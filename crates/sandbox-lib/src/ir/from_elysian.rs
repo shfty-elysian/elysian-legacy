@@ -9,10 +9,11 @@ use crate::{
     },
     ir::{
         ast::{
-            Block, ComposeBlocks, Expr, IntoBlock, IntoLiteral, IntoPathRead, IntoPathWrite,
-            IntoValue,
-            Property::{self, *},
+            Block, ComposeBlocks, Expr, IntoBlock, IntoLiteral, IntoRead, IntoWrite,
+            IntoValue, Property,
             Stmt::{self, *},
+            COLOR, DISTANCE, ERROR, GRADIENT, LEFT, LIGHT, NUM, OUT, POSITION, RIGHT, SUPPORT,
+            TANGENT, TIME, UV, VECT,
         },
         module::{
             FieldDefinition, FunctionDefinition, InputDefinition, Module, StructDefinition, Type,
@@ -20,91 +21,93 @@ use crate::{
     },
 };
 
+use super::ast::{COMBINE_CONTEXT, CONTEXT, K};
+
 pub fn elysian_struct_definitions<N, V>(elysian: &Elysian<N, V>) -> Vec<StructDefinition<N, V>> {
     vec![
         StructDefinition {
-            name: "Context",
+            name: "CONTEXT",
             public: true,
             fields: [
                 (
-                    Property::Position,
+                    POSITION,
                     FieldDefinition {
                         ty: Type::Vector,
                         public: true,
                     },
                 ),
                 (
-                    Property::Time,
+                    TIME,
                     FieldDefinition {
                         ty: Type::Number,
                         public: true,
                     },
                 ),
                 (
-                    Property::Distance,
+                    DISTANCE,
                     FieldDefinition {
                         ty: Type::Number,
                         public: true,
                     },
                 ),
                 (
-                    Property::Gradient,
+                    GRADIENT,
                     FieldDefinition {
                         ty: Type::Vector,
                         public: true,
                     },
                 ),
                 (
-                    Property::Uv,
+                    UV,
                     FieldDefinition {
                         ty: Type::Vector,
                         public: true,
                     },
                 ),
                 (
-                    Property::Tangent,
+                    TANGENT,
                     FieldDefinition {
                         ty: Type::Vector,
                         public: true,
                     },
                 ),
                 (
-                    Property::Color,
+                    COLOR,
                     FieldDefinition {
                         ty: Type::Vector,
                         public: true,
                     },
                 ),
                 (
-                    Property::Light,
+                    LIGHT,
                     FieldDefinition {
                         ty: Type::Number,
                         public: true,
                     },
                 ),
                 (
-                    Property::Support,
+                    SUPPORT,
                     FieldDefinition {
                         ty: Type::Vector,
                         public: true,
                     },
                 ),
                 (
-                    Property::Error,
+                    ERROR,
                     FieldDefinition {
                         ty: Type::Number,
                         public: true,
                     },
                 ),
                 (
-                    Property::Num,
+                    NUM,
                     FieldDefinition {
                         ty: Type::Number,
                         public: true,
                     },
                 ),
                 (
-                    Property::Vect,
+                    VECT,
                     FieldDefinition {
                         ty: Type::Vector,
                         public: true,
@@ -115,27 +118,27 @@ pub fn elysian_struct_definitions<N, V>(elysian: &Elysian<N, V>) -> Vec<StructDe
             .collect(),
         },
         StructDefinition {
-            name: "CombineContext",
+            name: "CombineCONTEXT",
             public: false,
             fields: [
                 (
-                    Property::Left,
+                    LEFT,
                     FieldDefinition {
-                        ty: Type::Struct("Context"),
+                        ty: Type::Struct("CONTEXT"),
                         public: false,
                     },
                 ),
                 (
-                    Property::Right,
+                    RIGHT,
                     FieldDefinition {
-                        ty: Type::Struct("Context"),
+                        ty: Type::Struct("CONTEXT"),
                         public: false,
                     },
                 ),
                 (
-                    Property::Out,
+                    OUT,
                     FieldDefinition {
-                        ty: Type::Struct("Context"),
+                        ty: Type::Struct("CONTEXT"),
                         public: false,
                     },
                 ),
@@ -160,15 +163,15 @@ where
         name: "shape",
         public: true,
         inputs: [(
-            Property::Context,
+            CONTEXT,
             InputDefinition {
-                ty: Type::Struct("Context"),
+                ty: Type::Struct("CONTEXT"),
                 mutable: false,
             },
         )]
         .into_iter()
         .collect(),
-        output: Type::Struct("Context"),
+        output: Type::Struct("CONTEXT"),
         block: elysian_entry_point(elysian),
     };
     Module {
@@ -189,7 +192,7 @@ where
         Elysian::Combine { combinator, shapes } => {
             let mut stmts = elysian_entry_point_combine(combinator, shapes);
             stmts.push(Stmt::Output(
-                [Property::CombineContext, Property::Out].read(),
+                [COMBINE_CONTEXT, OUT].read(),
             ));
             stmts
         }
@@ -217,15 +220,15 @@ where
 
     match lhs {
         Elysian::Field(f) => {
-            block.extend([Property::CombineContext.write(Expr::Construct(
-                "CombineContext",
-                [(Property::Out, Box::new(field_expr(f)))].into(),
+            block.extend([COMBINE_CONTEXT.write(Expr::Construct(
+                "COMBINE_CONTEXT",
+                [(OUT, Box::new(field_expr(f)))].into(),
             ))]);
         }
         Elysian::Modifier(m) => {
-            block.extend([Property::CombineContext.write(Expr::Construct(
-                "CombineContext",
-                [(Property::Out, Box::new(modifier_expr(m)))].into(),
+            block.extend([COMBINE_CONTEXT.write(Expr::Construct(
+                "COMBINE_CONTEXT",
+                [(OUT, Box::new(modifier_expr(m)))].into(),
             ))]);
         }
         Elysian::Combine { combinator, shapes } => {
@@ -238,18 +241,18 @@ where
 
     iter.fold(block, |mut acc, next| {
         acc.extend([
-            Property::CombineContext.write(Expr::Construct(
-                "CombineContext",
+            COMBINE_CONTEXT.write(Expr::Construct(
+                "COMBINE_CONTEXT",
                 [
                     (
-                        Property::Left,
-                        Box::new([Property::CombineContext, Property::Out].read()),
+                        LEFT,
+                        Box::new([COMBINE_CONTEXT, OUT].read()),
                     ),
-                    (Property::Right, Box::new(elysian_expr(&next))),
+                    (RIGHT, Box::new(elysian_expr(&next))),
                 ]
                 .into(),
             )),
-            Property::CombineContext.write(combinator.clone()),
+            COMBINE_CONTEXT.write(combinator.clone()),
         ]);
 
         acc
@@ -260,7 +263,7 @@ pub fn field_expr<N, V>(field: &Field<N, V>) -> Expr<N, V> {
     match field {
         Field::Point => Expr::Call {
             function: "point",
-            args: vec![Box::new(Property::Context.read())],
+            args: vec![Box::new(CONTEXT.read())],
         },
         Field::_Phantom(_) => unimplemented!(),
     }
@@ -352,7 +355,7 @@ where
 {
     combinators
         .into_iter()
-        .fold(Property::CombineContext.read(), |acc: Expr<N, V>, next| {
+        .fold(COMBINE_CONTEXT.read(), |acc: Expr<N, V>, next| {
             let Expr::Call{ function, mut args } = combinator_expr(next) else  {
                             panic!("Combinator expression is not a CallResult")
                         };
@@ -382,64 +385,64 @@ where
     V: Clone + IntoValue<N, V>,
 {
     match combinator {
-        Combinator::Boolean(b) => FunctionDefinition {
-            name: match b {
-                Boolean::Union => "union",
-                Boolean::Intersection => "intersection",
-                Boolean::Subtraction => "subtraction",
-            },
-            public: false,
-            inputs: [(
-                CombineContext,
-                InputDefinition {
-                    ty: Type::Struct("CombineContext"),
-                    mutable: true,
+        Combinator::Boolean(b) => {
+            FunctionDefinition {
+                name: match b {
+                    Boolean::Union => "union",
+                    Boolean::Intersection => "intersection",
+                    Boolean::Subtraction => "subtraction",
                 },
-            )]
-            .into_iter()
-            .collect(),
-            output: Type::Struct("CombineContext"),
-            block: match b {
-                Boolean::Union | Boolean::Intersection => [
-                    [CombineContext, Out]
-                        .write([CombineContext, Left].read())
-                        .if_else(
-                            match b {
-                                Boolean::Union => [CombineContext, Left, Distance].read().lt([
-                                    CombineContext,
-                                    Right,
-                                    Distance,
+                public: false,
+                inputs: [(
+                    COMBINE_CONTEXT,
+                    InputDefinition {
+                        ty: Type::Struct("CombineCONTEXT"),
+                        mutable: true,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                output: Type::Struct("CombineCONTEXT"),
+                block: match b {
+                    Boolean::Union | Boolean::Intersection => [
+                        [COMBINE_CONTEXT, OUT]
+                            .write([COMBINE_CONTEXT, LEFT].read())
+                            .if_else(
+                                match b {
+                                    Boolean::Union => [COMBINE_CONTEXT, LEFT, DISTANCE]
+                                        .read()
+                                        .lt([COMBINE_CONTEXT, RIGHT, DISTANCE].read()),
+                                    Boolean::Intersection => [COMBINE_CONTEXT, LEFT, DISTANCE]
+                                        .read()
+                                        .gt([COMBINE_CONTEXT, RIGHT, DISTANCE].read()),
+                                    _ => unreachable!(),
+                                },
+                                [COMBINE_CONTEXT, OUT].write([COMBINE_CONTEXT, RIGHT].read()),
+                            ),
+                        COMBINE_CONTEXT.read().output(),
+                    ]
+                    .block(),
+                    Boolean::Subtraction => [
+                        [COMBINE_CONTEXT, OUT].write([COMBINE_CONTEXT, RIGHT].read()),
+                        [COMBINE_CONTEXT, OUT, DISTANCE]
+                            .write(-[COMBINE_CONTEXT, OUT, DISTANCE].read()),
+                        [COMBINE_CONTEXT, OUT]
+                            .write([COMBINE_CONTEXT, LEFT].read())
+                            .if_else(
+                                [COMBINE_CONTEXT, LEFT, DISTANCE].read().gt([
+                                    COMBINE_CONTEXT,
+                                    OUT,
+                                    DISTANCE,
                                 ]
                                 .read()),
-                                Boolean::Intersection => [CombineContext, Left, Distance]
-                                    .read()
-                                    .gt([CombineContext, Right, Distance].read()),
-                                _ => unreachable!(),
-                            },
-                            [CombineContext, Out].write([CombineContext, Right].read()),
-                        ),
-                    CombineContext.read().output(),
-                ]
-                .block(),
-                Boolean::Subtraction => [
-                    [CombineContext, Out].write([CombineContext, Right].read()),
-                    [CombineContext, Out, Distance].write(-[CombineContext, Out, Distance].read()),
-                    [CombineContext, Out]
-                        .write([CombineContext, Left].read())
-                        .if_else(
-                            [CombineContext, Left, Distance].read().gt([
-                                CombineContext,
-                                Out,
-                                Distance,
-                            ]
-                            .read()),
-                            Nop,
-                        ),
-                    CombineContext.read().output(),
-                ]
-                .block(),
-            },
-        },
+                                Nop,
+                            ),
+                        COMBINE_CONTEXT.read().output(),
+                    ]
+                    .block(),
+                },
+            }
+        }
 
         Combinator::Blend(b) => FunctionDefinition {
             name: match b {
@@ -457,45 +460,45 @@ where
                     },
                 ),
                 (
-                    CombineContext,
+                    COMBINE_CONTEXT,
                     InputDefinition {
-                        ty: Type::Struct("CombineContext"),
+                        ty: Type::Struct("COMBINE_CONTEXT"),
                         mutable: true,
                     },
                 ),
             ]
             .into_iter()
             .collect(),
-            output: Type::Struct("CombineContext"),
+            output: Type::Struct("COMBINE_CONTEXT"),
             block: match b {
                 Blend::SmoothUnion { attr, .. } => {
                     let property: Property = (*attr).into();
 
                     let mut block = vec![
-                        Num.write(
+                        NUM.write(
                             ((N::ONE.literal() / N::TWO.literal())
                                 + (N::ONE.literal() / N::TWO.literal())
-                                    * ([CombineContext, Right, Distance].read()
-                                        - [CombineContext, Left, Distance].read())
+                                    * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
+                                        - [COMBINE_CONTEXT, LEFT, DISTANCE].read())
                                     / K.read())
                             .max(N::ZERO.literal())
                             .min(N::ONE.literal()),
                         ),
-                        [CombineContext, Out, property].write(
-                            [CombineContext, Right, property]
+                        [COMBINE_CONTEXT, OUT, property].write(
+                            [COMBINE_CONTEXT, RIGHT, property]
                                 .read()
-                                .mix([CombineContext, Left, property].read(), Num.read()),
+                                .mix([COMBINE_CONTEXT, LEFT, property].read(), NUM.read()),
                         ),
                     ];
 
-                    if property == Distance {
-                        block.push([CombineContext, Out, Distance].write(
-                            [CombineContext, Out, Distance].read()
-                                - K.read() * Num.read() * (N::ONE.literal() - Num.read()),
+                    if property == DISTANCE {
+                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
+                            [COMBINE_CONTEXT, OUT, DISTANCE].read()
+                                - K.read() * NUM.read() * (N::ONE.literal() - NUM.read()),
                         ))
                     }
 
-                    block.push(CombineContext.read().output());
+                    block.push(COMBINE_CONTEXT.read().output());
 
                     block.into_iter().collect()
                 }
@@ -503,29 +506,29 @@ where
                     let property: Property = (*attr).into();
 
                     let mut block = vec![
-                        Num.write(
+                        NUM.write(
                             ((N::ONE.literal() / N::TWO.literal())
                                 - (N::ONE.literal() / N::TWO.literal())
-                                    * ([Right, Distance].read() - [Left, Distance].read())
+                                    * ([RIGHT, DISTANCE].read() - [LEFT, DISTANCE].read())
                                     / K.read())
                             .max(N::ZERO.literal())
                             .min(N::ONE.literal()),
                         ),
                         property.write(
-                            [Right, property]
+                            [RIGHT, property]
                                 .read()
-                                .mix([Left, property].read(), Num.read()),
+                                .mix([LEFT, property].read(), NUM.read()),
                         ),
                     ];
 
-                    if property == Distance {
-                        block.push(Distance.write(
-                            Distance.read()
-                                + K.read() * Num.read() * (N::ONE.literal() - Num.read()),
+                    if property == DISTANCE {
+                        block.push(DISTANCE.write(
+                            DISTANCE.read()
+                                + K.read() * NUM.read() * (N::ONE.literal() - NUM.read()),
                         ))
                     }
 
-                    block.push([Out, property].write([Out, property].read()));
+                    block.push([OUT, property].write([OUT, property].read()));
 
                     block.into_iter().collect()
                 }
@@ -533,30 +536,30 @@ where
                     let property: Property = (*attr).into();
 
                     let mut block = vec![
-                        Num.write(
+                        NUM.write(
                             ((N::ONE.literal() / N::TWO.literal())
                                 - (N::ONE.literal() / N::TWO.literal())
-                                    * ([CombineContext, Right, Distance].read()
-                                        + [CombineContext, Left, Distance].read())
+                                    * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
+                                        + [COMBINE_CONTEXT, LEFT, DISTANCE].read())
                                     / K.read())
                             .max(N::ZERO.literal())
                             .min(N::ONE.literal()),
                         ),
-                        [CombineContext, Out, property].write(
-                            [CombineContext, Left, property]
+                        [COMBINE_CONTEXT, OUT, property].write(
+                            [COMBINE_CONTEXT, LEFT, property]
                                 .read()
-                                .mix(-[CombineContext, Right, property].read(), Num.read()),
+                                .mix(-[COMBINE_CONTEXT, RIGHT, property].read(), NUM.read()),
                         ),
                     ];
 
-                    if property == Distance {
-                        block.push([CombineContext, Out, Distance].write(
-                            [CombineContext, Out, Distance].read()
-                                + K.read() * Num.read() * (N::ONE.literal() - Num.read()),
+                    if property == DISTANCE {
+                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
+                            [COMBINE_CONTEXT, OUT, DISTANCE].read()
+                                + K.read() * NUM.read() * (N::ONE.literal() - NUM.read()),
                         ))
                     }
 
-                    block.push(CombineContext.read().output());
+                    block.push(COMBINE_CONTEXT.read().output());
 
                     block.into_iter().collect()
                 }
@@ -571,19 +574,19 @@ pub fn field_function<N, V>(field: &Field<N, V>) -> FunctionDefinition<N, V> {
             name: "point",
             public: false,
             inputs: [(
-                Context,
+                CONTEXT,
                 InputDefinition {
-                    ty: Type::Struct("Context"),
+                    ty: Type::Struct("CONTEXT"),
                     mutable: true,
                 },
             )]
             .into_iter()
             .collect(),
-            output: Type::Struct("Context"),
+            output: Type::Struct("CONTEXT"),
             block: [
-                [Context, Distance].write([Context, Position].read().length()),
-                [Context, Gradient].write([Context, Position].read().normalize()),
-                Context.read().output(),
+                [CONTEXT, DISTANCE].write([CONTEXT, POSITION].read().length()),
+                [CONTEXT, GRADIENT].write([CONTEXT, POSITION].read().normalize()),
+                CONTEXT.read().output(),
             ]
             .block(),
         },
@@ -602,26 +605,26 @@ where
             public: false,
             inputs: [
                 (
-                    Vect,
+                    VECT,
                     InputDefinition {
                         ty: Type::Vector,
                         mutable: false,
                     },
                 ),
                 (
-                    Context,
+                    CONTEXT,
                     InputDefinition {
-                        ty: Type::Struct("Context"),
+                        ty: Type::Struct("CONTEXT"),
                         mutable: true,
                     },
                 ),
             ]
             .into_iter()
             .collect(),
-            output: Type::Struct("Context"),
+            output: Type::Struct("CONTEXT"),
             block: [
-                [Context, Position].write([Context, Position].read() - Vect.read()),
-                Context.read().output(),
+                [CONTEXT, POSITION].write([CONTEXT, POSITION].read() - VECT.read()),
+                CONTEXT.read().output(),
             ]
             .block(),
         },
@@ -630,37 +633,37 @@ where
             public: false,
             inputs: [
                 (
-                    Vect,
+                    VECT,
                     InputDefinition {
                         ty: Type::Vector,
                         mutable: false,
                     },
                 ),
                 (
-                    Context,
+                    CONTEXT,
                     InputDefinition {
-                        ty: Type::Struct("Context"),
+                        ty: Type::Struct("CONTEXT"),
                         mutable: true,
                     },
                 ),
             ]
             .into_iter()
             .collect(),
-            output: Type::Struct("Context"),
+            output: Type::Struct("CONTEXT"),
             block: {
-                let expr = [Context, Position].read().dot(Vect.read().normalize());
+                let expr = [CONTEXT, POSITION].read().dot(VECT.read().normalize());
 
                 [
-                    [Context, Position].write(
-                        [Context, Position].read()
-                            - Vect.read().normalize()
+                    [CONTEXT, POSITION].write(
+                        [CONTEXT, POSITION].read()
+                            - VECT.read().normalize()
                                 * if *infinite {
                                     expr
                                 } else {
-                                    expr.max(-Vect.read().length()).min(Vect.read().length())
+                                    expr.max(-VECT.read().length()).min(VECT.read().length())
                                 },
                     ),
-                    Context.read().output(),
+                    CONTEXT.read().output(),
                 ]
                 .block()
             },
@@ -670,26 +673,26 @@ where
             public: false,
             inputs: [
                 (
-                    Num,
+                    NUM,
                     InputDefinition {
                         ty: Type::Number,
                         mutable: false,
                     },
                 ),
                 (
-                    Context,
+                    CONTEXT,
                     InputDefinition {
-                        ty: Type::Struct("Context"),
+                        ty: Type::Struct("CONTEXT"),
                         mutable: true,
                     },
                 ),
             ]
             .into_iter()
             .collect(),
-            output: Type::Struct("Context"),
+            output: Type::Struct("CONTEXT"),
             block: [
-                [Context, Distance].write([Context, Distance].read() - Num.read()),
-                Context.read().output(),
+                [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - NUM.read()),
+                CONTEXT.read().output(),
             ]
             .block(),
         },
@@ -697,20 +700,20 @@ where
             name: "manifold",
             public: false,
             inputs: [(
-                Context,
+                CONTEXT,
                 InputDefinition {
-                    ty: Type::Struct("Context"),
+                    ty: Type::Struct("CONTEXT"),
                     mutable: true,
                 },
             )]
             .into_iter()
             .collect(),
-            output: Type::Struct("Context"),
+            output: Type::Struct("CONTEXT"),
             block: [
-                Num.write([Context, Distance].read()),
-                [Context, Distance].write(Num.read().abs()),
-                [Context, Gradient].write([Context, Gradient].read() * Num.read().sign()),
-                Context.read().output(),
+                NUM.write([CONTEXT, DISTANCE].read()),
+                [CONTEXT, DISTANCE].write(NUM.read().abs()),
+                [CONTEXT, GRADIENT].write([CONTEXT, GRADIENT].read() * NUM.read().sign()),
+                CONTEXT.read().output(),
             ]
             .block(),
         },
@@ -770,8 +773,8 @@ where
         Elysian::Field(field) => match field {
             Field::Point => Stmt::Block(
                 [
-                    Distance.write(Position.read().length()),
-                    Gradient.write(Position.read().normalize()),
+                    DISTANCE.write(POSITION.read().length()),
+                    GRADIENT.write(POSITION.read().normalize()),
                 ]
                 .block(),
             ),
@@ -782,7 +785,7 @@ where
                 let Stmt::Block(block) = elysian_stmt(shape) else {
                     panic!("Elysian statement is not a Block");
                 };
-                [Position.write(Position.read() - delta.clone().into())].compose(block)
+                [POSITION.write(POSITION.read() - delta.clone().into())].compose(block)
             }
             Modifier::Elongate {
                 dir,
@@ -793,17 +796,17 @@ where
                     panic!("Elysian statement is not a Block");
                 };
 
-                let expr = Position.read().dot(Num.read().normalize());
+                let expr = POSITION.read().dot(NUM.read().normalize());
 
                 [
-                    Vect.write(dir.clone().into()),
-                    Position.write(
-                        Position.read()
-                            - Vect.read().normalize()
+                    VECT.write(dir.clone().into()),
+                    POSITION.write(
+                        POSITION.read()
+                            - VECT.read().normalize()
                                 * if *infinite {
                                     expr
                                 } else {
-                                    expr.max(-Num.read().length()).min(Num.read().length())
+                                    expr.max(-NUM.read().length()).min(NUM.read().length())
                                 },
                     ),
                 ]
@@ -816,8 +819,8 @@ where
 
                 b.compose(
                     [
-                        Num.write(dist.clone().into()),
-                        Distance.write(Distance.read() - Num.read()),
+                        NUM.write(dist.clone().into()),
+                        DISTANCE.write(DISTANCE.read() - NUM.read()),
                     ]
                     .block(),
                 )
@@ -829,9 +832,9 @@ where
 
                 b.compose(
                     [
-                        Num.write(Distance.read()),
-                        Distance.write(Num.read().abs()),
-                        Gradient.write(Gradient.read() * Num.read().sign()),
+                        NUM.write(DISTANCE.read()),
+                        DISTANCE.write(NUM.read().abs()),
+                        GRADIENT.write(GRADIENT.read() * NUM.read().sign()),
                     ]
                     .block(),
                 )

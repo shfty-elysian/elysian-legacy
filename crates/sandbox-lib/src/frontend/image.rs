@@ -4,10 +4,10 @@ use image::{Rgb, RgbImage};
 use rust_gpu_bridge::glam::Vec2;
 
 use crate::{
-    frontend::{interpreter::evaluate_module, ToGlam},
     elysian::{expand::Expand, Elysian},
+    frontend::{interpreter::evaluate_module, ToGlam},
     ir::{
-        ast::{Property::*, Struct},
+        ast::{Struct, DISTANCE, GRADIENT, POSITION},
         from_elysian::elysian_module,
     },
 };
@@ -27,15 +27,15 @@ where
     for y in 0..width {
         for x in 0..height {
             let ctx = Struct::default().set_vector(
-                Position,
+                POSITION,
                 Vec2::new(
                     ((x as f32 / width as f32) - 0.5) * 2.0 / scale,
                     ((y as f32 / height as f32) - 0.5) * 2.0 / scale,
                 ),
             );
             let ctx = evaluate_module(Interpreter { context: ctx }, &module).context;
-            let d: f32 = ctx.get_number(&Distance);
-            let g: Vec2 = ctx.get_vector(&Gradient);
+            let d: f32 = ctx.get_number(&DISTANCE);
+            let g: Vec2 = ctx.get_vector(&GRADIENT);
 
             let c = if d.abs() < 2.0 / width as f32 {
                 [255, 255, 255]

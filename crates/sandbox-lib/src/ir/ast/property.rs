@@ -6,68 +6,55 @@ use crate::{
     },
 };
 
+use super::Identifier;
+
+pub const POSITION: Property = Property::new("position", 19300293251480055481);
+pub const TIME: Property = Property::new("time", 391570251245214947);
+pub const DISTANCE: Property = Property::new("distance", 20699600731090380932);
+pub const GRADIENT: Property = Property::new("gradient", 16702807221222221695);
+pub const UV: Property = Property::new("uv", 1527481748115194786);
+pub const TANGENT: Property = Property::new("tangent", 12976793731289731131);
+pub const COLOR: Property = Property::new("color", 84604795624457789);
+pub const LIGHT: Property = Property::new("light", 1330409404139204842);
+pub const SUPPORT: Property = Property::new("support", 85970193295239647);
+pub const ERROR: Property = Property::new("error", 209621851525461471);
+pub const K: Property = Property::new("k", 12632115441234896764);
+pub const NUM: Property = Property::new("num", 1349662877516236181);
+pub const VECT: Property = Property::new("vect", 19553087511741435087);
+pub const CONTEXT: Property = Property::new("context", 595454262490629935);
+pub const COMBINE_CONTEXT: Property = Property::new("combine_context", 671133652169921634);
+pub const LEFT: Property = Property::new("left", 635254731934742132);
+pub const RIGHT: Property = Property::new("right", 5251097991491214179);
+pub const OUT: Property = Property::new("out", 1470763158891875334);
+
 /// Block variable names
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Property {
-    Position,
-    Time,
-    Distance,
-    Gradient,
-    Uv,
-    Tangent,
-    Color,
-    Light,
-    Support,
-    Error,
-    Bool,
-    Num,
-    Vect,
-    K,
-    Context,
-    CombineContext,
-    Left,
-    Right,
-    Out,
+pub struct Property(Identifier);
+
+impl Property {
+    pub const fn new(name: &'static str, uuid: u128) -> Self {
+        Property(Identifier::new(name, uuid))
+    }
 }
 
 impl From<Attribute> for Property {
     fn from(value: Attribute) -> Self {
         match value {
-            Attribute::Position => Property::Position,
-            Attribute::Time => Property::Time,
-            Attribute::Distance => Property::Distance,
-            Attribute::Gradient => Property::Gradient,
-            Attribute::Uv => Property::Uv,
-            Attribute::Tangent => Property::Tangent,
-            Attribute::Color => Property::Color,
-            Attribute::Light => Property::Light,
+            Attribute::Position => POSITION,
+            Attribute::Time => TIME,
+            Attribute::Distance => DISTANCE,
+            Attribute::Gradient => GRADIENT,
+            Attribute::Uv => UV,
+            Attribute::Tangent => TANGENT,
+            Attribute::Color => COLOR,
+            Attribute::Light => LIGHT,
         }
     }
 }
 
 impl Property {
     pub fn name(&self) -> &'static str {
-        match self {
-            Property::Position => "position",
-            Property::Time => "time",
-            Property::Distance => "distance",
-            Property::Gradient => "gradient",
-            Property::Uv => "uv",
-            Property::Tangent => "tangent",
-            Property::Color => "color",
-            Property::Light => "light",
-            Property::Support => "support",
-            Property::Error => "error",
-            Property::Bool => "bool",
-            Property::Num => "num",
-            Property::Vect => "vect",
-            Property::K => "k",
-            Property::Context => "context",
-            Property::CombineContext => "combine_context",
-            Property::Left => "left",
-            Property::Right => "right",
-            Property::Out => "out",
-        }
+        self.0.name()
     }
 
     pub fn read<N, V>(self) -> Expr<N, V> {
@@ -82,11 +69,11 @@ impl Property {
     }
 }
 
-pub trait IntoPathRead<N, V>: IntoIterator<Item = Property> {
+pub trait IntoRead<N, V>: IntoIterator<Item = Property> {
     fn read(self) -> Expr<N, V>;
 }
 
-impl<T, N, V> IntoPathRead<N, V> for T
+impl<T, N, V> IntoRead<N, V> for T
 where
     T: IntoIterator<Item = Property>,
 {
@@ -95,11 +82,11 @@ where
     }
 }
 
-pub trait IntoPathWrite<N, V>: IntoIterator<Item = Property> {
+pub trait IntoWrite<N, V>: IntoIterator<Item = Property> {
     fn write(self, expr: Expr<N, V>) -> Stmt<N, V>;
 }
 
-impl<T, N, V> IntoPathWrite<N, V> for T
+impl<T, N, V> IntoWrite<N, V> for T
 where
     T: IntoIterator<Item = Property>,
 {
