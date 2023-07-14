@@ -132,7 +132,7 @@ where
     }
 }
 
-impl<N, V> ToTokens for Type<N, V> {
+impl ToTokens for Type {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let name = Ident::new(
             match self {
@@ -140,7 +140,6 @@ impl<N, V> ToTokens for Type<N, V> {
                 Type::Number => "f32",
                 Type::Vector => "Vec2",
                 Type::Struct(s) => s,
-                Type::_Phantom(_) => unimplemented!(),
             },
             Span::call_site(),
         );
@@ -179,10 +178,10 @@ where
     };
 
     let mut inputs = quote!();
-    for (name, def) in &function.inputs {
+    for (prop, def) in &function.inputs {
         let mutable = if def.mutable { quote!(mut) } else { quote!() };
-        let ty = &def.ty;
-        inputs = quote!(#inputs #mutable #name: #ty,);
+        let ty = prop.ty();
+        inputs = quote!(#inputs #mutable #prop: #ty,);
     }
 
     let output = &function.output;
@@ -214,7 +213,7 @@ where
             .iter()
             .map(|(prop, def)| {
                 let public = if def.public { quote!(pub) } else { quote!() };
-                let ty = &def.ty;
+                let ty = prop.ty();
                 quote!(#public #prop: #ty,)
             })
             .collect::<TokenStream>();

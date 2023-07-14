@@ -9,6 +9,6 @@ pub use struct_definition::*;
 #[derive(Debug)]
 pub struct Module<N, V> {
     pub function_definitions: Vec<FunctionDefinition<N, V>>,
-    pub struct_definitions: Vec<StructDefinition<N, V>>,
+    pub struct_definitions: Vec<StructDefinition>,
     pub entry_point: FunctionDefinition<N, V>,
 }

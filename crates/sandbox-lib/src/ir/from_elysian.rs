@@ -9,8 +9,8 @@ use crate::{
     },
     ir::{
         ast::{
-            Block, ComposeBlocks, Expr, IntoBlock, IntoLiteral, IntoRead, IntoWrite,
-            IntoValue, Property,
+            Block, ComposeBlocks, Expr, IntoBlock, IntoLiteral, IntoRead, IntoValue, IntoWrite,
+            Property,
             Stmt::{self, *},
             COLOR, DISTANCE, ERROR, GRADIENT, LEFT, LIGHT, NUM, OUT, POSITION, RIGHT, SUPPORT,
             TANGENT, TIME, UV, VECT,
@@ -23,125 +23,35 @@ use crate::{
 
 use super::ast::{COMBINE_CONTEXT, CONTEXT, K};
 
-pub fn elysian_struct_definitions<N, V>(elysian: &Elysian<N, V>) -> Vec<StructDefinition<N, V>> {
+pub fn elysian_struct_definitions<N, V>(elysian: &Elysian<N, V>) -> Vec<StructDefinition> {
     vec![
         StructDefinition {
-            name: "CONTEXT",
+            name: "Context",
             public: true,
             fields: [
-                (
-                    POSITION,
-                    FieldDefinition {
-                        ty: Type::Vector,
-                        public: true,
-                    },
-                ),
-                (
-                    TIME,
-                    FieldDefinition {
-                        ty: Type::Number,
-                        public: true,
-                    },
-                ),
-                (
-                    DISTANCE,
-                    FieldDefinition {
-                        ty: Type::Number,
-                        public: true,
-                    },
-                ),
-                (
-                    GRADIENT,
-                    FieldDefinition {
-                        ty: Type::Vector,
-                        public: true,
-                    },
-                ),
-                (
-                    UV,
-                    FieldDefinition {
-                        ty: Type::Vector,
-                        public: true,
-                    },
-                ),
-                (
-                    TANGENT,
-                    FieldDefinition {
-                        ty: Type::Vector,
-                        public: true,
-                    },
-                ),
-                (
-                    COLOR,
-                    FieldDefinition {
-                        ty: Type::Vector,
-                        public: true,
-                    },
-                ),
-                (
-                    LIGHT,
-                    FieldDefinition {
-                        ty: Type::Number,
-                        public: true,
-                    },
-                ),
-                (
-                    SUPPORT,
-                    FieldDefinition {
-                        ty: Type::Vector,
-                        public: true,
-                    },
-                ),
-                (
-                    ERROR,
-                    FieldDefinition {
-                        ty: Type::Number,
-                        public: true,
-                    },
-                ),
-                (
-                    NUM,
-                    FieldDefinition {
-                        ty: Type::Number,
-                        public: true,
-                    },
-                ),
-                (
-                    VECT,
-                    FieldDefinition {
-                        ty: Type::Vector,
-                        public: true,
-                    },
-                ),
+                (POSITION, FieldDefinition { public: true }),
+                (TIME, FieldDefinition { public: true }),
+                (DISTANCE, FieldDefinition { public: true }),
+                (GRADIENT, FieldDefinition { public: true }),
+                (UV, FieldDefinition { public: true }),
+                (TANGENT, FieldDefinition { public: true }),
+                (COLOR, FieldDefinition { public: true }),
+                (LIGHT, FieldDefinition { public: true }),
+                (SUPPORT, FieldDefinition { public: true }),
+                (ERROR, FieldDefinition { public: true }),
+                (NUM, FieldDefinition { public: true }),
+                (VECT, FieldDefinition { public: true }),
             ]
             .into_iter()
             .collect(),
         },
         StructDefinition {
-            name: "CombineCONTEXT",
+            name: "CombineContext",
             public: false,
             fields: [
-                (
-                    LEFT,
-                    FieldDefinition {
-                        ty: Type::Struct("CONTEXT"),
-                        public: false,
-                    },
-                ),
-                (
-                    RIGHT,
-                    FieldDefinition {
-                        ty: Type::Struct("CONTEXT"),
-                        public: false,
-                    },
-                ),
-                (
-                    OUT,
-                    FieldDefinition {
-                        ty: Type::Struct("CONTEXT"),
-                        public: false,
-                    },
-                ),
+                (LEFT, FieldDefinition { public: false }),
+                (RIGHT, FieldDefinition { public: false }),
+                (OUT, FieldDefinition { public: false }),
             ]
             .into_iter()
             .collect(),
@@ -162,16 +72,10 @@ where
     let entry_point = FunctionDefinition {
         name: "shape",
         public: true,
-        inputs: [(
-            CONTEXT,
-            InputDefinition {
-                ty: Type::Struct("CONTEXT"),
-                mutable: false,
-            },
-        )]
-        .into_iter()
-        .collect(),
-        output: Type::Struct("CONTEXT"),
+        inputs: [(CONTEXT, InputDefinition { mutable: false })]
+            .into_iter()
+            .collect(),
+        output: Type::Struct("Context"),
         block: elysian_entry_point(elysian),
     };
     Module {
@@ -191,9 +95,7 @@ where
         Elysian::Modifier(m) => vec![modifier_expr(&m).output()],
         Elysian::Combine { combinator, shapes } => {
             let mut stmts = elysian_entry_point_combine(combinator, shapes);
-            stmts.push(Stmt::Output(
-                [COMBINE_CONTEXT, OUT].read(),
-            ));
+            stmts.push(Stmt::Output([COMBINE_CONTEXT, OUT].read()));
             stmts
         }
         Elysian::Alias(_) => {
@@ -244,10 +146,7 @@ where
             COMBINE_CONTEXT.write(Expr::Construct(
                 "COMBINE_CONTEXT",
                 [
-                    (
-                        LEFT,
-                        Box::new([COMBINE_CONTEXT, OUT].read()),
-                    ),
+                    (LEFT, Box::new([COMBINE_CONTEXT, OUT].read())),
                     (RIGHT, Box::new(elysian_expr(&next))),
                 ]
                 .into(),
@@ -393,16 +292,10 @@ where
                     Boolean::Subtraction => "subtraction",
                 },
                 public: false,
-                inputs: [(
-                    COMBINE_CONTEXT,
-                    InputDefinition {
-                        ty: Type::Struct("CombineCONTEXT"),
-                        mutable: true,
-                    },
-                )]
-                .into_iter()
-                .collect(),
-                output: Type::Struct("CombineCONTEXT"),
+                inputs: [(COMBINE_CONTEXT, InputDefinition { mutable: true })]
+                    .into_iter()
+                    .collect(),
+                output: Type::Struct("CombineContext"),
                 block: match b {
                     Boolean::Union | Boolean::Intersection => [
                         [COMBINE_CONTEXT, OUT]
@@ -452,20 +345,8 @@ where
             },
             public: false,
             inputs: [
-                (
-                    K,
-                    InputDefinition {
-                        ty: Type::Number,
-                        mutable: false,
-                    },
-                ),
-                (
-                    COMBINE_CONTEXT,
-                    InputDefinition {
-                        ty: Type::Struct("COMBINE_CONTEXT"),
-                        mutable: true,
-                    },
-                ),
+                (K, InputDefinition { mutable: false }),
+                (COMBINE_CONTEXT, InputDefinition { mutable: true }),
             ]
             .into_iter()
             .collect(),
@@ -573,16 +454,10 @@ pub fn field_function<N, V>(field: &Field<N, V>) -> FunctionDefinition<N, V> {
         Field::Point => FunctionDefinition {
             name: "point",
             public: false,
-            inputs: [(
-                CONTEXT,
-                InputDefinition {
-                    ty: Type::Struct("CONTEXT"),
-                    mutable: true,
-                },
-            )]
-            .into_iter()
-            .collect(),
-            output: Type::Struct("CONTEXT"),
+            inputs: [(CONTEXT, InputDefinition { mutable: true })]
+                .into_iter()
+                .collect(),
+            output: Type::Struct("Context"),
             block: [
                 [CONTEXT, DISTANCE].write([CONTEXT, POSITION].read().length()),
                 [CONTEXT, GRADIENT].write([CONTEXT, POSITION].read().normalize()),
@@ -604,24 +479,12 @@ where
             name: "translate",
             public: false,
             inputs: [
-                (
-                    VECT,
-                    InputDefinition {
-                        ty: Type::Vector,
-                        mutable: false,
-                    },
-                ),
-                (
-                    CONTEXT,
-                    InputDefinition {
-                        ty: Type::Struct("CONTEXT"),
-                        mutable: true,
-                    },
-                ),
+                (VECT, InputDefinition { mutable: false }),
+                (CONTEXT, InputDefinition { mutable: true }),
             ]
             .into_iter()
             .collect(),
-            output: Type::Struct("CONTEXT"),
+            output: Type::Struct("Context"),
             block: [
                 [CONTEXT, POSITION].write([CONTEXT, POSITION].read() - VECT.read()),
                 CONTEXT.read().output(),
@@ -632,24 +495,12 @@ where
             name: "elongate",
             public: false,
             inputs: [
-                (
-                    VECT,
-                    InputDefinition {
-                        ty: Type::Vector,
-                        mutable: false,
-                    },
-                ),
-                (
-                    CONTEXT,
-                    InputDefinition {
-                        ty: Type::Struct("CONTEXT"),
-                        mutable: true,
-                    },
-                ),
+                (VECT, InputDefinition { mutable: false }),
+                (CONTEXT, InputDefinition { mutable: true }),
             ]
             .into_iter()
             .collect(),
-            output: Type::Struct("CONTEXT"),
+            output: Type::Struct("Context"),
             block: {
                 let expr = [CONTEXT, POSITION].read().dot(VECT.read().normalize());
 
@@ -672,24 +523,12 @@ where
             name: "isosurface",
             public: false,
             inputs: [
-                (
-                    NUM,
-                    InputDefinition {
-                        ty: Type::Number,
-                        mutable: false,
-                    },
-                ),
-                (
-                    CONTEXT,
-                    InputDefinition {
-                        ty: Type::Struct("CONTEXT"),
-                        mutable: true,
-                    },
-                ),
+                (NUM, InputDefinition { mutable: false }),
+                (CONTEXT, InputDefinition { mutable: true }),
             ]
             .into_iter()
             .collect(),
-            output: Type::Struct("CONTEXT"),
+            output: Type::Struct("Context"),
             block: [
                 [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - NUM.read()),
                 CONTEXT.read().output(),
@@ -699,16 +538,10 @@ where
         Modifier::Manifold { .. } => FunctionDefinition {
             name: "manifold",
             public: false,
-            inputs: [(
-                CONTEXT,
-                InputDefinition {
-                    ty: Type::Struct("CONTEXT"),
-                    mutable: true,
-                },
-            )]
-            .into_iter()
-            .collect(),
-            output: Type::Struct("CONTEXT"),
+            inputs: [(CONTEXT, InputDefinition { mutable: true })]
+                .into_iter()
+                .collect(),
+            output: Type::Struct("Context"),
             block: [
                 NUM.write([CONTEXT, DISTANCE].read()),
                 [CONTEXT, DISTANCE].write(NUM.read().abs()),

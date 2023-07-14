@@ -9,13 +9,12 @@ use crate::ir::{
 pub struct FunctionDefinition<N, V> {
     pub name: &'static str,
     pub public: bool,
-    pub inputs: BTreeMap<Property, InputDefinition<N, V>>,
-    pub output: Type<N, V>,
+    pub inputs: BTreeMap<Property, InputDefinition>,
+    pub output: Type,
     pub block: Block<N, V>,
 }
 
 #[derive(Debug, Clone)]
-pub struct InputDefinition<N, V> {
-    pub ty: Type<N, V>,
+pub struct InputDefinition {
     pub mutable: bool,
 }

@@ -1,16 +1,15 @@
 use std::collections::BTreeMap;
 
-use crate::ir::{ast::Property, module::Type};
+use crate::ir::ast::Property;
 
 #[derive(Debug, Clone)]
-pub struct StructDefinition<N, V> {
+pub struct StructDefinition {
     pub name: &'static str,
     pub public: bool,
-    pub fields: BTreeMap<Property, FieldDefinition<N, V>>,
+    pub fields: BTreeMap<Property, FieldDefinition>,
 }
 
 #[derive(Debug, Clone)]
-pub struct FieldDefinition<N, V> {
-    pub ty: Type<N, V>,
+pub struct FieldDefinition {
     pub public: bool,
 }
