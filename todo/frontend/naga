@@ -1,0 +1,6 @@
+* Generate naga IR from Elysian IR
+
+* Iteration pipeline
+  * Visualization via bevy requires textual preprocessing to handle bind groups, builtins, etc.
+  * Practical approach is probably to generate a WGSL / GLSL function, then feed that into a bevy Shader
+

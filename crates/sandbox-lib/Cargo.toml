@@ -1,0 +1,11 @@
+[package]
+name = "sandbox-lib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rust-gpu-bridge = { path = "../../../bevy-rust-gpu-project/crates/rust-gpu-bridge", features = ["glam"] }
+image = "0.24.6"
+quote = "1.0.29"
+proc-macro2 = "1.0.64"
+uuid = "1.4.0"
