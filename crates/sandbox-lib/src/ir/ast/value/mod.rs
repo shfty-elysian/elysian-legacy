@@ -9,7 +9,7 @@ pub use structure::*;
 pub use vector::*;
 
 /// Concrete value
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum Value<N, V> {
     Boolean(bool),

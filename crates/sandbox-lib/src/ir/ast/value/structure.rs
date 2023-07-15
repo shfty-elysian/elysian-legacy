@@ -1,16 +1,14 @@
 use crate::ir::ast::{Property, Value};
 use std::{collections::BTreeMap, fmt::Debug};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Struct<N, V> {
     pub(crate) members: BTreeMap<Property, Value<N, V>>,
 }
 
 impl<N, V> Default for Struct<N, V> {
     fn default() -> Self {
-        Self {
-            members: Default::default(),
-        }
+        Self { members: Default::default() }
     }
 }
 
@@ -25,7 +23,7 @@ impl<N, V> Struct<N, V> {
     pub fn get_ref(&self, key: &Property) -> &Value<N, V> {
         self.members
             .get(key)
-            .unwrap_or_else(|| panic!("Invalid key {key:#?}"))
+            .unwrap_or_else(|| panic!("Invalid key {}", key.name()))
     }
 
     pub fn get_mut(&mut self, key: &Property) -> &mut Value<N, V> {

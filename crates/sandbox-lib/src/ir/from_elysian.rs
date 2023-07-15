@@ -5,58 +5,96 @@ use rust_gpu_bridge::{One, Two, Zero};
 use crate::{
     elysian::{
         combinator::{Blend, Boolean, Combinator},
-        Elysian, Field, Modifier,
+        Elysian, Field, PostModifier, PreModifier,
     },
     ir::{
         ast::{
-            Block, ComposeBlocks, Expr, IntoBlock, IntoLiteral, IntoRead, IntoValue, IntoWrite,
-            Property,
-            Stmt::{self, *},
-            COLOR, DISTANCE, ERROR, GRADIENT, LEFT, LIGHT, NUM, OUT, POSITION, RIGHT, SUPPORT,
-            TANGENT, TIME, UV, VECT,
+            Block, Expr, IntoBlock, IntoLiteral, IntoRead, IntoValue, IntoWrite, Property, Stmt,
+            COLOR, COMBINE_CONTEXT, CONTEXT, DISTANCE, ERROR, GRADIENT, K, LEFT, LIGHT, NUM, OUT,
+            POSITION, RIGHT, SUPPORT, TANGENT, TIME, UV, VECT,
         },
-        module::{
-            FieldDefinition, FunctionDefinition, InputDefinition, Module, StructDefinition, Type,
-        },
+        module::{FieldDefinition, FunctionDefinition, InputDefinition, Module, StructDefinition},
     },
 };
 
-use super::ast::{COMBINE_CONTEXT, CONTEXT, K};
+use super::ast::Identifier;
+
+pub const CONTEXT_STRUCT: StructDefinition = StructDefinition {
+    id: Identifier::new("Context", 1198218077110787867),
+    public: true,
+    fields: &[
+        FieldDefinition {
+            prop: POSITION,
+            public: true,
+        },
+        FieldDefinition {
+            prop: TIME,
+            public: true,
+        },
+        FieldDefinition {
+            prop: DISTANCE,
+            public: true,
+        },
+        FieldDefinition {
+            prop: GRADIENT,
+            public: true,
+        },
+        FieldDefinition {
+            prop: UV,
+            public: true,
+        },
+        FieldDefinition {
+            prop: TANGENT,
+            public: true,
+        },
+        FieldDefinition {
+            prop: COLOR,
+            public: true,
+        },
+        FieldDefinition {
+            prop: LIGHT,
+            public: true,
+        },
+        FieldDefinition {
+            prop: SUPPORT,
+            public: true,
+        },
+        FieldDefinition {
+            prop: ERROR,
+            public: true,
+        },
+        FieldDefinition {
+            prop: NUM,
+            public: true,
+        },
+        FieldDefinition {
+            prop: VECT,
+            public: true,
+        },
+    ],
+};
+
+pub const COMBINE_CONTEXT_STRUCT: StructDefinition = StructDefinition {
+    id: Identifier::new("CombineContext", 416045102551943616),
+    public: false,
+    fields: &[
+        FieldDefinition {
+            prop: LEFT,
+            public: false,
+        },
+        FieldDefinition {
+            prop: RIGHT,
+            public: false,
+        },
+        FieldDefinition {
+            prop: OUT,
+            public: false,
+        },
+    ],
+};
 
 pub fn elysian_struct_definitions<N, V>(elysian: &Elysian<N, V>) -> Vec<StructDefinition> {
-    vec![
-        StructDefinition {
-            name: "Context",
-            public: true,
-            fields: [
-                (POSITION, FieldDefinition { public: true }),
-                (TIME, FieldDefinition { public: true }),
-                (DISTANCE, FieldDefinition { public: true }),
-                (GRADIENT, FieldDefinition { public: true }),
-                (UV, FieldDefinition { public: true }),
-                (TANGENT, FieldDefinition { public: true }),
-                (COLOR, FieldDefinition { public: true }),
-                (LIGHT, FieldDefinition { public: true }),
-                (SUPPORT, FieldDefinition { public: true }),
-                (ERROR, FieldDefinition { public: true }),
-                (NUM, FieldDefinition { public: true }),
-                (VECT, FieldDefinition { public: true }),
-            ]
-            .into_iter()
-            .collect(),
-        },
-        StructDefinition {
-            name: "CombineContext",
-            public: false,
-            fields: [
-                (LEFT, FieldDefinition { public: false }),
-                (RIGHT, FieldDefinition { public: false }),
-                (OUT, FieldDefinition { public: false }),
-            ]
-            .into_iter()
-            .collect(),
-        },
-    ]
+    vec![CONTEXT_STRUCT, COMBINE_CONTEXT_STRUCT]
 }
 
 pub fn elysian_module<N, V>(elysian: &Elysian<N, V>) -> Module<N, V>
@@ -65,17 +103,18 @@ where
     V: Debug + Clone + IntoValue<N, V>,
 {
     let mut functions = elysian_functions(elysian);
-    functions.sort_by(|lhs, rhs| lhs.name.cmp(rhs.name));
-    functions.dedup_by(|lhs, rhs| lhs.name == rhs.name);
+    functions.sort_by(|lhs, rhs| lhs.id.cmp(&rhs.id));
+    functions.dedup_by(|lhs, rhs| lhs.id == rhs.id);
 
     let struct_definitions = elysian_struct_definitions(elysian);
     let entry_point = FunctionDefinition {
-        name: "shape",
+        id: Identifier::new("shape", 523056258704924944),
         public: true,
-        inputs: [(CONTEXT, InputDefinition { mutable: false })]
-            .into_iter()
-            .collect(),
-        output: Type::Struct("Context"),
+        inputs: &[InputDefinition {
+            prop: CONTEXT,
+            mutable: false,
+        }],
+        output: &CONTEXT_STRUCT,
         block: elysian_entry_point(elysian),
     };
     Module {
@@ -92,10 +131,11 @@ where
 {
     Block(match elysian {
         Elysian::Field(f) => vec![field_expr(&f).output()],
-        Elysian::Modifier(m) => vec![modifier_expr(&m).output()],
+        Elysian::PreModifier(m) => vec![pre_modifier_expr(&m).output()],
+        Elysian::PostModifier(m) => vec![post_modifier_expr(&m).output()],
         Elysian::Combine { combinator, shapes } => {
             let mut stmts = elysian_entry_point_combine(combinator, shapes);
-            stmts.push(Stmt::Output([COMBINE_CONTEXT, OUT].read()));
+            stmts.push([COMBINE_CONTEXT, OUT].read().output());
             stmts
         }
         Elysian::Alias(_) => {
@@ -123,14 +163,20 @@ where
     match lhs {
         Elysian::Field(f) => {
             block.extend([COMBINE_CONTEXT.write(Expr::Construct(
-                "COMBINE_CONTEXT",
-                [(OUT, Box::new(field_expr(f)))].into(),
+                &COMBINE_CONTEXT_STRUCT,
+                [(OUT, field_expr(f))].into(),
             ))]);
         }
-        Elysian::Modifier(m) => {
+        Elysian::PreModifier(m) => {
             block.extend([COMBINE_CONTEXT.write(Expr::Construct(
-                "COMBINE_CONTEXT",
-                [(OUT, Box::new(modifier_expr(m)))].into(),
+                &COMBINE_CONTEXT_STRUCT,
+                [(OUT, pre_modifier_expr(m))].into(),
+            ))]);
+        }
+        Elysian::PostModifier(m) => {
+            block.extend([COMBINE_CONTEXT.write(Expr::Construct(
+                &COMBINE_CONTEXT_STRUCT,
+                [(OUT, post_modifier_expr(m))].into(),
             ))]);
         }
         Elysian::Combine { combinator, shapes } => {
@@ -144,10 +190,10 @@ where
     iter.fold(block, |mut acc, next| {
         acc.extend([
             COMBINE_CONTEXT.write(Expr::Construct(
-                "COMBINE_CONTEXT",
+                &COMBINE_CONTEXT_STRUCT,
                 [
-                    (LEFT, Box::new([COMBINE_CONTEXT, OUT].read())),
-                    (RIGHT, Box::new(elysian_expr(&next))),
+                    (LEFT, [COMBINE_CONTEXT, OUT].read()),
+                    (RIGHT, elysian_expr(&next)),
                 ]
                 .into(),
             )),
@@ -158,60 +204,102 @@ where
     })
 }
 
+const POINT: Identifier = Identifier::new("point", 419357041369711478);
+
 pub fn field_expr<N, V>(field: &Field<N, V>) -> Expr<N, V> {
     match field {
         Field::Point => Expr::Call {
-            function: "point",
-            args: vec![Box::new(CONTEXT.read())],
+            function: POINT,
+            args: vec![CONTEXT.read()],
         },
         Field::_Phantom(_) => unimplemented!(),
     }
 }
 
-pub fn modifier_expr<N, V>(modifier: &Modifier<N, V>) -> Expr<N, V>
+const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
+const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324);
+const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
+const MANIFOLD: Identifier = Identifier::new("manifold", 7861274791729269697);
+
+pub fn pre_modifier_expr<N, V>(modifier: &PreModifier<N, V>) -> Expr<N, V>
 where
     N: Clone + IntoValue<N, V>,
     V: Clone + IntoValue<N, V>,
 {
     match modifier {
-        Modifier::Translate { delta, shape } => Expr::Call {
-            function: "translate",
-            args: vec![
-                Box::new(delta.clone().into()),
-                Box::new(elysian_expr(shape)),
-            ],
+        PreModifier::Translate { delta, shape } => {
+            let Expr::Call { function, mut args } = elysian_expr(shape) else {
+                panic!("Invalid Translate inner");
+            };
+
+            let arg = args.pop().expect("Empty arg list");
+
+            args.push(Expr::Call {
+                function: TRANSLATE,
+                args: vec![delta.clone().into(), arg],
+            });
+
+            Expr::Call { function, args }
+        }
+        PreModifier::Elongate { dir, shape, .. } => {
+            let Expr::Call { function, mut args } = elysian_expr(shape) else {
+                panic!("Invalid Translate inner");
+            };
+
+            let arg = args.pop().expect("Empty arg list");
+
+            args.push(Expr::Call {
+                function: ELONGATE,
+                args: vec![dir.clone().into(), arg],
+            });
+
+            Expr::Call { function, args }
+        }
+    }
+}
+
+pub fn post_modifier_expr<N, V>(modifier: &PostModifier<N, V>) -> Expr<N, V>
+where
+    N: Clone + IntoValue<N, V>,
+    V: Clone + IntoValue<N, V>,
+{
+    match modifier {
+        PostModifier::Isosurface { dist, shape } => Expr::Call {
+            function: ISOSURFACE,
+            args: vec![dist.clone().into(), elysian_expr(shape)],
         },
-        Modifier::Elongate { dir, shape, .. } => Expr::Call {
-            function: "elongate",
-            args: vec![Box::new(dir.clone().into()), Box::new(elysian_expr(shape))],
-        },
-        Modifier::Isosurface { dist, shape } => Expr::Call {
-            function: "isosurface",
-            args: vec![Box::new(dist.clone().into()), Box::new(elysian_expr(shape))],
-        },
-        Modifier::Manifold { shape } => Expr::Call {
-            function: "manifold",
-            args: vec![Box::new(elysian_expr(shape))],
+        PostModifier::Manifold { shape } => Expr::Call {
+            function: MANIFOLD,
+            args: vec![elysian_expr(shape)],
         },
     }
 }
 
+const UNION: Identifier = Identifier::new("union", 1894363406191409858);
+const INTERSECTION: Identifier = Identifier::new("intersection", 18033822391797795038);
+const SUBTRACTION: Identifier = Identifier::new("subtraction", 1414822549598552032);
+
 pub fn boolean_expr<N, V>(boolean: &Boolean) -> Expr<N, V> {
     match boolean {
         Boolean::Union => Expr::Call {
-            function: "union",
+            function: UNION,
             args: vec![],
         },
         Boolean::Intersection => Expr::Call {
-            function: "intersection",
+            function: INTERSECTION,
             args: vec![],
         },
         Boolean::Subtraction => Expr::Call {
-            function: "subtraction",
+            function: SUBTRACTION,
             args: vec![],
         },
     }
 }
+
+const SMOOTH_UNION: Identifier = Identifier::new("smooth_union", 1894363406191409858);
+const SMOOTH_INTERSECTION: Identifier =
+    Identifier::new("smooth_intersection", 18033822391797795038);
+const SMOOTH_SUBTRACTION: Identifier = Identifier::new("smooth_subtraction", 1414822549598552032);
 
 pub fn blend_expr<N, V>(blend: &Blend<N, V>) -> Expr<N, V>
 where
@@ -220,16 +308,16 @@ where
 {
     match blend {
         Blend::SmoothUnion { attr, k } => Expr::Call {
-            function: "smooth_union",
-            args: vec![Box::new(k.clone().into())],
+            function: SMOOTH_UNION,
+            args: vec![k.clone().into()],
         },
         Blend::SmoothIntersection { attr, k } => Expr::Call {
-            function: "smooth_intersection",
-            args: vec![Box::new(k.clone().into())],
+            function: SMOOTH_INTERSECTION,
+            args: vec![k.clone().into()],
         },
         Blend::SmoothSubtraction { attr, k } => Expr::Call {
-            function: "smooth_subtraction",
-            args: vec![Box::new(k.clone().into())],
+            function: SMOOTH_SUBTRACTION,
+            args: vec![k.clone().into()],
         },
     }
 }
@@ -259,7 +347,7 @@ where
                             panic!("Combinator expression is not a CallResult")
                         };
 
-            args.push(Box::new(acc));
+            args.push(acc);
 
             Expr::Call { function, args }
         })
@@ -272,7 +360,8 @@ where
 {
     match elysian {
         Elysian::Field(f) => field_expr(f),
-        Elysian::Modifier(m) => modifier_expr(m),
+        Elysian::PreModifier(m) => pre_modifier_expr(m),
+        Elysian::PostModifier(m) => post_modifier_expr(m),
         Elysian::Combine { combinator, .. } => combinator_list_expr(combinator),
         Elysian::Alias(_) => panic!("Aliases must be expanded before conversion to Expr"),
     }
@@ -286,16 +375,17 @@ where
     match combinator {
         Combinator::Boolean(b) => {
             FunctionDefinition {
-                name: match b {
-                    Boolean::Union => "union",
-                    Boolean::Intersection => "intersection",
-                    Boolean::Subtraction => "subtraction",
+                id: match b {
+                    Boolean::Union => UNION,
+                    Boolean::Intersection => INTERSECTION,
+                    Boolean::Subtraction => SUBTRACTION,
                 },
                 public: false,
-                inputs: [(COMBINE_CONTEXT, InputDefinition { mutable: true })]
-                    .into_iter()
-                    .collect(),
-                output: Type::Struct("CombineContext"),
+                inputs: &[InputDefinition {
+                    prop: COMBINE_CONTEXT,
+                    mutable: true,
+                }],
+                output: &COMBINE_CONTEXT_STRUCT,
                 block: match b {
                     Boolean::Union | Boolean::Intersection => [
                         [COMBINE_CONTEXT, OUT]
@@ -310,7 +400,7 @@ where
                                         .gt([COMBINE_CONTEXT, RIGHT, DISTANCE].read()),
                                     _ => unreachable!(),
                                 },
-                                [COMBINE_CONTEXT, OUT].write([COMBINE_CONTEXT, RIGHT].read()),
+                                Some([COMBINE_CONTEXT, OUT].write([COMBINE_CONTEXT, RIGHT].read())),
                             ),
                         COMBINE_CONTEXT.read().output(),
                     ]
@@ -328,7 +418,7 @@ where
                                     DISTANCE,
                                 ]
                                 .read()),
-                                Nop,
+                                None,
                             ),
                         COMBINE_CONTEXT.read().output(),
                     ]
@@ -338,19 +428,23 @@ where
         }
 
         Combinator::Blend(b) => FunctionDefinition {
-            name: match b {
-                Blend::SmoothUnion { .. } => "smooth_union",
-                Blend::SmoothIntersection { .. } => "smooth_intersection",
-                Blend::SmoothSubtraction { .. } => "smooth_subtraction",
+            id: match b {
+                Blend::SmoothUnion { .. } => SMOOTH_UNION,
+                Blend::SmoothIntersection { .. } => SMOOTH_INTERSECTION,
+                Blend::SmoothSubtraction { .. } => SMOOTH_SUBTRACTION,
             },
             public: false,
-            inputs: [
-                (K, InputDefinition { mutable: false }),
-                (COMBINE_CONTEXT, InputDefinition { mutable: true }),
-            ]
-            .into_iter()
-            .collect(),
-            output: Type::Struct("COMBINE_CONTEXT"),
+            inputs: &[
+                InputDefinition {
+                    prop: K,
+                    mutable: false,
+                },
+                InputDefinition {
+                    prop: COMBINE_CONTEXT,
+                    mutable: true,
+                },
+            ],
+            output: &COMBINE_CONTEXT_STRUCT,
             block: match b {
                 Blend::SmoothUnion { attr, .. } => {
                     let property: Property = (*attr).into();
@@ -452,12 +546,13 @@ where
 pub fn field_function<N, V>(field: &Field<N, V>) -> FunctionDefinition<N, V> {
     match field {
         Field::Point => FunctionDefinition {
-            name: "point",
+            id: POINT,
             public: false,
-            inputs: [(CONTEXT, InputDefinition { mutable: true })]
-                .into_iter()
-                .collect(),
-            output: Type::Struct("Context"),
+            inputs: &[InputDefinition {
+                prop: CONTEXT,
+                mutable: true,
+            }],
+            output: &CONTEXT_STRUCT,
             block: [
                 [CONTEXT, DISTANCE].write([CONTEXT, POSITION].read().length()),
                 [CONTEXT, GRADIENT].write([CONTEXT, POSITION].read().normalize()),
@@ -469,38 +564,46 @@ pub fn field_function<N, V>(field: &Field<N, V>) -> FunctionDefinition<N, V> {
     }
 }
 
-pub fn modifier_function<N, V>(modifier: &Modifier<N, V>) -> FunctionDefinition<N, V>
+pub fn pre_modifier_function<N, V>(modifier: &PreModifier<N, V>) -> FunctionDefinition<N, V>
 where
     N: Clone,
     V: Clone,
 {
     match modifier {
-        Modifier::Translate { .. } => FunctionDefinition {
-            name: "translate",
+        PreModifier::Translate { .. } => FunctionDefinition {
+            id: TRANSLATE,
             public: false,
-            inputs: [
-                (VECT, InputDefinition { mutable: false }),
-                (CONTEXT, InputDefinition { mutable: true }),
-            ]
-            .into_iter()
-            .collect(),
-            output: Type::Struct("Context"),
+            inputs: &[
+                InputDefinition {
+                    prop: VECT,
+                    mutable: false,
+                },
+                InputDefinition {
+                    prop: CONTEXT,
+                    mutable: true,
+                },
+            ],
+            output: &CONTEXT_STRUCT,
             block: [
                 [CONTEXT, POSITION].write([CONTEXT, POSITION].read() - VECT.read()),
                 CONTEXT.read().output(),
             ]
             .block(),
         },
-        Modifier::Elongate { infinite, .. } => FunctionDefinition {
-            name: "elongate",
+        PreModifier::Elongate { infinite, .. } => FunctionDefinition {
+            id: ELONGATE,
             public: false,
-            inputs: [
-                (VECT, InputDefinition { mutable: false }),
-                (CONTEXT, InputDefinition { mutable: true }),
-            ]
-            .into_iter()
-            .collect(),
-            output: Type::Struct("Context"),
+            inputs: &[
+                InputDefinition {
+                    prop: VECT,
+                    mutable: false,
+                },
+                InputDefinition {
+                    prop: CONTEXT,
+                    mutable: true,
+                },
+            ],
+            output: &CONTEXT_STRUCT,
             block: {
                 let expr = [CONTEXT, POSITION].read().dot(VECT.read().normalize());
 
@@ -519,29 +622,43 @@ where
                 .block()
             },
         },
-        Modifier::Isosurface { .. } => FunctionDefinition {
-            name: "isosurface",
+    }
+}
+
+pub fn post_modifier_function<N, V>(modifier: &PostModifier<N, V>) -> FunctionDefinition<N, V>
+where
+    N: Clone,
+    V: Clone,
+{
+    match modifier {
+        PostModifier::Isosurface { .. } => FunctionDefinition {
+            id: ISOSURFACE,
             public: false,
-            inputs: [
-                (NUM, InputDefinition { mutable: false }),
-                (CONTEXT, InputDefinition { mutable: true }),
-            ]
-            .into_iter()
-            .collect(),
-            output: Type::Struct("Context"),
+            inputs: &[
+                InputDefinition {
+                    prop: NUM,
+                    mutable: false,
+                },
+                InputDefinition {
+                    prop: CONTEXT,
+                    mutable: true,
+                },
+            ],
+            output: &CONTEXT_STRUCT,
             block: [
                 [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - NUM.read()),
                 CONTEXT.read().output(),
             ]
             .block(),
         },
-        Modifier::Manifold { .. } => FunctionDefinition {
-            name: "manifold",
+        PostModifier::Manifold { .. } => FunctionDefinition {
+            id: MANIFOLD,
             public: false,
-            inputs: [(CONTEXT, InputDefinition { mutable: true })]
-                .into_iter()
-                .collect(),
-            output: Type::Struct("Context"),
+            inputs: &[InputDefinition {
+                prop: CONTEXT,
+                mutable: true,
+            }],
+            output: &CONTEXT_STRUCT,
             block: [
                 NUM.write([CONTEXT, DISTANCE].read()),
                 [CONTEXT, DISTANCE].write(NUM.read().abs()),
@@ -560,7 +677,8 @@ where
 {
     match elysian {
         Elysian::Field(f) => vec![field_function(f)],
-        Elysian::Modifier(m) => modifier_functions(m),
+        Elysian::PreModifier(m) => pre_modifier_functions(m),
+        Elysian::PostModifier(m) => post_modifier_functions(m),
         Elysian::Combine { combinator, shapes } => combinator
             .iter()
             .map(combinator_function)
@@ -572,108 +690,36 @@ where
     }
 }
 
-fn modifier_functions<N, V>(modifier: &Modifier<N, V>) -> Vec<FunctionDefinition<N, V>>
+fn pre_modifier_functions<N, V>(modifier: &PreModifier<N, V>) -> Vec<FunctionDefinition<N, V>>
 where
     N: Debug + Clone + One + Two + Zero + IntoValue<N, V>,
     V: Debug + Clone + IntoValue<N, V>,
 {
     match modifier {
-        Modifier::Translate { shape, .. } => [modifier_function(modifier)]
+        PreModifier::Translate { shape, .. } => [pre_modifier_function(modifier)]
             .into_iter()
             .chain(elysian_functions(shape).into_iter())
             .collect(),
-        Modifier::Elongate { shape, .. } => [modifier_function(modifier)]
-            .into_iter()
-            .chain(elysian_functions(shape).into_iter())
-            .collect(),
-        Modifier::Isosurface { shape, .. } => [modifier_function(modifier)]
-            .into_iter()
-            .chain(elysian_functions(shape).into_iter())
-            .collect(),
-        Modifier::Manifold { shape } => [modifier_function(modifier)]
+        PreModifier::Elongate { shape, .. } => [pre_modifier_function(modifier)]
             .into_iter()
             .chain(elysian_functions(shape).into_iter())
             .collect(),
     }
 }
 
-pub fn elysian_stmt<N, V>(elysian: &Elysian<N, V>) -> Stmt<N, V>
+fn post_modifier_functions<N, V>(modifier: &PostModifier<N, V>) -> Vec<FunctionDefinition<N, V>>
 where
     N: Debug + Clone + One + Two + Zero + IntoValue<N, V>,
     V: Debug + Clone + IntoValue<N, V>,
 {
-    match elysian {
-        Elysian::Field(field) => match field {
-            Field::Point => Stmt::Block(
-                [
-                    DISTANCE.write(POSITION.read().length()),
-                    GRADIENT.write(POSITION.read().normalize()),
-                ]
-                .block(),
-            ),
-            _ => unimplemented!(),
-        },
-        Elysian::Modifier(modifier) => match modifier {
-            Modifier::Translate { delta, shape } => {
-                let Stmt::Block(block) = elysian_stmt(shape) else {
-                    panic!("Elysian statement is not a Block");
-                };
-                [POSITION.write(POSITION.read() - delta.clone().into())].compose(block)
-            }
-            Modifier::Elongate {
-                dir,
-                infinite,
-                shape,
-            } => {
-                let Stmt::Block(block) = elysian_stmt(shape) else {
-                    panic!("Elysian statement is not a Block");
-                };
-
-                let expr = POSITION.read().dot(NUM.read().normalize());
-
-                [
-                    VECT.write(dir.clone().into()),
-                    POSITION.write(
-                        POSITION.read()
-                            - VECT.read().normalize()
-                                * if *infinite {
-                                    expr
-                                } else {
-                                    expr.max(-NUM.read().length()).min(NUM.read().length())
-                                },
-                    ),
-                ]
-                .compose(block)
-            }
-            Modifier::Isosurface { dist, shape } => {
-                let Stmt::Block(b) = elysian_stmt(shape) else {
-                    panic!("Elysian statement is not a Block");
-                };
-
-                b.compose(
-                    [
-                        NUM.write(dist.clone().into()),
-                        DISTANCE.write(DISTANCE.read() - NUM.read()),
-                    ]
-                    .block(),
-                )
-            }
-            Modifier::Manifold { shape } => {
-                let Stmt::Block(b) = elysian_stmt(shape) else {
-                    panic!("Elysian statement is not a Block");
-                };
-
-                b.compose(
-                    [
-                        NUM.write(DISTANCE.read()),
-                        DISTANCE.write(NUM.read().abs()),
-                        GRADIENT.write(GRADIENT.read() * NUM.read().sign()),
-                    ]
-                    .block(),
-                )
-            }
-        },
-        Elysian::Combine { .. } => unimplemented!(),
-        Elysian::Alias(_) => panic!("Aliases must be expanded before conversion to Ast"),
+    match modifier {
+        PostModifier::Isosurface { shape, .. } => [post_modifier_function(modifier)]
+            .into_iter()
+            .chain(elysian_functions(shape).into_iter())
+            .collect(),
+        PostModifier::Manifold { shape } => [post_modifier_function(modifier)]
+            .into_iter()
+            .chain(elysian_functions(shape).into_iter())
+            .collect(),
     }
 }

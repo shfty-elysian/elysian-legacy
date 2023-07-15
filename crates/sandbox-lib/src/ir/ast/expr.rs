@@ -2,18 +2,19 @@ use std::collections::BTreeMap;
 
 use crate::elysian::expr::Expr as ElysianExpr;
 use crate::ir::ast::{IntoValue, Property, Value};
+use crate::ir::module::StructDefinition;
 
 /// Expression resulting in a value
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum Expr<N, V> {
     Literal(Value<N, V>),
     Read(Vec<Property>),
     Call {
-        function: &'static str,
-        args: Vec<BoxExpr<N, V>>,
+        function: Identifier,
+        args: Vec<Expr<N, V>>,
     },
-    Construct(&'static str, BTreeMap<Property, BoxExpr<N, V>>),
+    Construct(&'static StructDefinition, BTreeMap<Property, Expr<N, V>>),
     Add(BoxExpr<N, V>, BoxExpr<N, V>),
     Sub(BoxExpr<N, V>, BoxExpr<N, V>),
     Mul(BoxExpr<N, V>, BoxExpr<N, V>),
@@ -34,6 +35,7 @@ pub enum Expr<N, V> {
 use Expr::*;
 
 use super::stmt::Stmt;
+use super::Identifier;
 
 impl<N, V> From<ElysianExpr<N, V>> for Expr<N, V> {
     fn from(value: ElysianExpr<N, V>) -> Self {

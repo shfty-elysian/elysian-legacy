@@ -1,20 +1,18 @@
-use std::collections::BTreeMap;
+use crate::ir::ast::{Block, Identifier, Property};
 
-use crate::ir::{
-    ast::{Block, Property},
-    module::Type,
-};
+use super::StructDefinition;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FunctionDefinition<N, V> {
-    pub name: &'static str,
+    pub id: Identifier,
     pub public: bool,
-    pub inputs: BTreeMap<Property, InputDefinition>,
-    pub output: Type,
+    pub inputs: &'static [InputDefinition],
+    pub output: &'static StructDefinition,
     pub block: Block<N, V>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct InputDefinition {
+    pub prop: Property,
     pub mutable: bool,
 }

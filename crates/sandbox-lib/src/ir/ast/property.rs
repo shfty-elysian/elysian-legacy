@@ -5,6 +5,7 @@ use crate::{
             Expr::{self, *},
             Stmt::{self, *},
         },
+        from_elysian::{COMBINE_CONTEXT_STRUCT, CONTEXT_STRUCT},
         module::Type,
     },
 };
@@ -24,15 +25,17 @@ pub const ERROR: Property = Property::new("error", Type::Number, 209621851525461
 pub const K: Property = Property::new("k", Type::Number, 12632115441234896764);
 pub const NUM: Property = Property::new("num", Type::Number, 1349662877516236181);
 pub const VECT: Property = Property::new("vect", Type::Vector, 19553087511741435087);
-pub const CONTEXT: Property = Property::new("context", Type::Struct("Context"), 595454262490629935);
+pub const CONTEXT: Property =
+    Property::new("context", Type::Struct(&CONTEXT_STRUCT), 595454262490629935);
 pub const COMBINE_CONTEXT: Property = Property::new(
     "combine_context",
-    Type::Struct("CombineContext"),
+    Type::Struct(&COMBINE_CONTEXT_STRUCT),
     671133652169921634,
 );
-pub const LEFT: Property = Property::new("left", Type::Struct("Context"), 635254731934742132);
-pub const RIGHT: Property = Property::new("right", Type::Struct("Context"), 5251097991491214179);
-pub const OUT: Property = Property::new("out", Type::Struct("Context"), 1470763158891875334);
+pub const LEFT: Property = Property::new("left", Type::Struct(&CONTEXT_STRUCT), 635254731934742132);
+pub const RIGHT: Property =
+    Property::new("right", Type::Struct(&CONTEXT_STRUCT), 5251097991491214179);
+pub const OUT: Property = Property::new("out", Type::Struct(&CONTEXT_STRUCT), 1470763158891875334);
 
 /// Block variable names
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

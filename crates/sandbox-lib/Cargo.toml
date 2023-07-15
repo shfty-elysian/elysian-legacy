@@ -9,3 +9,5 @@ image = "0.24.6"
 quote = "1.0.29"
 proc-macro2 = "1.0.64"
 uuid = { version = "1.4.0", features = ["v4"] }
+syn = { version = "2.0.25", features = ["full"]}
+prettyplease = "0.2.10"

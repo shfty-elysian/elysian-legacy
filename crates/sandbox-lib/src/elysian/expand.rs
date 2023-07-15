@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::elysian::{Elysian, Field, Modifier};
+use crate::elysian::{Elysian, Field, PostModifier, PreModifier};
 
 pub trait Expand<N, V>: Debug {
     fn expand(&self) -> Elysian<N, V>;
@@ -17,25 +17,27 @@ where
                 Field::Point => Field::Point,
                 Field::_Phantom(p) => Field::_Phantom(*p),
             }),
-            Elysian::Modifier(modifier) => Elysian::Modifier(match modifier {
-                Modifier::Translate { delta, shape: ast } => Modifier::Translate {
+            Elysian::PreModifier(modifier) => Elysian::PreModifier(match modifier {
+                PreModifier::Translate { delta, shape: ast } => PreModifier::Translate {
                     delta: delta.clone(),
                     shape: Box::new(ast.expand()),
                 },
-                Modifier::Isosurface { dist, shape: ast } => Modifier::Isosurface {
-                    dist: dist.clone(),
-                    shape: Box::new(ast.expand()),
-                },
-                Modifier::Manifold { shape: ast } => Modifier::Manifold {
-                    shape: Box::new(ast.expand()),
-                },
-                Modifier::Elongate {
+                PreModifier::Elongate {
                     dir,
                     infinite,
                     shape: ast,
-                } => Modifier::Elongate {
+                } => PreModifier::Elongate {
                     dir: dir.clone(),
                     infinite: *infinite,
+                    shape: Box::new(ast.expand()),
+                },
+            }),
+            Elysian::PostModifier(modifier) => Elysian::PostModifier(match modifier {
+                PostModifier::Isosurface { dist, shape: ast } => PostModifier::Isosurface {
+                    dist: dist.clone(),
+                    shape: Box::new(ast.expand()),
+                },
+                PostModifier::Manifold { shape: ast } => PostModifier::Manifold {
                     shape: Box::new(ast.expand()),
                 },
             }),

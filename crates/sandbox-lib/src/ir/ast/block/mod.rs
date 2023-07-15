@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use crate::ir::ast::Stmt;
 
 /// List of statements
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Block<N, V>(pub Vec<Stmt<N, V>>);
 
 impl<N, V> IntoIterator for Block<N, V> {

@@ -1,5 +1,4 @@
 use sandbox_lib::{
-    frontend::image::rasterize,
     elysian::{
         alias::{Capsule, Circle, Ring},
         attribute::Attribute::*,
@@ -7,8 +6,10 @@ use sandbox_lib::{
         combinator::Boolean::*,
         combinator::Combinator::*,
         expr::IntoLiteral,
+        Field::*,
         IntoAlias, IntoCombine,
     },
+    frontend::out_image::rasterize,
 };
 
 use viuer::Config;
@@ -16,6 +17,7 @@ use viuer::Config;
 fn main() {
     let smooth_union = [
         Boolean(Union),
+        /*
         Blend(SmoothUnion {
             attr: Distance,
             k: 0.4.literal(),
@@ -24,6 +26,7 @@ fn main() {
             attr: Gradient,
             k: 0.4.literal(),
         }),
+        */
     ];
 
     let smooth_subtraction = [
@@ -61,6 +64,11 @@ fn main() {
         .translate([0.0, 0.5].literal()),
     ]
     .combine(smooth_subtraction);
+
+    let shape = Point
+        .field()
+        .isosurface(1.0.literal())
+        .translate([0.0, -1.0].literal());
 
     println!("{shape:#?}");
 

@@ -5,14 +5,14 @@ use rust_gpu_bridge::glam::Vec2;
 
 use crate::{
     elysian::{expand::Expand, Elysian},
-    frontend::{interpreter::evaluate_module, ToGlam},
+    frontend::{out_interpreter::evaluate_module, ToGlam},
     ir::{
         ast::{Struct, DISTANCE, GRADIENT, POSITION},
         from_elysian::elysian_module,
     },
 };
 
-use super::interpreter::Interpreter;
+use super::out_interpreter::Interpreter;
 
 pub fn rasterize<N, V>(shape: &Elysian<N, V>, width: u32, height: u32, scale: f32) -> RgbImage
 where
@@ -21,6 +21,7 @@ where
     Elysian<N, V>: ToGlam<2, Output = Elysian<f32, Vec2>>,
 {
     let module = elysian_module(&shape.expand().to_glam());
+    println!("{:#?}", module.entry_point);
 
     let mut image = RgbImage::new(width, height);
 
@@ -33,7 +34,14 @@ where
                     ((y as f32 / height as f32) - 0.5) * 2.0 / scale,
                 ),
             );
-            let ctx = evaluate_module(Interpreter { context: ctx }, &module).context;
+            let ctx = evaluate_module(
+                Interpreter {
+                    context: ctx,
+                    ..Default::default()
+                },
+                &module,
+            );
+
             let d: f32 = ctx.get_number(&DISTANCE);
             let g: Vec2 = ctx.get_vector(&GRADIENT);
 

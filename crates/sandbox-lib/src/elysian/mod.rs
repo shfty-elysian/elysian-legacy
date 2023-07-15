@@ -32,7 +32,7 @@ impl<N, V> Field<N, V> {
 }
 
 #[derive(Debug)]
-pub enum Modifier<N, V> {
+pub enum PreModifier<N, V> {
     Translate {
         delta: Expr<N, V>,
         shape: ElysianBox<N, V>,
@@ -42,6 +42,18 @@ pub enum Modifier<N, V> {
         infinite: bool,
         shape: ElysianBox<N, V>,
     },
+}
+
+impl<N, V> PreModifier<N, V> {
+    pub fn modifier(self) -> Elysian<N, V> {
+        Elysian::PreModifier(self)
+    }
+}
+
+use PreModifier::*;
+
+#[derive(Debug)]
+pub enum PostModifier<N, V> {
     Isosurface {
         dist: Expr<N, V>,
         shape: ElysianBox<N, V>,
@@ -51,19 +63,20 @@ pub enum Modifier<N, V> {
     },
 }
 
-impl<N, V> Modifier<N, V> {
+impl<N, V> PostModifier<N, V> {
     pub fn modifier(self) -> Elysian<N, V> {
-        Elysian::Modifier(self)
+        Elysian::PostModifier(self)
     }
 }
 
-use Modifier::*;
+use PostModifier::*;
 
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Elysian<N, V> {
     Field(Field<N, V>),
-    Modifier(Modifier<N, V>),
+    PreModifier(PreModifier<N, V>),
+    PostModifier(PostModifier<N, V>),
     Combine {
         combinator: Vec<Combinator<N, V>>,
         shapes: ElysianList<N, V>,
@@ -73,25 +86,25 @@ pub enum Elysian<N, V> {
 
 impl<N, V> Elysian<N, V> {
     pub fn isosurface(self, dist: Expr<N, V>) -> Elysian<N, V> {
-        Elysian::Modifier(Isosurface {
+        Elysian::PostModifier(Isosurface {
             dist,
             shape: self.into(),
         })
     }
 
     pub fn manifold(self) -> Elysian<N, V> {
-        Elysian::Modifier(Manifold { shape: self.into() })
+        Elysian::PostModifier(Manifold { shape: self.into() })
     }
 
     pub fn translate(self, delta: Expr<N, V>) -> Elysian<N, V> {
-        Elysian::Modifier(Translate {
+        Elysian::PreModifier(Translate {
             delta,
             shape: self.into(),
         })
     }
 
     pub fn elongate(self, dir: Expr<N, V>, infinite: bool) -> Self {
-        Elysian::Modifier(Elongate {
+        Elysian::PreModifier(Elongate {
             dir,
             infinite,
             shape: self.into(),

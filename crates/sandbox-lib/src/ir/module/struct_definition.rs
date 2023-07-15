@@ -1,15 +1,14 @@
-use std::collections::BTreeMap;
+use crate::ir::ast::{Identifier, Property};
 
-use crate::ir::ast::Property;
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StructDefinition {
-    pub name: &'static str,
+    pub id: Identifier,
     pub public: bool,
-    pub fields: BTreeMap<Property, FieldDefinition>,
+    pub fields: &'static [FieldDefinition],
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FieldDefinition {
+    pub prop: Property,
     pub public: bool,
 }

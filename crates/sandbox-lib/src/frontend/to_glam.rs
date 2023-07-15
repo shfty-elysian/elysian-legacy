@@ -6,7 +6,7 @@ use crate::elysian::{
     combinator::{Blend, Combinator},
     expr::Expr,
     value::Value,
-    Elysian, Field, Modifier,
+    Elysian, Field, PostModifier, PreModifier,
 };
 
 pub trait ToGlam<const N: usize> {
@@ -56,58 +56,76 @@ impl ToGlam<2> for Field<f32, [f32; 3]> {
     }
 }
 
-impl ToGlam<2> for Modifier<f32, [f32; 2]> {
-    type Output = Modifier<f32, Vec2>;
+impl ToGlam<2> for PreModifier<f32, [f32; 2]> {
+    type Output = PreModifier<f32, Vec2>;
 
     fn to_glam(self) -> Self::Output {
         match self {
-            Modifier::Translate { delta, shape } => Modifier::Translate {
+            PreModifier::Translate { delta, shape } => PreModifier::Translate {
                 delta: delta.to_glam(),
                 shape: shape.to_glam(),
             },
-            Modifier::Elongate {
+            PreModifier::Elongate {
                 dir,
                 infinite,
                 shape,
-            } => Modifier::Elongate {
+            } => PreModifier::Elongate {
                 dir: dir.to_glam(),
                 infinite,
-                shape: shape.to_glam(),
-            },
-            Modifier::Isosurface { dist, shape } => Modifier::Isosurface {
-                dist: dist.to_glam(),
-                shape: shape.to_glam(),
-            },
-            Modifier::Manifold { shape } => Modifier::Manifold {
                 shape: shape.to_glam(),
             },
         }
     }
 }
 
-impl ToGlam<3> for Modifier<f32, [f32; 3]> {
-    type Output = Modifier<f32, Vec3>;
+impl ToGlam<2> for PostModifier<f32, [f32; 2]> {
+    type Output = PostModifier<f32, Vec2>;
 
     fn to_glam(self) -> Self::Output {
         match self {
-            Modifier::Translate { delta, shape } => Modifier::Translate {
+            PostModifier::Isosurface { dist, shape } => PostModifier::Isosurface {
+                dist: dist.to_glam(),
+                shape: shape.to_glam(),
+            },
+            PostModifier::Manifold { shape } => PostModifier::Manifold {
+                shape: shape.to_glam(),
+            },
+        }
+    }
+}
+
+impl ToGlam<3> for PreModifier<f32, [f32; 3]> {
+    type Output = PreModifier<f32, Vec3>;
+
+    fn to_glam(self) -> Self::Output {
+        match self {
+            PreModifier::Translate { delta, shape } => PreModifier::Translate {
                 delta: delta.to_glam(),
                 shape: shape.to_glam(),
             },
-            Modifier::Elongate {
+            PreModifier::Elongate {
                 dir,
                 infinite,
                 shape,
-            } => Modifier::Elongate {
+            } => PreModifier::Elongate {
                 dir: dir.to_glam(),
                 infinite,
                 shape: shape.to_glam(),
             },
-            Modifier::Isosurface { dist, shape } => Modifier::Isosurface {
+        }
+    }
+}
+
+impl ToGlam<3> for PostModifier<f32, [f32; 3]> {
+    type Output = PostModifier<f32, Vec3>;
+
+    fn to_glam(self) -> Self::Output {
+        match self {
+            PostModifier::Isosurface { dist, shape } => PostModifier::Isosurface {
                 dist: dist.to_glam(),
                 shape: shape.to_glam(),
             },
-            Modifier::Manifold { shape } => Modifier::Manifold {
+            PostModifier::Manifold { shape } => PostModifier::Manifold {
                 shape: shape.to_glam(),
             },
         }
@@ -120,7 +138,8 @@ impl ToGlam<2> for Elysian<f32, [f32; 2]> {
     fn to_glam(self) -> Self::Output {
         match self {
             Elysian::Field(field) => Elysian::Field(field.to_glam()),
-            Elysian::Modifier(modifier) => Elysian::Modifier(modifier.to_glam()),
+            Elysian::PreModifier(modifier) => Elysian::PreModifier(modifier.to_glam()),
+            Elysian::PostModifier(modifier) => Elysian::PostModifier(modifier.to_glam()),
             Elysian::Combine {
                 combinator,
                 shapes: list,
@@ -139,7 +158,8 @@ impl ToGlam<3> for Elysian<f32, [f32; 3]> {
     fn to_glam(self) -> Self::Output {
         match self {
             Elysian::Field(f) => Elysian::Field(f.to_glam()),
-            Elysian::Modifier(m) => Elysian::Modifier(m.to_glam()),
+            Elysian::PreModifier(m) => Elysian::PreModifier(m.to_glam()),
+            Elysian::PostModifier(m) => Elysian::PostModifier(m.to_glam()),
             Elysian::Combine {
                 combinator,
                 shapes: list,
