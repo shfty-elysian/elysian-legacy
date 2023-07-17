@@ -4,16 +4,17 @@ use std::{
 };
 
 use crate::ir::{
-    as_ir::{clone_ir, hash_ir, AsIR},
-    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, POSITION, VECT},
+    as_ir::AsIR,
+    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION},
     from_elysian::CONTEXT_STRUCT,
-    module::{FunctionDefinition, InputDefinition},
+    module::{FunctionDefinition, InputDefinition, Type},
 };
 
 use crate::ast::expr::Expr;
 
 pub const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324);
 pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1799909959882308009);
+pub const DIR: Property = Property::new("dir", Type::Vector, 10994004961423687819);
 
 #[derive(Debug, Clone)]
 pub struct Elongate<N, V> {
@@ -47,7 +48,7 @@ where
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: VECT,
+                    prop: DIR,
                     mutable: false,
                 },
                 InputDefinition {
@@ -57,16 +58,16 @@ where
             ],
             output: &CONTEXT_STRUCT,
             block: {
-                let expr = [CONTEXT, POSITION].read().dot(VECT.read().normalize());
+                let expr = [CONTEXT, POSITION].read().dot(DIR.read().normalize());
 
                 [
                     [CONTEXT, POSITION].write(
                         [CONTEXT, POSITION].read()
-                            - VECT.read().normalize()
+                            - DIR.read().normalize()
                                 * if self.infinite {
                                     expr
                                 } else {
-                                    expr.max(-VECT.read().length()).min(VECT.read().length())
+                                    expr.max(-DIR.read().length()).min(DIR.read().length())
                                 },
                     ),
                     CONTEXT.read().output(),
@@ -76,22 +77,14 @@ where
         }]
     }
 
-    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
-        vec![crate::ir::ast::Expr::Call {
+    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+        crate::ir::ast::Expr::Call {
             function: if self.infinite {
                 ELONGATE_INFINITE
             } else {
                 ELONGATE
             },
             args: vec![self.dir.clone().into(), input],
-        }]
-    }
-
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
+        }
     }
 }

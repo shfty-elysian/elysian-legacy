@@ -5,57 +5,64 @@ use std::{
 
 use super::{ast::Expr, module::FunctionDefinition};
 
-pub trait AsIR<N, V>: std::fmt::Debug {
+pub trait AsIR<N, V>: std::fmt::Debug + HashIR + CloneIR<N, V> {
     fn functions(&self) -> Vec<FunctionDefinition<N, V>>;
-    fn expressions(&self, input: Expr<N, V>) -> Vec<Expr<N, V>>;
-    fn hash_ir(&self) -> u64;
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>>;
+    fn expression(&self, input: Expr<N, V>) -> Expr<N, V>;
 }
 
-pub fn hash_ir(ir: impl Hash) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    ir.hash(&mut hasher);
-    hasher.finish()
-}
-
-pub fn clone_ir<N, V>(ir: &(impl AsIR<N, V> + Clone + 'static)) -> Box<dyn AsIR<N, V>> {
-    Box::new(ir.clone())
-}
-
-impl<T, N, V> AsIR<N, V> for &T
+impl<N, V> AsIR<N, V> for Box<dyn AsIR<N, V>>
 where
-    T: AsIR<N, V>,
+    N: 'static,
+    V: 'static,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<N, V>> {
-        (*self).functions()
-    }
-
-    fn expressions(&self, input: Expr<N, V>) -> Vec<Expr<N, V>> {
-        (*self).expressions(input)
-    }
-
-    fn hash_ir(&self) -> u64 {
-        (*self).hash_ir()
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        (*self).clone_ir()
-    }
-}
-
-impl<N, V> AsIR<N, V> for Box<dyn AsIR<N, V>> {
     fn functions(&self) -> Vec<FunctionDefinition<N, V>> {
         (**self).functions()
     }
 
-    fn expressions(&self, input: Expr<N, V>) -> Vec<Expr<N, V>> {
-        (**self).expressions(input)
+    fn expression(&self, input: Expr<N, V>) -> Expr<N, V> {
+        (**self).expression(input)
     }
+}
 
+pub trait HashIR {
+    fn hash_ir(&self) -> u64;
+}
+
+impl<T> HashIR for T
+where
+    T: Hash,
+{
+    fn hash_ir(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
+}
+
+impl<N, V> HashIR for Box<dyn AsIR<N, V>> {
     fn hash_ir(&self) -> u64 {
         (**self).hash_ir()
     }
+}
 
+pub trait CloneIR<N, V>: 'static {
+    fn clone_ir(&self) -> Box<dyn AsIR<N, V>>;
+}
+
+impl<T, N, V> CloneIR<N, V> for T
+where
+    T: 'static + Clone + AsIR<N, V>,
+{
+    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
+        Box::new(self.clone())
+    }
+}
+
+impl<N, V> CloneIR<N, V> for Box<dyn AsIR<N, V>>
+where
+    N: 'static,
+    V: 'static,
+{
     fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
         (**self).clone_ir()
     }

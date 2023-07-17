@@ -2,11 +2,13 @@ mod into_value;
 mod number;
 mod structure;
 mod vector;
+mod type_spec;
 
 pub use into_value::*;
 pub use number::*;
 pub use structure::*;
 pub use vector::*;
+pub use type_spec::*;
 
 /// Concrete value
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

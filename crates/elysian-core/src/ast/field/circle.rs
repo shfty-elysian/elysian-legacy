@@ -10,10 +10,17 @@ use crate::{
         post_modifier::isosurface::{Isosurface, ISOSURFACE},
     },
     ir::{
-        as_ir::{clone_ir, hash_ir, AsIR},
-        ast::Identifier,
+        as_ir::AsIR,
+        ast::{Identifier, IntoBlock, Property, CONTEXT},
+        from_elysian::CONTEXT_STRUCT,
+        module::{FunctionDefinition, InputDefinition, Type},
     },
 };
+
+use super::POINT;
+
+pub const CIRCLE: Identifier = Identifier::new("circle", 15738477621793375359);
+pub const RADIUS: Property = Property::new("radius", Type::Number, 213754678517975478);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Circle<N, V> {
@@ -25,8 +32,6 @@ impl<N, V> Hash for Circle<N, V> {
         self.radius.hash(state);
     }
 }
-
-pub const CIRCLE: Identifier = Identifier::new("circle", 15738477621793375359);
 
 impl<N, V> AsIR<N, V> for Circle<N, V>
 where
@@ -41,28 +46,42 @@ where
                 Isosurface {
                     dist: self.radius.clone(),
                 }
-                .functions()
-                .into_iter(),
+                .functions(),
             )
-            .collect()
-    }
-
-    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
-        Point
-            .expressions(input.clone())
-            .into_iter()
-            .chain([crate::ir::ast::Expr::Call {
-                function: ISOSURFACE,
-                args: vec![self.radius.clone().into(), input],
+            .chain([FunctionDefinition {
+                id: CIRCLE,
+                public: false,
+                inputs: vec![
+                    InputDefinition {
+                        prop: RADIUS,
+                        mutable: false,
+                    },
+                    InputDefinition {
+                        prop: CONTEXT,
+                        mutable: false,
+                    },
+                ],
+                output: &CONTEXT_STRUCT,
+                block: [crate::ir::ast::Expr::Call {
+                    function: ISOSURFACE,
+                    args: vec![
+                        RADIUS.read(),
+                        crate::ir::ast::Expr::Call {
+                            function: POINT,
+                            args: vec![CONTEXT.read()],
+                        },
+                    ],
+                }
+                .output()]
+                .block(),
             }])
             .collect()
     }
 
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
+    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+        crate::ir::ast::Expr::Call {
+            function: CIRCLE,
+            args: vec![self.radius.clone().into(), input],
+        }
     }
 }

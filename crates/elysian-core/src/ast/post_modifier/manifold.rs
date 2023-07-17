@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::ir::{
-    as_ir::{clone_ir, hash_ir, AsIR},
+    as_ir::AsIR,
     ast::{Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT, NUM},
     from_elysian::CONTEXT_STRUCT,
     module::{FunctionDefinition, InputDefinition},
@@ -32,18 +32,10 @@ impl<N, V> AsIR<N, V> for Manifold {
         }]
     }
 
-    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
-        vec![crate::ir::ast::Expr::Call {
+    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+        crate::ir::ast::Expr::Call {
             function: MANIFOLD,
             args: vec![input],
-        }]
-    }
-
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
+        }
     }
 }

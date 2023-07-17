@@ -5,7 +5,15 @@ use crate::ast::expr::Expr;
 use crate::ast::post_modifier::isosurface::{Isosurface, ISOSURFACE};
 
 use crate::ast::field::Line;
-use crate::ir::as_ir::{clone_ir, hash_ir, AsIR};
+use crate::ast::pre_modifier::elongate::DIR;
+use crate::ir::as_ir::AsIR;
+use crate::ir::ast::{Identifier, IntoBlock, CONTEXT};
+use crate::ir::from_elysian::CONTEXT_STRUCT;
+use crate::ir::module::{FunctionDefinition, InputDefinition};
+
+use super::{LINE, RADIUS};
+
+pub const CAPSULE: Identifier = Identifier::new("capsule", 14339483921749952476);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Capsule<N, V> {
@@ -35,30 +43,46 @@ where
             Isosurface {
                 dist: self.radius.clone(),
             }
-            .functions()
-            .into_iter(),
+            .functions(),
         )
-        .collect()
-    }
-
-    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
-        Line {
-            dir: self.dir.clone(),
-        }
-        .expressions(input.clone())
-        .into_iter()
-        .chain([crate::ir::ast::Expr::Call {
-            function: ISOSURFACE,
-            args: vec![self.radius.clone().into(), input],
+        .chain([FunctionDefinition {
+            id: CAPSULE,
+            public: false,
+            inputs: vec![
+                InputDefinition {
+                    prop: DIR,
+                    mutable: false,
+                },
+                InputDefinition {
+                    prop: RADIUS,
+                    mutable: false,
+                },
+                InputDefinition {
+                    prop: CONTEXT,
+                    mutable: false,
+                },
+            ],
+            output: CONTEXT_STRUCT,
+            block: [crate::ir::ast::Expr::Call {
+                function: ISOSURFACE,
+                args: vec![
+                    RADIUS.read(),
+                    crate::ir::ast::Expr::Call {
+                        function: LINE,
+                        args: vec![DIR.read(), CONTEXT.read()],
+                    },
+                ],
+            }
+            .output()]
+            .block(),
         }])
         .collect()
     }
 
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
+    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+        crate::ir::ast::Expr::Call {
+            function: CAPSULE,
+            args: vec![self.dir.clone().into(), self.radius.clone().into(), input],
+        }
     }
 }

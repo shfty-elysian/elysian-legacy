@@ -4,9 +4,22 @@ use std::{
 };
 
 use crate::{
-    ast::{expr::Expr, field::Point, pre_modifier::elongate::Elongate},
-    ir::as_ir::{clone_ir, hash_ir, AsIR},
+    ast::{
+        expr::Expr,
+        field::Point,
+        pre_modifier::elongate::{Elongate, DIR, ELONGATE},
+    },
+    ir::{
+        as_ir::AsIR,
+        ast::{Identifier, IntoBlock, CONTEXT},
+        from_elysian::CONTEXT_STRUCT,
+        module::{FunctionDefinition, InputDefinition},
+    },
 };
+
+use super::POINT;
+
+pub const LINE: Identifier = Identifier::new("line", 14339483921749952476);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Line<N, V> {
@@ -35,25 +48,37 @@ where
                 }
                 .functions(),
             )
+            .chain([FunctionDefinition {
+                id: LINE,
+                public: false,
+                inputs: vec![
+                    InputDefinition {
+                        prop: DIR,
+                        mutable: false,
+                    },
+                    InputDefinition {
+                        prop: CONTEXT,
+                        mutable: false,
+                    },
+                ],
+                output: CONTEXT_STRUCT,
+                block: [crate::ir::ast::Expr::Call {
+                    function: POINT,
+                    args: vec![crate::ir::ast::Expr::Call {
+                        function: ELONGATE,
+                        args: vec![DIR.read(), CONTEXT.read()],
+                    }],
+                }
+                .output()]
+                .block(),
+            }])
             .collect()
     }
 
-    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
-        Elongate {
-            dir: self.dir.clone(),
-            infinite: false,
+    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+        crate::ir::ast::Expr::Call {
+            function: LINE,
+            args: vec![self.dir.clone().into(), input],
         }
-        .expressions(input.clone())
-        .into_iter()
-        .chain(Point.expressions(input))
-        .collect()
-    }
-
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
     }
 }

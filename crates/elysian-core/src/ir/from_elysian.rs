@@ -100,8 +100,8 @@ where
 #[instrument]
 pub fn elysian_module<N, V>(elysian: &Elysian<N, V>) -> Module<N, V>
 where
-    N: Debug + Clone + One + Two + Zero + IntoValue<N, V>,
-    V: Debug + Clone + IntoValue<N, V>,
+    N: 'static + Debug + Clone + One + Two + Zero + IntoValue<N, V>,
+    V: 'static + Debug + Clone + IntoValue<N, V>,
 {
     let mut functions = elysian_functions(elysian);
     functions.sort_by(|lhs, rhs| lhs.id.cmp(&rhs.id));
@@ -128,8 +128,8 @@ where
 #[instrument]
 pub fn elysian_entry_point<N, V>(elysian: &Elysian<N, V>) -> Block<N, V>
 where
-    N: Debug + Clone + IntoValue<N, V>,
-    V: Debug + Clone + IntoValue<N, V>,
+    N: 'static + Debug + Clone + IntoValue<N, V>,
+    V: 'static + Debug + Clone + IntoValue<N, V>,
 {
     Block(match elysian {
         Elysian::Field {
@@ -138,32 +138,17 @@ where
             post_modifiers,
         } => pre_modifiers
             .iter()
-            .flat_map(|modifier| {
-                modifier
-                    .expressions(CONTEXT.read())
-                    .into_iter()
-                    .map(|expr| Stmt::Write {
-                        path: vec![CONTEXT],
-                        expr,
-                    })
+            .map(|modifier| Stmt::Write {
+                path: vec![CONTEXT],
+                expr: modifier.expression(CONTEXT.read()),
             })
-            .chain(
-                field
-                    .expressions(CONTEXT.read())
-                    .into_iter()
-                    .map(|expr| Stmt::Write {
-                        path: vec![CONTEXT],
-                        expr,
-                    }),
-            )
-            .chain(post_modifiers.iter().flat_map(|modifier| {
-                modifier
-                    .expressions(CONTEXT.read())
-                    .into_iter()
-                    .map(|expr| Stmt::Write {
-                        path: vec![CONTEXT],
-                        expr,
-                    })
+            .chain([Stmt::Write {
+                path: vec![CONTEXT],
+                expr: field.expression(CONTEXT.read()),
+            }])
+            .chain(post_modifiers.iter().map(|modifier| Stmt::Write {
+                path: vec![CONTEXT],
+                expr: modifier.expression(CONTEXT.read()),
             }))
             .chain(std::iter::once([CONTEXT].read().output()))
             .collect(),
@@ -182,8 +167,8 @@ pub fn elysian_entry_point_combine<N, V>(
     shapes: &Vec<Elysian<N, V>>,
 ) -> Vec<Stmt<N, V>>
 where
-    N: Debug + Clone + IntoValue<N, V>,
-    V: Debug + Clone + IntoValue<N, V>,
+    N: 'static + Debug + Clone + IntoValue<N, V>,
+    V: 'static + Debug + Clone + IntoValue<N, V>,
 {
     let combinator = combinator_list_expr(combinator);
 
@@ -201,25 +186,14 @@ where
                 } => {
                     acc.push([side.clone()].write([CONTEXT].read()));
 
-                    acc.extend(pre_modifiers.iter().flat_map(|modifier| {
-                        modifier
-                            .expressions(side.clone().read())
-                            .into_iter()
-                            .map(|expr| side.clone().write(expr))
+                    acc.extend(pre_modifiers.iter().map(|modifier| {
+                        side.clone().write(modifier.expression(side.clone().read()))
                     }));
 
-                    acc.extend(
-                        field
-                            .expressions(side.clone().read())
-                            .into_iter()
-                            .map(|expr| side.clone().write(expr)),
-                    );
+                    acc.push(side.clone().write(field.expression(side.clone().read())));
 
-                    acc.extend(post_modifiers.iter().flat_map(|modifier| {
-                        modifier
-                            .expressions(side.clone().read())
-                            .into_iter()
-                            .map(|expr| side.clone().write(expr))
+                    acc.extend(post_modifiers.iter().map(|modifier| {
+                        side.clone().write(modifier.expression(side.clone().read()))
                     }));
                 }
                 Elysian::Combine { combinator, shapes } => {
@@ -250,13 +224,13 @@ pub fn combinator_list_expr<'a, I: IntoIterator<Item = &'a Box<dyn AsIR<N, V>>>,
 ) -> Expr<N, V>
 where
     I: Debug,
-    N: Debug + Clone,
-    V: Debug + Clone,
+    N: 'static + Debug + Clone,
+    V: 'static + Debug + Clone,
 {
     combinators
         .into_iter()
         .fold(COMBINE_CONTEXT.read(), |acc: Expr<N, V>, next| {
-            let Expr::Call{ function, args } = next.expressions(acc).get(0).unwrap().clone() else  {
+            let Expr::Call{ function, args } = next.expression(acc) else  {
                 panic!("Combinator expression is not a CallResult")
             };
 
@@ -267,8 +241,8 @@ where
 #[instrument]
 pub fn elysian_functions<N, V>(elysian: &Elysian<N, V>) -> Vec<FunctionDefinition<N, V>>
 where
-    N: Debug + Clone + One + Two + Zero + IntoValue<N, V>,
-    V: Debug + Clone + IntoValue<N, V>,
+    N: 'static + Debug + Clone + One + Two + Zero + IntoValue<N, V>,
+    V: 'static + Debug + Clone + IntoValue<N, V>,
 {
     match elysian {
         Elysian::Field {

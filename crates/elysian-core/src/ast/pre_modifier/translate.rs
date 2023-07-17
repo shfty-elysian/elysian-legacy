@@ -1,15 +1,16 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::ir::{
-    as_ir::{clone_ir, hash_ir, AsIR},
-    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, POSITION, VECT},
+    as_ir::AsIR,
+    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION},
     from_elysian::CONTEXT_STRUCT,
-    module::{FunctionDefinition, InputDefinition},
+    module::{FunctionDefinition, InputDefinition, Type},
 };
 
 use crate::ast::expr::Expr;
 
 pub const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
+pub const DELTA: Property = Property::new("delta", Type::Vector, 1292788437813720044);
 
 #[derive(Debug, Clone)]
 pub struct Translate<N, V> {
@@ -37,7 +38,7 @@ where
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: VECT,
+                    prop: DELTA,
                     mutable: false,
                 },
                 InputDefinition {
@@ -47,25 +48,17 @@ where
             ],
             output: &CONTEXT_STRUCT,
             block: [
-                [CONTEXT, POSITION].write([CONTEXT, POSITION].read() - VECT.read()),
+                [CONTEXT, POSITION].write([CONTEXT, POSITION].read() - DELTA.read()),
                 CONTEXT.read().output(),
             ]
             .block(),
         }]
     }
 
-    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
-        vec![crate::ir::ast::Expr::Call {
+    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+        crate::ir::ast::Expr::Call {
             function: TRANSLATE,
             args: vec![self.delta.clone().into(), input],
-        }]
-    }
-
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
+        }
     }
 }

@@ -1,10 +1,8 @@
 use std::hash::Hash;
 
 use crate::ir::{
-    as_ir::{clone_ir, hash_ir},
     ast::{
-        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT,
-        POSITION,
+        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT, POSITION,
     },
     from_elysian::CONTEXT_STRUCT,
     module::{FunctionDefinition, InputDefinition},
@@ -36,18 +34,10 @@ impl<N, V> AsIR<N, V> for Point {
         }]
     }
 
-    fn expressions(&self, input: Expr<N, V>) -> Vec<Expr<N, V>> {
-        vec![Expr::Call {
+    fn expression(&self, input: Expr<N, V>) -> Expr<N, V> {
+        Expr::Call {
             function: POINT,
             args: vec![input],
-        }]
-    }
-
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
+        }
     }
 }

@@ -7,10 +7,23 @@ use crate::{
     ast::{
         expr::Expr,
         field::Circle,
-        post_modifier::{isosurface::Isosurface, manifold::Manifold},
+        post_modifier::{
+            isosurface::{Isosurface, ISOSURFACE},
+            manifold::{Manifold, MANIFOLD},
+        },
     },
-    ir::as_ir::{clone_ir, hash_ir, AsIR},
+    ir::{
+        as_ir::AsIR,
+        ast::{Identifier, IntoBlock, Property, CONTEXT},
+        from_elysian::CONTEXT_STRUCT,
+        module::{FunctionDefinition, InputDefinition, Type},
+    },
 };
+
+use super::{CIRCLE, RADIUS};
+
+pub const RING: Identifier = Identifier::new("ring", 18972348581943461950);
+pub const WIDTH: Property = Property::new("width", Type::Number, 2742125101201765597);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Ring<N, V> {
@@ -43,30 +56,47 @@ where
             }
             .functions(),
         )
-        .collect()
-    }
-
-    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
-        Circle {
-            radius: self.radius.clone(),
-        }
-        .expressions(input.clone())
-        .into_iter()
-        .chain(Manifold.expressions(input.clone()))
-        .chain(
-            Isosurface {
-                dist: self.width.clone(),
+        .chain([FunctionDefinition {
+            id: RING,
+            public: false,
+            inputs: vec![
+                InputDefinition {
+                    prop: RADIUS,
+                    mutable: false,
+                },
+                InputDefinition {
+                    prop: WIDTH,
+                    mutable: false,
+                },
+                InputDefinition {
+                    prop: CONTEXT,
+                    mutable: false,
+                },
+            ],
+            output: CONTEXT_STRUCT,
+            block: [crate::ir::ast::Expr::Call {
+                function: ISOSURFACE,
+                args: vec![
+                    WIDTH.read(),
+                    crate::ir::ast::Expr::Call {
+                        function: MANIFOLD,
+                        args: vec![crate::ir::ast::Expr::Call {
+                            function: CIRCLE,
+                            args: vec![RADIUS.read(), CONTEXT.read()],
+                        }],
+                    },
+                ],
             }
-            .expressions(input),
-        )
+            .output()]
+            .block(),
+        }])
         .collect()
     }
 
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
+    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+        crate::ir::ast::Expr::Call {
+            function: RING,
+            args: vec![self.radius.clone().into(), self.width.clone().into(), input],
+        }
     }
 }

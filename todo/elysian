@@ -87,19 +87,18 @@
   DONE: Field, PreModifier and PostModifier have been replace with the AsIR trait
         and corresponding dyn machinery
 
-=========================================================================================================
-
 * Generalize combinators via AsIR
+
+  DONE: Combiner enums have been factored into AsIR implementors
 
 * Generate dedicated functions for alias types instead of inlining directly
   * Clearer intent, better code sharing
+  * Allows rolling back Vec<Expr<N, V>> change
 
-* Stronger typing for pre / post / field IR conversion
-  * At minimum, create separate traits to identify a given symbol as each
-    * May be better for Modifier to be a single trait with pre / post methods
-      * Makes it more ergonomic to support pre + post ops like scale
-  * Since the base AST has a Value representation,
-    may be able to reinstate something resembling move semantics?
+  DONE: Aliases are now simply AsIR implementors that depend on other AsIR implementors
+        Rolled back Vec change, and also moved hash_ir / clone_ir to blanket-impled traits for ergonomics
+
+=========================================================================================================
 
 * Replace N, V parameters with a single T describing a type specification
   * Trait with one associated type per relevant AST type
@@ -114,6 +113,13 @@
     whereas others vary depending on the vector space
   * Can probably host a 'vector space' assoc type alongside
     vector arity types, use for position, gradient, etc.
+
+* Stronger typing for pre / post / field IR conversion
+  * At minimum, create separate traits to identify a given symbol as each
+    * May be better for Modifier to be a single trait with pre / post methods
+      * Makes it more ergonomic to support pre + post ops like scale
+  * Since the base AST has a Value representation,
+    may be able to reinstate something resembling move semantics?
 
 * 3D support
 

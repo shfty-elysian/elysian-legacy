@@ -1,5 +1,5 @@
 use crate::ir::{
-    as_ir::{clone_ir, hash_ir, AsIR},
+    as_ir::AsIR,
     ast::{
         Identifier, IntoBlock, IntoRead, IntoWrite, COMBINE_CONTEXT, DISTANCE, LEFT, OUT, RIGHT,
     },
@@ -75,8 +75,8 @@ impl<N, V> AsIR<N, V> for Boolean {
         }]
     }
 
-    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
-        vec![match self {
+    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+        match self {
             Boolean::Union => crate::ir::ast::Expr::Call {
                 function: UNION,
                 args: vec![input],
@@ -89,14 +89,6 @@ impl<N, V> AsIR<N, V> for Boolean {
                 function: SUBTRACTION,
                 args: vec![input],
             },
-        }]
-    }
-
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
+        }
     }
 }

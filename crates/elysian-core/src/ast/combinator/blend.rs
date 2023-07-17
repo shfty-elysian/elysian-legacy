@@ -5,7 +5,7 @@ use rust_gpu_bridge::{One, Two, Zero};
 use crate::{
     ast::{attribute::Attribute, expr::Expr},
     ir::{
-        as_ir::{clone_ir, hash_ir, AsIR},
+        as_ir::AsIR,
         ast::{
             Identifier, IntoLiteral, IntoRead, IntoValue, IntoWrite, Property, COMBINE_CONTEXT,
             DISTANCE, K, LEFT, NUM, OUT, RIGHT,
@@ -174,8 +174,8 @@ where
         }]
     }
 
-    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
-        vec![match self {
+    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+        match self {
             Blend::SmoothUnion { attr, k } => crate::ir::ast::Expr::Call {
                 function: SMOOTH_UNION.concat(Property::from(*attr).id()),
                 args: vec![k.clone().into(), input],
@@ -188,14 +188,6 @@ where
                 function: SMOOTH_SUBTRACTION.concat(Property::from(*attr).id()),
                 args: vec![k.clone().into(), input],
             },
-        }]
-    }
-
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
+        }
     }
 }

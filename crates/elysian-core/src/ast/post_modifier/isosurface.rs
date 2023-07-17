@@ -1,15 +1,16 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::ir::{
-    as_ir::{clone_ir, hash_ir, AsIR},
-    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, NUM},
+    as_ir::AsIR,
+    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, DISTANCE},
     from_elysian::CONTEXT_STRUCT,
-    module::{FunctionDefinition, InputDefinition},
+    module::{FunctionDefinition, InputDefinition, Type},
 };
 
 use crate::ast::expr::Expr;
 
 pub const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
+pub const DIST: Property = Property::new("property", Type::Number, 463524741302033362);
 
 #[derive(Debug, Clone)]
 pub struct Isosurface<N, V> {
@@ -37,7 +38,7 @@ where
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: NUM,
+                    prop: DIST,
                     mutable: false,
                 },
                 InputDefinition {
@@ -47,25 +48,17 @@ where
             ],
             output: &CONTEXT_STRUCT,
             block: [
-                [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - NUM.read()),
+                [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - DIST.read()),
                 CONTEXT.read().output(),
             ]
             .block(),
         }]
     }
 
-    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
-        vec![crate::ir::ast::Expr::Call {
+    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+        crate::ir::ast::Expr::Call {
             function: ISOSURFACE,
             args: vec![self.dist.clone().into(), input],
-        }]
-    }
-
-    fn hash_ir(&self) -> u64 {
-        hash_ir(self)
-    }
-
-    fn clone_ir(&self) -> Box<dyn AsIR<N, V>> {
-        clone_ir(self)
+        }
     }
 }
