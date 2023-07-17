@@ -2,7 +2,7 @@ use std::{fmt::Debug, hash::Hash};
 
 use crate::ir::{
     as_ir::{clone_ir, hash_ir, AsIR},
-    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, DISTANCE, NUM},
+    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, NUM},
     from_elysian::CONTEXT_STRUCT,
     module::{FunctionDefinition, InputDefinition},
 };
@@ -54,10 +54,10 @@ where
         }]
     }
 
-    fn expressions(&self, input: Property) -> Vec<crate::ir::ast::Expr<N, V>> {
+    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
         vec![crate::ir::ast::Expr::Call {
             function: ISOSURFACE,
-            args: vec![self.dist.clone().into(), input.read()],
+            args: vec![self.dist.clone().into(), input],
         }]
     }
 

@@ -91,6 +91,9 @@
 
 * Generalize combinators via AsIR
 
+* Generate dedicated functions for alias types instead of inlining directly
+  * Clearer intent, better code sharing
+
 * Stronger typing for pre / post / field IR conversion
   * At minimum, create separate traits to identify a given symbol as each
     * May be better for Modifier to be a single trait with pre / post methods

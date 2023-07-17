@@ -1,35 +1,35 @@
-use elysian_core::ast::{
-    attribute::Attribute::{self, *},
-    combinator::{
-        Blend, Boolean,
-        Combinator::{self, *},
+use elysian_core::{
+    ast::{
+        attribute::Attribute::{self, *},
+        combinator::{Blend, Boolean},
+        expr::IntoLiteral,
+        field::{Capsule, Circle, IntoField, Point, Ring},
+        Elysian, IntoCombine,
     },
-    expr::IntoLiteral,
-    field::{Capsule, Circle, IntoField, Point, Ring},
-    Elysian, IntoCombine,
+    ir::as_ir::AsIR,
 };
 use rust_gpu_bridge::glam::Vec2;
 
 pub fn kettle_bell() -> Elysian<f32, Vec2> {
-    let smooth_union = [
-        Combinator::Boolean(Boolean::Union),
-        Blend(Blend::SmoothUnion {
+    let smooth_union: [Box<dyn AsIR<f32, Vec2>>; 3] = [
+        Box::new(Boolean::Union),
+        Box::new(Blend::SmoothUnion {
             attr: Distance,
             k: 0.4.literal(),
         }),
-        Blend(Blend::SmoothUnion {
+        Box::new(Blend::SmoothUnion {
             attr: Gradient,
             k: 0.4.literal(),
         }),
     ];
 
-    let smooth_subtraction = [
-        Combinator::Boolean(Boolean::Subtraction),
-        Combinator::Blend(Blend::SmoothSubtraction {
+    let smooth_subtraction: [Box<dyn AsIR<f32, Vec2>>; 3] = [
+        Box::new(Boolean::Subtraction),
+        Box::new(Blend::SmoothSubtraction {
             attr: Attribute::Distance,
             k: 0.4.literal(),
         }),
-        Combinator::Blend(Blend::SmoothSubtraction {
+        Box::new(Blend::SmoothSubtraction {
             attr: Attribute::Gradient,
             k: 0.4.literal(),
         }),

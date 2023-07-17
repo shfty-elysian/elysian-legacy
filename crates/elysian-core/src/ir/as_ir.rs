@@ -3,14 +3,11 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use super::{
-    ast::{Expr, Property},
-    module::FunctionDefinition,
-};
+use super::{ast::Expr, module::FunctionDefinition};
 
 pub trait AsIR<N, V>: std::fmt::Debug {
     fn functions(&self) -> Vec<FunctionDefinition<N, V>>;
-    fn expressions(&self, input: Property) -> Vec<Expr<N, V>>;
+    fn expressions(&self, input: Expr<N, V>) -> Vec<Expr<N, V>>;
     fn hash_ir(&self) -> u64;
     fn clone_ir(&self) -> Box<dyn AsIR<N, V>>;
 }
@@ -33,7 +30,7 @@ where
         (*self).functions()
     }
 
-    fn expressions(&self, input: Property) -> Vec<Expr<N, V>> {
+    fn expressions(&self, input: Expr<N, V>) -> Vec<Expr<N, V>> {
         (*self).expressions(input)
     }
 
@@ -51,7 +48,7 @@ impl<N, V> AsIR<N, V> for Box<dyn AsIR<N, V>> {
         (**self).functions()
     }
 
-    fn expressions(&self, input: Property) -> Vec<Expr<N, V>> {
+    fn expressions(&self, input: Expr<N, V>) -> Vec<Expr<N, V>> {
         (**self).expressions(input)
     }
 

@@ -46,7 +46,7 @@ where
         .collect()
     }
 
-    fn expressions(&self, input: crate::ir::ast::Property) -> Vec<crate::ir::ast::Expr<N, V>> {
+    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
         Circle {
             radius: self.radius.clone(),
         }

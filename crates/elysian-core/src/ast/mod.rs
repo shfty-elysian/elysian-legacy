@@ -13,7 +13,6 @@ use std::{
 use crate::ir::as_ir::AsIR;
 
 use self::{
-    combinator::Combinator,
     expr::Expr,
     post_modifier::{isosurface::Isosurface, manifold::Manifold},
     pre_modifier::{elongate::Elongate, translate::Translate},
@@ -34,7 +33,7 @@ pub enum Elysian<N, V> {
         post_modifiers: Vec<Box<dyn AsIR<N, V>>>,
     },
     Combine {
-        combinator: Vec<Combinator<N, V>>,
+        combinator: Vec<Box<dyn AsIR<N, V>>>,
         shapes: ElysianList<N, V>,
     },
 }
@@ -57,7 +56,9 @@ impl<N, V> Hash for Elysian<N, V> {
                 }
             }
             Elysian::Combine { combinator, shapes } => {
-                combinator.hash(state);
+                for combinator in combinator {
+                    state.write_u64(combinator.hash_ir());
+                }
                 shapes.hash(state);
             }
         }
@@ -150,7 +151,7 @@ where
 pub trait IntoCombine<N, V> {
     fn combine<U>(self, combinator: U) -> Elysian<N, V>
     where
-        U: IntoIterator<Item = Combinator<N, V>>;
+        U: IntoIterator<Item = Box<dyn AsIR<N, V>>>;
 }
 
 impl<N, V, T> IntoCombine<N, V> for T
@@ -159,7 +160,7 @@ where
 {
     fn combine<U>(self, combinator: U) -> Elysian<N, V>
     where
-        U: IntoIterator<Item = Combinator<N, V>>,
+        U: IntoIterator<Item = Box<dyn AsIR<N, V>>>,
     {
         Elysian::Combine {
             combinator: combinator.into_iter().collect(),
@@ -167,4 +168,3 @@ where
         }
     }
 }
-

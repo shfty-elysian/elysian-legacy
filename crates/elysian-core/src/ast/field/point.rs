@@ -3,7 +3,7 @@ use std::hash::Hash;
 use crate::ir::{
     as_ir::{clone_ir, hash_ir},
     ast::{
-        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, DISTANCE, GRADIENT,
+        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT,
         POSITION,
     },
     from_elysian::CONTEXT_STRUCT,
@@ -36,10 +36,10 @@ impl<N, V> AsIR<N, V> for Point {
         }]
     }
 
-    fn expressions(&self, input: Property) -> Vec<Expr<N, V>> {
+    fn expressions(&self, input: Expr<N, V>) -> Vec<Expr<N, V>> {
         vec![Expr::Call {
             function: POINT,
-            args: vec![input.read()],
+            args: vec![input],
         }]
     }
 

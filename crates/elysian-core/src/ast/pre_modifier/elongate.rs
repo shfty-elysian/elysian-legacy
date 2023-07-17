@@ -76,14 +76,14 @@ where
         }]
     }
 
-    fn expressions(&self, input: crate::ir::ast::Property) -> Vec<crate::ir::ast::Expr<N, V>> {
+    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
         vec![crate::ir::ast::Expr::Call {
             function: if self.infinite {
                 ELONGATE_INFINITE
             } else {
                 ELONGATE
             },
-            args: vec![self.dir.clone().into(), input.read()],
+            args: vec![self.dir.clone().into(), input],
         }]
     }
 

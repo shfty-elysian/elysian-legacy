@@ -41,7 +41,7 @@ where
         .collect()
     }
 
-    fn expressions(&self, input: crate::ir::ast::Property) -> Vec<crate::ir::ast::Expr<N, V>> {
+    fn expressions(&self, input: crate::ir::ast::Expr<N, V>) -> Vec<crate::ir::ast::Expr<N, V>> {
         Line {
             dir: self.dir.clone(),
         }
@@ -49,7 +49,7 @@ where
         .into_iter()
         .chain([crate::ir::ast::Expr::Call {
             function: ISOSURFACE,
-            args: vec![self.radius.clone().into(), input.read()],
+            args: vec![self.radius.clone().into(), input],
         }])
         .collect()
     }
