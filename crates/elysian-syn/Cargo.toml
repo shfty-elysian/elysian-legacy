@@ -1,0 +1,15 @@
+[package]
+name = "elysian-syn"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elysian-core = { path = "../elysian-core" }
+elysian-interpreter = { path = "../elysian-interpreter" }
+rust-gpu-bridge = { path = "../../../bevy-rust-gpu-project/crates/rust-gpu-bridge", features = ["glam"] }
+
+syn = { version = "2.0.25", features = ["full"]}
+proc-macro2 = "1.0.64"
+quote = "1.0.29"
+prettyplease = "0.2.10"
+linkme = "0.3.12"

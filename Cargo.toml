@@ -1,13 +1,30 @@
+[package]
+name = "elysian"
+version = "0.1.0"
+edition = "2021"
+
 [workspace]
-resolver = "2"
 members = [
-    "crates/sandbox-lib",
-    "crates/sandbox-bin",
+    "crates/*",
+    "testing/*",
 ]
-default-members = [
-    "crates/sandbox-lib",
-    "crates/sandbox-bin",
-]
+
+[features]
+default = ["syn", "image"]
+syn = ["dep:elysian-syn"]
+image = ["dep:elysian-image"]
+
+[dependencies]
+elysian-core = { path = "crates/elysian-core" }
+
+elysian-image = { path = "crates/elysian-image", optional = true }
+elysian-syn = { path = "crates/elysian-syn", optional = true }
+
+rust-gpu-bridge = { path = "../bevy-rust-gpu-project/crates/rust-gpu-bridge" }
+
+[[example]]
+name = "syn"
+path = "examples/syn.rs"
 
 # Fast-compile config
 [profile.dev]
@@ -22,3 +39,4 @@ incremental = true
 # Use opt level 3 for dependencies
 [profile.dev.package."*"]
 opt-level = 3
+

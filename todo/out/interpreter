@@ -1,0 +1,36 @@
+* Refactor interpreter following changes to IR
+  * Need to be able to traverse a function call chain
+    by looking up definitions from storage and evaluating their blocks
+  
+  DONE: Interpreter is now up to parity with syn frontend
+
+* Integrate tracing
+  * Derive tracing spans for all interpreter functions
+
+  DONE: Various perf-critical functions are now instrumented
+
+* Optimization pass
+  * Interpreter is considerably slower than previous implementations
+  * Need to profile hot paths using tracing and improve them
+
+  DONE: No obvious hot paths; introduced rayon multithreading to image frontend to compensate
+
+======================================================================
+
+* IR optimization
+  * Strategies to reduce the amount of IR that needs to be interpreted
+  * Pre-evaluate expressions comprised solely of literals
+    * ex. Convert 1 / 2 into 0.5 to avoid a runtime divide
+  * Inlining
+    * ex. Replace variable bindings with their values to reduce IO overhead
+      * Mainly relevant to entrypoint; may be better to hand-optimize codegen
+
+* Interpreter acceleration
+  * Strategies to speed up evaluation of IR
+  * Expression caching
+    * Should be able to cache expression results and return immediately for repeat evals
+    * Mostly relevant for innermost math ops, since context params are less trivial to handle
+  * Parallelism
+    * Should be able to evaluate each element of a combine in parallel, then process results
+    * Will likely require some new intermediary threading-friendly IR,
+      or extensions to the existing one that preserve threadable abstractions (i.e. maps, folds)

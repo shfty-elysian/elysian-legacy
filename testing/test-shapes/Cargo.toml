@@ -1,0 +1,8 @@
+[package]
+name = "test-shapes"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elysian-core = { path = "../../crates/elysian-core" }
+rust-gpu-bridge = { path = "../../../bevy-rust-gpu-project/crates/rust-gpu-bridge"}

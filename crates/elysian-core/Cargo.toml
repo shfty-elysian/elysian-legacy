@@ -1,0 +1,10 @@
+[package]
+name = "elysian-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rust-gpu-bridge = { path = "../../../bevy-rust-gpu-project/crates/rust-gpu-bridge", features = ["glam"] }
+
+uuid = { version = "1.4.0", features = ["v4"] }
+tracing = "0.1.37"

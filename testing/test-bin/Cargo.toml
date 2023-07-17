@@ -1,0 +1,15 @@
+[package]
+name = "test-bin"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+elysian-syn = { path = "../../crates/elysian-syn" }
+test-shapes = { path = "../test-shapes" }
+
+[dependencies]
+elysian = { path = "../.." }
+test-shapes = { path = "../test-shapes" }
+rust-gpu-bridge = { path = "../../../bevy-rust-gpu-project/crates/rust-gpu-bridge", features = ["glam"] }
+linkme = "0.3.12"
+viuer = "0.6.2"

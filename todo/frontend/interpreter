@@ -1,3 +1,0 @@
-* Refactor interpreter following changes to IR
-  * Need to be able to traverse a function call chain
-    by looking up definitions from storage and evaluating their blocks
