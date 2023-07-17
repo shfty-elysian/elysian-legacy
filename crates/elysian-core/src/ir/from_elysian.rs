@@ -5,8 +5,7 @@ use tracing::instrument;
 
 use crate::ast::{
     combinator::{Blend, Boolean, Combinator},
-    field::Field,
-    Elysian, PostModifier, PreModifier,
+    Elysian,
 };
 use crate::ir::{
     ast::{
@@ -17,7 +16,7 @@ use crate::ir::{
     module::{FieldDefinition, FunctionDefinition, InputDefinition, Module, StructDefinition},
 };
 
-use super::ast::Identifier;
+use super::{as_ir::AsIR, ast::Identifier};
 
 pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
     id: Identifier::new("Context", 1198218077110787867),
@@ -143,17 +142,32 @@ where
             post_modifiers,
         } => pre_modifiers
             .iter()
-            .map(|modifier| Stmt::Write {
-                path: vec![CONTEXT],
-                expr: pre_modifier_expr(modifier, CONTEXT),
+            .flat_map(|modifier| {
+                modifier
+                    .expressions(CONTEXT)
+                    .into_iter()
+                    .map(|expr| Stmt::Write {
+                        path: vec![CONTEXT],
+                        expr,
+                    })
             })
-            .chain(std::iter::once(Stmt::Write {
-                path: vec![CONTEXT],
-                expr: field.field_expr(CONTEXT),
-            }))
-            .chain(post_modifiers.iter().map(|modifier| Stmt::Write {
-                path: vec![CONTEXT],
-                expr: post_modifier_expr(modifier, CONTEXT),
+            .chain(
+                field
+                    .expressions(CONTEXT)
+                    .into_iter()
+                    .map(|expr| Stmt::Write {
+                        path: vec![CONTEXT],
+                        expr,
+                    }),
+            )
+            .chain(post_modifiers.iter().flat_map(|modifier| {
+                modifier
+                    .expressions(CONTEXT)
+                    .into_iter()
+                    .map(|expr| Stmt::Write {
+                        path: vec![CONTEXT],
+                        expr,
+                    })
             }))
             .chain(std::iter::once([CONTEXT].read().output()))
             .collect(),
@@ -162,9 +176,6 @@ where
             stmts.extend(elysian_entry_point_combine(combinator, shapes));
             stmts.push([LEFT].read().output());
             stmts
-        }
-        Elysian::Alias(_) => {
-            unimplemented!("Aliases must be expanded before conversion to Block")
         }
     })
 }
@@ -194,25 +205,29 @@ where
         } => {
             block.push([LEFT].write([CONTEXT].read()));
 
+            block.extend(pre_modifiers.iter().flat_map(|modifier| {
+                modifier
+                    .expressions(LEFT)
+                    .into_iter()
+                    .map(|expr| LEFT.write(expr))
+            }));
+
             block.extend(
-                pre_modifiers
-                    .iter()
-                    .map(|modifier| LEFT.write(pre_modifier_expr(modifier, LEFT))),
+                field
+                    .expressions(LEFT)
+                    .into_iter()
+                    .map(|expr| LEFT.write(expr)),
             );
 
-            block.extend([LEFT.write(field.field_expr(LEFT))]);
-
-            block.extend(
-                post_modifiers
-                    .iter()
-                    .map(|modifier| LEFT.write(post_modifier_expr(modifier, LEFT))),
-            );
+            block.extend(post_modifiers.iter().flat_map(|modifier| {
+                modifier
+                    .expressions(LEFT)
+                    .into_iter()
+                    .map(|expr| LEFT.write(expr))
+            }));
         }
         Elysian::Combine { combinator, shapes } => {
             block.extend(elysian_entry_point_combine(combinator, shapes));
-        }
-        Elysian::Alias(_) => {
-            panic!("Aliases must be expanded before conversion to entry point")
         }
     }
 
@@ -225,25 +240,29 @@ where
             } => {
                 acc.push([RIGHT].write([CONTEXT].read()));
 
+                acc.extend(pre_modifiers.iter().flat_map(|modifier| {
+                    modifier
+                        .expressions(RIGHT)
+                        .into_iter()
+                        .map(|expr| RIGHT.write(expr))
+                }));
+
                 acc.extend(
-                    pre_modifiers
-                        .iter()
-                        .map(|modifier| RIGHT.write(pre_modifier_expr(modifier, RIGHT))),
+                    field
+                        .expressions(RIGHT)
+                        .into_iter()
+                        .map(|expr| RIGHT.write(expr)),
                 );
 
-                acc.extend([RIGHT.write(field.field_expr(RIGHT))]);
-
-                acc.extend(
-                    post_modifiers
-                        .iter()
-                        .map(|modifier| RIGHT.write(post_modifier_expr(modifier, RIGHT))),
-                );
+                acc.extend(post_modifiers.iter().flat_map(|modifier| {
+                    modifier
+                        .expressions(RIGHT)
+                        .into_iter()
+                        .map(|expr| RIGHT.write(expr))
+                }));
             }
             Elysian::Combine { combinator, shapes } => {
                 acc.extend(elysian_entry_point_combine(combinator, shapes));
-            }
-            Elysian::Alias(_) => {
-                panic!("Aliases must be expanded before conversion to entry point")
             }
         }
 
@@ -258,69 +277,6 @@ where
 
         acc
     })
-}
-
-pub const POINT: Identifier = Identifier::new("point", 419357041369711478);
-
-#[instrument]
-pub fn field_expr<N, V>(field: &Field<N, V>, input: Property) -> Expr<N, V>
-where
-    N: Debug,
-    V: Debug,
-{
-    match field {
-        Field::Point => Expr::Call {
-            function: POINT,
-            args: vec![input.read()],
-        },
-        Field::_Phantom(_) => unimplemented!(),
-    }
-}
-
-pub const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
-pub const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324);
-pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1799909959882308009);
-pub const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
-pub const MANIFOLD: Identifier = Identifier::new("manifold", 7861274791729269697);
-
-#[instrument]
-pub fn pre_modifier_expr<N, V>(modifier: &PreModifier<N, V>, input: Property) -> Expr<N, V>
-where
-    N: Debug + Clone + IntoValue<N, V>,
-    V: Debug + Clone + IntoValue<N, V>,
-{
-    match modifier {
-        PreModifier::Translate { delta } => Expr::Call {
-            function: TRANSLATE,
-            args: vec![delta.clone().into(), input.read()],
-        },
-        PreModifier::Elongate { dir, infinite, .. } => Expr::Call {
-            function: if *infinite {
-                ELONGATE_INFINITE
-            } else {
-                ELONGATE
-            },
-            args: vec![dir.clone().into(), input.read()],
-        },
-    }
-}
-
-#[instrument]
-pub fn post_modifier_expr<N, V>(modifier: &PostModifier<N, V>, input: Property) -> Expr<N, V>
-where
-    N: Debug + Clone + IntoValue<N, V>,
-    V: Debug + Clone + IntoValue<N, V>,
-{
-    match modifier {
-        PostModifier::Isosurface { dist } => Expr::Call {
-            function: ISOSURFACE,
-            args: vec![dist.clone().into(), input.read()],
-        },
-        PostModifier::Manifold => Expr::Call {
-            function: MANIFOLD,
-            args: vec![input.read()],
-        },
-    }
 }
 
 const UNION: Identifier = Identifier::new("union", 1894363406191409858);
@@ -589,144 +545,6 @@ where
 }
 
 #[instrument]
-pub fn field_function<N, V>(field: &Field<N, V>) -> FunctionDefinition<N, V>
-where
-    N: Debug,
-    V: Debug,
-{
-    match field {
-        Field::Point => FunctionDefinition {
-            id: POINT,
-            public: false,
-            inputs: vec![InputDefinition {
-                prop: CONTEXT,
-                mutable: true,
-            }],
-            output: &CONTEXT_STRUCT,
-            block: [
-                [CONTEXT, DISTANCE].write([CONTEXT, POSITION].read().length()),
-                [CONTEXT, GRADIENT].write([CONTEXT, POSITION].read().normalize()),
-                CONTEXT.read().output(),
-            ]
-            .block(),
-        },
-        Field::_Phantom(_) => unimplemented!(),
-    }
-}
-
-#[instrument]
-pub fn pre_modifier_function<N, V>(modifier: &PreModifier<N, V>) -> FunctionDefinition<N, V>
-where
-    N: Debug + Clone,
-    V: Debug + Clone,
-{
-    match modifier {
-        PreModifier::Translate { .. } => FunctionDefinition {
-            id: TRANSLATE,
-            public: false,
-            inputs: vec![
-                InputDefinition {
-                    prop: VECT,
-                    mutable: false,
-                },
-                InputDefinition {
-                    prop: CONTEXT,
-                    mutable: true,
-                },
-            ],
-            output: &CONTEXT_STRUCT,
-            block: [
-                [CONTEXT, POSITION].write([CONTEXT, POSITION].read() - VECT.read()),
-                CONTEXT.read().output(),
-            ]
-            .block(),
-        },
-        PreModifier::Elongate { infinite, .. } => FunctionDefinition {
-            id: if *infinite {
-                ELONGATE_INFINITE
-            } else {
-                ELONGATE
-            },
-            public: false,
-            inputs: vec![
-                InputDefinition {
-                    prop: VECT,
-                    mutable: false,
-                },
-                InputDefinition {
-                    prop: CONTEXT,
-                    mutable: true,
-                },
-            ],
-            output: &CONTEXT_STRUCT,
-            block: {
-                let expr = [CONTEXT, POSITION].read().dot(VECT.read().normalize());
-
-                [
-                    [CONTEXT, POSITION].write(
-                        [CONTEXT, POSITION].read()
-                            - VECT.read().normalize()
-                                * if *infinite {
-                                    expr
-                                } else {
-                                    expr.max(-VECT.read().length()).min(VECT.read().length())
-                                },
-                    ),
-                    CONTEXT.read().output(),
-                ]
-                .block()
-            },
-        },
-    }
-}
-
-#[instrument]
-pub fn post_modifier_function<N, V>(modifier: &PostModifier<N, V>) -> FunctionDefinition<N, V>
-where
-    N: Debug + Clone,
-    V: Debug + Clone,
-{
-    match modifier {
-        PostModifier::Isosurface { .. } => FunctionDefinition {
-            id: ISOSURFACE,
-            public: false,
-            inputs: vec![
-                InputDefinition {
-                    prop: NUM,
-                    mutable: false,
-                },
-                InputDefinition {
-                    prop: CONTEXT,
-                    mutable: true,
-                },
-            ],
-            output: &CONTEXT_STRUCT,
-            block: [
-                [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - NUM.read()),
-                CONTEXT.read().output(),
-            ]
-            .block(),
-        },
-        PostModifier::Manifold { .. } => FunctionDefinition {
-            id: MANIFOLD,
-            public: false,
-            inputs: vec![InputDefinition {
-                prop: CONTEXT,
-                mutable: true,
-            }],
-            output: &CONTEXT_STRUCT,
-            block: [
-                NUM.write([CONTEXT, DISTANCE].read()),
-                [CONTEXT, DISTANCE].write(NUM.read().abs()),
-                [CONTEXT, GRADIENT].write([CONTEXT, GRADIENT].read() * NUM.read().sign()),
-                CONTEXT.read().output(),
-            ]
-            .block(),
-        },
-    }
-}
-
-#[instrument]
 pub fn elysian_functions<N, V>(elysian: &Elysian<N, V>) -> Vec<FunctionDefinition<N, V>>
 where
     N: Debug + Clone + One + Two + Zero + IntoValue<N, V>,
@@ -739,21 +557,14 @@ where
             post_modifiers,
         } => pre_modifiers
             .iter()
-            .map(|modifier| pre_modifier_function(modifier))
-            .chain(std::iter::once(field.field_function()))
-            .chain(
-                post_modifiers
-                    .iter()
-                    .map(|modifier| post_modifier_function(modifier)),
-            )
+            .flat_map(AsIR::functions)
+            .chain(field.functions())
+            .chain(post_modifiers.iter().flat_map(AsIR::functions))
             .collect(),
         Elysian::Combine { combinator, shapes } => combinator
             .iter()
             .map(combinator_function)
             .chain(shapes.iter().map(elysian_functions).flatten())
             .collect(),
-        Elysian::Alias(_) => {
-            unimplemented!("Aliases must be expanded before conversion to Functions")
-        }
     }
 }

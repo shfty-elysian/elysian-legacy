@@ -1,0 +1,2 @@
+* Create a Syn -> IR pipeline to simplify Block / Stmt / Expr notation
+  * Should ultimately work similar to parse_quote

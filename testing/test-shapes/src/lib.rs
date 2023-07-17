@@ -1,17 +1,16 @@
 use elysian_core::ast::{
-    alias::{Capsule, Circle, Ring},
     attribute::Attribute::{self, *},
     combinator::{
         Blend, Boolean,
         Combinator::{self, *},
     },
-    expand::Expand,
     expr::IntoLiteral,
-    field::Field,
-    Elysian, IntoAlias, IntoCombine,
+    field::{Capsule, Circle, IntoField, Point, Ring},
+    Elysian, IntoCombine,
 };
+use rust_gpu_bridge::glam::Vec2;
 
-pub fn kettle_bell() -> Elysian<f32, [f32; 2]> {
+pub fn kettle_bell() -> Elysian<f32, Vec2> {
     let smooth_union = [
         Combinator::Boolean(Boolean::Union),
         Blend(Blend::SmoothUnion {
@@ -41,37 +40,34 @@ pub fn kettle_bell() -> Elysian<f32, [f32; 2]> {
             Circle {
                 radius: 1.0.literal(),
             }
-            .alias()
-            .expand()
-            .translate([0.0, 0.5].literal()),
+            .field()
+            .translate(Vec2::new(0.0, 0.5).literal()),
             Ring {
                 radius: 0.9.literal(),
                 width: 0.15.literal(),
             }
-            .alias()
-            .expand()
-            .translate([0.0, -0.25].literal()),
+            .field()
+            .translate(Vec2::new(0.0, -0.25).literal()),
         ]
         .combine(smooth_union),
         Capsule {
-            dir: [1.5, 0.0].literal(),
+            dir: Vec2::new(1.5, 0.0).literal(),
             radius: 0.2.literal(),
         }
-        .alias()
-        .expand()
-        .translate([0.0, 0.5].literal()),
+        .field()
+        .translate(Vec2::new(0.0, 0.5).literal()),
     ]
     .combine(smooth_subtraction)
 }
 
-pub fn point() -> Elysian<f32, [f32; 2]> {
+pub fn point() -> Elysian<f32, Vec2> {
     Elysian::Field {
         pre_modifiers: Default::default(),
-        field: Field::Point,
+        field: Box::new(Point),
         post_modifiers: Default::default(),
     }
 }
 
-pub fn shapes() -> [(&'static str, Elysian<f32, [f32; 2]>); 2] {
+pub fn shapes() -> [(&'static str, Elysian<f32, Vec2>); 2] {
     [("point", point()), ("kettle_bell", kettle_bell())]
 }

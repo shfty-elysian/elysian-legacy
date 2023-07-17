@@ -1,10 +1,7 @@
-pub mod alias;
 pub mod attribute;
 pub mod combinator;
-pub mod expand;
 pub mod expr;
 pub mod field;
-pub mod to_glam;
 pub mod value;
 
 use std::{
@@ -13,97 +10,34 @@ use std::{
     hash::{Hash, Hasher},
 };
 
+use crate::ir::as_ir::AsIR;
+
 use self::{
     combinator::Combinator,
-    expand::Expand,
     expr::Expr,
-    field::{AsField, Field},
+    post_modifier::{isosurface::Isosurface, manifold::Manifold},
+    pre_modifier::{elongate::Elongate, translate::Translate},
 };
 
 pub type ElysianBox<N, V> = Box<Elysian<N, V>>;
 pub type ElysianList<N, V> = Vec<Elysian<N, V>>;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum PreModifier<N, V> {
-    Translate { delta: Expr<N, V> },
-    Elongate { dir: Expr<N, V>, infinite: bool },
-}
-
-impl<N, V> Hash for PreModifier<N, V> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        core::mem::discriminant(self).hash(state);
-
-        match self {
-            Translate { delta } => delta.hash(state),
-            Elongate { dir, infinite } => {
-                dir.hash(state);
-                infinite.hash(state);
-            }
-        }
-    }
-}
-
-use PreModifier::*;
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum PostModifier<N, V> {
-    Isosurface { dist: Expr<N, V> },
-    Manifold,
-}
-
-impl<N, V> Hash for PostModifier<N, V> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        core::mem::discriminant(self).hash(state);
-        match self {
-            Isosurface { dist } => dist.hash(state),
-            Manifold => {}
-        }
-    }
-}
-
-use PostModifier::*;
+pub mod post_modifier;
+pub mod pre_modifier;
 
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Elysian<N, V> {
     Field {
-        pre_modifiers: Vec<PreModifier<N, V>>,
-        field: Box<dyn AsField<N, V>>,
-        post_modifiers: Vec<PostModifier<N, V>>,
+        pre_modifiers: Vec<Box<dyn AsIR<N, V>>>,
+        field: Box<dyn AsIR<N, V>>,
+        post_modifiers: Vec<Box<dyn AsIR<N, V>>>,
     },
     Combine {
         combinator: Vec<Combinator<N, V>>,
         shapes: ElysianList<N, V>,
     },
-    Alias(Box<dyn Expand<N, V>>),
 }
-
-/*
-impl<N, V> Clone for Elysian<N, V>
-where
-    N: Clone,
-    V: Clone,
-{
-    fn clone(&self) -> Self {
-        match self {
-            Self::Field {
-                pre_modifiers,
-                field,
-                post_modifiers,
-            } => Self::Field {
-                pre_modifiers: pre_modifiers.clone(),
-                field: field.clone(),
-                post_modifiers: post_modifiers.clone(),
-            },
-            Self::Combine { combinator, shapes } => Self::Combine {
-                combinator: combinator.clone(),
-                shapes: shapes.clone(),
-            },
-            Self::Alias(_) => unimplemented!(),
-        }
-    }
-}
-*/
 
 impl<N, V> Hash for Elysian<N, V> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -114,23 +48,26 @@ impl<N, V> Hash for Elysian<N, V> {
                 field,
                 post_modifiers,
             } => {
-                pre_modifiers.hash(state);
-                state.write_u64(field.field_hash());
-                post_modifiers.hash(state);
+                for pre_modifier in pre_modifiers {
+                    state.write_u64(pre_modifier.hash_ir());
+                }
+                state.write_u64(field.hash_ir());
+                for post_modifier in post_modifiers {
+                    state.write_u64(post_modifier.hash_ir());
+                }
             }
             Elysian::Combine { combinator, shapes } => {
                 combinator.hash(state);
                 shapes.hash(state);
             }
-            Elysian::Alias(_) => {}
         }
     }
 }
 
 impl<N, V> Elysian<N, V>
 where
-    N: Debug,
-    V: Debug,
+    N: 'static + Debug + Clone,
+    V: 'static + Debug + Clone,
 {
     pub fn shape_hash(&self) -> u64 {
         let mut s = DefaultHasher::new();
@@ -143,15 +80,15 @@ where
             Elysian::Field {
                 pre_modifiers,
                 field,
-                post_modifiers,
-            } => Elysian::Field {
-                pre_modifiers,
-                field,
-                post_modifiers: post_modifiers
-                    .into_iter()
-                    .chain(std::iter::once(Isosurface { dist }))
-                    .collect(),
-            },
+                mut post_modifiers,
+            } => {
+                post_modifiers.push(Box::new(Isosurface { dist }));
+                Elysian::Field {
+                    pre_modifiers,
+                    field,
+                    post_modifiers,
+                }
+            }
             t => unimplemented!("{t:#?}"),
         }
     }
@@ -161,15 +98,15 @@ where
             Elysian::Field {
                 pre_modifiers,
                 field,
-                post_modifiers,
-            } => Elysian::Field {
-                pre_modifiers,
-                field,
-                post_modifiers: post_modifiers
-                    .into_iter()
-                    .chain(std::iter::once(Manifold))
-                    .collect(),
-            },
+                mut post_modifiers,
+            } => {
+                post_modifiers.push(Box::new(Manifold));
+                Elysian::Field {
+                    pre_modifiers,
+                    field,
+                    post_modifiers,
+                }
+            }
             t => unimplemented!("{t:#?}"),
         }
     }
@@ -177,17 +114,17 @@ where
     pub fn translate(self, delta: Expr<N, V>) -> Elysian<N, V> {
         match self {
             Elysian::Field {
-                pre_modifiers,
+                mut pre_modifiers,
                 field,
                 post_modifiers,
-            } => Elysian::Field {
-                pre_modifiers: pre_modifiers
-                    .into_iter()
-                    .chain(std::iter::once(Translate { delta }))
-                    .collect(),
-                field,
-                post_modifiers,
-            },
+            } => {
+                pre_modifiers.push(Box::new(Translate { delta }));
+                Elysian::Field {
+                    pre_modifiers,
+                    field,
+                    post_modifiers,
+                }
+            }
             t => unimplemented!("{t:#?}"),
         }
     }
@@ -195,17 +132,17 @@ where
     pub fn elongate(self, dir: Expr<N, V>, infinite: bool) -> Self {
         match self {
             Elysian::Field {
-                pre_modifiers,
+                mut pre_modifiers,
                 field,
                 post_modifiers,
-            } => Elysian::Field {
-                pre_modifiers: pre_modifiers
-                    .into_iter()
-                    .chain(std::iter::once(Elongate { dir, infinite }))
-                    .collect(),
-                field,
-                post_modifiers,
-            },
+            } => {
+                pre_modifiers.push(Box::new(Elongate { dir, infinite }));
+                Elysian::Field {
+                    pre_modifiers,
+                    field,
+                    post_modifiers,
+                }
+            }
             t => unimplemented!("{t:#?}"),
         }
     }
@@ -231,15 +168,3 @@ where
     }
 }
 
-pub trait IntoAlias<N, V> {
-    fn alias(self) -> Elysian<N, V>;
-}
-
-impl<N, V, T> IntoAlias<N, V> for T
-where
-    T: 'static + Expand<N, V>,
-{
-    fn alias(self) -> Elysian<N, V> {
-        Elysian::Alias(Box::new(self))
-    }
-}

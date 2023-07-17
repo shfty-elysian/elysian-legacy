@@ -1,17 +1,15 @@
-use rust_gpu_bridge::glam::Vec2;
-
 use elysian::{
     core::ast::{
-        alias::{Capsule, Circle, Ring},
         attribute::Attribute::{self, *},
         combinator::{Blend, Boolean, Combinator},
-        expand::Expand,
         expr::IntoLiteral,
-        to_glam::ToGlam,
-        IntoAlias, IntoCombine,
+        field::{Capsule, Circle, Ring},
+        IntoCombine,
     },
     syn::{elysian_to_syn, prettyplease},
 };
+use elysian_core::ast::field::IntoField;
+use rust_gpu_bridge::glam::Vec2;
 
 fn main() {
     let smooth_union = [
@@ -43,29 +41,26 @@ fn main() {
             Circle {
                 radius: 1.0.literal(),
             }
-            .alias()
-            .expand()
-            .translate([0.0, 0.5].literal()),
+            .field()
+            .translate(Vec2::new(0.0, 0.5).literal()),
             Ring {
                 radius: 0.9.literal(),
                 width: 0.15.literal(),
             }
-            .alias()
-            .expand()
-            .translate([0.0, -0.25].literal()),
+            .field()
+            .translate(Vec2::new(0.0, -0.25).literal()),
         ]
         .combine(smooth_union),
         Capsule {
-            dir: [1.5, 0.0].literal(),
+            dir: Vec2::new(1.5, 0.0).literal(),
             radius: 0.2.literal(),
         }
-        .alias()
-        .expand()
-        .translate([0.0, 0.5].literal()),
+        .field()
+        .translate(Vec2::new(0.0, 0.5).literal()),
     ]
     .combine(smooth_subtraction);
 
-    let foo = elysian_to_syn::<f32, Vec2>(&shape.expand().to_glam(), "test");
-    let foo = prettyplease::unparse(&foo);
-    println!("{foo:}");
+    let source = elysian_to_syn(&shape, "test");
+    let source = prettyplease::unparse(&source);
+    println!("{source:}");
 }

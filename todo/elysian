@@ -76,8 +76,6 @@
   
   DONE: Zero-trimmed UUIDs are now used as suffixes to differentiate same-named identifiers
 
-=========================================================================================================
-
 * Generalize AST -> IR conversion
   * Elysian variants should ultimately contain Box<dyn Trait>,
     where Trait converts into the relevant IR
@@ -85,6 +83,34 @@
     * Preserves more information that can be represented in output
       * ex. Ring's function composing Circle's function, etc
     * Alias types can defer to their component parts' IR conversion functions
+  
+  DONE: Field, PreModifier and PostModifier have been replace with the AsIR trait
+        and corresponding dyn machinery
+
+=========================================================================================================
+
+* Generalize combinators via AsIR
+
+* Stronger typing for pre / post / field IR conversion
+  * At minimum, create separate traits to identify a given symbol as each
+    * May be better for Modifier to be a single trait with pre / post methods
+      * Makes it more ergonomic to support pre + post ops like scale
+  * Since the base AST has a Value representation,
+    may be able to reinstate something resembling move semantics?
+
+* Replace N, V parameters with a single T describing a type specification
+  * Trait with one associated type per relevant AST type
+  * i.e. Prim32 would specify f32 and [f32; N] types
+         Prim64 would specify f64 and [f64; N] types
+         Glam32 would specify f32 and Vec* types,
+         Glam64 would specify f64 and DVec* types,
+         etc.
+
+* Formalize vector arity
+  * Certain properties (ex. color) need a fixed arity,
+    whereas others vary depending on the vector space
+  * Can probably host a 'vector space' assoc type alongside
+    vector arity types, use for position, gradient, etc.
 
 * 3D support
 
@@ -93,7 +119,7 @@
        * ex. Just distance, just gradient, distance + uv, etc.
        * Useful for blending optimizations:
          * Evaluate distance
-         * Pick nearer context
+         * Pick a context
          * Evaluate rest of domains
 
 * Error handling pass

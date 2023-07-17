@@ -1,6 +1,6 @@
 pub use prettyplease;
 
-use std::{collections::BTreeMap, fmt::Debug, sync::OnceLock};
+use std::{collections::BTreeMap, sync::OnceLock};
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
@@ -15,7 +15,7 @@ use syn::{
 
 use elysian_interpreter::{evaluate_module, Interpreter};
 
-use elysian_core::ast::{expand::Expand, to_glam::ToGlam, Elysian};
+use elysian_core::ast::Elysian;
 use elysian_core::ir::{
     ast::{Block as IrBlock, Expr as IrExpr, Property, Stmt as IrStmt, Struct, CONTEXT},
     from_elysian::{elysian_module, CONTEXT_STRUCT},
@@ -37,12 +37,11 @@ pub fn static_shapes_map() -> &'static BTreeMap<u64, fn(Struct<f32, Vec2>) -> St
 }
 
 /// Build.rs static shape registrar
-pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, Elysian<f32, [f32; 2]>)>>(t: T) {
+pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, Elysian<f32, Vec2>)>>(t: T) {
     let source: String = t
         .into_iter()
         .map(|(name, shape)| {
-            let shape = shape.expand().to_glam();
-            let syn = elysian_to_syn::<f32, Vec2>(&shape, name);
+            let syn = elysian_to_syn(&shape, name);
             prettyplease::unparse(&syn)
         })
         .collect();
@@ -112,10 +111,7 @@ pub fn property_to_syn(prop: &Property) -> TokenStream {
     }
 }
 
-pub fn elysian_to_syn(elysian: &Elysian<f32, Vec2>, name: &str) -> File
-{
-    let elysian = elysian.expand();
-
+pub fn elysian_to_syn(elysian: &Elysian<f32, Vec2>, name: &str) -> File {
     let mut attrs = vec![];
 
     attrs.push(parse_quote! {

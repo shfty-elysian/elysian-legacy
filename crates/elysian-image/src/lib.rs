@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use image::RgbImage;
 use rust_gpu_bridge::glam::Vec2;
 use tracing::instrument;
@@ -7,19 +5,14 @@ use tracing::instrument;
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use elysian_core::{
-    ast::{expand::Expand, to_glam::ToGlam, Elysian},
+    ast::Elysian,
     ir::ast::{Struct, DISTANCE, GRADIENT, POSITION},
 };
 use elysian_syn::dispatch_shape;
 
 #[instrument]
-pub fn rasterize<N, V>(shape: &Elysian<N, V>, width: u32, height: u32, scale: f32) -> RgbImage
-where
-    N: Debug + Copy,
-    V: Debug + Copy,
-    Elysian<N, V>: ToGlam<2, Output = Elysian<f32, Vec2>>,
-{
-    let shape = dispatch_shape(&shape.expand().to_glam());
+pub fn rasterize(shape: &Elysian<f32, Vec2>, width: u32, height: u32, scale: f32) -> RgbImage {
+    let shape = dispatch_shape(shape);
 
     let indices: Vec<_> = (0..height)
         .into_iter()
