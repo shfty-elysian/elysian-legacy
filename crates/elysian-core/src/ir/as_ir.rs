@@ -16,6 +16,8 @@ where
     fn expression(&self, input: Expr<T, N>) -> Expr<T, N>;
 }
 
+pub type DynAsIR<T, const N: usize> = Box<dyn AsIR<T, N>>;
+
 impl<T, const N: usize> AsIR<T, N> for Box<dyn AsIR<T, N>>
 where
     T: TypeSpec + VectorSpace<N>,

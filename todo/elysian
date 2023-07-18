@@ -108,13 +108,20 @@
 
   DONE: Implemented via TypeSpec trait, extended rust-gpu-bridge with f64 support
 
-=========================================================================================================
-
 * Formalize vector arity
   * Certain properties (ex. color) need a fixed arity,
     whereas others vary depending on the vector space
   * Can probably host a 'vector space' assoc type alongside
     vector arity types, use for position, gradient, etc.
+
+  DONE: Implemented as VectorSpace trait and variant type,
+        added const params to drive it
+
+=========================================================================================================
+
+* Avoid specifying dimensionality before IR
+  * Should be able to remove it from Elysian,
+    supply constant at evaluation time
 
 * Stronger typing for pre / post / field IR conversion
   * At minimum, create separate traits to identify a given symbol as each
@@ -124,6 +131,9 @@
     may be able to reinstate something resembling move semantics?
 
 * 3D support
+  * How to represent morphisms between vector spaces?
+    * Doesn't fit comfortably into the existing pre / post modifier idiom
+    * Seems like a more general wrapper
 
 * Domain evaluation
   i.e. Being able to evaluate a subset of a given field's computations

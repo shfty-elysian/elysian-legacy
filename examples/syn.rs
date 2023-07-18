@@ -10,12 +10,12 @@ use elysian::{
 };
 use elysian_core::{
     ast::field::IntoField,
-    ir::{as_ir::AsIR, ast::GlamF32},
+    ir::{as_ir::DynAsIR, ast::GlamF32},
 };
 use rust_gpu_bridge::glam::Vec2;
 
 fn main() {
-    let smooth_union: [Box<dyn AsIR<GlamF32, 2>>; 3] = [
+    let smooth_union: [DynAsIR<GlamF32, 2>; 3] = [
         Box::new(Boolean::Union),
         Box::new(Blend::SmoothUnion {
             attr: Distance,
@@ -27,7 +27,7 @@ fn main() {
         }),
     ];
 
-    let smooth_subtraction: [Box<dyn AsIR<GlamF32, 2>>; 3] = [
+    let smooth_subtraction: [DynAsIR<GlamF32, 2>; 3] = [
         Box::new(Boolean::Subtraction),
         Box::new(Blend::SmoothSubtraction {
             attr: Attribute::Distance,
