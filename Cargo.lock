@@ -215,6 +215,7 @@ name = "elysian-interpreter"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "rust-gpu-bridge",
  "tracing",
 ]
 

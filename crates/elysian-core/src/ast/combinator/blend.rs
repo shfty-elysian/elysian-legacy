@@ -7,11 +7,11 @@ use crate::{
     ir::{
         as_ir::AsIR,
         ast::{
-            Identifier, IntoLiteral, IntoRead, IntoValue, IntoWrite, Property, COMBINE_CONTEXT,
-            DISTANCE, K, LEFT, NUM, OUT, RIGHT,
+            Identifier, IntoLiteral, IntoRead, IntoValue, IntoWrite, Property, TypeSpec,
+            COMBINE_CONTEXT, DISTANCE, LEFT, NUM, OUT, RIGHT, VectorSpace,
         },
         from_elysian::COMBINE_CONTEXT_STRUCT,
-        module::{FunctionDefinition, InputDefinition},
+        module::{FunctionDefinition, InputDefinition, Type},
     },
 };
 
@@ -21,14 +21,68 @@ pub const SMOOTH_INTERSECTION: Identifier =
 pub const SMOOTH_SUBTRACTION: Identifier =
     Identifier::new("smooth_subtraction", 1414822549598552032);
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Blend<N, V> {
-    SmoothUnion { attr: Attribute, k: Expr<N, V> },
-    SmoothIntersection { attr: Attribute, k: Expr<N, V> },
-    SmoothSubtraction { attr: Attribute, k: Expr<N, V> },
+pub const K: Property = Property::new("k", Type::Number, 12632115441234896764);
+
+pub enum Blend<T>
+where
+    T: TypeSpec,
+{
+    SmoothUnion { attr: Attribute, k: Expr<T> },
+    SmoothIntersection { attr: Attribute, k: Expr<T> },
+    SmoothSubtraction { attr: Attribute, k: Expr<T> },
 }
 
-impl<N, V> std::hash::Hash for Blend<N, V> {
+impl<T> Debug for Blend<T>
+where
+    T: TypeSpec,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SmoothUnion { attr, k } => f
+                .debug_struct("SmoothUnion")
+                .field("attr", attr)
+                .field("k", k)
+                .finish(),
+            Self::SmoothIntersection { attr, k } => f
+                .debug_struct("SmoothIntersection")
+                .field("attr", attr)
+                .field("k", k)
+                .finish(),
+            Self::SmoothSubtraction { attr, k } => f
+                .debug_struct("SmoothSubtraction")
+                .field("attr", attr)
+                .field("k", k)
+                .finish(),
+        }
+    }
+}
+
+impl<T> Clone for Blend<T>
+where
+    T: TypeSpec,
+{
+    fn clone(&self) -> Self {
+        match self {
+            Self::SmoothUnion { attr, k } => Self::SmoothUnion {
+                attr: attr.clone(),
+                k: k.clone(),
+            },
+            Self::SmoothIntersection { attr, k } => Self::SmoothIntersection {
+                attr: attr.clone(),
+                k: k.clone(),
+            },
+            Self::SmoothSubtraction { attr, k } => Self::SmoothSubtraction {
+                attr: attr.clone(),
+                k: k.clone(),
+            },
+        }
+    }
+}
+
+impl<T> std::hash::Hash for Blend<T>
+where
+    T: TypeSpec,
+{
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         core::mem::discriminant(self).hash(state);
         match self {
@@ -48,12 +102,13 @@ impl<N, V> std::hash::Hash for Blend<N, V> {
     }
 }
 
-impl<N, V> AsIR<N, V> for Blend<N, V>
+impl<T, const N: usize> AsIR<T, N> for Blend<T>
 where
-    N: 'static + Debug + Clone + One + Two + Zero + IntoValue<N, V>,
-    V: 'static + Debug + Clone + IntoValue<N, V>,
+    T: TypeSpec + VectorSpace<N>,
+    T::NUMBER: IntoValue<T, N>,
+    T::VECTOR2: IntoValue<T, N>,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<N, V>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
         vec![FunctionDefinition {
             id: match self {
                 Blend::SmoothUnion { attr, .. } => SMOOTH_UNION.concat(Property::from(*attr).id()),
@@ -82,13 +137,13 @@ where
 
                     let mut block = vec![
                         NUM.write(
-                            ((N::ONE.literal() / N::TWO.literal())
-                                + (N::ONE.literal() / N::TWO.literal())
+                            ((T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
+                                + (T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
                                     * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
                                         - [COMBINE_CONTEXT, LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(N::ZERO.literal())
-                            .min(N::ONE.literal()),
+                            .max(T::NUMBER::ZERO.literal())
+                            .min(T::NUMBER::ONE.literal()),
                         ),
                         [COMBINE_CONTEXT, OUT, property.clone()].write(
                             [COMBINE_CONTEXT, RIGHT, property.clone()]
@@ -100,7 +155,7 @@ where
                     if property == DISTANCE {
                         block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
                             [COMBINE_CONTEXT, OUT, DISTANCE].read()
-                                - K.read() * NUM.read() * (N::ONE.literal() - NUM.read()),
+                                - K.read() * NUM.read() * (T::NUMBER::ONE.literal() - NUM.read()),
                         ))
                     }
 
@@ -113,12 +168,12 @@ where
 
                     let mut block = vec![
                         NUM.write(
-                            ((N::ONE.literal() / N::TWO.literal())
-                                - (N::ONE.literal() / N::TWO.literal())
+                            ((T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
+                                - (T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
                                     * ([RIGHT, DISTANCE].read() - [LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(N::ZERO.literal())
-                            .min(N::ONE.literal()),
+                            .max(T::NUMBER::ZERO.literal())
+                            .min(T::NUMBER::ONE.literal()),
                         ),
                         property.clone().write(
                             [RIGHT, property.clone()]
@@ -130,7 +185,7 @@ where
                     if property == DISTANCE {
                         block.push(DISTANCE.write(
                             DISTANCE.read()
-                                + K.read() * NUM.read() * (N::ONE.literal() - NUM.read()),
+                                + K.read() * NUM.read() * (T::NUMBER::ONE.literal() - NUM.read()),
                         ))
                     }
 
@@ -143,13 +198,13 @@ where
 
                     let mut block = vec![
                         NUM.write(
-                            ((N::ONE.literal() / N::TWO.literal())
-                                - (N::ONE.literal() / N::TWO.literal())
+                            ((T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
+                                - (T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
                                     * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
                                         + [COMBINE_CONTEXT, LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(N::ZERO.literal())
-                            .min(N::ONE.literal()),
+                            .max(T::NUMBER::ZERO.literal())
+                            .min(T::NUMBER::ONE.literal()),
                         ),
                         [COMBINE_CONTEXT, OUT, property.clone()].write(
                             [COMBINE_CONTEXT, LEFT, property.clone()].read().mix(
@@ -162,7 +217,7 @@ where
                     if property == DISTANCE {
                         block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
                             [COMBINE_CONTEXT, OUT, DISTANCE].read()
-                                + K.read() * NUM.read() * (N::ONE.literal() - NUM.read()),
+                                + K.read() * NUM.read() * (T::NUMBER::ONE.literal() - NUM.read()),
                         ))
                     }
 
@@ -174,7 +229,7 @@ where
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
         match self {
             Blend::SmoothUnion { attr, k } => crate::ir::ast::Expr::Call {
                 function: SMOOTH_UNION.concat(Property::from(*attr).id()),

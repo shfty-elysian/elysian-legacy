@@ -1,10 +1,8 @@
+use elysian_core::ir::ast::VectorSpace;
 pub use prettyplease;
-
-use std::{collections::BTreeMap, sync::OnceLock};
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
-use rust_gpu_bridge::glam::Vec2;
 use syn::{
     parse_quote, token::Mut, BinOp, Block, Expr, ExprAssign, ExprBinary, ExprBlock, ExprCall,
     ExprField, ExprIf, ExprLet, ExprLit, ExprMethodCall, ExprPath, ExprReturn, ExprStruct,
@@ -13,74 +11,117 @@ use syn::{
     PathSegment, ReturnType, Signature, Stmt, Type, TypePath, Visibility,
 };
 
-use elysian_interpreter::{evaluate_module, Interpreter};
-
 use elysian_core::ast::Elysian;
 use elysian_core::ir::{
-    ast::{Block as IrBlock, Expr as IrExpr, Property, Stmt as IrStmt, Struct, CONTEXT},
+    ast::{Block as IrBlock, Expr as IrExpr, GlamF32, Property, Stmt as IrStmt, CONTEXT},
     from_elysian::{elysian_module, CONTEXT_STRUCT},
 };
 
-/// Distributed slice of shape hash -> shape function pairs
-/// Populated at link-time by auto-generated shape modules
-#[linkme::distributed_slice]
-pub static STATIC_SHAPES: [(u64, fn(Struct<f32, Vec2>) -> Struct<f32, Vec2>)] = [..];
+pub mod static_shapes {
+    use elysian_core::ir::ast::{TypeSpec, VectorSpace};
+    use elysian_core::ir::from_elysian::elysian_module;
+    use elysian_interpreter::{evaluate_module, Interpreter};
+    pub use prettyplease;
 
-/// Runtime storage for static shape data
-static STATIC_SHAPES_MAP: OnceLock<BTreeMap<u64, fn(Struct<f32, Vec2>) -> Struct<f32, Vec2>>> =
-    OnceLock::new();
+    use std::{collections::BTreeMap, sync::OnceLock};
 
-/// Accessor for STATIC_SHAPES_MAP
-pub fn static_shapes_map() -> &'static BTreeMap<u64, fn(Struct<f32, Vec2>) -> Struct<f32, Vec2>> {
-    STATIC_SHAPES_MAP.get_or_init(|| STATIC_SHAPES.into_iter().copied().collect())
-    //STATIC_SHAPES_MAP.get_or_init(Default::default)
-}
+    use elysian_core::ast::Elysian;
+    use elysian_core::ir::ast::{GlamF32, Struct};
 
-/// Build.rs static shape registrar
-pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, Elysian<f32, Vec2>)>>(t: T) {
-    let source: String = t
-        .into_iter()
-        .map(|(name, shape)| {
-            let syn = elysian_to_syn(&shape, name);
-            prettyplease::unparse(&syn)
+    use crate::elysian_to_syn;
+
+    pub type ShapeHash = u64;
+    pub type ShapeFn<T, const N: usize> = fn(Struct<T, N>) -> Struct<T, N>;
+
+    pub struct StaticShape<T, const N: usize>
+    where
+        T: TypeSpec + VectorSpace<N>,
+    {
+        pub hash: ShapeHash,
+        pub function: ShapeFn<T, N>,
+    }
+
+    impl<T, const N: usize> Clone for StaticShape<T, N>
+    where
+        T: TypeSpec + VectorSpace<N>,
+    {
+        fn clone(&self) -> Self {
+            Self {
+                hash: self.hash.clone(),
+                function: self.function.clone(),
+            }
+        }
+    }
+
+    impl<T, const N: usize> Copy for StaticShape<T, N> where T: TypeSpec + VectorSpace<N> {}
+
+    /// Distributed slice of shape hash -> shape function pairs
+    /// Populated at link-time by auto-generated shape modules
+    #[linkme::distributed_slice]
+    pub static STATIC_SHAPES_F32: [StaticShape<GlamF32, 2>] = [..];
+
+    /// Runtime storage for static shape data
+    static STATIC_SHAPES_MAP_F32: OnceLock<BTreeMap<ShapeHash, ShapeFn<GlamF32, 2>>> =
+        OnceLock::new();
+
+    /// Accessor for STATIC_SHAPES_MAP_F32
+    pub fn static_shapes_map_f32() -> &'static BTreeMap<ShapeHash, ShapeFn<GlamF32, 2>> {
+        STATIC_SHAPES_MAP_F32.get_or_init(|| {
+            STATIC_SHAPES_F32
+                .into_iter()
+                .copied()
+                .map(|t| (t.hash, t.function))
+                .collect()
         })
-        .collect();
+        //STATIC_SHAPES_MAP.get_or_init(Default::default)
+    }
 
-    let out_dir = std::env::var_os("OUT_DIR").expect("No OUT_DIR environment variable");
-    let dest_path = std::path::Path::new(&out_dir).join("static_shapes.rs");
-    std::fs::write(&dest_path, source).unwrap();
-}
+    /// Build.rs static shape registrar
+    pub fn static_shapes_f32<'a, T: IntoIterator<Item = (&'a str, Elysian<GlamF32, 2>)>>(t: T) {
+        let source: String = t
+            .into_iter()
+            .map(|(name, shape)| {
+                let syn = elysian_to_syn(&shape, name);
+                prettyplease::unparse(&syn)
+            })
+            .collect();
 
-/// Convenience macro for including generated static shape code
-#[macro_export]
-macro_rules! include_static_shapes {
-    () => {
-        include!(concat!(env!("OUT_DIR"), "/static_shapes.rs"));
-    };
-}
+        let out_dir = std::env::var_os("OUT_DIR").expect("No OUT_DIR environment variable");
+        let dest_path = std::path::Path::new(&out_dir).join("static_shapes.rs");
+        std::fs::write(&dest_path, source).unwrap();
+    }
 
-/// Return a function that calls the static implementation of a given shape if it exists,
-/// falling back to the interpreter otherwise.
-pub fn dispatch_shape(
-    shape: &Elysian<f32, Vec2>,
-) -> Box<dyn Fn(Struct<f32, Vec2>) -> Struct<f32, Vec2> + Send + Sync> {
-    let hash = shape.shape_hash();
+    /// Convenience macro for including generated static shape code
+    #[macro_export]
+    macro_rules! include_static_shapes {
+        () => {
+            include!(concat!(env!("OUT_DIR"), "/static_shapes.rs"));
+        };
+    }
 
-    if let Some(f) = static_shapes_map().get(&hash) {
-        println!("Dispatching to static function");
-        Box::new(|context| f(context))
-    } else {
-        println!("Dispatching to dynamic interpreter");
-        let module = elysian_module(shape);
-        Box::new(move |context| {
-            evaluate_module(
-                Interpreter {
-                    context,
-                    ..Default::default()
-                },
-                &module,
-            )
-        })
+    /// Return a function that calls the static implementation of a given shape if it exists,
+    /// falling back to the interpreter otherwise.
+    pub fn dispatch_shape_f32(
+        shape: &Elysian<GlamF32, 2>,
+    ) -> Box<dyn Fn(Struct<GlamF32, 2>) -> Struct<GlamF32, 2> + Send + Sync> {
+        let hash = shape.shape_hash();
+
+        if let Some(f) = static_shapes_map_f32().get(&hash) {
+            println!("Dispatching to static function");
+            Box::new(|context| f(context))
+        } else {
+            println!("Dispatching to dynamic interpreter");
+            let module = elysian_module(shape);
+            Box::new(move |context| {
+                evaluate_module(
+                    Interpreter {
+                        context,
+                        ..Default::default()
+                    },
+                    &module,
+                )
+            })
+        }
     }
 }
 
@@ -88,7 +129,10 @@ pub fn type_to_syn(ty: &elysian_core::ir::module::Type) -> TokenStream {
     match ty {
         elysian_core::ir::module::Type::Boolean => quote!(Type::Boolean),
         elysian_core::ir::module::Type::Number => quote!(Type::Number),
-        elysian_core::ir::module::Type::Vector => quote!(Type::Vector),
+        elysian_core::ir::module::Type::VectorSpace => quote!(Type::VectorSpace),
+        elysian_core::ir::module::Type::Vector2 => quote!(Type::Vector2),
+        elysian_core::ir::module::Type::Vector3 => quote!(Type::Vector3),
+        elysian_core::ir::module::Type::Vector4 => quote!(Type::Vector4),
         elysian_core::ir::module::Type::Struct(_) => unimplemented!(),
     }
 }
@@ -97,7 +141,10 @@ pub fn type_to_value(ty: &elysian_core::ir::module::Type) -> TokenStream {
     match ty {
         elysian_core::ir::module::Type::Boolean => quote!(Value::Boolean),
         elysian_core::ir::module::Type::Number => quote!(Value::Number),
-        elysian_core::ir::module::Type::Vector => quote!(Value::Vector),
+        elysian_core::ir::module::Type::VectorSpace => quote!(Value::VectorSpace),
+        elysian_core::ir::module::Type::Vector2 => quote!(Value::Vector2),
+        elysian_core::ir::module::Type::Vector3 => quote!(Value::Vector3),
+        elysian_core::ir::module::Type::Vector4 => quote!(Value::Vector4),
         elysian_core::ir::module::Type::Struct(_) => unimplemented!(),
     }
 }
@@ -111,7 +158,10 @@ pub fn property_to_syn(prop: &Property) -> TokenStream {
     }
 }
 
-pub fn elysian_to_syn(elysian: &Elysian<f32, Vec2>, name: &str) -> File {
+pub fn elysian_to_syn<const N: usize>(elysian: &Elysian<GlamF32, N>, name: &str) -> File
+where
+    GlamF32: VectorSpace<N>,
+{
     let mut attrs = vec![];
 
     attrs.push(parse_quote! {
@@ -125,7 +175,19 @@ pub fn elysian_to_syn(elysian: &Elysian<f32, Vec2>, name: &str) -> File {
     });
 
     items.push(parse_quote! {
-        use elysian::core::ir::{ast::{Struct, StructIO, Property, Value}, module::Type};
+        use elysian::{
+            core::ir::{
+                ast::{
+                    Struct,
+                    StructIO,
+                    Property,
+                    Value,
+                    GlamF32
+                },
+                module::Type,
+            },
+            syn::static_shapes::StaticShape,
+        };
     });
 
     let module = elysian_module(&elysian);
@@ -194,14 +256,14 @@ pub fn elysian_to_syn(elysian: &Elysian<f32, Vec2>, name: &str) -> File {
         .collect();
 
     items.push(syn::parse_quote! {
-        impl From<Struct<f32, Vec2>> for #struct_name {
-            fn from(s: Struct<f32, Vec2>) -> Self {
+        impl From<Struct<GlamF32, 2>> for #struct_name {
+            fn from(s: Struct<GlamF32, 2>) -> Self {
                 let mut out = Self::default();
 
                 #(
                     if let Some(v) = s.try_get(&#members) {
                         let #values(v) = v else {
-                            panic!("Unexpected type");
+                            panic!("Unexpected type {v:#?}");
                         };
 
                         out.#names = v;
@@ -214,7 +276,7 @@ pub fn elysian_to_syn(elysian: &Elysian<f32, Vec2>, name: &str) -> File {
     });
 
     items.push(syn::parse_quote! {
-        impl From<#struct_name> for Struct<f32, Vec2> {
+        impl From<#struct_name> for Struct<GlamF32, 2> {
             fn from(s: #struct_name) -> Self {
                 let mut out = Self::default();
 
@@ -370,15 +432,18 @@ pub fn elysian_to_syn(elysian: &Elysian<f32, Vec2>, name: &str) -> File {
     }));
 
     items.push(parse_quote! {
-        pub fn shape(context: Struct<f32, Vec2>) -> Struct<f32, Vec2> {
+        pub fn shape(context: Struct<GlamF32, 2>) -> Struct<GlamF32, 2> {
             entry_point(context.into()).into()
         }
     });
 
     let hash = elysian.shape_hash();
     items.push(parse_quote! {
-        #[linkme::distributed_slice(elysian::syn::STATIC_SHAPES)]
-        static STATIC_SHAPE: (u64, fn(Struct<f32, Vec2>) -> Struct<f32, Vec2>) = (#hash, shape);
+        #[linkme::distributed_slice(elysian::syn::static_shapes::STATIC_SHAPES_F32)]
+        static STATIC_SHAPE: StaticShape<GlamF32, 2> = StaticShape {
+            hash: #hash,
+            function: shape
+        };
     });
 
     let items = vec![Item::Mod(ItemMod {
@@ -398,14 +463,20 @@ pub fn elysian_to_syn(elysian: &Elysian<f32, Vec2>, name: &str) -> File {
     }
 }
 
-fn block_to_syn(block: &IrBlock<f32, Vec2>) -> Block {
+fn block_to_syn<const N: usize>(block: &IrBlock<GlamF32, N>) -> Block
+where
+    GlamF32: VectorSpace<N>,
+{
     Block {
         brace_token: Default::default(),
         stmts: block.0.iter().map(stmt_to_syn).collect(),
     }
 }
 
-fn stmt_to_syn(stmt: &IrStmt<f32, Vec2>) -> Stmt {
+fn stmt_to_syn<const N: usize>(stmt: &IrStmt<GlamF32, N>) -> Stmt
+where
+    GlamF32: VectorSpace<N>,
+{
     match stmt {
         IrStmt::Block(block) => Stmt::Expr(
             Expr::Block(ExprBlock {
@@ -486,7 +557,10 @@ fn stmt_to_syn(stmt: &IrStmt<f32, Vec2>) -> Stmt {
     }
 }
 
-fn expr_to_syn(expr: &IrExpr<f32, Vec2>) -> Expr {
+fn expr_to_syn<const N: usize>(expr: &IrExpr<GlamF32, N>) -> Expr
+where
+    GlamF32: VectorSpace<N>,
+{
     match expr {
         elysian_core::ir::ast::Expr::Literal(v) => match v {
             elysian_core::ir::ast::Value::Boolean(b) => Expr::Lit(ExprLit {
@@ -500,7 +574,7 @@ fn expr_to_syn(expr: &IrExpr<f32, Vec2>) -> Expr {
                 attrs: vec![],
                 lit: Lit::Float(LitFloat::new(&(n.to_string() + &"f32"), Span::call_site())),
             }),
-            elysian_core::ir::ast::Value::Vector(v) => Expr::Call(ExprCall {
+            elysian_core::ir::ast::Value::Vector2(v) => Expr::Call(ExprCall {
                 attrs: vec![],
                 func: Box::new(Expr::Path(ExprPath {
                     attrs: vec![],

@@ -1,33 +1,82 @@
-use std::{collections::BTreeMap, fmt::Debug};
+use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 
 use elysian_core::ir::{
     ast::Expr::*,
     ast::Stmt::{self, *},
     ast::{
-        Identifier, Number, Struct, StructIO,
+        Identifier, Struct, StructIO, TypeSpec,
         Value::{self, *},
-        Vector, CONTEXT,
+        CONTEXT, VectorSpace,
     },
     module::{FunctionDefinition, Module},
 };
+use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
 
-use tracing::instrument;
-
-#[derive(Debug, Default, Clone)]
-pub struct Interpreter<N, V> {
-    pub context: Struct<N, V>,
-    pub functions: BTreeMap<Identifier, FunctionDefinition<N, V>>,
-    pub output: Option<Value<N, V>>,
+pub struct Interpreter<T, const N: usize>
+where
+    T: TypeSpec + VectorSpace<N>,
+{
+    pub context: Struct<T, N>,
+    pub functions: BTreeMap<Identifier, FunctionDefinition<T, N>>,
+    pub output: Option<Value<T, N>>,
 }
 
-#[instrument]
-pub fn evaluate_module<N, V>(
-    mut interpreter: Interpreter<N, V>,
-    module: &Module<N, V>,
-) -> Struct<N, V>
+impl<T, const N: usize> Debug for Interpreter<T, N>
 where
-    N: Debug + Number<N, V>,
-    V: Debug + Vector<N, V>,
+    T: TypeSpec + VectorSpace<N>,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Interpreter")
+            .field("context", &self.context)
+            .field("functions", &self.functions)
+            .field("output", &self.output)
+            .finish()
+    }
+}
+
+impl<T, const N: usize> Default for Interpreter<T, N>
+where
+    T: TypeSpec + VectorSpace<N>,
+{
+    fn default() -> Self {
+        Self {
+            context: Default::default(),
+            functions: Default::default(),
+            output: Default::default(),
+        }
+    }
+}
+
+impl<T, const N: usize> Clone for Interpreter<T, N>
+where
+    T: TypeSpec + VectorSpace<N>,
+{
+    fn clone(&self) -> Self {
+        Self {
+            context: self.context.clone(),
+            functions: self.functions.clone(),
+            output: self.output.clone(),
+        }
+    }
+}
+
+impl<T, const N: usize> std::hash::Hash for Interpreter<T, N>
+where
+    T: TypeSpec + VectorSpace<N>,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.context.hash(state);
+        self.functions.hash(state);
+        self.output.hash(state);
+    }
+}
+
+pub fn evaluate_module<T, const N: usize>(
+    mut interpreter: Interpreter<T, N>,
+    module: &Module<T, N>,
+) -> Struct<T, N>
+where
+    T: TypeSpec + VectorSpace<N>,
 {
     interpreter.context = Struct::default().set(CONTEXT, Value::Struct(interpreter.context));
     interpreter.functions = module
@@ -49,14 +98,12 @@ where
     context
 }
 
-#[instrument]
-pub fn evaluate_stmt<N, V>(
-    mut interpreter: Interpreter<N, V>,
-    stmt: &Stmt<N, V>,
-) -> Interpreter<N, V>
+pub fn evaluate_stmt<T, const N: usize>(
+    mut interpreter: Interpreter<T, N>,
+    stmt: &Stmt<T, N>,
+) -> Interpreter<T, N>
 where
-    N: Debug + Number<N, V>,
-    V: Debug + Vector<N, V>,
+    T: TypeSpec + VectorSpace<N>,
 {
     match stmt {
         Block(block) => evaluate_block(interpreter, block),
@@ -108,26 +155,22 @@ where
     }
 }
 
-#[instrument]
-pub fn evaluate_block<N, V>(
-    interpreter: Interpreter<N, V>,
-    elysian_core::ir::ast::Block(list): &elysian_core::ir::ast::Block<N, V>,
-) -> Interpreter<N, V>
+pub fn evaluate_block<T, const N: usize>(
+    interpreter: Interpreter<T, N>,
+    elysian_core::ir::ast::Block(list): &elysian_core::ir::ast::Block<T, N>,
+) -> Interpreter<T, N>
 where
-    N: Debug + Number<N, V>,
-    V: Debug + Vector<N, V>,
+    T: TypeSpec + VectorSpace<N>,
 {
     list.iter().fold(interpreter, evaluate_stmt)
 }
 
-#[instrument]
-pub fn evaluate_expr<N, V>(
-    interpreter: &Interpreter<N, V>,
-    expr: &elysian_core::ir::ast::Expr<N, V>,
-) -> Value<N, V>
+pub fn evaluate_expr<T, const N: usize>(
+    interpreter: &Interpreter<T, N>,
+    expr: &elysian_core::ir::ast::Expr<T, N>,
+) -> Value<T, N>
 where
-    N: Debug + Number<N, V>,
-    V: Debug + Vector<N, V>,
+    T: TypeSpec + VectorSpace<N>,
 {
     match expr {
         Literal(l) => l.clone(),
@@ -176,9 +219,9 @@ where
             evaluate_expr(interpreter, rhs),
         ) {
             (Number(lhs), Number(rhs)) => Number(lhs + rhs),
-            (Vector(lhs), Vector(rhs)) => Vector(lhs + rhs),
-            (Number(lhs), Vector(rhs)) => Vector(lhs + rhs),
-            (Vector(lhs), Number(rhs)) => Vector(lhs + rhs),
+            (Vector2(lhs), Vector2(rhs)) => Vector2(lhs + rhs),
+            (Number(lhs), Vector2(rhs)) => Vector2(lhs + rhs),
+            (Vector2(lhs), Number(rhs)) => Vector2(lhs + rhs),
             _ => panic!("Invalid Add"),
         },
         Sub(lhs, rhs) => match (
@@ -186,9 +229,9 @@ where
             evaluate_expr(interpreter, rhs),
         ) {
             (Number(lhs), Number(rhs)) => Number(lhs - rhs),
-            (Vector(lhs), Vector(rhs)) => Vector(lhs - rhs),
-            (Number(lhs), Vector(rhs)) => Vector(lhs - rhs),
-            (Vector(lhs), Number(rhs)) => Vector(lhs - rhs),
+            (Vector2(lhs), Vector2(rhs)) => Vector2(lhs - rhs),
+            (Number(lhs), Vector2(rhs)) => Vector2(lhs - rhs),
+            (Vector2(lhs), Number(rhs)) => Vector2(lhs - rhs),
             _ => panic!("Invalid Sub"),
         },
         Mul(lhs, rhs) => match (
@@ -196,9 +239,9 @@ where
             evaluate_expr(interpreter, rhs),
         ) {
             (Number(lhs), Number(rhs)) => Number(lhs * rhs),
-            (Vector(lhs), Vector(rhs)) => Vector(lhs * rhs),
-            (Number(lhs), Vector(rhs)) => Vector(lhs * rhs),
-            (Vector(lhs), Number(rhs)) => Vector(lhs * rhs),
+            (Vector2(lhs), Vector2(rhs)) => Vector2(lhs * rhs),
+            (Number(lhs), Vector2(rhs)) => Vector2(lhs * rhs),
+            (Vector2(lhs), Number(rhs)) => Vector2(lhs * rhs),
             _ => panic!("Invalid Mul"),
         },
         Div(lhs, rhs) => match (
@@ -206,9 +249,9 @@ where
             evaluate_expr(interpreter, rhs),
         ) {
             (Number(lhs), Number(rhs)) => Number(lhs / rhs),
-            (Vector(lhs), Vector(rhs)) => Vector(lhs / rhs),
-            (Number(lhs), Vector(rhs)) => Vector(lhs / rhs),
-            (Vector(lhs), Number(rhs)) => Vector(lhs / rhs),
+            (Vector2(lhs), Vector2(rhs)) => Vector2(lhs / rhs),
+            (Number(lhs), Vector2(rhs)) => Vector2(lhs / rhs),
+            (Vector2(lhs), Number(rhs)) => Vector2(lhs / rhs),
             _ => panic!("Invalid Div"),
         },
         Lt(lhs, rhs) => match (
@@ -245,17 +288,17 @@ where
             evaluate_expr(interpreter, t),
         ) {
             (Number(lhs), Number(rhs), Number(t)) => Number(lhs.mix(rhs, t)),
-            (Vector(lhs), Vector(rhs), Number(t)) => Vector(lhs.mix(rhs, t)),
+            (Vector2(lhs), Vector2(rhs), Number(t)) => Vector2(lhs.mix(rhs, t)),
             _ => panic!("Invalid Mix"),
         },
         Neg(op) => match evaluate_expr(interpreter, op) {
             Number(n) => Number(-n),
-            Vector(v) => Vector(-v),
+            Vector2(v) => Vector2(-v),
             _ => panic!("Invalid Neg"),
         },
         Abs(op) => match evaluate_expr(interpreter, op) {
             Number(n) => Number(n.abs()),
-            Vector(v) => Vector(v.abs()),
+            Vector2(v) => Vector2(v.abs()),
             _ => panic!("Invalid Abs"),
         },
         Sign(op) => match evaluate_expr(interpreter, op) {
@@ -264,12 +307,12 @@ where
         },
         Length(op) => match evaluate_expr(interpreter, op) {
             Number(n) => Number(n),
-            Vector(v) => Number(v.length()),
+            Vector2(v) => Number(v.length()),
             _ => panic!("Invalid Length"),
         },
         Normalize(op) => match evaluate_expr(interpreter, op) {
             Number(n) => Number(n.sign()),
-            Vector(v) => Vector(v.normalize()),
+            Vector2(v) => Vector2(v.normalize()),
             _ => panic!("Invalid Normalize"),
         },
         Dot(lhs, rhs) => match (
@@ -277,7 +320,7 @@ where
             evaluate_expr(interpreter, rhs),
         ) {
             (Number(lhs), Number(rhs)) => Number(lhs * rhs),
-            (Vector(lhs), Vector(rhs)) => Number(lhs.dot(rhs)),
+            (Vector2(lhs), Vector2(rhs)) => Number(lhs.dot(rhs)),
             _ => panic!("Invalid Div"),
         },
         _ => unimplemented!(),

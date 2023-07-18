@@ -1,7 +1,8 @@
 use crate::ir::{
     as_ir::AsIR,
     ast::{
-        Identifier, IntoBlock, IntoRead, IntoWrite, COMBINE_CONTEXT, DISTANCE, LEFT, OUT, RIGHT,
+        Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, COMBINE_CONTEXT, DISTANCE, LEFT, OUT,
+        RIGHT, VectorSpace,
     },
     from_elysian::COMBINE_CONTEXT_STRUCT,
     module::{FunctionDefinition, InputDefinition},
@@ -18,8 +19,11 @@ pub const UNION: Identifier = Identifier::new("union", 1894363406191409858);
 pub const INTERSECTION: Identifier = Identifier::new("intersection", 18033822391797795038);
 pub const SUBTRACTION: Identifier = Identifier::new("subtraction", 1414822549598552032);
 
-impl<N, V> AsIR<N, V> for Boolean {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<N, V>> {
+impl<T, const N: usize> AsIR<T, N> for Boolean
+where
+    T: TypeSpec + VectorSpace<N>,
+{
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
         vec![FunctionDefinition {
             id: match self {
                 Boolean::Union => UNION,
@@ -75,7 +79,7 @@ impl<N, V> AsIR<N, V> for Boolean {
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
         match self {
             Boolean::Union => crate::ir::ast::Expr::Call {
                 function: UNION,

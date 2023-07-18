@@ -6,13 +6,13 @@ use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIter
 
 use elysian_core::{
     ast::Elysian,
-    ir::ast::{Struct, DISTANCE, GRADIENT, POSITION},
+    ir::ast::{GlamF32, Struct, StructIO, Value, DISTANCE, GRADIENT, POSITION},
 };
-use elysian_syn::dispatch_shape;
+use elysian_syn::static_shapes::dispatch_shape_f32;
 
 #[instrument]
-pub fn rasterize(shape: &Elysian<f32, Vec2>, width: u32, height: u32, scale: f32) -> RgbImage {
-    let shape = dispatch_shape(shape);
+pub fn rasterize(shape: &Elysian<GlamF32, 2>, width: u32, height: u32, scale: f32) -> RgbImage {
+    let shape = dispatch_shape_f32(shape);
 
     let indices: Vec<_> = (0..height)
         .into_iter()
@@ -28,18 +28,18 @@ pub fn rasterize(shape: &Elysian<f32, Vec2>, width: u32, height: u32, scale: f32
             indices
                 .into_iter()
                 .flat_map(|(x, y)| {
-                    let ctx = Struct::default().set_vector(
+                    let ctx = Struct::default().set(
                         POSITION,
-                        Vec2::new(
+                        Value::VectorSpace(Vec2::new(
                             ((x as f32 / width as f32) - 0.5) * 2.0 / scale,
                             ((y as f32 / height as f32) - 0.5) * 2.0 / scale,
-                        ),
+                        )),
                     );
 
                     let ctx = shape(ctx);
 
                     let d: f32 = ctx.get_number(&DISTANCE);
-                    let g: Vec2 = ctx.get_vector(&GRADIENT);
+                    let g: Vec2 = ctx.get_vector_space(&GRADIENT);
 
                     if d.abs() < 2.0 / width as f32 {
                         [255, 255, 255]

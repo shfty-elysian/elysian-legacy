@@ -2,7 +2,8 @@ use std::hash::Hash;
 
 use crate::ir::{
     ast::{
-        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT, POSITION,
+        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, CONTEXT, DISTANCE, GRADIENT,
+        POSITION, VectorSpace,
     },
     from_elysian::CONTEXT_STRUCT,
     module::{FunctionDefinition, InputDefinition},
@@ -15,8 +16,11 @@ pub const POINT: Identifier = Identifier::new("point", 419357041369711478);
 #[derive(Debug, Copy, Clone, Hash)]
 pub struct Point;
 
-impl<N, V> AsIR<N, V> for Point {
-    fn functions(&self) -> Vec<FunctionDefinition<N, V>> {
+impl<T, const N: usize> AsIR<T, N> for Point
+where
+    T: TypeSpec + VectorSpace<N>,
+{
+    fn functions(&self) -> Vec<FunctionDefinition<T, N>> {
         vec![FunctionDefinition {
             id: POINT,
             public: false,
@@ -34,7 +38,7 @@ impl<N, V> AsIR<N, V> for Point {
         }]
     }
 
-    fn expression(&self, input: Expr<N, V>) -> Expr<N, V> {
+    fn expression(&self, input: Expr<T, N>) -> Expr<T, N> {
         Expr::Call {
             function: POINT,
             args: vec![input],

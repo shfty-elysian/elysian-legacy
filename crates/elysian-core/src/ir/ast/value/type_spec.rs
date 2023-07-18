@@ -1,12 +1,17 @@
-use rust_gpu_bridge::glam::{DVec2, DVec3, DVec4, IVec2, IVec3, IVec4, Vec2, Vec3, Vec4};
+use std::fmt::Debug;
 
-pub trait TypeSpec {
-    type NUMBER;
-    type VECTOR2;
-    type VECTOR3;
-    type VECTOR4;
+use rust_gpu_bridge::glam::{DVec2, DVec3, DVec4, Vec2, Vec3, Vec4};
+
+use super::{Number, Vector2};
+
+pub trait TypeSpec: 'static {
+    type NUMBER: 'static + Debug + Clone + PartialEq + PartialOrd + Number<Self>;
+    type VECTOR2: 'static + Debug + Clone + PartialEq + Vector2<Self>;
+    type VECTOR3: 'static + Debug + Clone + PartialEq;
+    type VECTOR4: 'static + Debug + Clone + PartialEq;
 }
 
+/*
 pub enum GlamI32 {}
 
 impl TypeSpec for GlamI32 {
@@ -15,6 +20,7 @@ impl TypeSpec for GlamI32 {
     type VECTOR3 = IVec3;
     type VECTOR4 = IVec4;
 }
+*/
 
 pub enum GlamF32 {}
 
@@ -35,6 +41,7 @@ impl TypeSpec for GlamF64 {
     type VECTOR4 = DVec4;
 }
 
+/*
 pub enum PrimI32 {}
 
 impl TypeSpec for PrimI32 {
@@ -61,4 +68,4 @@ impl TypeSpec for PrimF64 {
     type VECTOR3 = [f64; 3];
     type VECTOR4 = [f64; 4];
 }
-
+*/

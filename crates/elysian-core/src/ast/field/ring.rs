@@ -14,7 +14,7 @@ use crate::{
     },
     ir::{
         as_ir::AsIR,
-        ast::{Identifier, IntoBlock, Property, CONTEXT},
+        ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT, VectorSpace},
         from_elysian::CONTEXT_STRUCT,
         module::{FunctionDefinition, InputDefinition, Type},
     },
@@ -25,25 +25,53 @@ use super::{CIRCLE, RADIUS};
 pub const RING: Identifier = Identifier::new("ring", 18972348581943461950);
 pub const WIDTH: Property = Property::new("width", Type::Number, 2742125101201765597);
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Ring<N, V> {
-    pub radius: Expr<N, V>,
-    pub width: Expr<N, V>,
+pub struct Ring<T>
+where
+    T: TypeSpec,
+{
+    pub radius: Expr<T>,
+    pub width: Expr<T>,
 }
 
-impl<N, V> Hash for Ring<N, V> {
+impl<T> Debug for Ring<T>
+where
+    T: TypeSpec,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Ring")
+            .field("radius", &self.radius)
+            .field("width", &self.width)
+            .finish()
+    }
+}
+
+impl<T> Clone for Ring<T>
+where
+    T: TypeSpec,
+{
+    fn clone(&self) -> Self {
+        Self {
+            radius: self.radius.clone(),
+            width: self.width.clone(),
+        }
+    }
+}
+
+impl<T> Hash for Ring<T>
+where
+    T: TypeSpec,
+{
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.radius.hash(state);
         self.width.hash(state);
     }
 }
 
-impl<N, V> AsIR<N, V> for Ring<N, V>
+impl<T, const N: usize> AsIR<T, N> for Ring<T>
 where
-    N: 'static + Debug + Clone,
-    V: 'static + Debug + Clone,
+    T: TypeSpec + VectorSpace<N>,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<N, V>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
         Circle {
             radius: self.radius.clone(),
         }
@@ -93,7 +121,7 @@ where
         .collect()
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
         crate::ir::ast::Expr::Call {
             function: RING,
             args: vec![self.radius.clone().into(), self.width.clone().into(), input],

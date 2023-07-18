@@ -10,7 +10,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::ir::as_ir::AsIR;
+use crate::ir::{as_ir::AsIR, ast::{TypeSpec, VectorSpace}};
 
 use self::{
     expr::Expr,
@@ -18,27 +18,48 @@ use self::{
     pre_modifier::{elongate::Elongate, translate::Translate},
 };
 
-pub type ElysianBox<N, V> = Box<Elysian<N, V>>;
-pub type ElysianList<N, V> = Vec<Elysian<N, V>>;
+pub type ElysianBox<T, const N: usize> = Box<Elysian<T, N>>;
+pub type ElysianList<T, const N: usize> = Vec<Elysian<T, N>>;
 
 pub mod post_modifier;
 pub mod pre_modifier;
 
-#[derive(Debug)]
 #[non_exhaustive]
-pub enum Elysian<N, V> {
+pub enum Elysian<T, const N: usize> {
     Field {
-        pre_modifiers: Vec<Box<dyn AsIR<N, V>>>,
-        field: Box<dyn AsIR<N, V>>,
-        post_modifiers: Vec<Box<dyn AsIR<N, V>>>,
+        pre_modifiers: Vec<Box<dyn AsIR<T, N>>>,
+        field: Box<dyn AsIR<T, N>>,
+        post_modifiers: Vec<Box<dyn AsIR<T, N>>>,
     },
     Combine {
-        combinator: Vec<Box<dyn AsIR<N, V>>>,
-        shapes: ElysianList<N, V>,
+        combinator: Vec<Box<dyn AsIR<T, N>>>,
+        shapes: ElysianList<T, N>,
     },
 }
 
-impl<N, V> Hash for Elysian<N, V> {
+impl<T, const N: usize> Debug for Elysian<T, N> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Field {
+                pre_modifiers,
+                field,
+                post_modifiers,
+            } => f
+                .debug_struct("Field")
+                .field("pre_modifiers", pre_modifiers)
+                .field("field", field)
+                .field("post_modifiers", post_modifiers)
+                .finish(),
+            Self::Combine { combinator, shapes } => f
+                .debug_struct("Combine")
+                .field("combinator", combinator)
+                .field("shapes", shapes)
+                .finish(),
+        }
+    }
+}
+
+impl<T, const N: usize> Hash for Elysian<T, N> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         core::mem::discriminant(self).hash(state);
         match self {
@@ -65,10 +86,9 @@ impl<N, V> Hash for Elysian<N, V> {
     }
 }
 
-impl<N, V> Elysian<N, V>
+impl<T, const N: usize> Elysian<T, N>
 where
-    N: 'static + Debug + Clone,
-    V: 'static + Debug + Clone,
+    T: TypeSpec + VectorSpace<N>,
 {
     pub fn shape_hash(&self) -> u64 {
         let mut s = DefaultHasher::new();
@@ -76,7 +96,7 @@ where
         s.finish()
     }
 
-    pub fn isosurface(self, dist: Expr<N, V>) -> Elysian<N, V> {
+    pub fn isosurface(self, dist: Expr<T>) -> Elysian<T, N> {
         match self {
             Elysian::Field {
                 pre_modifiers,
@@ -94,7 +114,7 @@ where
         }
     }
 
-    pub fn manifold(self) -> Elysian<N, V> {
+    pub fn manifold(self) -> Elysian<T, N> {
         match self {
             Elysian::Field {
                 pre_modifiers,
@@ -112,7 +132,7 @@ where
         }
     }
 
-    pub fn translate(self, delta: Expr<N, V>) -> Elysian<N, V> {
+    pub fn translate(self, delta: Expr<T>) -> Elysian<T, N> {
         match self {
             Elysian::Field {
                 mut pre_modifiers,
@@ -130,7 +150,7 @@ where
         }
     }
 
-    pub fn elongate(self, dir: Expr<N, V>, infinite: bool) -> Self {
+    pub fn elongate(self, dir: Expr<T>, infinite: bool) -> Self {
         match self {
             Elysian::Field {
                 mut pre_modifiers,
@@ -148,19 +168,19 @@ where
         }
     }
 }
-pub trait IntoCombine<N, V> {
-    fn combine<U>(self, combinator: U) -> Elysian<N, V>
+pub trait IntoCombine<T, const N: usize> {
+    fn combine<U>(self, combinator: U) -> Elysian<T, N>
     where
-        U: IntoIterator<Item = Box<dyn AsIR<N, V>>>;
+        U: IntoIterator<Item = Box<dyn AsIR<T, N>>>;
 }
 
-impl<N, V, T> IntoCombine<N, V> for T
+impl<T, U, const N: usize> IntoCombine<U, N> for T
 where
-    T: IntoIterator<Item = Elysian<N, V>>,
+    T: IntoIterator<Item = Elysian<U, N>>,
 {
-    fn combine<U>(self, combinator: U) -> Elysian<N, V>
+    fn combine<V>(self, combinator: V) -> Elysian<U, N>
     where
-        U: IntoIterator<Item = Box<dyn AsIR<N, V>>>,
+        V: IntoIterator<Item = Box<dyn AsIR<U, N>>>,
     {
         Elysian::Combine {
             combinator: combinator.into_iter().collect(),

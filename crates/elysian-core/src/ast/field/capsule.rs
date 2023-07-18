@@ -7,7 +7,7 @@ use crate::ast::post_modifier::isosurface::{Isosurface, ISOSURFACE};
 use crate::ast::field::Line;
 use crate::ast::pre_modifier::elongate::DIR;
 use crate::ir::as_ir::AsIR;
-use crate::ir::ast::{Identifier, IntoBlock, CONTEXT};
+use crate::ir::ast::{Identifier, IntoBlock, TypeSpec, CONTEXT, VectorSpace};
 use crate::ir::from_elysian::CONTEXT_STRUCT;
 use crate::ir::module::{FunctionDefinition, InputDefinition};
 
@@ -15,25 +15,53 @@ use super::{LINE, RADIUS};
 
 pub const CAPSULE: Identifier = Identifier::new("capsule", 14339483921749952476);
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Capsule<N, V> {
-    pub dir: Expr<N, V>,
-    pub radius: Expr<N, V>,
+pub struct Capsule<T>
+where
+    T: TypeSpec,
+{
+    pub dir: Expr<T>,
+    pub radius: Expr<T>,
 }
 
-impl<N, V> Hash for Capsule<N, V> {
+impl<T> Debug for Capsule<T>
+where
+    T: TypeSpec,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Capsule")
+            .field("dir", &self.dir)
+            .field("radius", &self.radius)
+            .finish()
+    }
+}
+
+impl<T> Clone for Capsule<T>
+where
+    T: TypeSpec,
+{
+    fn clone(&self) -> Self {
+        Self {
+            dir: self.dir.clone(),
+            radius: self.radius.clone(),
+        }
+    }
+}
+
+impl<T> Hash for Capsule<T>
+where
+    T: TypeSpec,
+{
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.dir.hash(state);
         self.radius.hash(state);
     }
 }
 
-impl<N, V> AsIR<N, V> for Capsule<N, V>
+impl<T, const N: usize> AsIR<T, N> for Capsule<T>
 where
-    N: 'static + Debug + Clone,
-    V: 'static + Debug + Clone,
+    T: TypeSpec + VectorSpace<N>,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<N, V>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
         Line {
             dir: self.dir.clone(),
         }
@@ -79,7 +107,7 @@ where
         .collect()
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
         crate::ir::ast::Expr::Call {
             function: CAPSULE,
             args: vec![self.dir.clone().into(), self.radius.clone().into(), input],

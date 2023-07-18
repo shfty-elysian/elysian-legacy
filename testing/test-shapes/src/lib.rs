@@ -6,12 +6,12 @@ use elysian_core::{
         field::{Capsule, Circle, IntoField, Point, Ring},
         Elysian, IntoCombine,
     },
-    ir::as_ir::AsIR,
+    ir::{as_ir::AsIR, ast::GlamF32},
 };
 use rust_gpu_bridge::glam::Vec2;
 
-pub fn kettle_bell() -> Elysian<f32, Vec2> {
-    let smooth_union: [Box<dyn AsIR<f32, Vec2>>; 3] = [
+pub fn kettle_bell() -> Elysian<GlamF32, 2> {
+    let smooth_union: [Box<dyn AsIR<GlamF32, 2>>; 3] = [
         Box::new(Boolean::Union),
         Box::new(Blend::SmoothUnion {
             attr: Distance,
@@ -23,7 +23,7 @@ pub fn kettle_bell() -> Elysian<f32, Vec2> {
         }),
     ];
 
-    let smooth_subtraction: [Box<dyn AsIR<f32, Vec2>>; 3] = [
+    let smooth_subtraction: [Box<dyn AsIR<GlamF32, 2>>; 3] = [
         Box::new(Boolean::Subtraction),
         Box::new(Blend::SmoothSubtraction {
             attr: Attribute::Distance,
@@ -60,7 +60,7 @@ pub fn kettle_bell() -> Elysian<f32, Vec2> {
     .combine(smooth_subtraction)
 }
 
-pub fn point() -> Elysian<f32, Vec2> {
+pub fn point() -> Elysian<GlamF32, 2> {
     Elysian::Field {
         pre_modifiers: Default::default(),
         field: Box::new(Point),
@@ -68,6 +68,6 @@ pub fn point() -> Elysian<f32, Vec2> {
     }
 }
 
-pub fn shapes() -> [(&'static str, Elysian<f32, Vec2>); 2] {
+pub fn shapes() -> [(&'static str, Elysian<GlamF32, 2>); 2] {
     [("point", point()), ("kettle_bell", kettle_bell())]
 }

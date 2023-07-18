@@ -11,7 +11,7 @@ use crate::{
     },
     ir::{
         as_ir::AsIR,
-        ast::{Identifier, IntoBlock, Property, CONTEXT},
+        ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT, VectorSpace},
         from_elysian::CONTEXT_STRUCT,
         module::{FunctionDefinition, InputDefinition, Type},
     },
@@ -22,23 +22,49 @@ use super::POINT;
 pub const CIRCLE: Identifier = Identifier::new("circle", 15738477621793375359);
 pub const RADIUS: Property = Property::new("radius", Type::Number, 213754678517975478);
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Circle<N, V> {
-    pub radius: Expr<N, V>,
+pub struct Circle<T>
+where
+    T: TypeSpec,
+{
+    pub radius: Expr<T>,
 }
 
-impl<N, V> Hash for Circle<N, V> {
+impl<T> Debug for Circle<T>
+where
+    T: TypeSpec,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Circle")
+            .field("radius", &self.radius)
+            .finish()
+    }
+}
+
+impl<T> Clone for Circle<T>
+where
+    T: TypeSpec,
+{
+    fn clone(&self) -> Self {
+        Self {
+            radius: self.radius.clone(),
+        }
+    }
+}
+
+impl<T> Hash for Circle<T>
+where
+    T: TypeSpec,
+{
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.radius.hash(state);
     }
 }
 
-impl<N, V> AsIR<N, V> for Circle<N, V>
+impl<T, const N: usize> AsIR<T, N> for Circle<T>
 where
-    N: 'static + Debug + Clone,
-    V: 'static + Debug + Clone,
+    T: TypeSpec + VectorSpace<N>,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<N, V>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
         Point
             .functions()
             .into_iter()
@@ -78,7 +104,7 @@ where
             .collect()
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
         crate::ir::ast::Expr::Call {
             function: CIRCLE,
             args: vec![self.radius.clone().into(), input],

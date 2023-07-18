@@ -10,21 +10,20 @@ use crate::{
     },
 };
 
-use super::Identifier;
+use super::{Identifier, TypeSpec, VectorSpace};
 
-pub const POSITION: Property = Property::new("position", Type::Vector, 19300293251480055481);
+pub const POSITION: Property = Property::new("position", Type::VectorSpace, 19300293251480055481);
 pub const TIME: Property = Property::new("time", Type::Number, 391570251245214947);
 pub const DISTANCE: Property = Property::new("distance", Type::Number, 20699600731090380932);
-pub const GRADIENT: Property = Property::new("gradient", Type::Vector, 16702807221222221695);
-pub const UV: Property = Property::new("uv", Type::Vector, 1527481748115194786);
-pub const TANGENT: Property = Property::new("tangent", Type::Vector, 12976793731289731131);
-pub const COLOR: Property = Property::new("color", Type::Vector, 84604795624457789);
+pub const GRADIENT: Property = Property::new("gradient", Type::VectorSpace, 16702807221222221695);
+pub const UV: Property = Property::new("uv", Type::Vector2, 1527481748115194786);
+pub const TANGENT: Property = Property::new("tangent", Type::VectorSpace, 12976793731289731131);
+pub const COLOR: Property = Property::new("color", Type::Vector4, 84604795624457789);
 pub const LIGHT: Property = Property::new("light", Type::Number, 1330409404139204842);
-pub const SUPPORT: Property = Property::new("support", Type::Vector, 85970193295239647);
+pub const SUPPORT: Property = Property::new("support", Type::VectorSpace, 85970193295239647);
 pub const ERROR: Property = Property::new("error", Type::Number, 209621851525461471);
-pub const K: Property = Property::new("k", Type::Number, 12632115441234896764);
 pub const NUM: Property = Property::new("num", Type::Number, 1349662877516236181);
-pub const VECT: Property = Property::new("vect", Type::Vector, 19553087511741435087);
+
 pub const CONTEXT: Property =
     Property::new("context", Type::Struct(&CONTEXT_STRUCT), 595454262490629935);
 pub const COMBINE_CONTEXT: Property = Property::new(
@@ -32,6 +31,7 @@ pub const COMBINE_CONTEXT: Property = Property::new(
     Type::Struct(&COMBINE_CONTEXT_STRUCT),
     671133652169921634,
 );
+
 pub const LEFT: Property = Property::new("left", Type::Struct(&CONTEXT_STRUCT), 635254731934742132);
 pub const RIGHT: Property =
     Property::new("right", Type::Struct(&CONTEXT_STRUCT), 5251097991491214179);
@@ -68,11 +68,17 @@ impl Property {
         self.id.name_unique()
     }
 
-    pub fn read<N, V>(self) -> Expr<N, V> {
+    pub fn read<T, const N: usize>(self) -> Expr<T, N>
+    where
+        T: TypeSpec + VectorSpace<N>,
+    {
         Read(vec![self])
     }
 
-    pub fn write<N, V>(self, expr: Expr<N, V>) -> Stmt<N, V> {
+    pub fn write<T, const N: usize>(self, expr: Expr<T, N>) -> Stmt<T, N>
+    where
+        T: TypeSpec + VectorSpace<N>,
+    {
         Write {
             path: vec![self],
             expr,
@@ -95,28 +101,36 @@ impl From<Attribute> for Property {
     }
 }
 
-pub trait IntoRead<N, V>: IntoIterator<Item = Property> {
-    fn read(self) -> Expr<N, V>;
+pub trait IntoRead<T, const N: usize>: IntoIterator<Item = Property>
+where
+    T: TypeSpec + VectorSpace<N>,
+{
+    fn read(self) -> Expr<T, N>;
 }
 
-impl<T, N, V> IntoRead<N, V> for T
+impl<T, U, const N: usize> IntoRead<U, N> for T
 where
+    U: TypeSpec + VectorSpace<N>,
     T: IntoIterator<Item = Property>,
 {
-    fn read(self) -> Expr<N, V> {
+    fn read(self) -> Expr<U, N> {
         Read(self.into_iter().collect())
     }
 }
 
-pub trait IntoWrite<N, V>: IntoIterator<Item = Property> {
-    fn write(self, expr: Expr<N, V>) -> Stmt<N, V>;
+pub trait IntoWrite<T, const N: usize>: IntoIterator<Item = Property>
+where
+    T: TypeSpec + VectorSpace<N>,
+{
+    fn write(self, expr: Expr<T, N>) -> Stmt<T, N>;
 }
 
-impl<T, N, V> IntoWrite<N, V> for T
+impl<T, U, const N: usize> IntoWrite<U, N> for T
 where
+    U: TypeSpec + VectorSpace<N>,
     T: IntoIterator<Item = Property>,
 {
-    fn write(self, expr: Expr<N, V>) -> Stmt<N, V> {
+    fn write(self, expr: Expr<U, N>) -> Stmt<U, N> {
         Write {
             path: self.into_iter().collect(),
             expr,

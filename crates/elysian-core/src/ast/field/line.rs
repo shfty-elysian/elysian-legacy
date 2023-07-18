@@ -11,7 +11,7 @@ use crate::{
     },
     ir::{
         as_ir::AsIR,
-        ast::{Identifier, IntoBlock, CONTEXT},
+        ast::{Identifier, IntoBlock, TypeSpec, CONTEXT, VectorSpace},
         from_elysian::CONTEXT_STRUCT,
         module::{FunctionDefinition, InputDefinition},
     },
@@ -21,23 +21,47 @@ use super::POINT;
 
 pub const LINE: Identifier = Identifier::new("line", 14339483921749952476);
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Line<N, V> {
-    pub dir: Expr<N, V>,
+pub struct Line<T>
+where
+    T: TypeSpec,
+{
+    pub dir: Expr<T>,
 }
 
-impl<N, V> Hash for Line<N, V> {
+impl<T> Debug for Line<T>
+where
+    T: TypeSpec,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Line").field("dir", &self.dir).finish()
+    }
+}
+
+impl<T> Clone for Line<T>
+where
+    T: TypeSpec,
+{
+    fn clone(&self) -> Self {
+        Self {
+            dir: self.dir.clone(),
+        }
+    }
+}
+
+impl<T> Hash for Line<T>
+where
+    T: TypeSpec,
+{
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.dir.hash(state);
     }
 }
 
-impl<N, V> AsIR<N, V> for Line<N, V>
+impl<T, const N: usize> AsIR<T, N> for Line<T>
 where
-    N: 'static + Debug + Clone,
-    V: 'static + Debug + Clone,
+    T: TypeSpec + VectorSpace<N>,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<N, V>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
         Point
             .functions()
             .into_iter()
@@ -75,7 +99,7 @@ where
             .collect()
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
         crate::ir::ast::Expr::Call {
             function: LINE,
             args: vec![self.dir.clone().into(), input],

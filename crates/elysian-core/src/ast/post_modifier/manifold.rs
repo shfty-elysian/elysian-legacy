@@ -2,7 +2,7 @@ use std::{fmt::Debug, hash::Hash};
 
 use crate::ir::{
     as_ir::AsIR,
-    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT, NUM},
+    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, CONTEXT, DISTANCE, GRADIENT, NUM, VectorSpace},
     from_elysian::CONTEXT_STRUCT,
     module::{FunctionDefinition, InputDefinition},
 };
@@ -12,8 +12,11 @@ pub const MANIFOLD: Identifier = Identifier::new("manifold", 7861274791729269697
 #[derive(Debug, Clone, Hash)]
 pub struct Manifold;
 
-impl<N, V> AsIR<N, V> for Manifold {
-    fn functions(&self) -> Vec<FunctionDefinition<N, V>> {
+impl<T, const N: usize> AsIR<T, N> for Manifold
+where
+    T: TypeSpec + VectorSpace<N>,
+{
+    fn functions(&self) -> Vec<FunctionDefinition<T, N>> {
         vec![FunctionDefinition {
             id: MANIFOLD,
             public: false,
@@ -32,7 +35,7 @@ impl<N, V> AsIR<N, V> for Manifold {
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<N, V>) -> crate::ir::ast::Expr<N, V> {
+    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
         crate::ir::ast::Expr::Call {
             function: MANIFOLD,
             args: vec![input],

@@ -6,12 +6,12 @@ use crate::ast::Elysian;
 use crate::ir::{
     ast::{
         Block, Expr, IntoRead, IntoValue, IntoWrite, Stmt, COLOR, COMBINE_CONTEXT, CONTEXT,
-        DISTANCE, ERROR, GRADIENT, LEFT, LIGHT, NUM, OUT, POSITION, RIGHT, SUPPORT, TANGENT, TIME,
-        UV, VECT,
+        DISTANCE, ERROR, GRADIENT, LEFT, LIGHT, OUT, POSITION, RIGHT, SUPPORT, TANGENT, TIME, UV,
     },
     module::{FieldDefinition, FunctionDefinition, InputDefinition, Module, StructDefinition},
 };
 
+use super::ast::{TypeSpec, VectorSpace};
 use super::{as_ir::AsIR, ast::Identifier};
 
 pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
@@ -58,14 +58,6 @@ pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
             prop: ERROR,
             public: true,
         },
-        FieldDefinition {
-            prop: NUM,
-            public: true,
-        },
-        FieldDefinition {
-            prop: VECT,
-            public: true,
-        },
     ],
 };
 
@@ -89,19 +81,18 @@ pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition 
 };
 
 #[instrument]
-pub fn elysian_struct_definitions<N, V>(elysian: &Elysian<N, V>) -> Vec<StructDefinition>
-where
-    N: Debug,
-    V: Debug,
-{
+pub fn elysian_struct_definitions<T, const N: usize>(
+    elysian: &Elysian<T, N>,
+) -> Vec<StructDefinition> {
     vec![CONTEXT_STRUCT.clone(), COMBINE_CONTEXT_STRUCT.clone()]
 }
 
 #[instrument]
-pub fn elysian_module<N, V>(elysian: &Elysian<N, V>) -> Module<N, V>
+pub fn elysian_module<T, const N: usize>(elysian: &Elysian<T, N>) -> Module<T, N>
 where
-    N: 'static + Debug + Clone + One + Two + Zero + IntoValue<N, V>,
-    V: 'static + Debug + Clone + IntoValue<N, V>,
+    T: TypeSpec + VectorSpace<N>,
+    T::NUMBER: 'static + Debug + Clone + One + Two + Zero + IntoValue<T, N>,
+    T::VECTOR2: 'static + Debug + Clone + IntoValue<T, N>,
 {
     let mut functions = elysian_functions(elysian);
     functions.sort_by(|lhs, rhs| lhs.id.cmp(&rhs.id));
@@ -126,10 +117,11 @@ where
 }
 
 #[instrument]
-pub fn elysian_entry_point<N, V>(elysian: &Elysian<N, V>) -> Block<N, V>
+pub fn elysian_entry_point<T, const N: usize>(elysian: &Elysian<T, N>) -> Block<T, N>
 where
-    N: 'static + Debug + Clone + IntoValue<N, V>,
-    V: 'static + Debug + Clone + IntoValue<N, V>,
+    T: TypeSpec + VectorSpace<N>,
+    T::NUMBER: 'static + Debug + Clone + IntoValue<T, N>,
+    T::VECTOR2: 'static + Debug + Clone + IntoValue<T, N>,
 {
     Block(match elysian {
         Elysian::Field {
@@ -162,13 +154,14 @@ where
 }
 
 #[instrument]
-pub fn elysian_entry_point_combine<N, V>(
-    combinator: &Vec<Box<dyn AsIR<N, V>>>,
-    shapes: &Vec<Elysian<N, V>>,
-) -> Vec<Stmt<N, V>>
+pub fn elysian_entry_point_combine<T, const N: usize>(
+    combinator: &Vec<Box<dyn AsIR<T, N>>>,
+    shapes: &Vec<Elysian<T, N>>,
+) -> Vec<Stmt<T, N>>
 where
-    N: 'static + Debug + Clone + IntoValue<N, V>,
-    V: 'static + Debug + Clone + IntoValue<N, V>,
+    T: TypeSpec + VectorSpace<N>,
+    T::NUMBER: IntoValue<T, N>,
+    T::VECTOR2: IntoValue<T, N>,
 {
     let combinator = combinator_list_expr(combinator);
 
@@ -219,17 +212,23 @@ where
 }
 
 #[instrument]
-pub fn combinator_list_expr<'a, I: IntoIterator<Item = &'a Box<dyn AsIR<N, V>>>, N: 'a, V: 'a>(
+pub fn combinator_list_expr<
+    'a,
+    T,
+    const N: usize,
+    I: IntoIterator<Item = &'a Box<dyn AsIR<T, N>>>,
+>(
     combinators: I,
-) -> Expr<N, V>
+) -> Expr<T, N>
 where
     I: Debug,
-    N: 'static + Debug + Clone,
-    V: 'static + Debug + Clone,
+    T: TypeSpec + VectorSpace<N>,
+    T::NUMBER: 'static + Debug + Clone,
+    T::VECTOR2: 'static + Debug + Clone,
 {
     combinators
         .into_iter()
-        .fold(COMBINE_CONTEXT.read(), |acc: Expr<N, V>, next| {
+        .fold(COMBINE_CONTEXT.read(), |acc: Expr<T, N>, next| {
             let Expr::Call{ function, args } = next.expression(acc) else  {
                 panic!("Combinator expression is not a CallResult")
             };
@@ -239,10 +238,13 @@ where
 }
 
 #[instrument]
-pub fn elysian_functions<N, V>(elysian: &Elysian<N, V>) -> Vec<FunctionDefinition<N, V>>
+pub fn elysian_functions<T, const N: usize>(
+    elysian: &Elysian<T, N>,
+) -> Vec<FunctionDefinition<T, N>>
 where
-    N: 'static + Debug + Clone + One + Two + Zero + IntoValue<N, V>,
-    V: 'static + Debug + Clone + IntoValue<N, V>,
+    T: TypeSpec + VectorSpace<N>,
+    T::NUMBER: IntoValue<T, N>,
+    T::VECTOR2: IntoValue<T, N>,
 {
     match elysian {
         Elysian::Field {

@@ -98,8 +98,6 @@
   DONE: Aliases are now simply AsIR implementors that depend on other AsIR implementors
         Rolled back Vec change, and also moved hash_ir / clone_ir to blanket-impled traits for ergonomics
 
-=========================================================================================================
-
 * Replace N, V parameters with a single T describing a type specification
   * Trait with one associated type per relevant AST type
   * i.e. Prim32 would specify f32 and [f32; N] types
@@ -107,6 +105,10 @@
          Glam32 would specify f32 and Vec* types,
          Glam64 would specify f64 and DVec* types,
          etc.
+
+  DONE: Implemented via TypeSpec trait, extended rust-gpu-bridge with f64 support
+
+=========================================================================================================
 
 * Formalize vector arity
   * Certain properties (ex. color) need a fixed arity,
