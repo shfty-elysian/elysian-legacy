@@ -1,15 +1,19 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use crate::ast::expr::Expr;
-use crate::ast::post_modifier::isosurface::{Isosurface, ISOSURFACE};
-
-use crate::ast::field::Line;
-use crate::ast::pre_modifier::elongate::DIR;
-use crate::ir::as_ir::AsIR;
-use crate::ir::ast::{Identifier, IntoBlock, TypeSpec, CONTEXT, VectorSpace};
-use crate::ir::from_elysian::CONTEXT_STRUCT;
-use crate::ir::module::{FunctionDefinition, InputDefinition};
+use crate::{
+    ast::{
+        expr::Expr,
+        field::{Line, CONTEXT_STRUCT},
+        post_modifier::isosurface::{Isosurface, ISOSURFACE},
+        pre_modifier::elongate::DIR,
+    },
+    ir::{
+        as_ir::AsIR,
+        ast::{Identifier, IntoBlock, TypeSpec, VectorSpace, CONTEXT},
+        module::{FunctionDefinition, InputDefinition},
+    },
+};
 
 use super::{LINE, RADIUS};
 

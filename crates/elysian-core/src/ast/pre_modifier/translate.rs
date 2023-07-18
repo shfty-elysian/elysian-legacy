@@ -1,10 +1,15 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::ir::{
-    as_ir::AsIR,
-    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, CONTEXT, POSITION, VectorSpace},
-    from_elysian::CONTEXT_STRUCT,
-    module::{FunctionDefinition, InputDefinition, Type},
+use crate::{
+    ast::field::CONTEXT_STRUCT,
+    ir::{
+        as_ir::AsIR,
+        ast::{
+            Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, VectorSpace, CONTEXT,
+            POSITION,
+        },
+        module::{FunctionDefinition, InputDefinition, Type},
+    },
 };
 
 use crate::ast::expr::Expr;

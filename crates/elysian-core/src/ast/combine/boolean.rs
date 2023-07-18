@@ -1,12 +1,11 @@
-use crate::ir::{
+use crate::{ir::{
     as_ir::AsIR,
     ast::{
         Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, COMBINE_CONTEXT, DISTANCE, LEFT, OUT,
         RIGHT, VectorSpace,
     },
-    from_elysian::COMBINE_CONTEXT_STRUCT,
     module::{FunctionDefinition, InputDefinition},
-};
+}, ast::combine::COMBINE_CONTEXT_STRUCT};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Boolean {

@@ -1,11 +1,10 @@
 use crate::{
-    ast::attribute::Attribute,
+    ast::{attribute::Attribute, combine::COMBINE_CONTEXT_STRUCT, field::CONTEXT_STRUCT},
     ir::{
         ast::{
             Expr::{self, *},
             Stmt::{self, *},
         },
-        from_elysian::{COMBINE_CONTEXT_STRUCT, CONTEXT_STRUCT},
         module::Type,
     },
 };
@@ -72,7 +71,7 @@ impl Property {
     where
         T: TypeSpec + VectorSpace<N>,
     {
-        Read(vec![self])
+        Read(None, vec![self])
     }
 
     pub fn write<T, const N: usize>(self, expr: Expr<T, N>) -> Stmt<T, N>
@@ -114,7 +113,7 @@ where
     T: IntoIterator<Item = Property>,
 {
     fn read(self) -> Expr<U, N> {
-        Read(self.into_iter().collect())
+        Read(None, self.into_iter().collect())
     }
 }
 

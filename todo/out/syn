@@ -32,13 +32,17 @@
         from generated code, and an additional evaluation layer
         that chooses between static and interpreted based on availability
 
-============================================================================================
-
 * Create struct to hold static function registrations
   * Clearer semantics than tuple
 
+  DONE: Implemented as StaticShape
+
+============================================================================================
+
 * Clean up syn usage
-  * Should be using parse_quote as much as possible to avoid boilerplate
+  * Should be using parse_quote where possible to avoid boilerplate
+  * Some cases unavoidable due to what appear to be bugs in parse_quote
+    * ex. Struct expressions not outputting a , between the last member and terminating ..
 
 * Generate Context / CombineContext structs conditionally
   * Currently outputting a hardcoded set of members

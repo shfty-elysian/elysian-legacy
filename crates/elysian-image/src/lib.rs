@@ -4,14 +4,17 @@ use tracing::instrument;
 
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
-use elysian_core::{
-    ast::Elysian,
-    ir::ast::{GlamF32, Struct, StructIO, Value, DISTANCE, GRADIENT, POSITION},
+use elysian_core::ir::{
+    ast::{GlamF32, Struct, StructIO, Value, DISTANCE, GRADIENT, POSITION},
+    module::AsModule,
 };
 use elysian_syn::static_shapes::dispatch_shape_f32;
 
 #[instrument]
-pub fn rasterize(shape: &Elysian<GlamF32, 2>, width: u32, height: u32, scale: f32) -> RgbImage {
+pub fn rasterize<T>(shape: &T, width: u32, height: u32, scale: f32) -> RgbImage
+where
+    T: AsModule<GlamF32, 2>,
+{
     let shape = dispatch_shape_f32(shape);
 
     let indices: Vec<_> = (0..height)

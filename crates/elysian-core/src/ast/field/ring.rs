@@ -6,7 +6,7 @@ use std::{
 use crate::{
     ast::{
         expr::Expr,
-        field::Circle,
+        field::{Circle, CONTEXT_STRUCT},
         post_modifier::{
             isosurface::{Isosurface, ISOSURFACE},
             manifold::{Manifold, MANIFOLD},
@@ -14,8 +14,7 @@ use crate::{
     },
     ir::{
         as_ir::AsIR,
-        ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT, VectorSpace},
-        from_elysian::CONTEXT_STRUCT,
+        ast::{Identifier, IntoBlock, Property, TypeSpec, VectorSpace, CONTEXT},
         module::{FunctionDefinition, InputDefinition, Type},
     },
 };

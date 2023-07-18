@@ -1,12 +1,14 @@
 use std::hash::Hash;
 
-use crate::ir::{
-    ast::{
-        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, CONTEXT, DISTANCE, GRADIENT,
-        POSITION, VectorSpace,
+use crate::{
+    ast::field::CONTEXT_STRUCT,
+    ir::{
+        ast::{
+            Expr, Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, VectorSpace, CONTEXT,
+            DISTANCE, GRADIENT, POSITION,
+        },
+        module::{FunctionDefinition, InputDefinition},
     },
-    from_elysian::CONTEXT_STRUCT,
-    module::{FunctionDefinition, InputDefinition},
 };
 
 use super::AsIR;

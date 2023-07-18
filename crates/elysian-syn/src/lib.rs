@@ -1,4 +1,4 @@
-use elysian_core::ir::ast::VectorSpace;
+use elysian_core::{ast::field::CONTEXT_STRUCT, ir::ast::VectorSpace};
 pub use prettyplease;
 
 use proc_macro2::{Ident, Span, TokenStream};
@@ -11,22 +11,22 @@ use syn::{
     PathSegment, ReturnType, Signature, Stmt, Type, TypePath, Visibility,
 };
 
-use elysian_core::ast::Elysian;
 use elysian_core::ir::{
     ast::{Block as IrBlock, Expr as IrExpr, GlamF32, Property, Stmt as IrStmt, CONTEXT},
-    from_elysian::{elysian_module, CONTEXT_STRUCT},
+    module::AsModule,
 };
 
 pub mod static_shapes {
     use elysian_core::ir::ast::{TypeSpec, VectorSpace};
-    use elysian_core::ir::from_elysian::elysian_module;
     use elysian_interpreter::{evaluate_module, Interpreter};
     pub use prettyplease;
 
     use std::{collections::BTreeMap, sync::OnceLock};
 
-    use elysian_core::ast::Elysian;
-    use elysian_core::ir::ast::{GlamF32, Struct};
+    use elysian_core::ir::{
+        ast::{GlamF32, Struct},
+        module::AsModule,
+    };
 
     use crate::elysian_to_syn;
 
@@ -77,7 +77,12 @@ pub mod static_shapes {
     }
 
     /// Build.rs static shape registrar
-    pub fn static_shapes_f32<'a, T: IntoIterator<Item = (&'a str, Elysian<GlamF32, 2>)>>(t: T) {
+    pub fn static_shapes_f32<
+        'a,
+        T: IntoIterator<Item = (&'a str, Box<dyn AsModule<GlamF32, 2>>)>,
+    >(
+        t: T,
+    ) {
         let source: String = t
             .into_iter()
             .map(|(name, shape)| {
@@ -101,17 +106,20 @@ pub mod static_shapes {
 
     /// Return a function that calls the static implementation of a given shape if it exists,
     /// falling back to the interpreter otherwise.
-    pub fn dispatch_shape_f32(
-        shape: &Elysian<GlamF32, 2>,
-    ) -> Box<dyn Fn(Struct<GlamF32, 2>) -> Struct<GlamF32, 2> + Send + Sync> {
-        let hash = shape.shape_hash();
+    pub fn dispatch_shape_f32<T>(
+        shape: &T,
+    ) -> Box<dyn Fn(Struct<GlamF32, 2>) -> Struct<GlamF32, 2> + Send + Sync>
+    where
+        T: AsModule<GlamF32, 2>,
+    {
+        let hash = shape.hash_ir();
 
         if let Some(f) = static_shapes_map_f32().get(&hash) {
             println!("Dispatching to static function");
             Box::new(|context| f(context))
         } else {
             println!("Dispatching to dynamic interpreter");
-            let module = elysian_module(shape);
+            let module = shape.module();
             Box::new(move |context| {
                 evaluate_module(
                     Interpreter {
@@ -158,9 +166,10 @@ pub fn property_to_syn(prop: &Property) -> TokenStream {
     }
 }
 
-pub fn elysian_to_syn<const N: usize>(elysian: &Elysian<GlamF32, N>, name: &str) -> File
+pub fn elysian_to_syn<T, const N: usize>(elysian: &T, name: &str) -> File
 where
     GlamF32: VectorSpace<N>,
+    T: AsModule<GlamF32, N>,
 {
     let mut attrs = vec![];
 
@@ -190,7 +199,7 @@ where
         };
     });
 
-    let module = elysian_module(&elysian);
+    let module = elysian.module();
 
     for def in &module.struct_definitions {
         items.push(Item::Struct(ItemStruct {
@@ -289,8 +298,14 @@ where
         }
     });
 
+    let context_struct_name = Ident::new(CONTEXT_STRUCT.name(), Span::call_site());
+    let context_struct_name_unique = Ident::new(&CONTEXT_STRUCT.name_unique(), Span::call_site());
+    items.push(parse_quote! {
+        pub type #context_struct_name = #context_struct_name_unique;
+    });
+
     for def in &module.function_definitions {
-        let name = Ident::new(def.name(), Span::call_site());
+        let name = Ident::new(&def.name_unique(), Span::call_site());
 
         let args: Vec<FnArg> = def
             .inputs
@@ -318,126 +333,55 @@ where
             stmts: def.block.0.iter().map(stmt_to_syn).collect(),
         };
 
-        let item = parse_quote! {
-            fn #name(#(#args),*) -> #output #block
-        };
+        let item = Item::Fn(ItemFn {
+            attrs: vec![],
+            vis: Visibility::Inherited,
+            sig: Signature {
+                constness: None,
+                asyncness: None,
+                unsafety: None,
+                abi: None,
+                fn_token: Default::default(),
+                ident: name,
+                generics: Generics {
+                    lt_token: None,
+                    params: Default::default(),
+                    gt_token: None,
+                    where_clause: None,
+                },
+                paren_token: Default::default(),
+                inputs: args.into_iter().collect(),
+                variadic: None,
+                output: ReturnType::Type(
+                    Default::default(),
+                    Box::new(Type::Path(TypePath {
+                        qself: None,
+                        path: Path {
+                            leading_colon: Default::default(),
+                            segments: [PathSegment {
+                                ident: output,
+                                arguments: Default::default(),
+                            }]
+                            .into_iter()
+                            .collect(),
+                        },
+                    })),
+                ),
+            },
+            block: Box::new(block),
+        });
 
         items.push(item);
     }
 
-    let context_struct_name = Ident::new(CONTEXT_STRUCT.name(), Span::call_site());
-    let context_struct_name_unique = Ident::new(&CONTEXT_STRUCT.name_unique(), Span::call_site());
-    items.push(parse_quote! {
-        pub type #context_struct_name = #context_struct_name_unique;
-    });
-
-    items.push(Item::Fn(ItemFn {
-        attrs: vec![],
-        vis: Visibility::Public(Default::default()),
-        sig: Signature {
-            constness: None,
-            asyncness: None,
-            unsafety: None,
-            abi: None,
-            fn_token: Default::default(),
-            ident: Ident::new("entry_point", Span::call_site()),
-            generics: Generics {
-                lt_token: None,
-                params: Default::default(),
-                gt_token: None,
-                where_clause: None,
-            },
-            paren_token: Default::default(),
-            inputs: [FnArg::Typed(PatType {
-                attrs: vec![],
-                pat: Box::new(Pat::Path(PatPath {
-                    attrs: vec![],
-                    qself: None,
-                    path: Path {
-                        leading_colon: Default::default(),
-                        segments: [PathSegment {
-                            ident: Ident::new(CONTEXT.name(), Span::call_site()),
-                            arguments: Default::default(),
-                        }]
-                        .into_iter()
-                        .collect(),
-                    },
-                })),
-                colon_token: Default::default(),
-                ty: Box::new(Type::Path(TypePath {
-                    qself: None,
-                    path: Path {
-                        leading_colon: Default::default(),
-                        segments: [PathSegment {
-                            ident: Ident::new(CONTEXT_STRUCT.name(), Span::call_site()),
-                            arguments: Default::default(),
-                        }]
-                        .into_iter()
-                        .collect(),
-                    },
-                })),
-            })]
-            .into_iter()
-            .collect(),
-            variadic: None,
-            output: ReturnType::Type(
-                Default::default(),
-                Box::new(Type::Path(TypePath {
-                    qself: None,
-                    path: Ident::new(CONTEXT_STRUCT.name(), Span::call_site()).into(),
-                })),
-            ),
-        },
-        block: Box::new({
-            let mut block = block_to_syn(&module.entry_point.block);
-            block.stmts.insert(
-                0,
-                Stmt::Expr(
-                    Expr::Let(ExprLet {
-                        attrs: vec![],
-                        let_token: Default::default(),
-                        pat: Box::new(Pat::Path(PatPath {
-                            attrs: vec![],
-                            qself: None,
-                            path: Path {
-                                leading_colon: Default::default(),
-                                segments: [PathSegment {
-                                    ident: Ident::new(&CONTEXT.name_unique(), Span::call_site()),
-                                    arguments: Default::default(),
-                                }]
-                                .into_iter()
-                                .collect(),
-                            },
-                        })),
-                        eq_token: Default::default(),
-                        expr: Box::new(Expr::Path(ExprPath {
-                            attrs: vec![],
-                            qself: None,
-                            path: Path {
-                                leading_colon: Default::default(),
-                                segments: [PathSegment {
-                                    ident: Ident::new(CONTEXT.name(), Span::call_site()),
-                                    arguments: Default::default(),
-                                }]
-                                .into_iter()
-                                .collect(),
-                            },
-                        })),
-                    }),
-                    Some(Default::default()),
-                ),
-            );
-            block
-        }),
-    }));
-
+    let name = Ident::new(&module.entry_point.name_unique(), Span::call_site());
     items.push(parse_quote! {
         pub fn shape(context: Struct<GlamF32, 2>) -> Struct<GlamF32, 2> {
-            entry_point(context.into()).into()
+            #name(context.into()).into()
         }
     });
 
-    let hash = elysian.shape_hash();
+    let hash = elysian.hash_ir();
     items.push(parse_quote! {
         #[linkme::distributed_slice(elysian::syn::static_shapes::STATIC_SHAPES_F32)]
         static STATIC_SHAPE: StaticShape<GlamF32, 2> = StaticShape {
@@ -451,7 +395,7 @@ where
         vis: Visibility::Inherited,
         unsafety: None,
         mod_token: Default::default(),
-        ident: Ident::new(name, Span::call_site()),
+        ident: name,
         content: Some((Default::default(), items)),
         semi: None,
     })];
@@ -509,7 +453,7 @@ where
             } else {
                 Expr::Assign(ExprAssign {
                     attrs: vec![],
-                    left: Box::new(path_to_syn(path)),
+                    left: Box::new(path_to_syn(None, path)),
                     eq_token: Default::default(),
                     right: Box::new(expr_to_syn(expr)),
                 })
@@ -620,13 +564,13 @@ where
             }
             _ => unimplemented!(),
         },
-        IrExpr::Read(path) => path_to_syn(path),
+        IrExpr::Read(expr, path) => path_to_syn(expr.clone().map(|e| *e), path),
         IrExpr::Call { function, args } => Expr::Call(ExprCall {
             attrs: vec![],
             func: Box::new(Expr::Path(ExprPath {
                 attrs: vec![],
                 qself: None,
-                path: Ident::new(function.name(), Span::call_site()).into(),
+                path: Ident::new(&function.name_unique(), Span::call_site()).into(),
             })),
             paren_token: Default::default(),
             args: args.iter().map(|t| expr_to_syn(t)).collect(),
@@ -770,31 +714,34 @@ where
     }
 }
 
-fn path_to_syn(path: &Vec<Property>) -> Expr {
+fn path_to_syn<const N: usize>(expr: Option<IrExpr<GlamF32, N>>, path: &Vec<Property>) -> Expr
+where
+    GlamF32: VectorSpace<N>,
+{
     let mut iter = path.iter();
 
-    let base = Expr::Path(ExprPath {
-        attrs: vec![],
-        qself: None,
-        path: Ident::new(
-            &iter.next().expect("Empty path").name_unique(),
-            Span::call_site(),
-        )
-        .into(),
-    });
-
-    if path.len() == 1 {
-        base
+    let base = if let Some(expr) = expr {
+        expr_to_syn(&expr)
     } else {
-        iter.fold(base, |acc, next| {
-            Expr::Field(ExprField {
-                attrs: vec![],
-                base: Box::new(acc),
-                dot_token: Default::default(),
-                member: syn::Member::Named(Ident::new(&next.name_unique(), Span::call_site())),
-            })
+        Expr::Path(ExprPath {
+            attrs: vec![],
+            qself: None,
+            path: Ident::new(
+                &iter.next().expect("Empty path").name_unique(),
+                Span::call_site(),
+            )
+            .into(),
         })
-    }
+    };
+
+    iter.fold(base, |acc, next| {
+        Expr::Field(ExprField {
+            attrs: vec![],
+            base: Box::new(acc),
+            dot_token: Default::default(),
+            member: syn::Member::Named(Ident::new(&next.name_unique(), Span::call_site())),
+        })
+    })
 }
 
 pub mod output {}

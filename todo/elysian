@@ -117,11 +117,21 @@
   DONE: Implemented as VectorSpace trait and variant type,
         added const params to drive it
 
-=========================================================================================================
-
 * Avoid specifying dimensionality before IR
   * Should be able to remove it from Elysian,
     supply constant at evaluation time
+
+  SKIPPED: Can't be done without removing N param from everything,
+           since it's necessary for everything that composes Value,
+           and everything that needs to name such types
+
+=========================================================================================================
+
+* Abstraction of modifier application
+  * Currently built into field, but should be a wrapper around DynAsModule
+    * i.e. Should work with combine
+      * Semantically just prefixing and suffixing, so should be doable
+  * Intersects with the "do something with field" domain needed for 3D
 
 * Stronger typing for pre / post / field IR conversion
   * At minimum, create separate traits to identify a given symbol as each
@@ -145,3 +155,9 @@
 
 * Error handling pass
   * Replace panics with Result and error types
+
+* Long-term: Consider using a subset of rhai for IR / interpreter purposes
+  * Large in scope, but offers simplification via disabling functionality
+    * Raw engine + minimal set of modules
+  * Would simplify rust -> IR -> output process
+  * Opens up a lot of potential for extensibility

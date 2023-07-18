@@ -31,7 +31,6 @@ impl TypeSpec for GlamF32 {
     type VECTOR4 = Vec4;
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum GlamF64 {}
 
 impl TypeSpec for GlamF64 {

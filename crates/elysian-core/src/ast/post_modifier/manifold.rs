@@ -1,11 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::ir::{
+use crate::{ir::{
     as_ir::AsIR,
     ast::{Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, CONTEXT, DISTANCE, GRADIENT, NUM, VectorSpace},
-    from_elysian::CONTEXT_STRUCT,
     module::{FunctionDefinition, InputDefinition},
-};
+}, ast::field::CONTEXT_STRUCT};
 
 pub const MANIFOLD: Identifier = Identifier::new("manifold", 7861274791729269697);
 

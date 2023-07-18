@@ -1,7 +1,7 @@
 use elysian::{
     core::ast::{
         attribute::Attribute::{self, *},
-        combinator::{Blend, Boolean},
+        combine::{Blend, Boolean},
         expr::IntoLiteral,
         field::{Capsule, Circle, Ring},
         IntoCombine,
@@ -10,7 +10,7 @@ use elysian::{
 };
 use elysian_core::{
     ast::field::IntoField,
-    ir::{as_ir::DynAsIR, ast::GlamF32},
+    ir::{as_ir::DynAsIR, ast::GlamF32, module::DynAsModule},
 };
 use rust_gpu_bridge::glam::Vec2;
 
@@ -39,29 +39,45 @@ fn main() {
         }),
     ];
 
-    let shape = [
-        [
+    let shape_a: [DynAsModule<GlamF32, 2>; 3] = [
+        Box::new(
             Circle {
                 radius: 1.0.literal(),
             }
             .field()
             .translate(Vec2::new(0.0, 0.5).literal()),
+        ),
+        Box::new(
             Ring {
                 radius: 0.9.literal(),
                 width: 0.15.literal(),
             }
             .field()
             .translate(Vec2::new(0.0, -0.25).literal()),
-        ]
-        .combine(smooth_union),
-        Capsule {
-            dir: Vec2::new(1.5, 0.0).literal(),
-            radius: 0.2.literal(),
-        }
-        .field()
-        .translate(Vec2::new(0.0, 0.5).literal()),
-    ]
-    .combine(smooth_subtraction);
+        ),
+        Box::new(
+            Ring {
+                radius: 0.45.literal(),
+                width: 0.075.literal(),
+            }
+            .field()
+            .translate(Vec2::new(0.0, -0.25).literal()),
+        ),
+    ];
+
+    let shape_b: [DynAsModule<GlamF32, 2>; 2] = [
+        Box::new(shape_a.combine(smooth_union)),
+        Box::new(
+            Capsule {
+                dir: Vec2::new(1.5, 0.0).literal(),
+                radius: 0.2.literal(),
+            }
+            .field()
+            .translate(Vec2::new(0.0, 0.5).literal()),
+        ),
+    ];
+
+    let shape = shape_b.combine(smooth_subtraction);
 
     let source = elysian_to_syn(&shape, "test");
     let source = prettyplease::unparse(&source);

@@ -15,7 +15,7 @@ where
     T: TypeSpec + VectorSpace<N>,
 {
     Literal(Value<T, N>),
-    Read(Vec<Property>),
+    Read(Option<Box<Expr<T, N>>>, Vec<Property>),
     Call {
         function: Identifier,
         args: Vec<Expr<T, N>>,
@@ -45,7 +45,7 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Literal(arg0) => f.debug_tuple("Literal").field(arg0).finish(),
-            Self::Read(arg0) => f.debug_tuple("Read").field(arg0).finish(),
+            Self::Read(arg0, arg1) => f.debug_tuple("Read").field(arg0).field(arg1).finish(),
             Self::Call { function, args } => f
                 .debug_struct("Call")
                 .field("function", function)
@@ -85,7 +85,7 @@ where
     fn clone(&self) -> Self {
         match self {
             Self::Literal(arg0) => Self::Literal(arg0.clone()),
-            Self::Read(arg0) => Self::Read(arg0.clone()),
+            Self::Read(arg0, arg1) => Self::Read(arg0.clone(), arg1.clone()),
             Self::Call { function, args } => Self::Call {
                 function: function.clone(),
                 args: args.clone(),
@@ -117,17 +117,8 @@ where
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Literal(l0), Self::Literal(r0)) => l0 == r0,
-            (Self::Read(l0), Self::Read(r0)) => l0 == r0,
-            (
-                Self::Call {
-                    function: l_function,
-                    args: l_args,
-                },
-                Self::Call {
-                    function: r_function,
-                    args: r_args,
-                },
-            ) => l_function == r_function && l_args == r_args,
+            (Self::Read(l0, l1), Self::Read(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::Call { function: l_function, args: l_args }, Self::Call { function: r_function, args: r_args }) => l_function == r_function && l_args == r_args,
             (Self::Construct(l0, l1), Self::Construct(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Add(l0, l1), Self::Add(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Sub(l0, l1), Self::Sub(r0, r1)) => l0 == r0 && l1 == r1,
@@ -160,7 +151,7 @@ where
     fn from(value: ElysianExpr<T>) -> Self {
         match value {
             ElysianExpr::Literal(v) => Expr::Literal(v.into()),
-            ElysianExpr::Read(p) => Expr::Read(vec![p.into()]),
+            ElysianExpr::Read(p) => Expr::Read(None, vec![p.into()]),
             ElysianExpr::Add(lhs, rhs) => Expr::Add(lhs.into(), rhs.into()),
             ElysianExpr::Sub(lhs, rhs) => Expr::Sub(lhs.into(), rhs.into()),
             ElysianExpr::Mul(lhs, rhs) => Expr::Mul(lhs.into(), rhs.into()),

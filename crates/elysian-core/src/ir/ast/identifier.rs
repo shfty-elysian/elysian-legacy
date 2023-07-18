@@ -10,10 +10,19 @@ pub struct Identifier {
 }
 
 impl Identifier {
+    /// Construct a const identifier
     pub const fn new(name: &'static str, uuid: u128) -> Self {
         Identifier {
             name: Cow::Borrowed(name),
             uuid: Uuid::from_u128(uuid),
+        }
+    }
+
+    /// Construct a runtime identifier
+    pub fn new_dynamic(name: &'static str) -> Self {
+        Identifier {
+            name: Cow::Borrowed(name),
+            uuid: Uuid::new_v4(),
         }
     }
 

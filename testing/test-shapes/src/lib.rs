@@ -1,16 +1,16 @@
 use elysian_core::{
     ast::{
         attribute::Attribute::{self, *},
-        combinator::{Blend, Boolean},
+        combine::{Blend, Boolean},
         expr::IntoLiteral,
-        field::{Capsule, Circle, IntoField, Point, Ring},
-        Elysian, IntoCombine,
+        field::{Capsule, Circle, Field, IntoField, Point, Ring},
+        IntoCombine,
     },
-    ir::{as_ir::DynAsIR, ast::GlamF32},
+    ir::{as_ir::DynAsIR, ast::GlamF32, module::DynAsModule},
 };
 use rust_gpu_bridge::glam::Vec2;
 
-pub fn kettle_bell() -> Elysian<GlamF32, 2> {
+pub fn kettle_bell() -> DynAsModule<GlamF32, 2> {
     let smooth_union: [DynAsIR<GlamF32, 2>; 3] = [
         Box::new(Boolean::Union),
         Box::new(Blend::SmoothUnion {
@@ -35,39 +35,49 @@ pub fn kettle_bell() -> Elysian<GlamF32, 2> {
         }),
     ];
 
-    [
-        [
+    let shape_a: [DynAsModule<GlamF32, 2>; 2] = [
+        Box::new(
             Circle {
                 radius: 1.0.literal(),
             }
             .field()
             .translate(Vec2::new(0.0, 0.5).literal()),
+        ),
+        Box::new(
             Ring {
                 radius: 0.9.literal(),
                 width: 0.15.literal(),
             }
             .field()
             .translate(Vec2::new(0.0, -0.25).literal()),
-        ]
-        .combine(smooth_union),
-        Capsule {
-            dir: Vec2::new(1.5, 0.0).literal(),
-            radius: 0.2.literal(),
-        }
-        .field()
-        .translate(Vec2::new(0.0, 0.5).literal()),
-    ]
-    .combine(smooth_subtraction)
+        ),
+    ];
+
+    let shape_b: [DynAsModule<GlamF32, 2>; 2] = [
+        Box::new(shape_a.combine(smooth_union)),
+        Box::new(
+            Capsule {
+                dir: Vec2::new(1.5, 0.0).literal(),
+                radius: 0.2.literal(),
+            }
+            .field()
+            .translate(Vec2::new(0.0, 0.5).literal()),
+        ),
+    ];
+
+    let shape: DynAsModule<GlamF32, 2> = Box::new(shape_b.combine(smooth_subtraction));
+
+    shape
 }
 
-pub fn point() -> Elysian<GlamF32, 2> {
-    Elysian::Field {
+pub fn point() -> DynAsModule<GlamF32, 2> {
+    Box::new(Field {
         pre_modifiers: Default::default(),
         field: Box::new(Point),
         post_modifiers: Default::default(),
-    }
+    })
 }
 
-pub fn shapes() -> [(&'static str, Elysian<GlamF32, 2>); 2] {
+pub fn shapes() -> [(&'static str, DynAsModule<GlamF32, 2>); 2] {
     [("point", point()), ("kettle_bell", kettle_bell())]
 }

@@ -3,14 +3,13 @@ use std::fmt::Debug;
 use rust_gpu_bridge::{One, Two, Zero};
 
 use crate::{
-    ast::{attribute::Attribute, expr::Expr},
+    ast::{attribute::Attribute, expr::Expr, combine::COMBINE_CONTEXT_STRUCT},
     ir::{
         as_ir::AsIR,
         ast::{
             Identifier, IntoLiteral, IntoRead, IntoValue, IntoWrite, Property, TypeSpec,
             COMBINE_CONTEXT, DISTANCE, LEFT, NUM, OUT, RIGHT, VectorSpace,
         },
-        from_elysian::COMBINE_CONTEXT_STRUCT,
         module::{FunctionDefinition, InputDefinition, Type},
     },
 };

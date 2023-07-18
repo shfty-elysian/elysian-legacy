@@ -6,7 +6,7 @@ use elysian_core::ir::{
     ast::{
         Identifier, Struct, StructIO, TypeSpec,
         Value::{self, *},
-        CONTEXT, VectorSpace,
+        VectorSpace, CONTEXT,
     },
     module::{FunctionDefinition, Module},
 };
@@ -86,7 +86,13 @@ where
         .map(|def| (def.id.clone(), def))
         .collect();
 
-    let interpreter = evaluate_block(interpreter, &module.entry_point.block);
+    let entry_point = module
+        .function_definitions
+        .iter()
+        .find(|f| f.id == module.entry_point)
+        .expect("No entry point");
+
+    let interpreter = evaluate_block(interpreter, &entry_point.block);
     let Some(output) = interpreter.output else {
         panic!("No return value\n{:#?}", interpreter.context);
     };
@@ -174,13 +180,17 @@ where
 {
     match expr {
         Literal(l) => l.clone(),
-        Read(path) => {
-            path.iter()
-                .fold(Struct(interpreter.context.clone()), |acc, next| match acc {
-                    Value::Struct(s) => s.get(next),
-                    v => v,
-                })
-        }
+        Read(expr, path) => path.iter().fold(
+            if let Some(expr) = expr {
+                evaluate_expr(interpreter, expr)
+            } else {
+                Struct(interpreter.context.clone())
+            },
+            |acc, next| match acc {
+                Value::Struct(s) => s.get(next),
+                v => v,
+            },
+        ),
         Construct(_, exprs) => {
             let mut s = Struct::default();
             for (prop, expr) in exprs {

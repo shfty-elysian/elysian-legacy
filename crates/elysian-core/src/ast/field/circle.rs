@@ -6,13 +6,12 @@ use std::{
 use crate::{
     ast::{
         expr::Expr,
-        field::point::Point,
+        field::{point::Point, CONTEXT_STRUCT},
         post_modifier::isosurface::{Isosurface, ISOSURFACE},
     },
     ir::{
         as_ir::AsIR,
-        ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT, VectorSpace},
-        from_elysian::CONTEXT_STRUCT,
+        ast::{Identifier, IntoBlock, Property, TypeSpec, VectorSpace, CONTEXT},
         module::{FunctionDefinition, InputDefinition, Type},
     },
 };
