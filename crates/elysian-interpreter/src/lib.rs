@@ -151,6 +151,16 @@ where
                 }
             }
         }
+        Loop { stmt } => {
+            loop {
+                match &**stmt {
+                    Stmt::Break => break,
+                    stmt => interpreter = evaluate_stmt(interpreter, &stmt),
+                }
+            }
+
+            interpreter
+        }
         Output(o) => {
             let o = evaluate_expr(&interpreter, o);
             interpreter.output = Some(o);

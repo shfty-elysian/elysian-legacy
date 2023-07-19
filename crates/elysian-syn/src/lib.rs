@@ -5,10 +5,10 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::{
     parse_quote, token::Mut, BinOp, Block, Expr, ExprAssign, ExprBinary, ExprBlock, ExprCall,
-    ExprField, ExprIf, ExprLit, ExprMethodCall, ExprPath, ExprReturn, ExprStruct, ExprUnary, Field,
-    FieldMutability, FieldValue, Fields, FieldsNamed, File, FnArg, Generics, Item, ItemFn, ItemMod,
-    ItemStruct, Lit, LitBool, LitFloat, Pat, PatIdent, Path, PathSegment, ReturnType, Signature,
-    Stmt, Type, TypePath, Visibility,
+    ExprField, ExprIf, ExprLit, ExprLoop, ExprMethodCall, ExprPath, ExprReturn, ExprStruct,
+    ExprUnary, Field, FieldMutability, FieldValue, Fields, FieldsNamed, File, FnArg, Generics,
+    Item, ItemFn, ItemMod, ItemStruct, Lit, LitBool, LitFloat, Pat, PatIdent, Path, PathSegment,
+    ReturnType, Signature, Stmt, Type, TypePath, Visibility,
 };
 
 use elysian_core::ir::{
@@ -479,6 +479,27 @@ where
                 }),
             }),
             Default::default(),
+        ),
+        IrStmt::Loop { stmt } => Stmt::Expr(
+            Expr::Loop(ExprLoop {
+                attrs: vec![],
+                label: None,
+                loop_token: Default::default(),
+                body: Block {
+                    brace_token: Default::default(),
+                    stmts: vec![stmt_to_syn(stmt)],
+                },
+            }),
+            None,
+        ),
+        IrStmt::Break => Stmt::Expr(
+            Expr::Break(syn::ExprBreak {
+                attrs: vec![],
+                break_token: Default::default(),
+                label: None,
+                expr: None,
+            }),
+            Some(Default::default()),
         ),
         IrStmt::Output(expr) => Stmt::Expr(
             Expr::Return(ExprReturn {

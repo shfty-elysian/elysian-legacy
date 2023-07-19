@@ -23,6 +23,10 @@ where
         then: Box<Stmt<T, N>>,
         otherwise: Option<Box<Stmt<T, N>>>,
     },
+    Loop {
+        stmt: Box<Stmt<T, N>>,
+    },
+    Break,
     Output(Expr<T, N>),
 }
 
@@ -48,6 +52,8 @@ where
                 .field("then", then)
                 .field("otherwise", otherwise)
                 .finish(),
+            Self::Loop { stmt } => f.debug_struct("Loop").field("stmt", stmt).finish(),
+            Self::Break => f.debug_struct("Break").finish(),
             Self::Output(arg0) => f.debug_tuple("Output").field(arg0).finish(),
         }
     }
@@ -73,6 +79,8 @@ where
                 then: then.clone(),
                 otherwise: otherwise.clone(),
             },
+            Self::Loop { stmt } => Self::Loop { stmt: stmt.clone() },
+            Self::Break => Self::Break,
             Self::Output(arg0) => Self::Output(arg0.clone()),
         }
     }
