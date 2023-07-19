@@ -9,8 +9,9 @@ use crate::{
         as_ir::AsIR,
         ast::{
             Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, CONTEXT, POSITION_2D,
+            POSITION_3D,
         },
-        module::{FunctionDefinition, InputDefinition, Type},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
 
@@ -18,7 +19,8 @@ use crate::ast::expr::Expr;
 
 pub const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324);
 pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1799909959882308009);
-pub const DIR: Property = Property::new("dir", Type::Vector2, 10994004961423687819);
+pub const DIR_2D: Property = Property::new("dir_2d", Type::Vector2, 10994004961423687819);
+pub const DIR_3D: Property = Property::new("dir_3d", Type::Vector2, 66909101541205811);
 
 pub struct Elongate<T>
 where
@@ -66,7 +68,15 @@ impl<T> AsIR<T> for Elongate<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T>> {
+    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+        let (position, dir) = if spec.domains.contains(&POSITION_2D) {
+            (POSITION_2D, DIR_2D)
+        } else if spec.domains.contains(&POSITION_3D) {
+            (POSITION_3D, DIR_3D)
+        } else {
+            panic!("No position domain");
+        };
+
         vec![FunctionDefinition {
             id: if self.infinite {
                 ELONGATE_INFINITE
@@ -76,7 +86,7 @@ where
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: DIR,
+                    prop: dir.clone(),
                     mutable: false,
                 },
                 InputDefinition {
@@ -86,16 +96,19 @@ where
             ],
             output: &CONTEXT_STRUCT,
             block: {
-                let expr = [CONTEXT, POSITION_2D].read().dot(DIR.read().normalize());
+                let expr = [CONTEXT, position.clone()]
+                    .read()
+                    .dot(dir.clone().read().normalize());
 
                 [
-                    [CONTEXT, POSITION_2D].write(
-                        [CONTEXT, POSITION_2D].read()
-                            - DIR.read().normalize()
+                    [CONTEXT, position.clone()].write(
+                        [CONTEXT, position].read()
+                            - dir.clone().read().normalize()
                                 * if self.infinite {
                                     expr
                                 } else {
-                                    expr.max(-DIR.read().length()).min(DIR.read().length())
+                                    expr.max(-dir.clone().read().length())
+                                        .min(dir.clone().read().length())
                                 },
                     ),
                     CONTEXT.read().output(),
@@ -105,7 +118,11 @@ where
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+    fn expression(
+        &self,
+        _: &SpecializationData,
+        input: crate::ir::ast::Expr<T>,
+    ) -> crate::ir::ast::Expr<T> {
         if self.infinite {
             ELONGATE_INFINITE
         } else {

@@ -10,7 +10,11 @@ use elysian::{
 };
 use elysian_core::{
     ast::{central_diff_gradient::CentralDiffGradient, field::IntoField, modify::IntoModify},
-    ir::{as_ir::DynAsIR, ast::GlamF32, module::DynAsModule},
+    ir::{
+        as_ir::DynAsIR,
+        ast::GlamF32,
+        module::{DynAsModule, SpecializationData},
+    },
 };
 use rust_gpu_bridge::glam::Vec2;
 
@@ -88,7 +92,7 @@ fn main() {
         epsilon: 0.01,
     };
 
-    let source = elysian_to_syn(&shape_d, "test");
+    let source = elysian_to_syn(&shape_d, &SpecializationData::default(), "test");
     let source = prettyplease::unparse(&source);
     println!("{source:}");
 }

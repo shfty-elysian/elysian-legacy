@@ -3,10 +3,10 @@ use crate::{
     ir::{
         as_ir::AsIR,
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, COMBINE_CONTEXT,
-            DISTANCE, LEFT, OUT, RIGHT,
+            Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, COMBINE_CONTEXT, DISTANCE, LEFT,
+            OUT, RIGHT,
         },
-        module::{FunctionDefinition, InputDefinition},
+        module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
 };
 
@@ -25,7 +25,7 @@ impl<T> AsIR<T> for Boolean
 where
     T: TypeSpec,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    fn functions(&self, _: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         vec![FunctionDefinition {
             id: match self {
                 Boolean::Union => UNION,
@@ -81,7 +81,11 @@ where
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+    fn expression(
+        &self,
+        _: &SpecializationData,
+        input: crate::ir::ast::Expr<T>,
+    ) -> crate::ir::ast::Expr<T> {
         match self {
             Boolean::Union => crate::ir::ast::Expr::Call {
                 function: UNION,

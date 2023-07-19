@@ -17,7 +17,7 @@ use crate::ir::{
     },
     module::{
         AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
-        StructDefinition,
+        SpecializationData, StructDefinition,
     },
 };
 
@@ -132,13 +132,21 @@ where
         Identifier::new_dynamic("modify")
     }
 
-    fn functions(&self, entry_point: &Identifier) -> Vec<FunctionDefinition<T>> {
+    fn functions(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &Identifier,
+    ) -> Vec<FunctionDefinition<T>> {
         let field_entry_point = self.field.entry_point();
         self.pre_modifiers
             .iter()
-            .flat_map(AsIR::functions)
-            .chain(self.field.functions(&field_entry_point))
-            .chain(self.post_modifiers.iter().flat_map(AsIR::functions))
+            .flat_map(|t| AsIR::functions(t, spec))
+            .chain(self.field.functions(spec, &field_entry_point))
+            .chain(
+                self.post_modifiers
+                    .iter()
+                    .flat_map(|t| AsIR::functions(t, spec)),
+            )
             .chain(FunctionDefinition {
                 id: entry_point.clone(),
                 public: true,
@@ -154,8 +162,8 @@ where
                         field_entry_point.call([self
                             .pre_modifiers
                             .iter()
-                            .fold(CONTEXT.read(), |acc, next| next.expression(acc))]),
-                        |acc, next| next.expression(acc),
+                            .fold(CONTEXT.read(), |acc, next| next.expression(spec, acc))]),
+                        |acc, next| next.expression(spec, acc),
                     )
                     .output()
                     .block(),

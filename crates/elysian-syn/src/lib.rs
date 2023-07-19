@@ -1,4 +1,4 @@
-use elysian_core::ast::modify::CONTEXT_STRUCT;
+use elysian_core::{ast::modify::CONTEXT_STRUCT, ir::module::SpecializationData};
 pub use prettyplease;
 
 use proc_macro2::{Ident, Span, TokenStream};
@@ -17,7 +17,7 @@ use elysian_core::ir::{
 };
 
 pub mod static_shapes {
-    use elysian_core::ir::ast::TypeSpec;
+    use elysian_core::ir::{ast::TypeSpec, module::SpecializationData};
     use elysian_interpreter::{evaluate_module, Interpreter};
     pub use prettyplease;
 
@@ -78,11 +78,12 @@ pub mod static_shapes {
     /// Build.rs static shape registrar
     pub fn static_shapes_f32<'a, T: IntoIterator<Item = (&'a str, Box<dyn AsModule<GlamF32>>)>>(
         t: T,
+        spec: &SpecializationData,
     ) {
         let source: String = t
             .into_iter()
             .map(|(name, shape)| {
-                let syn = elysian_to_syn(&shape, name);
+                let syn = elysian_to_syn(&shape, spec, name);
                 prettyplease::unparse(&syn)
             })
             .collect();
@@ -104,6 +105,7 @@ pub mod static_shapes {
     /// falling back to the interpreter otherwise.
     pub fn dispatch_shape_f32<T>(
         shape: &T,
+        spec: &SpecializationData,
     ) -> Box<dyn Fn(Struct<GlamF32>) -> Struct<GlamF32> + Send + Sync>
     where
         T: AsModule<GlamF32>,
@@ -115,7 +117,7 @@ pub mod static_shapes {
             Box::new(|context| f(context))
         } else {
             println!("Dispatching to dynamic interpreter");
-            let module = shape.module();
+            let module = shape.module(spec);
             Box::new(move |context| {
                 evaluate_module(
                     Interpreter {
@@ -160,7 +162,7 @@ pub fn property_to_syn(prop: &Property) -> TokenStream {
     }
 }
 
-pub fn elysian_to_syn<T>(elysian: &T, name: &str) -> File
+pub fn elysian_to_syn<T>(input: &T, spec: &SpecializationData, name: &str) -> File
 where
     T: AsModule<GlamF32>,
 {
@@ -194,7 +196,7 @@ where
         };
     });
 
-    let module = elysian.module();
+    let module = input.module(spec);
 
     for def in &module.struct_definitions {
         items.push(Item::Struct(ItemStruct {
@@ -370,7 +372,7 @@ where
         }
     });
 
-    let hash = elysian.hash_ir();
+    let hash = input.hash_ir();
     items.push(parse_quote! {
         #[linkme::distributed_slice(elysian::syn::static_shapes::STATIC_SHAPES_F32)]
         static STATIC_SHAPE: StaticShape<GlamF32> = StaticShape {

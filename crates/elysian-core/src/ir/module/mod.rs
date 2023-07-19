@@ -1,11 +1,13 @@
 mod as_module;
 mod function_definition;
 mod struct_definition;
+mod specialization_data;
 mod ty;
 
 pub use as_module::*;
 pub use function_definition::*;
 pub use struct_definition::*;
+pub use specialization_data::*;
 pub use ty::*;
 
 use super::ast::{Identifier, TypeSpec};

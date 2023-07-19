@@ -12,7 +12,7 @@ use crate::{
     ir::{
         as_ir::AsIR,
         ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT},
-        module::{FunctionDefinition, InputDefinition, Type},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
 
@@ -67,18 +67,18 @@ impl<T> AsIR<T> for Ring<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    fn functions(&self, spec: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         Circle {
             radius: self.radius.clone(),
         }
-        .functions()
+        .functions(spec)
         .into_iter()
-        .chain(Manifold.functions())
+        .chain(Manifold.functions(spec))
         .chain(
             Isosurface {
                 dist: self.width.clone(),
             }
-            .functions(),
+            .functions(spec),
         )
         .chain(FunctionDefinition {
             id: RING,
@@ -109,7 +109,11 @@ where
         .collect()
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+    fn expression(
+        &self,
+        _: &SpecializationData,
+        input: crate::ir::ast::Expr<T>,
+    ) -> crate::ir::ast::Expr<T> {
         RING.call([self.radius.clone().into(), self.width.clone().into(), input])
     }
 }

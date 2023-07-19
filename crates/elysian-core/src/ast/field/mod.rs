@@ -18,7 +18,7 @@ use std::{
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
     ast::{Identifier, IntoBlock, TypeSpec, CONTEXT},
-    module::{AsModule, FunctionDefinition, InputDefinition, StructDefinition},
+    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, StructDefinition},
 };
 
 use crate::ir::ast::IntoValue;
@@ -51,9 +51,13 @@ where
         Identifier::new_dynamic("field")
     }
 
-    fn functions(&self, entry_point: &Identifier) -> Vec<FunctionDefinition<T>> {
+    fn functions(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &Identifier,
+    ) -> Vec<FunctionDefinition<T>> {
         self.field
-            .functions()
+            .functions(spec)
             .into_iter()
             .chain(FunctionDefinition {
                 id: entry_point.clone(),
@@ -63,7 +67,7 @@ where
                     mutable: false,
                 }],
                 output: CONTEXT_STRUCT,
-                block: self.field.expression(CONTEXT.read()).output().block(),
+                block: self.field.expression(spec, CONTEXT.read()).output().block(),
             })
             .collect()
     }

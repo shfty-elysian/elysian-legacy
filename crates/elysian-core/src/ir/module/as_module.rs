@@ -5,15 +5,15 @@ use crate::ir::{
     ast::{Identifier, TypeSpec},
 };
 
-use super::{FunctionDefinition, Module, StructDefinition};
+use super::{FunctionDefinition, Module, SpecializationData, StructDefinition};
 
 pub trait AsModule<T>: 'static + Debug + HashIR
 where
     T: TypeSpec,
 {
-    fn module(&self) -> Module<T> {
+    fn module(&self, spec: &SpecializationData) -> Module<T> {
         let entry_point = self.entry_point();
-        let mut functions = self.functions(&entry_point);
+        let mut functions = self.functions(spec, &entry_point);
         functions.sort_by(|lhs, rhs| lhs.id.cmp(&rhs.id));
         functions.dedup_by(|lhs, rhs| lhs.id == rhs.id);
 
@@ -25,7 +25,11 @@ where
     }
 
     fn entry_point(&self) -> Identifier;
-    fn functions(&self, entry_point: &Identifier) -> Vec<FunctionDefinition<T>>;
+    fn functions(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &Identifier,
+    ) -> Vec<FunctionDefinition<T>>;
     fn structs(&self) -> Vec<StructDefinition>;
 }
 
@@ -35,16 +39,20 @@ impl<T> AsModule<T> for DynAsModule<T>
 where
     T: TypeSpec,
 {
-    fn module(&self) -> Module<T> {
-        (**self).module()
+    fn module(&self, spec: &SpecializationData) -> Module<T> {
+        (**self).module(spec)
     }
 
     fn entry_point(&self) -> Identifier {
         (**self).entry_point()
     }
 
-    fn functions(&self, entry_point: &Identifier) -> Vec<FunctionDefinition<T>> {
-        (**self).functions(entry_point)
+    fn functions(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &Identifier,
+    ) -> Vec<FunctionDefinition<T>> {
+        (**self).functions(spec, entry_point)
     }
 
     fn structs(&self) -> Vec<StructDefinition> {

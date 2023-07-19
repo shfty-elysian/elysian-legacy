@@ -3,14 +3,14 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use rust_gpu_bridge::glam::Vec2;
+use rust_gpu_bridge::glam::{Vec2, Vec3};
 
 use crate::ir::{
     ast::{
         Expr, GlamF32, Identifier, IntoBlock, IntoLiteral, IntoWrite, TypeSpec, CONTEXT, DISTANCE,
-        GRADIENT_2D,
+        GRADIENT_2D, GRADIENT_3D,
     },
-    module::{AsModule, FunctionDefinition, InputDefinition},
+    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
 };
 
 use super::modify::{CONTEXT_STRUCT, TRANSLATE};
@@ -50,12 +50,21 @@ impl AsModule<GlamF32> for CentralDiffGradient<GlamF32> {
 
     fn functions(
         &self,
+        spec: &SpecializationData,
         entry_point: &Identifier,
     ) -> Vec<crate::ir::module::FunctionDefinition<GlamF32>> {
+        let (gradient, vec_x, vec_y) = if spec.domains.contains(&GRADIENT_2D) {
+            (GRADIENT_2D, Vec2::X.literal(), Vec2::Y.literal())
+        } else if spec.domains.contains(&GRADIENT_3D) {
+            (GRADIENT_2D, Vec3::X.literal(), Vec3::Y.literal())
+        } else {
+            panic!("No gradient domain");
+        };
+
         let field_entry_point = self.field.entry_point();
         let epsilon = self.epsilon.literal();
         self.field
-            .functions(&field_entry_point)
+            .functions(spec, &field_entry_point)
             .into_iter()
             .chain([FunctionDefinition {
                 id: entry_point.clone(),
@@ -67,35 +76,25 @@ impl AsModule<GlamF32> for CentralDiffGradient<GlamF32> {
                 output: CONTEXT_STRUCT,
                 block: [
                     CONTEXT.write(field_entry_point.call(CONTEXT.read())),
-                    [CONTEXT, GRADIENT_2D].write(
+                    [CONTEXT, gradient].write(
                         Expr::vector2(
                             field_entry_point
                                 .call(
-                                    TRANSLATE.call([
-                                        Vec2::X.literal() * -epsilon.clone(),
-                                        CONTEXT.read(),
-                                    ]),
+                                    TRANSLATE
+                                        .call([vec_x.clone() * -epsilon.clone(), CONTEXT.read()]),
                                 )
                                 .read(DISTANCE)
                                 - field_entry_point
-                                    .call(TRANSLATE.call([
-                                        Vec2::X.literal() * epsilon.clone(),
-                                        CONTEXT.read(),
-                                    ]))
+                                    .call(TRANSLATE.call([vec_x * epsilon.clone(), CONTEXT.read()]))
                                     .read(DISTANCE),
                             field_entry_point
                                 .call(
-                                    TRANSLATE.call([
-                                        Vec2::Y.literal() * -epsilon.clone(),
-                                        CONTEXT.read(),
-                                    ]),
+                                    TRANSLATE
+                                        .call([vec_y.clone() * -epsilon.clone(), CONTEXT.read()]),
                                 )
                                 .read(DISTANCE)
                                 - field_entry_point
-                                    .call(
-                                        TRANSLATE
-                                            .call([Vec2::Y.literal() * epsilon, CONTEXT.read()]),
-                                    )
+                                    .call(TRANSLATE.call([vec_y * epsilon, CONTEXT.read()]))
                                     .read(DISTANCE),
                         )
                         .normalize(),

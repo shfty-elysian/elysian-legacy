@@ -10,7 +10,7 @@ use crate::{
             Identifier, IntoLiteral, IntoRead, IntoValue, IntoWrite, Property, TypeSpec,
             COMBINE_CONTEXT, DISTANCE, LEFT, NUM, OUT, RIGHT,
         },
-        module::{FunctionDefinition, InputDefinition, Type},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
 
@@ -107,7 +107,7 @@ where
     T::NUMBER: IntoValue<T>,
     T::VECTOR2: IntoValue<T>,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    fn functions(&self, _: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         vec![FunctionDefinition {
             id: match self {
                 Blend::SmoothUnion { attr, .. } => SMOOTH_UNION.concat(Property::from(*attr).id()),
@@ -228,7 +228,11 @@ where
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+    fn expression(
+        &self,
+        _: &SpecializationData,
+        input: crate::ir::ast::Expr<T>,
+    ) -> crate::ir::ast::Expr<T> {
         match self {
             Blend::SmoothUnion { attr, k } => crate::ir::ast::Expr::Call {
                 function: SMOOTH_UNION.concat(Property::from(*attr).id()),

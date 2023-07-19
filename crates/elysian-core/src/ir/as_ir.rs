@@ -5,15 +5,15 @@ use std::{
 
 use super::{
     ast::{Expr, TypeSpec},
-    module::FunctionDefinition,
+    module::{FunctionDefinition, SpecializationData},
 };
 
 pub trait AsIR<T>: std::fmt::Debug + HashIR + CloneIR<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T>>;
-    fn expression(&self, input: Expr<T>) -> Expr<T>;
+    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>>;
+    fn expression(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T>;
 }
 
 pub type DynAsIR<T> = Box<dyn AsIR<T>>;
@@ -22,12 +22,12 @@ impl<T> AsIR<T> for Box<dyn AsIR<T>>
 where
     T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T>> {
-        (**self).functions()
+    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+        (**self).functions(spec)
     }
 
-    fn expression(&self, input: Expr<T>) -> Expr<T> {
-        (**self).expression(input)
+    fn expression(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T> {
+        (**self).expression(spec, input)
     }
 }
 

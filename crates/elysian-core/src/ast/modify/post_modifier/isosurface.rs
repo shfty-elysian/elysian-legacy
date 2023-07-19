@@ -5,7 +5,7 @@ use crate::{
     ir::{
         as_ir::AsIR,
         ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, CONTEXT, DISTANCE},
-        module::{FunctionDefinition, InputDefinition, Type},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
 
@@ -56,7 +56,7 @@ impl<T> AsIR<T> for Isosurface<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T>> {
+    fn functions(&self, _: &SpecializationData) -> Vec<FunctionDefinition<T>> {
         vec![FunctionDefinition {
             id: ISOSURFACE,
             public: false,
@@ -79,7 +79,11 @@ where
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+    fn expression(
+        &self,
+        _: &SpecializationData,
+        input: crate::ir::ast::Expr<T>,
+    ) -> crate::ir::ast::Expr<T> {
         ISOSURFACE.call([self.dist.clone().into(), input])
     }
 }

@@ -9,7 +9,7 @@ use std::hash::{Hash, Hasher};
 
 use crate::ast::modify::CONTEXT_STRUCT;
 use crate::ir::ast::{TypeSpec, CONTEXT};
-use crate::ir::module::InputDefinition;
+use crate::ir::module::{InputDefinition, SpecializationData};
 use crate::ir::{
     ast::{Block, Expr, IntoValue, LEFT, OUT, RIGHT},
     module::{FieldDefinition, FunctionDefinition, StructDefinition},
@@ -75,13 +75,17 @@ where
         Identifier::new_dynamic("combine")
     }
 
-    fn functions(&self, entry_point: &Identifier) -> Vec<FunctionDefinition<T>> {
+    fn functions(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &Identifier,
+    ) -> Vec<FunctionDefinition<T>> {
         let (shape_entry_points, shape_functions): (Vec<_>, Vec<_>) = self
             .shapes
             .iter()
             .map(|shape| {
                 let entry_point = shape.entry_point();
-                (entry_point.clone(), shape.functions(&entry_point))
+                (entry_point.clone(), shape.functions(spec, &entry_point))
             })
             .unzip();
 
@@ -96,7 +100,7 @@ where
                     COMBINE_CONTEXT_STRUCT
                         .construct([(LEFT, acc), (RIGHT, next.call(CONTEXT.read()))]),
                     |acc: Expr<T>, next| {
-                        let Expr::Call{ function, args } = next.expression(acc) else  {
+                        let Expr::Call{ function, args } = next.expression(spec, acc) else  {
                             panic!("Combinator expression is not a CallResult")
                         };
 
@@ -109,7 +113,7 @@ where
 
         self.combinator
             .iter()
-            .flat_map(AsIR::functions)
+            .flat_map(|t| t.functions(spec))
             .chain(shape_functions)
             .chain([FunctionDefinition {
                 id: entry_point.clone(),

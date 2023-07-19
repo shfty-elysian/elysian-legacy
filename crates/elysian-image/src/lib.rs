@@ -6,16 +6,22 @@ use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIter
 
 use elysian_core::ir::{
     ast::{GlamF32, Struct, StructIO, Value, DISTANCE, GRADIENT_2D, POSITION_2D},
-    module::AsModule,
+    module::{AsModule, SpecializationData},
 };
 use elysian_syn::static_shapes::dispatch_shape_f32;
 
 #[instrument]
-pub fn rasterize<T>(shape: &T, width: u32, height: u32, scale: f32) -> RgbImage
+pub fn rasterize<T>(
+    shape: &T,
+    spec: &SpecializationData,
+    width: u32,
+    height: u32,
+    scale: f32,
+) -> RgbImage
 where
     T: AsModule<GlamF32>,
 {
-    let shape = dispatch_shape_f32(shape);
+    let shape = dispatch_shape_f32(shape, spec);
 
     let indices: Vec<_> = (0..height)
         .into_iter()

@@ -5,17 +5,18 @@ use crate::{
     ir::{
         as_ir::AsIR,
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, CONTEXT,
-            POSITION_2D,
+            Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, CONTEXT, POSITION_2D,
+            POSITION_3D,
         },
-        module::{FunctionDefinition, InputDefinition, Type},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
 
 use crate::ast::expr::Expr;
 
 pub const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
-pub const DELTA: Property = Property::new("delta", Type::Vector2, 1292788437813720044);
+pub const DELTA_2D: Property = Property::new("delta_2d", Type::Vector2, 1292788437813720044);
+pub const DELTA_3D: Property = Property::new("delta_3d", Type::Vector2, 8306277011223488934);
 
 pub struct Translate<T>
 where
@@ -59,13 +60,21 @@ impl<T> AsIR<T> for Translate<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T>> {
+    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+        let (position, delta) = if spec.domains.contains(&POSITION_2D) {
+            (POSITION_2D, DELTA_2D)
+        } else if spec.domains.contains(&POSITION_3D) {
+            (POSITION_3D, DELTA_2D)
+        } else {
+            panic!("No position domain")
+        };
+
         vec![FunctionDefinition {
             id: TRANSLATE,
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: DELTA,
+                    prop: delta.clone(),
                     mutable: false,
                 },
                 InputDefinition {
@@ -75,14 +84,18 @@ where
             ],
             output: &CONTEXT_STRUCT,
             block: [
-                [CONTEXT, POSITION_2D].write([CONTEXT, POSITION_2D].read() - DELTA.read()),
+                [CONTEXT, position.clone()].write([CONTEXT, position].read() - delta.read()),
                 CONTEXT.read().output(),
             ]
             .block(),
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+    fn expression(
+        &self,
+        _: &SpecializationData,
+        input: crate::ir::ast::Expr<T>,
+    ) -> crate::ir::ast::Expr<T> {
         TRANSLATE.call([self.delta.clone().into(), input])
     }
 }

@@ -13,7 +13,7 @@ pub mod raymarch {
 
     use crate::ir::{
         ast::{GlamF32, Identifier},
-        module::AsModule,
+        module::{AsModule, SpecializationData},
     };
 
     pub struct Raymarch {
@@ -41,10 +41,11 @@ pub mod raymarch {
 
         fn functions(
             &self,
-            entry_point: &Identifier,
+            spec: &SpecializationData,
+            _: &Identifier,
         ) -> Vec<crate::ir::module::FunctionDefinition<GlamF32>> {
             let field_entry_point = self.field.entry_point();
-            self.field.functions(&field_entry_point)
+            self.field.functions(spec, &field_entry_point)
         }
 
         fn structs(&self) -> Vec<crate::ir::module::StructDefinition> {

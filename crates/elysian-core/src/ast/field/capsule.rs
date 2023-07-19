@@ -1,11 +1,12 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
+use crate::ir::module::SpecializationData;
 use crate::{
     ast::{
         expr::Expr,
         field::{Line, CONTEXT_STRUCT},
-        modify::{Isosurface, DIR, ISOSURFACE},
+        modify::{Isosurface, DIR_2D, ISOSURFACE},
     },
     ir::{
         as_ir::AsIR,
@@ -64,24 +65,24 @@ impl<T> AsIR<T> for Capsule<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    fn functions(&self, spec: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         Line {
             dir: self.dir.clone(),
         }
-        .functions()
+        .functions(spec)
         .into_iter()
         .chain(
             Isosurface {
                 dist: self.radius.clone(),
             }
-            .functions(),
+            .functions(spec),
         )
         .chain(FunctionDefinition {
             id: CAPSULE,
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: DIR,
+                    prop: DIR_2D,
                     mutable: false,
                 },
                 InputDefinition {
@@ -95,14 +96,18 @@ where
             ],
             output: CONTEXT_STRUCT,
             block: ISOSURFACE
-                .call([RADIUS.read(), LINE.call([DIR.read(), CONTEXT.read()])])
+                .call([RADIUS.read(), LINE.call([DIR_2D.read(), CONTEXT.read()])])
                 .output()
                 .block(),
         })
         .collect()
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+    fn expression(
+        &self,
+        _: &SpecializationData,
+        input: crate::ir::ast::Expr<T>,
+    ) -> crate::ir::ast::Expr<T> {
         CAPSULE.call([self.dir.clone().into(), self.radius.clone().into(), input])
     }
 }

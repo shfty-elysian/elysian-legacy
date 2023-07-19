@@ -843,6 +843,7 @@ name = "test-bin"
 version = "0.1.0"
 dependencies = [
  "elysian",
+ "elysian-core",
  "elysian-syn",
  "linkme",
  "rust-gpu-bridge",

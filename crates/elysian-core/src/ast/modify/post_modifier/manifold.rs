@@ -6,9 +6,9 @@ use crate::{
         as_ir::AsIR,
         ast::{
             Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, CONTEXT, DISTANCE, GRADIENT_2D,
-            NUM,
+            GRADIENT_3D, NUM,
         },
-        module::{FunctionDefinition, InputDefinition},
+        module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
 };
 
@@ -21,7 +21,15 @@ impl<T> AsIR<T> for Manifold
 where
     T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T>> {
+    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+        let gradient = if spec.domains.contains(&GRADIENT_2D) {
+            GRADIENT_2D
+        } else if spec.domains.contains(&GRADIENT_3D) {
+            GRADIENT_3D
+        } else {
+            panic!("No gradient domain")
+        };
+
         vec![FunctionDefinition {
             id: MANIFOLD,
             public: false,
@@ -33,14 +41,18 @@ where
             block: [
                 NUM.write([CONTEXT, DISTANCE].read()),
                 [CONTEXT, DISTANCE].write(NUM.read().abs()),
-                [CONTEXT, GRADIENT_2D].write([CONTEXT, GRADIENT_2D].read() * NUM.read().sign()),
+                [CONTEXT, gradient.clone()].write([CONTEXT, gradient].read() * NUM.read().sign()),
                 CONTEXT.read().output(),
             ]
             .block(),
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+    fn expression(
+        &self,
+        _: &SpecializationData,
+        input: crate::ir::ast::Expr<T>,
+    ) -> crate::ir::ast::Expr<T> {
         MANIFOLD.call(input)
     }
 }
