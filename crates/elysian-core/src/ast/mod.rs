@@ -2,9 +2,9 @@ pub mod attribute;
 pub mod combine;
 pub mod expr;
 pub mod field;
-pub mod post_modifier;
-pub mod pre_modifier;
+pub mod modify;
 pub mod value;
+pub mod central_diff_gradient;
 
 use crate::ir::{as_ir::DynAsIR, module::DynAsModule};
 

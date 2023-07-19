@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    ast::field::CONTEXT_STRUCT,
+    ast::modify::CONTEXT_STRUCT,
     ir::{
         as_ir::AsIR,
         ast::{

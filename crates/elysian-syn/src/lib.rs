@@ -1,18 +1,18 @@
-use elysian_core::{ast::field::CONTEXT_STRUCT, ir::ast::VectorSpace};
+use elysian_core::{ast::modify::CONTEXT_STRUCT, ir::ast::VectorSpace};
 pub use prettyplease;
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::{
     parse_quote, token::Mut, BinOp, Block, Expr, ExprAssign, ExprBinary, ExprBlock, ExprCall,
-    ExprField, ExprIf, ExprLet, ExprLit, ExprMethodCall, ExprPath, ExprReturn, ExprStruct,
-    ExprUnary, Field, FieldMutability, FieldValue, Fields, FieldsNamed, File, FnArg, Generics,
-    Item, ItemFn, ItemMod, ItemStruct, Lit, LitBool, LitFloat, Pat, PatPath, PatType, Path,
-    PathSegment, ReturnType, Signature, Stmt, Type, TypePath, Visibility,
+    ExprField, ExprIf, ExprLit, ExprMethodCall, ExprPath, ExprReturn, ExprStruct, ExprUnary, Field,
+    FieldMutability, FieldValue, Fields, FieldsNamed, File, FnArg, Generics, Item, ItemFn, ItemMod,
+    ItemStruct, Lit, LitBool, LitFloat, Pat, PatIdent, Path, PathSegment, ReturnType, Signature,
+    Stmt, Type, TypePath, Visibility,
 };
 
 use elysian_core::ir::{
-    ast::{Block as IrBlock, Expr as IrExpr, GlamF32, Property, Stmt as IrStmt, CONTEXT},
+    ast::{Block as IrBlock, Expr as IrExpr, GlamF32, Property, Stmt as IrStmt},
     module::AsModule,
 };
 
@@ -171,6 +171,8 @@ where
     GlamF32: VectorSpace<N>,
     T: AsModule<GlamF32, N>,
 {
+    let name = Ident::new(name, Span::call_site());
+
     let mut attrs = vec![];
 
     attrs.push(parse_quote! {
@@ -298,12 +300,6 @@ where
         }
     });
 
-    let context_struct_name = Ident::new(CONTEXT_STRUCT.name(), Span::call_site());
-    let context_struct_name_unique = Ident::new(&CONTEXT_STRUCT.name_unique(), Span::call_site());
-    items.push(parse_quote! {
-        pub type #context_struct_name = #context_struct_name_unique;
-    });
-
     for def in &module.function_definitions {
         let name = Ident::new(&def.name_unique(), Span::call_site());
 
@@ -374,10 +370,10 @@ where
         items.push(item);
     }
 
-    let name = Ident::new(&module.entry_point.name_unique(), Span::call_site());
+    let entry_point_name = Ident::new(&module.entry_point.name_unique(), Span::call_site());
     items.push(parse_quote! {
-        pub fn shape(context: Struct<GlamF32, 2>) -> Struct<GlamF32, 2> {
-            #name(context.into()).into()
+        pub fn #name(context: Struct<GlamF32, 2>) -> Struct<GlamF32, 2> {
+            #entry_point_name(context.into()).into()
         }
     });
 
@@ -386,7 +382,7 @@ where
         #[linkme::distributed_slice(elysian::syn::static_shapes::STATIC_SHAPES_F32)]
         static STATIC_SHAPE: StaticShape<GlamF32, 2> = StaticShape {
             hash: #hash,
-            function: shape
+            function: #name
         };
     });
 
@@ -435,17 +431,12 @@ where
                 Expr::Let(syn::ExprLet {
                     attrs: vec![],
                     let_token: Default::default(),
-                    pat: Box::new(Pat::Path(PatPath {
+                    pat: Box::new(Pat::Ident(PatIdent {
                         attrs: vec![],
-                        qself: None,
-                        path: Ident::new(
-                            &path
-                                .iter()
-                                .map(|prop| prop.name_unique())
-                                .collect::<String>(),
-                            Span::call_site(),
-                        )
-                        .into(),
+                        by_ref: None,
+                        mutability: Some(Default::default()),
+                        ident: Ident::new(&path[0].name_unique(), Span::call_site()),
+                        subpat: None,
                     })),
                     eq_token: Default::default(),
                     expr: Box::new(expr_to_syn(expr)),
@@ -575,7 +566,31 @@ where
             paren_token: Default::default(),
             args: args.iter().map(|t| expr_to_syn(t)).collect(),
         }),
-        IrExpr::Construct(structure, fields) => Expr::Struct(ExprStruct {
+        IrExpr::Vector2(x, y) => Expr::Call(ExprCall {
+            attrs: vec![],
+            func: Box::new(Expr::Path(ExprPath {
+                attrs: vec![],
+                qself: None,
+                path: Path {
+                    leading_colon: None,
+                    segments: [
+                        PathSegment {
+                            ident: Ident::new("Vec2", Span::call_site()),
+                            arguments: Default::default(),
+                        },
+                        PathSegment {
+                            ident: Ident::new("new", Span::call_site()),
+                            arguments: Default::default(),
+                        },
+                    ]
+                    .into_iter()
+                    .collect(),
+                },
+            })),
+            paren_token: Default::default(),
+            args: [expr_to_syn(x), expr_to_syn(y)].into_iter().collect(),
+        }),
+        IrExpr::Struct(structure, fields) => Expr::Struct(ExprStruct {
             attrs: vec![],
             qself: None,
             path: Ident::new(&structure.name_unique(), Span::call_site()).into(),

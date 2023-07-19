@@ -9,7 +9,7 @@ use elysian::{
     syn::{elysian_to_syn, prettyplease},
 };
 use elysian_core::{
-    ast::field::IntoField,
+    ast::{central_diff_gradient::CentralDiffGradient, field::IntoField, modify::IntoModify},
     ir::{as_ir::DynAsIR, ast::GlamF32, module::DynAsModule},
 };
 use rust_gpu_bridge::glam::Vec2;
@@ -45,6 +45,7 @@ fn main() {
                 radius: 1.0.literal(),
             }
             .field()
+            .modify()
             .translate(Vec2::new(0.0, 0.5).literal()),
         ),
         Box::new(
@@ -53,6 +54,7 @@ fn main() {
                 width: 0.15.literal(),
             }
             .field()
+            .modify()
             .translate(Vec2::new(0.0, -0.25).literal()),
         ),
         Box::new(
@@ -61,6 +63,7 @@ fn main() {
                 width: 0.075.literal(),
             }
             .field()
+            .modify()
             .translate(Vec2::new(0.0, -0.25).literal()),
         ),
     ];
@@ -73,13 +76,19 @@ fn main() {
                 radius: 0.2.literal(),
             }
             .field()
+            .modify()
             .translate(Vec2::new(0.0, 0.5).literal()),
         ),
     ];
 
-    let shape = shape_b.combine(smooth_subtraction);
+    let shape_c = shape_b.combine(smooth_subtraction);
 
-    let source = elysian_to_syn(&shape, "test");
+    let shape_d = CentralDiffGradient {
+        field: Box::new(shape_c),
+        epsilon: 0.01,
+    };
+
+    let source = elysian_to_syn(&shape_d, "test");
     let source = prettyplease::unparse(&source);
     println!("{source:}");
 }

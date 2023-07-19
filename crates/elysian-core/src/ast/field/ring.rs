@@ -7,10 +7,7 @@ use crate::{
     ast::{
         expr::Expr,
         field::{Circle, CONTEXT_STRUCT},
-        post_modifier::{
-            isosurface::{Isosurface, ISOSURFACE},
-            manifold::{Manifold, MANIFOLD},
-        },
+        modify::{Isosurface, Manifold, ISOSURFACE, MANIFOLD},
     },
     ir::{
         as_ir::AsIR,

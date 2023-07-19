@@ -1,5 +1,5 @@
 use crate::{
-    ast::{attribute::Attribute, combine::COMBINE_CONTEXT_STRUCT, field::CONTEXT_STRUCT},
+    ast::{attribute::Attribute, combine::COMBINE_CONTEXT_STRUCT, modify::CONTEXT_STRUCT},
     ir::{
         ast::{
             Expr::{self, *},

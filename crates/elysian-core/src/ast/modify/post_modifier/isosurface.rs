@@ -1,12 +1,12 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::{
-    ast::field::CONTEXT_STRUCT,
+    ast::modify::CONTEXT_STRUCT,
     ir::{
         as_ir::AsIR,
         ast::{
             Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, VectorSpace, CONTEXT,
-            POSITION,
+            DISTANCE,
         },
         module::{FunctionDefinition, InputDefinition, Type},
     },
@@ -14,58 +14,58 @@ use crate::{
 
 use crate::ast::expr::Expr;
 
-pub const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
-pub const DELTA: Property = Property::new("delta", Type::Vector2, 1292788437813720044);
+pub const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
+pub const DIST: Property = Property::new("property", Type::Number, 463524741302033362);
 
-pub struct Translate<T>
+pub struct Isosurface<T>
 where
     T: TypeSpec,
 {
-    pub delta: Expr<T>,
+    pub dist: Expr<T>,
 }
 
-impl<T> Debug for Translate<T>
+impl<T> Debug for Isosurface<T>
 where
     T: TypeSpec,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Translate")
-            .field("delta", &self.delta)
+        f.debug_struct("Isosurface")
+            .field("dist", &self.dist)
             .finish()
     }
 }
 
-impl<T> Clone for Translate<T>
+impl<T> Clone for Isosurface<T>
 where
     T: TypeSpec,
 {
     fn clone(&self) -> Self {
         Self {
-            delta: self.delta.clone(),
+            dist: self.dist.clone(),
         }
     }
 }
 
-impl<T> Hash for Translate<T>
+impl<T> Hash for Isosurface<T>
 where
     T: TypeSpec,
 {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.delta.hash(state);
+        self.dist.hash(state);
     }
 }
 
-impl<T, const N: usize> AsIR<T, N> for Translate<T>
+impl<T, const N: usize> AsIR<T, N> for Isosurface<T>
 where
     T: TypeSpec + VectorSpace<N>,
 {
     fn functions(&self) -> Vec<FunctionDefinition<T, N>> {
         vec![FunctionDefinition {
-            id: TRANSLATE,
+            id: ISOSURFACE,
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: DELTA,
+                    prop: DIST,
                     mutable: false,
                 },
                 InputDefinition {
@@ -75,7 +75,7 @@ where
             ],
             output: &CONTEXT_STRUCT,
             block: [
-                [CONTEXT, POSITION].write([CONTEXT, POSITION].read() - DELTA.read()),
+                [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - DIST.read()),
                 CONTEXT.read().output(),
             ]
             .block(),
@@ -84,8 +84,8 @@ where
 
     fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
         crate::ir::ast::Expr::Call {
-            function: TRANSLATE,
-            args: vec![self.delta.clone().into(), input],
+            function: ISOSURFACE,
+            args: vec![self.dist.clone().into(), input],
         }
     }
 }

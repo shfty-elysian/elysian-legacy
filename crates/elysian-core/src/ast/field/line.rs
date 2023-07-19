@@ -7,7 +7,7 @@ use crate::{
     ast::{
         expr::Expr,
         field::{Point, CONTEXT_STRUCT},
-        pre_modifier::elongate::{Elongate, DIR, ELONGATE},
+        modify::{Elongate, DIR, ELONGATE},
     },
     ir::{
         as_ir::AsIR,

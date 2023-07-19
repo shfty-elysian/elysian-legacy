@@ -7,7 +7,7 @@ use crate::{
     ast::{
         expr::Expr,
         field::{point::Point, CONTEXT_STRUCT},
-        post_modifier::isosurface::{Isosurface, ISOSURFACE},
+        modify::{Isosurface, ISOSURFACE},
     },
     ir::{
         as_ir::AsIR,

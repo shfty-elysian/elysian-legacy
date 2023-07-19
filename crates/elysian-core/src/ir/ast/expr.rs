@@ -20,7 +20,8 @@ where
         function: Identifier,
         args: Vec<Expr<T, N>>,
     },
-    Construct(&'static StructDefinition, BTreeMap<Property, Expr<T, N>>),
+    Vector2(BoxExpr<T, N>, BoxExpr<T, N>),
+    Struct(&'static StructDefinition, BTreeMap<Property, Expr<T, N>>),
     Add(BoxExpr<T, N>, BoxExpr<T, N>),
     Sub(BoxExpr<T, N>, BoxExpr<T, N>),
     Mul(BoxExpr<T, N>, BoxExpr<T, N>),
@@ -51,7 +52,10 @@ where
                 .field("function", function)
                 .field("args", args)
                 .finish(),
-            Self::Construct(arg0, arg1) => {
+            Self::Vector2(arg0, arg1) => {
+                f.debug_tuple("MakeVec2").field(arg0).field(arg1).finish()
+            }
+            Self::Struct(arg0, arg1) => {
                 f.debug_tuple("Construct").field(arg0).field(arg1).finish()
             }
             Self::Add(arg0, arg1) => f.debug_tuple("Add").field(arg0).field(arg1).finish(),
@@ -90,7 +94,8 @@ where
                 function: function.clone(),
                 args: args.clone(),
             },
-            Self::Construct(arg0, arg1) => Self::Construct(arg0.clone(), arg1.clone()),
+            Self::Vector2(arg0, arg1) => Self::Vector2(arg0.clone(), arg1.clone()),
+            Self::Struct(arg0, arg1) => Self::Struct(arg0.clone(), arg1.clone()),
             Self::Add(arg0, arg1) => Self::Add(arg0.clone(), arg1.clone()),
             Self::Sub(arg0, arg1) => Self::Sub(arg0.clone(), arg1.clone()),
             Self::Mul(arg0, arg1) => Self::Mul(arg0.clone(), arg1.clone()),
@@ -118,8 +123,18 @@ where
         match (self, other) {
             (Self::Literal(l0), Self::Literal(r0)) => l0 == r0,
             (Self::Read(l0, l1), Self::Read(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Call { function: l_function, args: l_args }, Self::Call { function: r_function, args: r_args }) => l_function == r_function && l_args == r_args,
-            (Self::Construct(l0, l1), Self::Construct(r0, r1)) => l0 == r0 && l1 == r1,
+            (
+                Self::Call {
+                    function: l_function,
+                    args: l_args,
+                },
+                Self::Call {
+                    function: r_function,
+                    args: r_args,
+                },
+            ) => l_function == r_function && l_args == r_args,
+            (Self::Vector2(l0, l1), Self::Vector2(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::Struct(l0, l1), Self::Struct(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Add(l0, l1), Self::Add(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Sub(l0, l1), Self::Sub(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Mul(l0, l1), Self::Mul(r0, r1)) => l0 == r0 && l1 == r1,

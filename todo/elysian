@@ -125,13 +125,30 @@
            since it's necessary for everything that composes Value,
            and everything that needs to name such types
 
-=========================================================================================================
+* Refactor module entry points as regular functions
+  * Emit a call hierarchy for compositional AsModule types instead of inlining everything
+
+  DONE: Entry points are now regular functions specified by identifier,
+        and can call one another instead of having to inline
 
 * Abstraction of modifier application
+  * Should be viable now AsModule types' generated code is compositional
+  * Can refactor Field to take a single AsIR,
+    lift it into an ApplyModifiers struct as dyn AsModule,
+    and emit appropriate pre / post IR
   * Currently built into field, but should be a wrapper around DynAsModule
     * i.e. Should work with combine
       * Semantically just prefixing and suffixing, so should be doable
   * Intersects with the "do something with field" domain needed for 3D
+
+  DONE: Field now wraps a single AsIR, Modify wraps field AsModule and pre / post AsIR modifiers
+
+=========================================================================================================
+
+* 3D support
+  * How to represent morphisms between vector spaces?
+    * Doesn't fit comfortably into the existing pre / post modifier idiom
+    * Seems like a more general wrapper
 
 * Stronger typing for pre / post / field IR conversion
   * At minimum, create separate traits to identify a given symbol as each
@@ -139,11 +156,6 @@
       * Makes it more ergonomic to support pre + post ops like scale
   * Since the base AST has a Value representation,
     may be able to reinstate something resembling move semantics?
-
-* 3D support
-  * How to represent morphisms between vector spaces?
-    * Doesn't fit comfortably into the existing pre / post modifier idiom
-    * Seems like a more general wrapper
 
 * Domain evaluation
   i.e. Being able to evaluate a subset of a given field's computations

@@ -7,17 +7,17 @@ pub use boolean::*;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use crate::ast::field::CONTEXT_STRUCT;
-use crate::ir::ast::{IntoWrite, CONTEXT};
+use crate::ast::modify::CONTEXT_STRUCT;
+use crate::ir::ast::CONTEXT;
 use crate::ir::module::InputDefinition;
 use crate::ir::{
-    ast::{Block, Expr, IntoRead, IntoValue, Stmt, COMBINE_CONTEXT, LEFT, OUT, RIGHT},
+    ast::{Block, Expr, IntoValue, LEFT, OUT, RIGHT},
     module::{FieldDefinition, FunctionDefinition, StructDefinition},
 };
 
 use crate::ir::{
     as_ir::{AsIR, HashIR},
-    ast::{Identifier, Property, VectorSpace},
+    ast::{Identifier, VectorSpace},
     module::{AsModule, DynAsModule},
 };
 
@@ -98,7 +98,7 @@ where
                 },
                 |acc, next| {
                     self.combinator.iter().fold(
-                        Expr::Construct(
+                        Expr::Struct(
                             COMBINE_CONTEXT_STRUCT,
                             [
                                 (LEFT, acc),

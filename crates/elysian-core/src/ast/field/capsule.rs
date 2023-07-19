@@ -5,8 +5,7 @@ use crate::{
     ast::{
         expr::Expr,
         field::{Line, CONTEXT_STRUCT},
-        post_modifier::isosurface::{Isosurface, ISOSURFACE},
-        pre_modifier::elongate::DIR,
+        modify::{Isosurface, DIR, ISOSURFACE},
     },
     ir::{
         as_ir::AsIR,

@@ -2,8 +2,10 @@ use elysian_core::{
     ast::{
         attribute::Attribute::{self, *},
         combine::{Blend, Boolean},
+        central_diff_gradient::CentralDiffGradient,
         expr::IntoLiteral,
-        field::{Capsule, Circle, Field, IntoField, Point, Ring},
+        field::{Capsule, Circle, IntoField, Point, Ring},
+        modify::IntoModify,
         IntoCombine,
     },
     ir::{as_ir::DynAsIR, ast::GlamF32, module::DynAsModule},
@@ -41,6 +43,7 @@ pub fn kettle_bell() -> DynAsModule<GlamF32, 2> {
                 radius: 1.0.literal(),
             }
             .field()
+            .modify()
             .translate(Vec2::new(0.0, 0.5).literal()),
         ),
         Box::new(
@@ -49,6 +52,7 @@ pub fn kettle_bell() -> DynAsModule<GlamF32, 2> {
                 width: 0.15.literal(),
             }
             .field()
+            .modify()
             .translate(Vec2::new(0.0, -0.25).literal()),
         ),
     ];
@@ -61,21 +65,23 @@ pub fn kettle_bell() -> DynAsModule<GlamF32, 2> {
                 radius: 0.2.literal(),
             }
             .field()
+            .modify()
             .translate(Vec2::new(0.0, 0.5).literal()),
         ),
     ];
 
-    let shape: DynAsModule<GlamF32, 2> = Box::new(shape_b.combine(smooth_subtraction));
+    let shape_c = shape_b.combine(smooth_subtraction);
 
-    shape
+    let shape_d = CentralDiffGradient {
+        field: Box::new(shape_c),
+        epsilon: 0.01,
+    };
+
+    Box::new(shape_d)
 }
 
 pub fn point() -> DynAsModule<GlamF32, 2> {
-    Box::new(Field {
-        pre_modifiers: Default::default(),
-        field: Box::new(Point),
-        post_modifiers: Default::default(),
-    })
+    Box::new(Point.field().modify())
 }
 
 pub fn shapes() -> [(&'static str, DynAsModule<GlamF32, 2>); 2] {
