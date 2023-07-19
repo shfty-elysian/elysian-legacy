@@ -10,38 +10,60 @@ use crate::{
 
 /// Expression resulting in a value
 #[non_exhaustive]
-pub enum Expr<T, const N: usize>
+pub enum Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    Literal(Value<T, N>),
-    Read(Option<Box<Expr<T, N>>>, Vec<Property>),
+    Literal(Value<T>),
+    Read(Option<Box<Expr<T>>>, Vec<Property>),
     Call {
         function: Identifier,
-        args: Vec<Expr<T, N>>,
+        args: Vec<Expr<T>>,
     },
-    Vector2(BoxExpr<T, N>, BoxExpr<T, N>),
-    Struct(&'static StructDefinition, BTreeMap<Property, Expr<T, N>>),
-    Add(BoxExpr<T, N>, BoxExpr<T, N>),
-    Sub(BoxExpr<T, N>, BoxExpr<T, N>),
-    Mul(BoxExpr<T, N>, BoxExpr<T, N>),
-    Div(BoxExpr<T, N>, BoxExpr<T, N>),
-    Min(BoxExpr<T, N>, BoxExpr<T, N>),
-    Max(BoxExpr<T, N>, BoxExpr<T, N>),
-    Mix(BoxExpr<T, N>, BoxExpr<T, N>, BoxExpr<T, N>),
-    Lt(BoxExpr<T, N>, BoxExpr<T, N>),
-    Gt(BoxExpr<T, N>, BoxExpr<T, N>),
-    Neg(BoxExpr<T, N>),
-    Abs(BoxExpr<T, N>),
-    Sign(BoxExpr<T, N>),
-    Length(BoxExpr<T, N>),
-    Normalize(BoxExpr<T, N>),
-    Dot(BoxExpr<T, N>, BoxExpr<T, N>),
+    Vector2(BoxExpr<T>, BoxExpr<T>),
+    Struct(&'static StructDefinition, BTreeMap<Property, Expr<T>>),
+    Add(BoxExpr<T>, BoxExpr<T>),
+    Sub(BoxExpr<T>, BoxExpr<T>),
+    Mul(BoxExpr<T>, BoxExpr<T>),
+    Div(BoxExpr<T>, BoxExpr<T>),
+    Min(BoxExpr<T>, BoxExpr<T>),
+    Max(BoxExpr<T>, BoxExpr<T>),
+    Mix(BoxExpr<T>, BoxExpr<T>, BoxExpr<T>),
+    Lt(BoxExpr<T>, BoxExpr<T>),
+    Gt(BoxExpr<T>, BoxExpr<T>),
+    Neg(BoxExpr<T>),
+    Abs(BoxExpr<T>),
+    Sign(BoxExpr<T>),
+    Length(BoxExpr<T>),
+    Normalize(BoxExpr<T>),
+    Dot(BoxExpr<T>, BoxExpr<T>),
 }
 
-impl<T, const N: usize> Debug for Expr<T, N>
+impl<T> IntoIterator for Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
+{
+    type Item = Self;
+
+    type IntoIter = std::iter::Once<Self>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        std::iter::once(self)
+    }
+}
+
+impl<T> Expr<T>
+where
+    T: TypeSpec,
+{
+    pub fn read<I: IntoIterator<Item = Property>>(self, path: I) -> Expr<T> {
+        Read(Some(Box::new(self)), path.into_iter().collect())
+    }
+}
+
+impl<T> Debug for Expr<T>
+where
+    T: TypeSpec,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -52,12 +74,8 @@ where
                 .field("function", function)
                 .field("args", args)
                 .finish(),
-            Self::Vector2(arg0, arg1) => {
-                f.debug_tuple("MakeVec2").field(arg0).field(arg1).finish()
-            }
-            Self::Struct(arg0, arg1) => {
-                f.debug_tuple("Construct").field(arg0).field(arg1).finish()
-            }
+            Self::Vector2(arg0, arg1) => f.debug_tuple("MakeVec2").field(arg0).field(arg1).finish(),
+            Self::Struct(arg0, arg1) => f.debug_tuple("Construct").field(arg0).field(arg1).finish(),
             Self::Add(arg0, arg1) => f.debug_tuple("Add").field(arg0).field(arg1).finish(),
             Self::Sub(arg0, arg1) => f.debug_tuple("Sub").field(arg0).field(arg1).finish(),
             Self::Mul(arg0, arg1) => f.debug_tuple("Mul").field(arg0).field(arg1).finish(),
@@ -82,9 +100,9 @@ where
     }
 }
 
-impl<T, const N: usize> Clone for Expr<T, N>
+impl<T> Clone for Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn clone(&self) -> Self {
         match self {
@@ -115,9 +133,9 @@ where
     }
 }
 
-impl<T, const N: usize> PartialEq for Expr<T, N>
+impl<T> PartialEq for Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -157,11 +175,11 @@ where
 
 use Expr::*;
 
-use super::{stmt::Stmt, Identifier, TypeSpec, VectorSpace};
+use super::{stmt::Stmt, Identifier, TypeSpec};
 
-impl<T, const N: usize> From<ElysianExpr<T>> for Expr<T, N>
+impl<T> From<ElysianExpr<T>> for Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn from(value: ElysianExpr<T>) -> Self {
         match value {
@@ -186,20 +204,20 @@ where
     }
 }
 
-impl<T, const N: usize> From<Box<ElysianExpr<T>>> for Box<Expr<T, N>>
+impl<T> From<Box<ElysianExpr<T>>> for Box<Expr<T>>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn from(value: Box<ElysianExpr<T>>) -> Self {
         Box::new(Expr::from(*value))
     }
 }
 
-pub type BoxExpr<T, const N: usize> = Box<Expr<T, N>>;
+pub type BoxExpr<T> = Box<Expr<T>>;
 
-impl<T, const N: usize> core::ops::Add for Expr<T, N>
+impl<T> core::ops::Add for Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     type Output = Self;
 
@@ -208,9 +226,9 @@ where
     }
 }
 
-impl<T, const N: usize> core::ops::Sub for Expr<T, N>
+impl<T> core::ops::Sub for Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     type Output = Self;
 
@@ -219,9 +237,9 @@ where
     }
 }
 
-impl<T, const N: usize> core::ops::Mul for Expr<T, N>
+impl<T> core::ops::Mul for Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     type Output = Self;
 
@@ -230,9 +248,9 @@ where
     }
 }
 
-impl<T, const N: usize> core::ops::Div for Expr<T, N>
+impl<T> core::ops::Div for Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     type Output = Self;
 
@@ -241,9 +259,9 @@ where
     }
 }
 
-impl<T, const N: usize> core::ops::Neg for Expr<T, N>
+impl<T> core::ops::Neg for Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     type Output = Self;
 
@@ -252,68 +270,72 @@ where
     }
 }
 
-impl<T, const N: usize> Expr<T, N>
+impl<T> Expr<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    pub fn lt(self, rhs: Expr<T, N>) -> Expr<T, N> {
+    pub fn lt(self, rhs: Expr<T>) -> Expr<T> {
         Lt(Box::new(self), Box::new(rhs))
     }
 
-    pub fn gt(self, rhs: Expr<T, N>) -> Expr<T, N> {
+    pub fn gt(self, rhs: Expr<T>) -> Expr<T> {
         Gt(Box::new(self), Box::new(rhs))
     }
 
-    pub fn min(self, rhs: Expr<T, N>) -> Expr<T, N> {
+    pub fn min(self, rhs: Expr<T>) -> Expr<T> {
         Min(Box::new(self), Box::new(rhs))
     }
 
-    pub fn max(self, rhs: Expr<T, N>) -> Expr<T, N> {
+    pub fn max(self, rhs: Expr<T>) -> Expr<T> {
         Max(Box::new(self), Box::new(rhs))
     }
 
-    pub fn mix(self, rhs: Expr<T, N>, t: Expr<T, N>) -> Expr<T, N> {
+    pub fn mix(self, rhs: Expr<T>, t: Expr<T>) -> Expr<T> {
         Mix(Box::new(self), Box::new(rhs), Box::new(t))
     }
 
-    pub fn dot(self, rhs: Expr<T, N>) -> Expr<T, N> {
+    pub fn dot(self, rhs: Expr<T>) -> Expr<T> {
         Dot(Box::new(self), Box::new(rhs))
     }
 
-    pub fn abs(self) -> Expr<T, N> {
+    pub fn abs(self) -> Expr<T> {
         Abs(Box::new(self))
     }
 
-    pub fn sign(self) -> Expr<T, N> {
+    pub fn sign(self) -> Expr<T> {
         Sign(Box::new(self))
     }
 
-    pub fn length(self) -> Expr<T, N> {
+    pub fn length(self) -> Expr<T> {
         Length(Box::new(self))
     }
 
-    pub fn normalize(self) -> Expr<T, N> {
+    pub fn normalize(self) -> Expr<T> {
         Normalize(Box::new(self))
     }
 
-    pub fn output(self) -> Stmt<T, N> {
+    pub fn output(self) -> Stmt<T> {
         Stmt::Output(self)
+    }
+
+    pub fn vector2(x: Expr<T>, y: Expr<T>) -> Expr<T> {
+        Expr::Vector2(Box::new(x), Box::new(y))
     }
 }
 
-pub trait IntoLiteral<T, const N: usize>: IntoValue<T, N>
+pub trait IntoLiteral<T>: IntoValue<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn literal(self) -> Expr<T, N>;
+    fn literal(self) -> Expr<T>;
 }
 
-impl<T, U, const N: usize> IntoLiteral<U, N> for T
+impl<T, U> IntoLiteral<U> for T
 where
-    U: TypeSpec + VectorSpace<N>,
-    T: IntoValue<U, N>,
+    U: TypeSpec,
+    T: IntoValue<U>,
 {
-    fn literal(self) -> Expr<U, N> {
+    fn literal(self) -> Expr<U> {
         Expr::Literal(self.value())
     }
 }

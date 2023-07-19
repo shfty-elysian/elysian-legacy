@@ -8,8 +8,7 @@ use crate::{
     ir::{
         as_ir::AsIR,
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, VectorSpace, CONTEXT,
-            POSITION,
+            Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, CONTEXT, POSITION_2D,
         },
         module::{FunctionDefinition, InputDefinition, Type},
     },
@@ -63,11 +62,11 @@ where
     }
 }
 
-impl<T, const N: usize> AsIR<T, N> for Elongate<T>
+impl<T> AsIR<T> for Elongate<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T, N>> {
+    fn functions(&self) -> Vec<FunctionDefinition<T>> {
         vec![FunctionDefinition {
             id: if self.infinite {
                 ELONGATE_INFINITE
@@ -87,11 +86,11 @@ where
             ],
             output: &CONTEXT_STRUCT,
             block: {
-                let expr = [CONTEXT, POSITION].read().dot(DIR.read().normalize());
+                let expr = [CONTEXT, POSITION_2D].read().dot(DIR.read().normalize());
 
                 [
-                    [CONTEXT, POSITION].write(
-                        [CONTEXT, POSITION].read()
+                    [CONTEXT, POSITION_2D].write(
+                        [CONTEXT, POSITION_2D].read()
                             - DIR.read().normalize()
                                 * if self.infinite {
                                     expr
@@ -106,14 +105,12 @@ where
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
-        crate::ir::ast::Expr::Call {
-            function: if self.infinite {
-                ELONGATE_INFINITE
-            } else {
-                ELONGATE
-            },
-            args: vec![self.dir.clone().into(), input],
+    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+        if self.infinite {
+            ELONGATE_INFINITE
+        } else {
+            ELONGATE
         }
+        .call([self.dir.clone().into(), input])
     }
 }

@@ -2,6 +2,8 @@ use std::borrow::Cow;
 
 use uuid::Uuid;
 
+use super::{Expr, TypeSpec};
+
 /// Named unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Identifier {
@@ -35,13 +37,27 @@ impl Identifier {
     }
 
     pub fn name_unique(&self) -> String {
-        format!("{}_{}", self.name(), self.uuid().as_simple().to_string().trim_start_matches('0'))
+        format!(
+            "{}_{}",
+            self.name(),
+            self.uuid().as_simple().to_string().trim_start_matches('0')
+        )
     }
 
     pub fn concat(&self, rhs: &Identifier) -> Identifier {
         Identifier {
             name: (self.name.to_string() + "_" + &rhs.name).into(),
             uuid: Uuid::from_u128(self.uuid.as_u128().wrapping_add(rhs.uuid.as_u128())),
+        }
+    }
+
+    pub fn call<T, I: IntoIterator<Item = Expr<T>>>(&self, args: I) -> Expr<T>
+    where
+        T: TypeSpec,
+    {
+        Expr::Call {
+            function: self.clone(),
+            args: args.into_iter().collect(),
         }
     }
 }

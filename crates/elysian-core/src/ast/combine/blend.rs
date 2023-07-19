@@ -3,12 +3,12 @@ use std::fmt::Debug;
 use rust_gpu_bridge::{One, Two, Zero};
 
 use crate::{
-    ast::{attribute::Attribute, expr::Expr, combine::COMBINE_CONTEXT_STRUCT},
+    ast::{attribute::Attribute, combine::COMBINE_CONTEXT_STRUCT, expr::Expr},
     ir::{
         as_ir::AsIR,
         ast::{
             Identifier, IntoLiteral, IntoRead, IntoValue, IntoWrite, Property, TypeSpec,
-            COMBINE_CONTEXT, DISTANCE, LEFT, NUM, OUT, RIGHT, VectorSpace,
+            COMBINE_CONTEXT, DISTANCE, LEFT, NUM, OUT, RIGHT,
         },
         module::{FunctionDefinition, InputDefinition, Type},
     },
@@ -101,13 +101,13 @@ where
     }
 }
 
-impl<T, const N: usize> AsIR<T, N> for Blend<T>
+impl<T> AsIR<T> for Blend<T>
 where
-    T: TypeSpec + VectorSpace<N>,
-    T::NUMBER: IntoValue<T, N>,
-    T::VECTOR2: IntoValue<T, N>,
+    T: TypeSpec,
+    T::NUMBER: IntoValue<T>,
+    T::VECTOR2: IntoValue<T>,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         vec![FunctionDefinition {
             id: match self {
                 Blend::SmoothUnion { attr, .. } => SMOOTH_UNION.concat(Property::from(*attr).id()),
@@ -228,7 +228,7 @@ where
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
+    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
         match self {
             Blend::SmoothUnion { attr, k } => crate::ir::ast::Expr::Call {
                 function: SMOOTH_UNION.concat(Property::from(*attr).id()),

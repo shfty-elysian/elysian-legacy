@@ -9,7 +9,7 @@ use crate::{
     },
     ir::{
         as_ir::AsIR,
-        ast::{Identifier, IntoBlock, TypeSpec, VectorSpace, CONTEXT},
+        ast::{Identifier, IntoBlock, TypeSpec, CONTEXT},
         module::{FunctionDefinition, InputDefinition},
     },
 };
@@ -60,11 +60,11 @@ where
     }
 }
 
-impl<T, const N: usize> AsIR<T, N> for Capsule<T>
+impl<T> AsIR<T> for Capsule<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         Line {
             dir: self.dir.clone(),
         }
@@ -76,7 +76,7 @@ where
             }
             .functions(),
         )
-        .chain([FunctionDefinition {
+        .chain(FunctionDefinition {
             id: CAPSULE,
             public: false,
             inputs: vec![
@@ -94,26 +94,15 @@ where
                 },
             ],
             output: CONTEXT_STRUCT,
-            block: [crate::ir::ast::Expr::Call {
-                function: ISOSURFACE,
-                args: vec![
-                    RADIUS.read(),
-                    crate::ir::ast::Expr::Call {
-                        function: LINE,
-                        args: vec![DIR.read(), CONTEXT.read()],
-                    },
-                ],
-            }
-            .output()]
-            .block(),
-        }])
+            block: ISOSURFACE
+                .call([RADIUS.read(), LINE.call([DIR.read(), CONTEXT.read()])])
+                .output()
+                .block(),
+        })
         .collect()
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
-        crate::ir::ast::Expr::Call {
-            function: CAPSULE,
-            args: vec![self.dir.clone().into(), self.radius.clone().into(), input],
-        }
+    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+        CAPSULE.call([self.dir.clone().into(), self.radius.clone().into(), input])
     }
 }

@@ -1,11 +1,14 @@
-use crate::{ir::{
-    as_ir::AsIR,
-    ast::{
-        Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, COMBINE_CONTEXT, DISTANCE, LEFT, OUT,
-        RIGHT, VectorSpace,
+use crate::{
+    ast::combine::COMBINE_CONTEXT_STRUCT,
+    ir::{
+        as_ir::AsIR,
+        ast::{
+            Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, COMBINE_CONTEXT,
+            DISTANCE, LEFT, OUT, RIGHT,
+        },
+        module::{FunctionDefinition, InputDefinition},
     },
-    module::{FunctionDefinition, InputDefinition},
-}, ast::combine::COMBINE_CONTEXT_STRUCT};
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Boolean {
@@ -18,11 +21,11 @@ pub const UNION: Identifier = Identifier::new("union", 1894363406191409858);
 pub const INTERSECTION: Identifier = Identifier::new("intersection", 18033822391797795038);
 pub const SUBTRACTION: Identifier = Identifier::new("subtraction", 1414822549598552032);
 
-impl<T, const N: usize> AsIR<T, N> for Boolean
+impl<T> AsIR<T> for Boolean
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         vec![FunctionDefinition {
             id: match self {
                 Boolean::Union => UNION,
@@ -78,7 +81,7 @@ where
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
+    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
         match self {
             Boolean::Union => crate::ir::ast::Expr::Call {
                 function: UNION,

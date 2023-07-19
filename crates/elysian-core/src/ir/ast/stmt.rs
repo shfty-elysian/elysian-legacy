@@ -5,34 +5,47 @@ use std::{
 
 use crate::ir::ast::{Block, Expr, Property};
 
-use super::{TypeSpec, VectorSpace};
+use super::TypeSpec;
 
 /// Statement consuming the result of an expression
 #[non_exhaustive]
-pub enum Stmt<T, const N: usize>
+pub enum Stmt<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    Block(Block<T, N>),
+    Block(Block<T>),
     Write {
         path: Vec<Property>,
-        expr: Expr<T, N>,
+        expr: Expr<T>,
     },
     If {
-        cond: Expr<T, N>,
-        then: Box<Stmt<T, N>>,
-        otherwise: Option<Box<Stmt<T, N>>>,
+        cond: Expr<T>,
+        then: Box<Stmt<T>>,
+        otherwise: Option<Box<Stmt<T>>>,
     },
     Loop {
-        stmt: Box<Stmt<T, N>>,
+        stmt: Box<Stmt<T>>,
     },
     Break,
-    Output(Expr<T, N>),
+    Output(Expr<T>),
 }
 
-impl<T, const N: usize> Debug for Stmt<T, N>
+impl<T> IntoIterator for Stmt<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
+{
+    type Item = Self;
+
+    type IntoIter = std::iter::Once<Self>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        std::iter::once(self)
+    }
+}
+
+impl<T> Debug for Stmt<T>
+where
+    T: TypeSpec,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -59,9 +72,9 @@ where
     }
 }
 
-impl<T, const N: usize> Clone for Stmt<T, N>
+impl<T> Clone for Stmt<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn clone(&self) -> Self {
         match self {
@@ -86,20 +99,20 @@ where
     }
 }
 
-impl<T, const N: usize> Hash for Stmt<T, N>
+impl<T> Hash for Stmt<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         core::mem::discriminant(self).hash(state);
     }
 }
 
-impl<T, const N: usize> Stmt<T, N>
+impl<T> Stmt<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    pub fn if_else(self, cond: Expr<T, N>, otherwise: Option<Stmt<T, N>>) -> Self {
+    pub fn if_else(self, cond: Expr<T>, otherwise: Option<Stmt<T>>) -> Self {
         Stmt::If {
             cond,
             then: Box::new(self),

@@ -1,21 +1,27 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::{ir::{
-    as_ir::AsIR,
-    ast::{Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, CONTEXT, DISTANCE, GRADIENT, NUM, VectorSpace},
-    module::{FunctionDefinition, InputDefinition},
-}, ast::modify::CONTEXT_STRUCT};
+use crate::{
+    ast::modify::CONTEXT_STRUCT,
+    ir::{
+        as_ir::AsIR,
+        ast::{
+            Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, CONTEXT, DISTANCE, GRADIENT_2D,
+            NUM,
+        },
+        module::{FunctionDefinition, InputDefinition},
+    },
+};
 
 pub const MANIFOLD: Identifier = Identifier::new("manifold", 7861274791729269697);
 
 #[derive(Debug, Clone, Hash)]
 pub struct Manifold;
 
-impl<T, const N: usize> AsIR<T, N> for Manifold
+impl<T> AsIR<T> for Manifold
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T, N>> {
+    fn functions(&self) -> Vec<FunctionDefinition<T>> {
         vec![FunctionDefinition {
             id: MANIFOLD,
             public: false,
@@ -27,17 +33,14 @@ where
             block: [
                 NUM.write([CONTEXT, DISTANCE].read()),
                 [CONTEXT, DISTANCE].write(NUM.read().abs()),
-                [CONTEXT, GRADIENT].write([CONTEXT, GRADIENT].read() * NUM.read().sign()),
+                [CONTEXT, GRADIENT_2D].write([CONTEXT, GRADIENT_2D].read() * NUM.read().sign()),
                 CONTEXT.read().output(),
             ]
             .block(),
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
-        crate::ir::ast::Expr::Call {
-            function: MANIFOLD,
-            args: vec![input],
-        }
+    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+        MANIFOLD.call(input)
     }
 }

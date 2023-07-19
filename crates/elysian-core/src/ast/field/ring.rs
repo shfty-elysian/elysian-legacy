@@ -11,7 +11,7 @@ use crate::{
     },
     ir::{
         as_ir::AsIR,
-        ast::{Identifier, IntoBlock, Property, TypeSpec, VectorSpace, CONTEXT},
+        ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT},
         module::{FunctionDefinition, InputDefinition, Type},
     },
 };
@@ -63,11 +63,11 @@ where
     }
 }
 
-impl<T, const N: usize> AsIR<T, N> for Ring<T>
+impl<T> AsIR<T> for Ring<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         Circle {
             radius: self.radius.clone(),
         }
@@ -80,7 +80,7 @@ where
             }
             .functions(),
         )
-        .chain([FunctionDefinition {
+        .chain(FunctionDefinition {
             id: RING,
             public: false,
             inputs: vec![
@@ -98,29 +98,18 @@ where
                 },
             ],
             output: CONTEXT_STRUCT,
-            block: [crate::ir::ast::Expr::Call {
-                function: ISOSURFACE,
-                args: vec![
+            block: ISOSURFACE
+                .call([
                     WIDTH.read(),
-                    crate::ir::ast::Expr::Call {
-                        function: MANIFOLD,
-                        args: vec![crate::ir::ast::Expr::Call {
-                            function: CIRCLE,
-                            args: vec![RADIUS.read(), CONTEXT.read()],
-                        }],
-                    },
-                ],
-            }
-            .output()]
-            .block(),
-        }])
+                    MANIFOLD.call(CIRCLE.call([RADIUS.read(), CONTEXT.read()])),
+                ])
+                .output()
+                .block(),
+        })
         .collect()
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
-        crate::ir::ast::Expr::Call {
-            function: RING,
-            args: vec![self.radius.clone().into(), self.width.clone().into(), input],
-        }
+    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+        RING.call([self.radius.clone().into(), self.width.clone().into(), input])
     }
 }

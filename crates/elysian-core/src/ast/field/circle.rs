@@ -11,7 +11,7 @@ use crate::{
     },
     ir::{
         as_ir::AsIR,
-        ast::{Identifier, IntoBlock, Property, TypeSpec, VectorSpace, CONTEXT},
+        ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT},
         module::{FunctionDefinition, InputDefinition, Type},
     },
 };
@@ -59,11 +59,11 @@ where
     }
 }
 
-impl<T, const N: usize> AsIR<T, N> for Circle<T>
+impl<T> AsIR<T> for Circle<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         Point
             .functions()
             .into_iter()
@@ -73,7 +73,7 @@ where
                 }
                 .functions(),
             )
-            .chain([FunctionDefinition {
+            .chain(FunctionDefinition {
                 id: CIRCLE,
                 public: false,
                 inputs: vec![
@@ -87,26 +87,15 @@ where
                     },
                 ],
                 output: &CONTEXT_STRUCT,
-                block: [crate::ir::ast::Expr::Call {
-                    function: ISOSURFACE,
-                    args: vec![
-                        RADIUS.read(),
-                        crate::ir::ast::Expr::Call {
-                            function: POINT,
-                            args: vec![CONTEXT.read()],
-                        },
-                    ],
-                }
-                .output()]
-                .block(),
-            }])
+                block: ISOSURFACE
+                    .call([RADIUS.read(), POINT.call(CONTEXT.read())])
+                    .output()
+                    .block(),
+            })
             .collect()
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
-        crate::ir::ast::Expr::Call {
-            function: CIRCLE,
-            args: vec![self.radius.clone().into(), input],
-        }
+    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+        CIRCLE.call([self.radius.clone().into(), input])
     }
 }

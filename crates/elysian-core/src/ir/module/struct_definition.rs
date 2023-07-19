@@ -1,4 +1,4 @@
-use crate::ir::ast::{Identifier, Property};
+use crate::ir::ast::{Expr, Identifier, Property, TypeSpec};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StructDefinition {
@@ -14,6 +14,16 @@ impl StructDefinition {
 
     pub fn name_unique(&self) -> String {
         self.id.name_unique()
+    }
+
+    pub fn construct<T, I: IntoIterator<Item = (Property, Expr<T>)>>(
+        &'static self,
+        props: I,
+    ) -> Expr<T>
+    where
+        T: TypeSpec,
+    {
+        Expr::Struct(self, props.into_iter().collect())
     }
 }
 

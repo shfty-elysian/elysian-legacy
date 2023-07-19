@@ -1,18 +1,18 @@
-use crate::ir::ast::{Block, Stmt, TypeSpec, VectorSpace};
+use crate::ir::ast::{Block, Stmt, TypeSpec};
 
-pub trait IntoBlock<T, const N: usize>: IntoIterator<Item = Stmt<T, N>>
+pub trait IntoBlock<T>: IntoIterator<Item = Stmt<T>>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn block(self) -> Block<T, N>;
+    fn block(self) -> Block<T>;
 }
 
-impl<T, U, const N: usize> IntoBlock<U, N> for T
+impl<T, U> IntoBlock<U> for T
 where
-    U: TypeSpec + VectorSpace<N>,
-    T: IntoIterator<Item = Stmt<U, N>>,
+    U: TypeSpec,
+    T: IntoIterator<Item = Stmt<U>>,
 {
-    fn block(self) -> Block<U, N> {
+    fn block(self) -> Block<U> {
         Block(self.into_iter().collect())
     }
 }

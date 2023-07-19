@@ -11,7 +11,7 @@ use crate::{
     },
     ir::{
         as_ir::AsIR,
-        ast::{Identifier, IntoBlock, TypeSpec, VectorSpace, CONTEXT},
+        ast::{Identifier, IntoBlock, TypeSpec, CONTEXT},
         module::{FunctionDefinition, InputDefinition},
     },
 };
@@ -56,11 +56,11 @@ where
     }
 }
 
-impl<T, const N: usize> AsIR<T, N> for Line<T>
+impl<T> AsIR<T> for Line<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T, N>> {
+    fn functions(&self) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         Point
             .functions()
             .into_iter()
@@ -71,7 +71,7 @@ where
                 }
                 .functions(),
             )
-            .chain([FunctionDefinition {
+            .chain(FunctionDefinition {
                 id: LINE,
                 public: false,
                 inputs: vec![
@@ -85,23 +85,15 @@ where
                     },
                 ],
                 output: CONTEXT_STRUCT,
-                block: [crate::ir::ast::Expr::Call {
-                    function: POINT,
-                    args: vec![crate::ir::ast::Expr::Call {
-                        function: ELONGATE,
-                        args: vec![DIR.read(), CONTEXT.read()],
-                    }],
-                }
-                .output()]
-                .block(),
-            }])
+                block: POINT
+                    .call(ELONGATE.call([DIR.read(), CONTEXT.read()]))
+                    .output()
+                    .block(),
+            })
             .collect()
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
-        crate::ir::ast::Expr::Call {
-            function: LINE,
-            args: vec![self.dir.clone().into(), input],
-        }
+    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+        LINE.call([self.dir.clone().into(), input])
     }
 }

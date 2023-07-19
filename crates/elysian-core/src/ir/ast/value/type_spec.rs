@@ -2,9 +2,11 @@ use std::fmt::Debug;
 
 use rust_gpu_bridge::glam::{DVec2, DVec3, DVec4, Vec2, Vec3, Vec4};
 
-use super::{Number, Vector2};
+use super::{Number, Vector2, VectorSpace};
 
-pub trait TypeSpec: 'static {
+pub trait TypeSpec:
+    'static + VectorSpace<1> + VectorSpace<2> + VectorSpace<3> + VectorSpace<4>
+{
     type NUMBER: 'static + Debug + Clone + PartialEq + PartialOrd + Number<Self>;
     type VECTOR2: 'static + Debug + Clone + PartialEq + Vector2<Self>;
     type VECTOR3: 'static + Debug + Clone + PartialEq;

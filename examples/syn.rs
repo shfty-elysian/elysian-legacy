@@ -15,7 +15,7 @@ use elysian_core::{
 use rust_gpu_bridge::glam::Vec2;
 
 fn main() {
-    let smooth_union: [DynAsIR<GlamF32, 2>; 3] = [
+    let smooth_union: [DynAsIR<GlamF32>; 3] = [
         Box::new(Boolean::Union),
         Box::new(Blend::SmoothUnion {
             attr: Distance,
@@ -27,7 +27,7 @@ fn main() {
         }),
     ];
 
-    let smooth_subtraction: [DynAsIR<GlamF32, 2>; 3] = [
+    let smooth_subtraction: [DynAsIR<GlamF32>; 3] = [
         Box::new(Boolean::Subtraction),
         Box::new(Blend::SmoothSubtraction {
             attr: Attribute::Distance,
@@ -39,7 +39,7 @@ fn main() {
         }),
     ];
 
-    let shape_a: [DynAsModule<GlamF32, 2>; 3] = [
+    let shape_a: [DynAsModule<GlamF32>; 3] = [
         Box::new(
             Circle {
                 radius: 1.0.literal(),
@@ -68,7 +68,7 @@ fn main() {
         ),
     ];
 
-    let shape_b: [DynAsModule<GlamF32, 2>; 2] = [
+    let shape_b: [DynAsModule<GlamF32>; 2] = [
         Box::new(shape_a.combine(smooth_union)),
         Box::new(
             Capsule {

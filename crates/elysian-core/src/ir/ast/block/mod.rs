@@ -9,56 +9,56 @@ use std::{
 
 use crate::ir::ast::Stmt;
 
-use super::{TypeSpec, VectorSpace};
+use super::TypeSpec;
 
 /// List of statements
-pub struct Block<T, const N: usize>(pub Vec<Stmt<T, N>>)
+pub struct Block<T>(pub Vec<Stmt<T>>)
 where
-    T: TypeSpec + VectorSpace<N>;
+    T: TypeSpec;
 
-impl<T, const N: usize> Debug for Block<T, N>
+impl<T> Debug for Block<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Block").field(&self.0).finish()
     }
 }
 
-impl<T, const N: usize> Default for Block<T, N>
+impl<T> Default for Block<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn default() -> Self {
         Self(Default::default())
     }
 }
 
-impl<T, const N: usize> Clone for Block<T, N>
+impl<T> Clone for Block<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<T, const N: usize> Hash for Block<T, N>
+impl<T> Hash for Block<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.hash(state);
     }
 }
 
-impl<T, const N: usize> IntoIterator for Block<T, N>
+impl<T> IntoIterator for Block<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    type Item = Stmt<T, N>;
+    type Item = Stmt<T>;
 
-    type IntoIter = std::vec::IntoIter<Stmt<T, N>>;
+    type IntoIter = std::vec::IntoIter<Stmt<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         match self {
@@ -68,35 +68,35 @@ where
     }
 }
 
-impl<T, const N: usize> FromIterator<Stmt<T, N>> for Block<T, N>
+impl<T> FromIterator<Stmt<T>> for Block<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn from_iter<U: IntoIterator<Item = Stmt<T, N>>>(iter: U) -> Self {
+    fn from_iter<U: IntoIterator<Item = Stmt<T>>>(iter: U) -> Self {
         Block(iter.into_iter().collect())
     }
 }
 
-pub trait ComposeBlocks<T, const N: usize>: IntoIterator<Item = Stmt<T, N>>
+pub trait ComposeBlocks<T>: IntoIterator<Item = Stmt<T>>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn compose<I: IntoIterator<Item = Stmt<T, N>>>(self, i: I) -> Stmt<T, N>;
+    fn compose<I: IntoIterator<Item = Stmt<T>>>(self, i: I) -> Stmt<T>;
 }
 
-pub fn into_block_stmt<T, const N: usize, I: IntoIterator<Item = Stmt<T, N>>>(t: I) -> Stmt<T, N>
+pub fn into_block_stmt<T, I: IntoIterator<Item = Stmt<T>>>(t: I) -> Stmt<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     Stmt::Block(crate::ir::ast::Block(t.into_iter().collect()))
 }
 
-impl<T, U, const N: usize> ComposeBlocks<U, N> for T
+impl<T, U> ComposeBlocks<U> for T
 where
-    U: TypeSpec + VectorSpace<N>,
-    T: IntoIterator<Item = Stmt<U, N>>,
+    U: TypeSpec,
+    T: IntoIterator<Item = Stmt<U>>,
 {
-    fn compose<I: IntoIterator<Item = Stmt<U, N>>>(self, rhs: I) -> Stmt<U, N> {
+    fn compose<I: IntoIterator<Item = Stmt<U>>>(self, rhs: I) -> Stmt<U> {
         let Stmt::Block(lhs) = into_block_stmt(self) else {
             panic!("Compose LHS is not a Block");
         };

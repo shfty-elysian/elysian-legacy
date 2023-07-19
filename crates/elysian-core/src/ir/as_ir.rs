@@ -4,29 +4,29 @@ use std::{
 };
 
 use super::{
-    ast::{Expr, TypeSpec, VectorSpace},
+    ast::{Expr, TypeSpec},
     module::FunctionDefinition,
 };
 
-pub trait AsIR<T, const N: usize>: std::fmt::Debug + HashIR + CloneIR<T, N>
+pub trait AsIR<T>: std::fmt::Debug + HashIR + CloneIR<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T, N>>;
-    fn expression(&self, input: Expr<T, N>) -> Expr<T, N>;
+    fn functions(&self) -> Vec<FunctionDefinition<T>>;
+    fn expression(&self, input: Expr<T>) -> Expr<T>;
 }
 
-pub type DynAsIR<T, const N: usize> = Box<dyn AsIR<T, N>>;
+pub type DynAsIR<T> = Box<dyn AsIR<T>>;
 
-impl<T, const N: usize> AsIR<T, N> for Box<dyn AsIR<T, N>>
+impl<T> AsIR<T> for Box<dyn AsIR<T>>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T, N>> {
+    fn functions(&self) -> Vec<FunctionDefinition<T>> {
         (**self).functions()
     }
 
-    fn expression(&self, input: Expr<T, N>) -> Expr<T, N> {
+    fn expression(&self, input: Expr<T>) -> Expr<T> {
         (**self).expression(input)
     }
 }
@@ -46,34 +46,34 @@ where
     }
 }
 
-impl<T, const N: usize> HashIR for Box<dyn AsIR<T, N>> {
+impl<T> HashIR for Box<dyn AsIR<T>> {
     fn hash_ir(&self) -> u64 {
         (**self).hash_ir()
     }
 }
 
-pub trait CloneIR<T, const N: usize>: 'static
+pub trait CloneIR<T>: 'static
 where
     T: TypeSpec,
 {
-    fn clone_ir(&self) -> Box<dyn AsIR<T, N>>;
+    fn clone_ir(&self) -> Box<dyn AsIR<T>>;
 }
 
-impl<T, U, const N: usize> CloneIR<U, N> for T
+impl<T, U> CloneIR<U> for T
 where
-    U: TypeSpec + VectorSpace<N>,
-    T: 'static + Clone + AsIR<U, N>,
+    U: TypeSpec,
+    T: 'static + Clone + AsIR<U>,
 {
-    fn clone_ir(&self) -> Box<dyn AsIR<U, N>> {
+    fn clone_ir(&self) -> Box<dyn AsIR<U>> {
         Box::new(self.clone())
     }
 }
 
-impl<T, const N: usize> CloneIR<T, N> for Box<dyn AsIR<T, N>>
+impl<T> CloneIR<T> for Box<dyn AsIR<T>>
 where
     T: TypeSpec,
 {
-    fn clone_ir(&self) -> Box<dyn AsIR<T, N>> {
+    fn clone_ir(&self) -> Box<dyn AsIR<T>> {
         (**self).clone_ir()
     }
 }

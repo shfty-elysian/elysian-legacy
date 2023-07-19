@@ -12,8 +12,8 @@ use std::{
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
     ast::{
-        Block, Expr, Identifier, IntoValue, TypeSpec, VectorSpace, COLOR, CONTEXT, DISTANCE, ERROR,
-        GRADIENT, LIGHT, POSITION, SUPPORT, TANGENT, TIME, UV,
+        Identifier, IntoBlock, IntoValue, TypeSpec, COLOR, CONTEXT, DISTANCE, ERROR, GRADIENT_2D,
+        LIGHT, POSITION_2D, SUPPORT_2D, TANGENT_2D, TIME, UV,
     },
     module::{
         AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
@@ -26,7 +26,7 @@ pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
     public: true,
     fields: &[
         FieldDefinition {
-            prop: POSITION,
+            prop: POSITION_2D,
             public: true,
         },
         FieldDefinition {
@@ -38,7 +38,7 @@ pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
             public: true,
         },
         FieldDefinition {
-            prop: GRADIENT,
+            prop: GRADIENT_2D,
             public: true,
         },
         FieldDefinition {
@@ -46,7 +46,7 @@ pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
             public: true,
         },
         FieldDefinition {
-            prop: TANGENT,
+            prop: TANGENT_2D,
             public: true,
         },
         FieldDefinition {
@@ -58,7 +58,7 @@ pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
             public: true,
         },
         FieldDefinition {
-            prop: SUPPORT,
+            prop: SUPPORT_2D,
             public: true,
         },
         FieldDefinition {
@@ -68,13 +68,13 @@ pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
     ],
 };
 
-pub struct Modify<T, const N: usize> {
-    pub pre_modifiers: Vec<DynAsIR<T, N>>,
-    pub field: DynAsModule<T, N>,
-    pub post_modifiers: Vec<DynAsIR<T, N>>,
+pub struct Modify<T> {
+    pub pre_modifiers: Vec<DynAsIR<T>>,
+    pub field: DynAsModule<T>,
+    pub post_modifiers: Vec<DynAsIR<T>>,
 }
 
-impl<T, const N: usize> Debug for Modify<T, N> {
+impl<T> Debug for Modify<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Modify")
             .field("pre_modifiers", &self.pre_modifiers)
@@ -84,7 +84,7 @@ impl<T, const N: usize> Debug for Modify<T, N> {
     }
 }
 
-impl<T, const N: usize> Hash for Modify<T, N> {
+impl<T> Hash for Modify<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for modifier in &self.pre_modifiers {
             state.write_u64(modifier.hash_ir());
@@ -96,50 +96,50 @@ impl<T, const N: usize> Hash for Modify<T, N> {
     }
 }
 
-impl<T, const N: usize> Modify<T, N>
+impl<T> Modify<T>
 where
-    T: VectorSpace<N>,
+    T: TypeSpec,
 {
-    pub fn translate(mut self, delta: crate::ast::expr::Expr<T>) -> Modify<T, N> {
+    pub fn translate(mut self, delta: crate::ast::expr::Expr<T>) -> Modify<T> {
         self.pre_modifiers.push(Box::new(Translate { delta }));
         self
     }
 
-    pub fn elongate(mut self, dir: crate::ast::expr::Expr<T>, infinite: bool) -> Modify<T, N> {
+    pub fn elongate(mut self, dir: crate::ast::expr::Expr<T>, infinite: bool) -> Modify<T> {
         self.pre_modifiers
             .push(Box::new(Elongate { dir, infinite }));
         self
     }
 
-    pub fn isosurface(mut self, dist: crate::ast::expr::Expr<T>) -> Modify<T, N> {
+    pub fn isosurface(mut self, dist: crate::ast::expr::Expr<T>) -> Modify<T> {
         self.post_modifiers.push(Box::new(Isosurface { dist }));
         self
     }
 
-    pub fn manifold(mut self) -> Modify<T, N> {
+    pub fn manifold(mut self) -> Modify<T> {
         self.post_modifiers.push(Box::new(Manifold));
         self
     }
 }
 
-impl<T, const N: usize> AsModule<T, N> for Modify<T, N>
+impl<T> AsModule<T> for Modify<T>
 where
-    T: VectorSpace<N>,
-    T::NUMBER: IntoValue<T, N>,
-    T::VECTOR2: IntoValue<T, N>,
+    T: TypeSpec,
+    T::NUMBER: IntoValue<T>,
+    T::VECTOR2: IntoValue<T>,
 {
     fn entry_point(&self) -> Identifier {
         Identifier::new_dynamic("modify")
     }
 
-    fn functions(&self, entry_point: Identifier) -> Vec<FunctionDefinition<T, N>> {
+    fn functions(&self, entry_point: &Identifier) -> Vec<FunctionDefinition<T>> {
         let field_entry_point = self.field.entry_point();
         self.pre_modifiers
             .iter()
             .flat_map(AsIR::functions)
-            .chain(self.field.functions(field_entry_point.clone()))
+            .chain(self.field.functions(&field_entry_point))
             .chain(self.post_modifiers.iter().flat_map(AsIR::functions))
-            .chain([FunctionDefinition {
+            .chain(FunctionDefinition {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
@@ -147,21 +147,19 @@ where
                     mutable: false,
                 }],
                 output: CONTEXT_STRUCT,
-                block: Block(vec![self
+                block: self
                     .post_modifiers
                     .iter()
                     .fold(
-                        Expr::Call {
-                            function: field_entry_point,
-                            args: vec![self
-                                .pre_modifiers
-                                .iter()
-                                .fold(CONTEXT.read(), |acc, next| next.expression(acc))],
-                        },
+                        field_entry_point.call([self
+                            .pre_modifiers
+                            .iter()
+                            .fold(CONTEXT.read(), |acc, next| next.expression(acc))]),
                         |acc, next| next.expression(acc),
                     )
-                    .output()]),
-            }])
+                    .output()
+                    .block(),
+            })
             .collect()
     }
 
@@ -170,11 +168,11 @@ where
     }
 }
 
-pub trait IntoModify<T, const N: usize>: 'static + Sized + AsModule<T, N>
+pub trait IntoModify<T>: 'static + Sized + AsModule<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn modify(self) -> Modify<T, N> {
+    fn modify(self) -> Modify<T> {
         Modify {
             pre_modifiers: Default::default(),
             field: Box::new(self),
@@ -183,9 +181,9 @@ where
     }
 }
 
-impl<T, U, const N: usize> IntoModify<U, N> for T
+impl<T, U> IntoModify<U> for T
 where
-    T: 'static + Sized + AsModule<U, N>,
-    U: TypeSpec + VectorSpace<N>,
+    T: 'static + Sized + AsModule<U>,
+    U: TypeSpec,
 {
 }

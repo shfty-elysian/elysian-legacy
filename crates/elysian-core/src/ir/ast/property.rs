@@ -9,17 +9,17 @@ use crate::{
     },
 };
 
-use super::{Identifier, TypeSpec, VectorSpace};
+use super::{Identifier, TypeSpec};
 
-pub const POSITION: Property = Property::new("position", Type::VectorSpace, 19300293251480055481);
+pub const POSITION_2D: Property = Property::new("position_2d", Type::Vector2, 19300293251480055481);
 pub const TIME: Property = Property::new("time", Type::Number, 391570251245214947);
 pub const DISTANCE: Property = Property::new("distance", Type::Number, 20699600731090380932);
-pub const GRADIENT: Property = Property::new("gradient", Type::VectorSpace, 16702807221222221695);
+pub const GRADIENT_2D: Property = Property::new("gradient_2d", Type::Vector2, 16702807221222221695);
 pub const UV: Property = Property::new("uv", Type::Vector2, 1527481748115194786);
-pub const TANGENT: Property = Property::new("tangent", Type::VectorSpace, 12976793731289731131);
+pub const TANGENT_2D: Property = Property::new("tangent_2d", Type::Vector2, 12976793731289731131);
 pub const COLOR: Property = Property::new("color", Type::Vector4, 84604795624457789);
 pub const LIGHT: Property = Property::new("light", Type::Number, 1330409404139204842);
-pub const SUPPORT: Property = Property::new("support", Type::VectorSpace, 85970193295239647);
+pub const SUPPORT_2D: Property = Property::new("support_2d", Type::Vector2, 85970193295239647);
 pub const ERROR: Property = Property::new("error", Type::Number, 209621851525461471);
 pub const NUM: Property = Property::new("num", Type::Number, 1349662877516236181);
 
@@ -41,6 +41,16 @@ pub const OUT: Property = Property::new("out", Type::Struct(&CONTEXT_STRUCT), 14
 pub struct Property {
     id: Identifier,
     ty: Type,
+}
+
+impl IntoIterator for Property {
+    type Item = Self;
+
+    type IntoIter = std::iter::Once<Self>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        std::iter::once(self)
+    }
 }
 
 impl Property {
@@ -67,16 +77,16 @@ impl Property {
         self.id.name_unique()
     }
 
-    pub fn read<T, const N: usize>(self) -> Expr<T, N>
+    pub fn read<T>(self) -> Expr<T>
     where
-        T: TypeSpec + VectorSpace<N>,
+        T: TypeSpec,
     {
         Read(None, vec![self])
     }
 
-    pub fn write<T, const N: usize>(self, expr: Expr<T, N>) -> Stmt<T, N>
+    pub fn write<T>(self, expr: Expr<T>) -> Stmt<T>
     where
-        T: TypeSpec + VectorSpace<N>,
+        T: TypeSpec,
     {
         Write {
             path: vec![self],
@@ -88,48 +98,48 @@ impl Property {
 impl From<Attribute> for Property {
     fn from(value: Attribute) -> Self {
         match value {
-            Attribute::Position => POSITION,
+            Attribute::Position => POSITION_2D,
             Attribute::Time => TIME,
             Attribute::Distance => DISTANCE,
-            Attribute::Gradient => GRADIENT,
+            Attribute::Gradient => GRADIENT_2D,
             Attribute::Uv => UV,
-            Attribute::Tangent => TANGENT,
+            Attribute::Tangent => TANGENT_2D,
             Attribute::Color => COLOR,
             Attribute::Light => LIGHT,
         }
     }
 }
 
-pub trait IntoRead<T, const N: usize>: IntoIterator<Item = Property>
+pub trait IntoRead<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn read(self) -> Expr<T, N>;
+    fn read(self) -> Expr<T>;
 }
 
-impl<T, U, const N: usize> IntoRead<U, N> for T
+impl<T, U> IntoRead<U> for T
 where
-    U: TypeSpec + VectorSpace<N>,
+    U: TypeSpec,
     T: IntoIterator<Item = Property>,
 {
-    fn read(self) -> Expr<U, N> {
+    fn read(self) -> Expr<U> {
         Read(None, self.into_iter().collect())
     }
 }
 
-pub trait IntoWrite<T, const N: usize>: IntoIterator<Item = Property>
+pub trait IntoWrite<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn write(self, expr: Expr<T, N>) -> Stmt<T, N>;
+    fn write(self, expr: Expr<T>) -> Stmt<T>;
 }
 
-impl<T, U, const N: usize> IntoWrite<U, N> for T
+impl<T, U> IntoWrite<U> for T
 where
-    U: TypeSpec + VectorSpace<N>,
+    U: TypeSpec,
     T: IntoIterator<Item = Property>,
 {
-    fn write(self, expr: Expr<U, N>) -> Stmt<U, N> {
+    fn write(self, expr: Expr<U>) -> Stmt<U> {
         Write {
             path: self.into_iter().collect(),
             expr,

@@ -17,7 +17,7 @@ use std::{
 
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
-    ast::{Block, Identifier, TypeSpec, VectorSpace, CONTEXT},
+    ast::{Identifier, IntoBlock, TypeSpec, CONTEXT},
     module::{AsModule, FunctionDefinition, InputDefinition, StructDefinition},
 };
 
@@ -25,50 +25,46 @@ use crate::ir::ast::IntoValue;
 
 use super::modify::CONTEXT_STRUCT;
 
-pub struct Field<T, const N: usize> {
-    pub field: DynAsIR<T, N>,
+pub struct Field<T> {
+    pub field: DynAsIR<T>,
 }
 
-impl<T, const N: usize> Debug for Field<T, N> {
+impl<T> Debug for Field<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Field").field("field", &self.field).finish()
     }
 }
 
-impl<T, const N: usize> Hash for Field<T, N> {
+impl<T> Hash for Field<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_u64(self.field.hash_ir());
     }
 }
 
-impl<T, const N: usize> AsModule<T, N> for Field<T, N>
+impl<T> AsModule<T> for Field<T>
 where
-    T: VectorSpace<N>,
-    T::NUMBER: IntoValue<T, N>,
-    T::VECTOR2: IntoValue<T, N>,
+    T: TypeSpec,
+    T::NUMBER: IntoValue<T>,
+    T::VECTOR2: IntoValue<T>,
 {
     fn entry_point(&self) -> Identifier {
         Identifier::new_dynamic("field")
     }
 
-    fn functions(&self, entry_point: Identifier) -> Vec<FunctionDefinition<T, N>> {
+    fn functions(&self, entry_point: &Identifier) -> Vec<FunctionDefinition<T>> {
         self.field
             .functions()
             .into_iter()
-            .chain([FunctionDefinition {
-                id: entry_point,
+            .chain(FunctionDefinition {
+                id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
                     prop: CONTEXT,
                     mutable: false,
                 }],
                 output: CONTEXT_STRUCT,
-                block: Block(
-                    [self.field.expression(CONTEXT.read()).output()]
-                        .into_iter()
-                        .collect(),
-                ),
-            }])
+                block: self.field.expression(CONTEXT.read()).output().block(),
+            })
             .collect()
     }
 
@@ -77,20 +73,20 @@ where
     }
 }
 
-pub trait IntoField<T, const N: usize>: 'static + Sized + AsIR<T, N>
+pub trait IntoField<T>: 'static + Sized + AsIR<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn field(self) -> Field<T, N> {
+    fn field(self) -> Field<T> {
         Field {
             field: Box::new(self),
         }
     }
 }
 
-impl<T, U, const N: usize> IntoField<U, N> for T
+impl<T, U> IntoField<U> for T
 where
-    T: 'static + Sized + AsIR<U, N>,
-    U: TypeSpec + VectorSpace<N>,
+    T: 'static + Sized + AsIR<U>,
+    U: TypeSpec,
 {
 }

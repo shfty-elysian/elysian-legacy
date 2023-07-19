@@ -5,7 +5,7 @@ use tracing::instrument;
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use elysian_core::ir::{
-    ast::{GlamF32, Struct, StructIO, Value, DISTANCE, GRADIENT, POSITION},
+    ast::{GlamF32, Struct, StructIO, Value, DISTANCE, GRADIENT_2D, POSITION_2D},
     module::AsModule,
 };
 use elysian_syn::static_shapes::dispatch_shape_f32;
@@ -13,7 +13,7 @@ use elysian_syn::static_shapes::dispatch_shape_f32;
 #[instrument]
 pub fn rasterize<T>(shape: &T, width: u32, height: u32, scale: f32) -> RgbImage
 where
-    T: AsModule<GlamF32, 2>,
+    T: AsModule<GlamF32>,
 {
     let shape = dispatch_shape_f32(shape);
 
@@ -32,8 +32,8 @@ where
                 .into_iter()
                 .flat_map(|(x, y)| {
                     let ctx = Struct::default().set(
-                        POSITION,
-                        Value::VectorSpace(Vec2::new(
+                        POSITION_2D,
+                        Value::Vector2(Vec2::new(
                             ((x as f32 / width as f32) - 0.5) * 2.0 / scale,
                             ((y as f32 / height as f32) - 0.5) * 2.0 / scale,
                         )),
@@ -42,7 +42,7 @@ where
                     let ctx = shape(ctx);
 
                     let d: f32 = ctx.get_number(&DISTANCE);
-                    let g: Vec2 = ctx.get_vector_space(&GRADIENT);
+                    let g: Vec2 = ctx.get_vector2(&GRADIENT_2D);
 
                     if d.abs() < 2.0 / width as f32 {
                         [255, 255, 255]

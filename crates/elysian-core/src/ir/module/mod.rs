@@ -8,22 +8,22 @@ pub use function_definition::*;
 pub use struct_definition::*;
 pub use ty::*;
 
-use super::ast::{Identifier, TypeSpec, VectorSpace};
+use super::ast::{Identifier, TypeSpec};
 
 use std::fmt::Debug;
 
-pub struct Module<T, const N: usize>
+pub struct Module<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    pub function_definitions: Vec<FunctionDefinition<T, N>>,
+    pub function_definitions: Vec<FunctionDefinition<T>>,
     pub struct_definitions: Vec<StructDefinition>,
     pub entry_point: Identifier,
 }
 
-impl<T, const N: usize> Debug for Module<T, N>
+impl<T> Debug for Module<T>
 where
-    T: VectorSpace<N>,
+    T: TypeSpec,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Module")

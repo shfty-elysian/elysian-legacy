@@ -7,40 +7,40 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use super::{TypeSpec, VectorSpace, VectorSpaceT};
+use super::TypeSpec;
 
-pub trait StructIO<T, const N: usize>
+pub trait StructIO<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn get(&self, key: &Property) -> Value<T, N>
+    fn get(&self, key: &Property) -> Value<T>
     where
-        Value<T, N>: Clone,
+        Value<T>: Clone,
     {
         self.get_ref(key).clone()
     }
 
-    fn get_ref(&self, key: &Property) -> &Value<T, N> {
+    fn get_ref(&self, key: &Property) -> &Value<T> {
         self.try_get_ref(key)
             .unwrap_or_else(|| panic!("Invalid key {key:#?}"))
     }
 
-    fn get_mut(&mut self, key: &Property) -> &mut Value<T, N> {
+    fn get_mut(&mut self, key: &Property) -> &mut Value<T> {
         self.try_get_mut(key)
             .unwrap_or_else(|| panic!("Invalid key {key:#?}"))
     }
 
-    fn try_get(&self, key: &Property) -> Option<Value<T, N>>
+    fn try_get(&self, key: &Property) -> Option<Value<T>>
     where
-        Value<T, N>: Clone,
+        Value<T>: Clone,
     {
         self.try_get_ref(key).cloned()
     }
 
-    fn try_get_ref(&self, key: &Property) -> Option<&Value<T, N>>;
-    fn try_get_mut(&mut self, key: &Property) -> Option<&mut Value<T, N>>;
+    fn try_get_ref(&self, key: &Property) -> Option<&Value<T>>;
+    fn try_get_mut(&mut self, key: &Property) -> Option<&mut Value<T>>;
 
-    fn set(mut self, key: Property, t: Value<T, N>) -> Self
+    fn set(mut self, key: Property, t: Value<T>) -> Self
     where
         Self: Sized,
     {
@@ -48,36 +48,36 @@ where
         self
     }
 
-    fn set_mut(&mut self, key: Property, t: Value<T, N>);
+    fn set_mut(&mut self, key: Property, t: Value<T>);
 }
 
-impl<T, const N: usize> StructIO<T, N> for Struct<T, N>
+impl<T> StructIO<T> for Struct<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn try_get_ref(&self, key: &Property) -> Option<&Value<T, N>> {
+    fn try_get_ref(&self, key: &Property) -> Option<&Value<T>> {
         self.members.get(key)
     }
 
-    fn try_get_mut(&mut self, key: &Property) -> Option<&mut Value<T, N>> {
+    fn try_get_mut(&mut self, key: &Property) -> Option<&mut Value<T>> {
         self.members.get_mut(key)
     }
 
-    fn set_mut(&mut self, key: Property, t: Value<T, N>) {
+    fn set_mut(&mut self, key: Property, t: Value<T>) {
         self.members.insert(key, t);
     }
 }
 
-pub struct Struct<T, const N: usize>
+pub struct Struct<T>
 where
-    T: TypeSpec + VectorSpace<N> + ?Sized,
+    T: TypeSpec + ?Sized,
 {
-    pub members: BTreeMap<Property, Value<T, N>>,
+    pub members: BTreeMap<Property, Value<T>>,
 }
 
-impl<T, const N: usize> Debug for Struct<T, N>
+impl<T> Debug for Struct<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Struct")
@@ -86,9 +86,9 @@ where
     }
 }
 
-impl<T, const N: usize> Clone for Struct<T, N>
+impl<T> Clone for Struct<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn clone(&self) -> Self {
         Self {
@@ -97,9 +97,9 @@ where
     }
 }
 
-impl<T, const N: usize> Default for Struct<T, N>
+impl<T> Default for Struct<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn default() -> Self {
         Self {
@@ -108,30 +108,30 @@ where
     }
 }
 
-impl<T, const N: usize> PartialEq for Struct<T, N>
+impl<T> PartialEq for Struct<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn eq(&self, other: &Self) -> bool {
         self.members == other.members
     }
 }
 
-impl<T, const N: usize> Hash for Struct<T, N>
+impl<T> Hash for Struct<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.members.hash(state);
     }
 }
 
-impl<T, const N: usize> Struct<T, N>
+impl<T> Struct<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     #[instrument]
-    pub fn remove(&mut self, key: &Property) -> Value<T, N> {
+    pub fn remove(&mut self, key: &Property) -> Value<T> {
         self.members
             .remove(key)
             .unwrap_or_else(|| panic!("Invalid key {key:?}"))
@@ -163,19 +163,6 @@ where
     }
 
     #[instrument]
-    pub fn get_vector_space(&self, key: &Property) -> VectorSpaceT<T, N>
-    where
-        T: TypeSpec,
-    {
-        let value = self.get_ref(key);
-        let Value::VectorSpace(v) = value else {
-        panic!("Value {value:#?} for key {key:?} is not a VectorSpace");
-    };
-
-        v.clone()
-    }
-
-    #[instrument]
     pub fn get_vector2(&self, key: &Property) -> T::VECTOR2
     where
         T: TypeSpec,
@@ -189,9 +176,9 @@ where
     }
 
     #[instrument]
-    pub fn get_context(&self, key: &Property) -> Struct<T, N>
+    pub fn get_context(&self, key: &Property) -> Struct<T>
     where
-        Struct<T, N>: Clone,
+        Struct<T>: Clone,
     {
         let Value::Struct(c) = self.get_ref(key) else {
         panic!("Value is not a context")

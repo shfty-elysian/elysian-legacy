@@ -1,4 +1,4 @@
-use elysian_core::{ast::modify::CONTEXT_STRUCT, ir::ast::VectorSpace};
+use elysian_core::ast::modify::CONTEXT_STRUCT;
 pub use prettyplease;
 
 use proc_macro2::{Ident, Span, TokenStream};
@@ -17,7 +17,7 @@ use elysian_core::ir::{
 };
 
 pub mod static_shapes {
-    use elysian_core::ir::ast::{TypeSpec, VectorSpace};
+    use elysian_core::ir::ast::TypeSpec;
     use elysian_interpreter::{evaluate_module, Interpreter};
     pub use prettyplease;
 
@@ -31,19 +31,19 @@ pub mod static_shapes {
     use crate::elysian_to_syn;
 
     pub type ShapeHash = u64;
-    pub type ShapeFn<T, const N: usize> = fn(Struct<T, N>) -> Struct<T, N>;
+    pub type ShapeFn<T> = fn(Struct<T>) -> Struct<T>;
 
-    pub struct StaticShape<T, const N: usize>
+    pub struct StaticShape<T>
     where
-        T: TypeSpec + VectorSpace<N>,
+        T: TypeSpec,
     {
         pub hash: ShapeHash,
-        pub function: ShapeFn<T, N>,
+        pub function: ShapeFn<T>,
     }
 
-    impl<T, const N: usize> Clone for StaticShape<T, N>
+    impl<T> Clone for StaticShape<T>
     where
-        T: TypeSpec + VectorSpace<N>,
+        T: TypeSpec,
     {
         fn clone(&self) -> Self {
             Self {
@@ -53,19 +53,18 @@ pub mod static_shapes {
         }
     }
 
-    impl<T, const N: usize> Copy for StaticShape<T, N> where T: TypeSpec + VectorSpace<N> {}
+    impl<T> Copy for StaticShape<T> where T: TypeSpec {}
 
     /// Distributed slice of shape hash -> shape function pairs
     /// Populated at link-time by auto-generated shape modules
     #[linkme::distributed_slice]
-    pub static STATIC_SHAPES_F32: [StaticShape<GlamF32, 2>] = [..];
+    pub static STATIC_SHAPES_F32: [StaticShape<GlamF32>] = [..];
 
     /// Runtime storage for static shape data
-    static STATIC_SHAPES_MAP_F32: OnceLock<BTreeMap<ShapeHash, ShapeFn<GlamF32, 2>>> =
-        OnceLock::new();
+    static STATIC_SHAPES_MAP_F32: OnceLock<BTreeMap<ShapeHash, ShapeFn<GlamF32>>> = OnceLock::new();
 
     /// Accessor for STATIC_SHAPES_MAP_F32
-    pub fn static_shapes_map_f32() -> &'static BTreeMap<ShapeHash, ShapeFn<GlamF32, 2>> {
+    pub fn static_shapes_map_f32() -> &'static BTreeMap<ShapeHash, ShapeFn<GlamF32>> {
         STATIC_SHAPES_MAP_F32.get_or_init(|| {
             STATIC_SHAPES_F32
                 .into_iter()
@@ -77,10 +76,7 @@ pub mod static_shapes {
     }
 
     /// Build.rs static shape registrar
-    pub fn static_shapes_f32<
-        'a,
-        T: IntoIterator<Item = (&'a str, Box<dyn AsModule<GlamF32, 2>>)>,
-    >(
+    pub fn static_shapes_f32<'a, T: IntoIterator<Item = (&'a str, Box<dyn AsModule<GlamF32>>)>>(
         t: T,
     ) {
         let source: String = t
@@ -108,9 +104,9 @@ pub mod static_shapes {
     /// falling back to the interpreter otherwise.
     pub fn dispatch_shape_f32<T>(
         shape: &T,
-    ) -> Box<dyn Fn(Struct<GlamF32, 2>) -> Struct<GlamF32, 2> + Send + Sync>
+    ) -> Box<dyn Fn(Struct<GlamF32>) -> Struct<GlamF32> + Send + Sync>
     where
-        T: AsModule<GlamF32, 2>,
+        T: AsModule<GlamF32>,
     {
         let hash = shape.hash_ir();
 
@@ -137,7 +133,6 @@ pub fn type_to_syn(ty: &elysian_core::ir::module::Type) -> TokenStream {
     match ty {
         elysian_core::ir::module::Type::Boolean => quote!(Type::Boolean),
         elysian_core::ir::module::Type::Number => quote!(Type::Number),
-        elysian_core::ir::module::Type::VectorSpace => quote!(Type::VectorSpace),
         elysian_core::ir::module::Type::Vector2 => quote!(Type::Vector2),
         elysian_core::ir::module::Type::Vector3 => quote!(Type::Vector3),
         elysian_core::ir::module::Type::Vector4 => quote!(Type::Vector4),
@@ -149,7 +144,6 @@ pub fn type_to_value(ty: &elysian_core::ir::module::Type) -> TokenStream {
     match ty {
         elysian_core::ir::module::Type::Boolean => quote!(Value::Boolean),
         elysian_core::ir::module::Type::Number => quote!(Value::Number),
-        elysian_core::ir::module::Type::VectorSpace => quote!(Value::VectorSpace),
         elysian_core::ir::module::Type::Vector2 => quote!(Value::Vector2),
         elysian_core::ir::module::Type::Vector3 => quote!(Value::Vector3),
         elysian_core::ir::module::Type::Vector4 => quote!(Value::Vector4),
@@ -166,10 +160,9 @@ pub fn property_to_syn(prop: &Property) -> TokenStream {
     }
 }
 
-pub fn elysian_to_syn<T, const N: usize>(elysian: &T, name: &str) -> File
+pub fn elysian_to_syn<T>(elysian: &T, name: &str) -> File
 where
-    GlamF32: VectorSpace<N>,
-    T: AsModule<GlamF32, N>,
+    T: AsModule<GlamF32>,
 {
     let name = Ident::new(name, Span::call_site());
 
@@ -267,8 +260,8 @@ where
         .collect();
 
     items.push(syn::parse_quote! {
-        impl From<Struct<GlamF32, 2>> for #struct_name {
-            fn from(s: Struct<GlamF32, 2>) -> Self {
+        impl From<Struct<GlamF32>> for #struct_name {
+            fn from(s: Struct<GlamF32>) -> Self {
                 let mut out = Self::default();
 
                 #(
@@ -287,7 +280,7 @@ where
     });
 
     items.push(syn::parse_quote! {
-        impl From<#struct_name> for Struct<GlamF32, 2> {
+        impl From<#struct_name> for Struct<GlamF32> {
             fn from(s: #struct_name) -> Self {
                 let mut out = Self::default();
 
@@ -372,7 +365,7 @@ where
 
     let entry_point_name = Ident::new(&module.entry_point.name_unique(), Span::call_site());
     items.push(parse_quote! {
-        pub fn #name(context: Struct<GlamF32, 2>) -> Struct<GlamF32, 2> {
+        pub fn #name(context: Struct<GlamF32>) -> Struct<GlamF32> {
             #entry_point_name(context.into()).into()
         }
     });
@@ -380,7 +373,7 @@ where
     let hash = elysian.hash_ir();
     items.push(parse_quote! {
         #[linkme::distributed_slice(elysian::syn::static_shapes::STATIC_SHAPES_F32)]
-        static STATIC_SHAPE: StaticShape<GlamF32, 2> = StaticShape {
+        static STATIC_SHAPE: StaticShape<GlamF32> = StaticShape {
             hash: #hash,
             function: #name
         };
@@ -403,20 +396,14 @@ where
     }
 }
 
-fn block_to_syn<const N: usize>(block: &IrBlock<GlamF32, N>) -> Block
-where
-    GlamF32: VectorSpace<N>,
-{
+fn block_to_syn(block: &IrBlock<GlamF32>) -> Block {
     Block {
         brace_token: Default::default(),
         stmts: block.0.iter().map(stmt_to_syn).collect(),
     }
 }
 
-fn stmt_to_syn<const N: usize>(stmt: &IrStmt<GlamF32, N>) -> Stmt
-where
-    GlamF32: VectorSpace<N>,
-{
+fn stmt_to_syn(stmt: &IrStmt<GlamF32>) -> Stmt {
     match stmt {
         IrStmt::Block(block) => Stmt::Expr(
             Expr::Block(ExprBlock {
@@ -513,10 +500,7 @@ where
     }
 }
 
-fn expr_to_syn<const N: usize>(expr: &IrExpr<GlamF32, N>) -> Expr
-where
-    GlamF32: VectorSpace<N>,
-{
+fn expr_to_syn(expr: &IrExpr<GlamF32>) -> Expr {
     match expr {
         elysian_core::ir::ast::Expr::Literal(v) => match v {
             elysian_core::ir::ast::Value::Boolean(b) => Expr::Lit(ExprLit {
@@ -750,10 +734,7 @@ where
     }
 }
 
-fn path_to_syn<const N: usize>(expr: Option<IrExpr<GlamF32, N>>, path: &Vec<Property>) -> Expr
-where
-    GlamF32: VectorSpace<N>,
-{
+fn path_to_syn(expr: Option<IrExpr<GlamF32>>, path: &Vec<Property>) -> Expr {
     let mut iter = path.iter();
 
     let base = if let Some(expr) = expr {

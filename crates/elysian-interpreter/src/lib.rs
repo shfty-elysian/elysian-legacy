@@ -5,24 +5,24 @@ use elysian_core::ir::{
     ast::{
         Expr, Identifier, Struct, StructIO, TypeSpec,
         Value::{self, *},
-        VectorSpace, CONTEXT,
+        CONTEXT,
     },
     module::{FunctionDefinition, Module},
 };
 use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
 
-pub struct Interpreter<T, const N: usize>
+pub struct Interpreter<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    pub context: Struct<T, N>,
-    pub functions: BTreeMap<Identifier, FunctionDefinition<T, N>>,
-    pub output: Option<Value<T, N>>,
+    pub context: Struct<T>,
+    pub functions: BTreeMap<Identifier, FunctionDefinition<T>>,
+    pub output: Option<Value<T>>,
 }
 
-impl<T, const N: usize> Debug for Interpreter<T, N>
+impl<T> Debug for Interpreter<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Interpreter")
@@ -33,9 +33,9 @@ where
     }
 }
 
-impl<T, const N: usize> Default for Interpreter<T, N>
+impl<T> Default for Interpreter<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn default() -> Self {
         Self {
@@ -46,9 +46,9 @@ where
     }
 }
 
-impl<T, const N: usize> Clone for Interpreter<T, N>
+impl<T> Clone for Interpreter<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn clone(&self) -> Self {
         Self {
@@ -59,9 +59,9 @@ where
     }
 }
 
-impl<T, const N: usize> std::hash::Hash for Interpreter<T, N>
+impl<T> std::hash::Hash for Interpreter<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.context.hash(state);
@@ -70,12 +70,9 @@ where
     }
 }
 
-pub fn evaluate_module<T, const N: usize>(
-    mut interpreter: Interpreter<T, N>,
-    module: &Module<T, N>,
-) -> Struct<T, N>
+pub fn evaluate_module<T>(mut interpreter: Interpreter<T>, module: &Module<T>) -> Struct<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     interpreter.context = Struct::default().set(CONTEXT, Value::Struct(interpreter.context));
     interpreter.functions = module
@@ -103,12 +100,9 @@ where
     context
 }
 
-pub fn evaluate_stmt<T, const N: usize>(
-    mut interpreter: Interpreter<T, N>,
-    stmt: &Stmt<T, N>,
-) -> Interpreter<T, N>
+pub fn evaluate_stmt<T>(mut interpreter: Interpreter<T>, stmt: &Stmt<T>) -> Interpreter<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     match stmt {
         Block(block) => evaluate_block(interpreter, block),
@@ -170,22 +164,22 @@ where
     }
 }
 
-pub fn evaluate_block<T, const N: usize>(
-    interpreter: Interpreter<T, N>,
-    elysian_core::ir::ast::Block(list): &elysian_core::ir::ast::Block<T, N>,
-) -> Interpreter<T, N>
+pub fn evaluate_block<T>(
+    interpreter: Interpreter<T>,
+    elysian_core::ir::ast::Block(list): &elysian_core::ir::ast::Block<T>,
+) -> Interpreter<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     list.iter().fold(interpreter, evaluate_stmt)
 }
 
-pub fn evaluate_expr<T, const N: usize>(
-    interpreter: &Interpreter<T, N>,
-    expr: &elysian_core::ir::ast::Expr<T, N>,
-) -> Value<T, N>
+pub fn evaluate_expr<T>(
+    interpreter: &Interpreter<T>,
+    expr: &elysian_core::ir::ast::Expr<T>,
+) -> Value<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     match expr {
         Expr::Literal(l) => l.clone(),

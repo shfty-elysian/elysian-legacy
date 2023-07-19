@@ -2,18 +2,18 @@ use std::fmt::Debug;
 
 use crate::ir::{
     as_ir::HashIR,
-    ast::{Identifier, VectorSpace},
+    ast::{Identifier, TypeSpec},
 };
 
 use super::{FunctionDefinition, Module, StructDefinition};
 
-pub trait AsModule<T, const N: usize>: 'static + Debug + HashIR
+pub trait AsModule<T>: 'static + Debug + HashIR
 where
-    T: VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn module(&self) -> Module<T, N> {
+    fn module(&self) -> Module<T> {
         let entry_point = self.entry_point();
-        let mut functions = self.functions(entry_point.clone());
+        let mut functions = self.functions(&entry_point);
         functions.sort_by(|lhs, rhs| lhs.id.cmp(&rhs.id));
         functions.dedup_by(|lhs, rhs| lhs.id == rhs.id);
 
@@ -25,17 +25,17 @@ where
     }
 
     fn entry_point(&self) -> Identifier;
-    fn functions(&self, entry_point: Identifier) -> Vec<FunctionDefinition<T, N>>;
+    fn functions(&self, entry_point: &Identifier) -> Vec<FunctionDefinition<T>>;
     fn structs(&self) -> Vec<StructDefinition>;
 }
 
-pub type DynAsModule<T, const N: usize> = Box<dyn AsModule<T, N>>;
+pub type DynAsModule<T> = Box<dyn AsModule<T>>;
 
-impl<T, const N: usize> AsModule<T, N> for DynAsModule<T, N>
+impl<T> AsModule<T> for DynAsModule<T>
 where
-    T: VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn module(&self) -> Module<T, N> {
+    fn module(&self) -> Module<T> {
         (**self).module()
     }
 
@@ -43,7 +43,7 @@ where
         (**self).entry_point()
     }
 
-    fn functions(&self, entry_point: Identifier) -> Vec<FunctionDefinition<T, N>> {
+    fn functions(&self, entry_point: &Identifier) -> Vec<FunctionDefinition<T>> {
         (**self).functions(entry_point)
     }
 
@@ -52,7 +52,7 @@ where
     }
 }
 
-impl<T, const N: usize> HashIR for DynAsModule<T, N> {
+impl<T> HashIR for DynAsModule<T> {
     fn hash_ir(&self) -> u64 {
         (**self).hash_ir()
     }

@@ -15,7 +15,7 @@ pub use structure::*;
 pub use type_spec::*;
 pub use vector::*;
 
-pub trait VectorSpace<const N: usize>: TypeSpec {
+pub trait VectorSpace<const N: usize> {
     type VectorSpace: 'static + Debug + Clone + PartialEq;
 }
 
@@ -51,28 +51,26 @@ pub type VectorSpaceT<T, const N: usize> = <T as VectorSpace<N>>::VectorSpace;
 
 /// Concrete value
 #[non_exhaustive]
-pub enum Value<T, const N: usize>
+pub enum Value<T>
 where
-    T: TypeSpec + VectorSpace<N> + ?Sized,
+    T: TypeSpec + ?Sized,
 {
     Boolean(bool),
     Number(T::NUMBER),
-    VectorSpace(VectorSpaceT<T, N>),
     Vector2(T::VECTOR2),
     Vector3(T::VECTOR3),
     Vector4(T::VECTOR4),
-    Struct(Struct<T, N>),
+    Struct(Struct<T>),
 }
 
-impl<T, const N: usize> Debug for Value<T, N>
+impl<T> Debug for Value<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Boolean(arg0) => f.debug_tuple("Boolean").field(arg0).finish(),
             Self::Number(arg0) => f.debug_tuple("Number").field(arg0).finish(),
-            Self::VectorSpace(arg0) => f.debug_tuple("VectorSpace").field(arg0).finish(),
             Self::Vector2(arg0) => f.debug_tuple("Vector2").field(arg0).finish(),
             Self::Vector3(arg0) => f.debug_tuple("Vector3").field(arg0).finish(),
             Self::Vector4(arg0) => f.debug_tuple("Vector4").field(arg0).finish(),
@@ -81,15 +79,14 @@ where
     }
 }
 
-impl<T, const N: usize> Clone for Value<T, N>
+impl<T> Clone for Value<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn clone(&self) -> Self {
         match self {
             Self::Boolean(arg0) => Self::Boolean(arg0.clone()),
             Self::Number(arg0) => Self::Number(arg0.clone()),
-            Self::VectorSpace(arg0) => Self::VectorSpace(arg0.clone()),
             Self::Vector2(arg0) => Self::Vector2(arg0.clone()),
             Self::Vector3(arg0) => Self::Vector3(arg0.clone()),
             Self::Vector4(arg0) => Self::Vector4(arg0.clone()),
@@ -98,15 +95,14 @@ where
     }
 }
 
-impl<T, const N: usize> PartialEq for Value<T, N>
+impl<T> PartialEq for Value<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Boolean(l0), Self::Boolean(r0)) => l0 == r0,
             (Self::Number(l0), Self::Number(r0)) => l0 == r0,
-            (Self::VectorSpace(l0), Self::VectorSpace(r0)) => l0 == r0,
             (Self::Vector2(l0), Self::Vector2(r0)) => l0 == r0,
             (Self::Vector3(l0), Self::Vector3(r0)) => l0 == r0,
             (Self::Vector4(l0), Self::Vector4(r0)) => l0 == r0,
@@ -116,18 +112,18 @@ where
     }
 }
 
-impl<T, const N: usize> Hash for Value<T, N>
+impl<T> Hash for Value<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         core::mem::discriminant(self).hash(state);
     }
 }
 
-impl<T, const N: usize> From<crate::ast::value::Value<T>> for Value<T, N>
+impl<T> From<crate::ast::value::Value<T>> for Value<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn from(value: crate::ast::value::Value<T>) -> Self {
         match value {
@@ -139,9 +135,9 @@ where
     }
 }
 
-impl<T, const N: usize> From<Box<crate::ast::value::Value<T>>> for Box<Value<T, N>>
+impl<T> From<Box<crate::ast::value::Value<T>>> for Box<Value<T>>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
     fn from(value: Box<crate::ast::value::Value<T>>) -> Self {
         Box::new(Value::from(*value))

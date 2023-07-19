@@ -4,10 +4,7 @@ use crate::{
     ast::modify::CONTEXT_STRUCT,
     ir::{
         as_ir::AsIR,
-        ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, VectorSpace, CONTEXT,
-            DISTANCE,
-        },
+        ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, CONTEXT, DISTANCE},
         module::{FunctionDefinition, InputDefinition, Type},
     },
 };
@@ -55,11 +52,11 @@ where
     }
 }
 
-impl<T, const N: usize> AsIR<T, N> for Isosurface<T>
+impl<T> AsIR<T> for Isosurface<T>
 where
-    T: TypeSpec + VectorSpace<N>,
+    T: TypeSpec,
 {
-    fn functions(&self) -> Vec<FunctionDefinition<T, N>> {
+    fn functions(&self) -> Vec<FunctionDefinition<T>> {
         vec![FunctionDefinition {
             id: ISOSURFACE,
             public: false,
@@ -82,10 +79,7 @@ where
         }]
     }
 
-    fn expression(&self, input: crate::ir::ast::Expr<T, N>) -> crate::ir::ast::Expr<T, N> {
-        crate::ir::ast::Expr::Call {
-            function: ISOSURFACE,
-            args: vec![self.dist.clone().into(), input],
-        }
+    fn expression(&self, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
+        ISOSURFACE.call([self.dist.clone().into(), input])
     }
 }
