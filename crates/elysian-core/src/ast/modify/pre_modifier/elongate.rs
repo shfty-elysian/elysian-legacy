@@ -6,9 +6,9 @@ use std::{
 use crate::{
     ast::modify::CONTEXT_STRUCT,
     ir::{
-        as_ir::AsIR,
+        as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, CONTEXT, POSITION_2D,
+            Identifier, IntoBlock, IntoRead, IntoBind, Property, TypeSpec, CONTEXT, POSITION_2D,
             POSITION_3D,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
@@ -20,7 +20,7 @@ use crate::ast::expr::Expr;
 pub const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324);
 pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1799909959882308009);
 pub const DIR_2D: Property = Property::new("dir_2d", Type::Vector2, 10994004961423687819);
-pub const DIR_3D: Property = Property::new("dir_3d", Type::Vector2, 66909101541205811);
+pub const DIR_3D: Property = Property::new("dir_3d", Type::Vector3, 66909101541205811);
 
 pub struct Elongate<T>
 where
@@ -64,14 +64,23 @@ where
     }
 }
 
+impl<T> FilterSpec for Elongate<T>
+where
+    T: TypeSpec,
+{
+    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
+        spec.filter([POSITION_2D.id(), POSITION_3D.id()])
+    }
+}
+
 impl<T> AsIR<T> for Elongate<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
-        let (position, dir) = if spec.domains.contains(&POSITION_2D) {
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+        let (position, dir) = if spec.contains(POSITION_2D.id()) {
             (POSITION_2D, DIR_2D)
-        } else if spec.domains.contains(&POSITION_3D) {
+        } else if spec.contains(POSITION_3D.id()) {
             (POSITION_3D, DIR_3D)
         } else {
             panic!("No position domain");
@@ -79,9 +88,9 @@ where
 
         vec![FunctionDefinition {
             id: if self.infinite {
-                ELONGATE_INFINITE
+                ELONGATE_INFINITE.specialize(spec)
             } else {
-                ELONGATE
+                ELONGATE.specialize(spec)
             },
             public: false,
             inputs: vec![
@@ -101,7 +110,7 @@ where
                     .dot(dir.clone().read().normalize());
 
                 [
-                    [CONTEXT, position.clone()].write(
+                    [CONTEXT, position.clone()].bind(
                         [CONTEXT, position].read()
                             - dir.clone().read().normalize()
                                 * if self.infinite {
@@ -118,15 +127,15 @@ where
         }]
     }
 
-    fn expression(
+    fn expression_impl(
         &self,
-        _: &SpecializationData,
+        spec: &SpecializationData,
         input: crate::ir::ast::Expr<T>,
     ) -> crate::ir::ast::Expr<T> {
         if self.infinite {
-            ELONGATE_INFINITE
+            ELONGATE_INFINITE.specialize(spec)
         } else {
-            ELONGATE
+            ELONGATE.specialize(spec)
         }
         .call([self.dir.clone().into(), input])
     }

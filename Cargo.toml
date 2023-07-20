@@ -22,10 +22,6 @@ elysian-syn = { path = "crates/elysian-syn", optional = true }
 
 rust-gpu-bridge = { path = "../bevy-rust-gpu-project/crates/rust-gpu-bridge" }
 
-[[example]]
-name = "syn"
-path = "examples/syn.rs"
-
 # Fast-compile config
 [profile.dev]
 opt-level = 0

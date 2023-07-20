@@ -3,8 +3,9 @@ use std::hash::Hash;
 use crate::{
     ast::field::CONTEXT_STRUCT,
     ir::{
+        as_ir::FilterSpec,
         ast::{
-            Expr, Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, CONTEXT, DISTANCE,
+            Expr, Identifier, IntoBlock, IntoRead, IntoBind, TypeSpec, CONTEXT, DISTANCE,
             GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
@@ -13,29 +14,41 @@ use crate::{
 
 use super::AsIR;
 
-pub const POINT: Identifier = Identifier::new("point", 419357041369711478);
+pub const POINT: Identifier = Identifier::new("point", 2023836058494613125);
 
 #[derive(Debug, Copy, Clone, Hash)]
 pub struct Point;
+
+impl FilterSpec for Point {
+    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
+        spec.filter([
+            POSITION_2D.id(),
+            POSITION_3D.id(),
+            DISTANCE.id(),
+            GRADIENT_2D.id(),
+            GRADIENT_3D.id(),
+        ])
+    }
+}
 
 impl<T> AsIR<T> for Point
 where
     T: TypeSpec,
 {
-    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
-        let position = if spec.domains.contains(&POSITION_2D) {
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+        let position = if spec.contains(POSITION_2D.id()) {
             POSITION_2D
-        } else if spec.domains.contains(&POSITION_3D) {
+        } else if spec.contains(POSITION_3D.id()) {
             POSITION_3D
         } else {
             panic!("No position domain set")
         };
 
-        let distance = spec.domains.contains(&DISTANCE);
+        let distance = spec.contains(DISTANCE.id());
 
-        let gradient = if spec.domains.contains(&POSITION_2D) {
+        let gradient = if spec.contains(POSITION_2D.id()) {
             Some(GRADIENT_2D)
-        } else if spec.domains.contains(&POSITION_3D) {
+        } else if spec.contains(POSITION_3D.id()) {
             Some(GRADIENT_3D)
         } else {
             None
@@ -43,17 +56,17 @@ where
 
         let mut block = vec![];
         if distance {
-            block.push([CONTEXT, DISTANCE].write([CONTEXT, position.clone()].read().length()))
+            block.push([CONTEXT, DISTANCE].bind([CONTEXT, position.clone()].read().length()))
         };
 
         if let Some(gradient) = gradient {
-            block.push([CONTEXT, gradient].write([CONTEXT, position].read().normalize()));
+            block.push([CONTEXT, gradient].bind([CONTEXT, position].read().normalize()));
         }
 
         block.push(CONTEXT.read().output());
 
         vec![FunctionDefinition {
-            id: POINT,
+            id: POINT.specialize(&spec),
             public: false,
             inputs: vec![InputDefinition {
                 prop: CONTEXT,
@@ -64,7 +77,7 @@ where
         }]
     }
 
-    fn expression(&self, _: &SpecializationData, input: Expr<T>) -> Expr<T> {
-        POINT.call(input)
+    fn expression_impl(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T> {
+        POINT.specialize(spec).call(input)
     }
 }

@@ -1,12 +1,15 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
+use crate::ast::modify::{DIR_3D, ISOSURFACE};
+use crate::ir::as_ir::FilterSpec;
+use crate::ir::ast::{POSITION_2D, POSITION_3D};
 use crate::ir::module::SpecializationData;
 use crate::{
     ast::{
         expr::Expr,
         field::{Line, CONTEXT_STRUCT},
-        modify::{Isosurface, DIR_2D, ISOSURFACE},
+        modify::{Isosurface, DIR_2D},
     },
     ir::{
         as_ir::AsIR,
@@ -61,11 +64,34 @@ where
     }
 }
 
+impl<T> FilterSpec for Capsule<T>
+where
+    T: TypeSpec,
+{
+    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
+        Line::<T>::filter_spec(spec).union(&Isosurface::<T>::filter_spec(spec))
+    }
+}
+
 impl<T> AsIR<T> for Capsule<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self, spec: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+        let dir = if spec.contains(POSITION_2D.id()) {
+            DIR_2D
+        } else if spec.contains(POSITION_3D.id()) {
+            DIR_3D
+        } else {
+            panic!("No position domain");
+        };
+
+        let isosurface_spec = Isosurface::<T>::filter_spec(spec);
+        let line_spec = Line::<T>::filter_spec(spec);
+
         Line {
             dir: self.dir.clone(),
         }
@@ -78,11 +104,11 @@ where
             .functions(spec),
         )
         .chain(FunctionDefinition {
-            id: CAPSULE,
+            id: CAPSULE.specialize(spec),
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: DIR_2D,
+                    prop: dir.clone(),
                     mutable: false,
                 },
                 InputDefinition {
@@ -96,18 +122,25 @@ where
             ],
             output: CONTEXT_STRUCT,
             block: ISOSURFACE
-                .call([RADIUS.read(), LINE.call([DIR_2D.read(), CONTEXT.read()])])
+                .specialize(&isosurface_spec)
+                .call([
+                    RADIUS.read(),
+                    LINE.specialize(&line_spec)
+                        .call([dir.read(), CONTEXT.read()]),
+                ])
                 .output()
                 .block(),
         })
         .collect()
     }
 
-    fn expression(
+    fn expression_impl(
         &self,
-        _: &SpecializationData,
+        spec: &SpecializationData,
         input: crate::ir::ast::Expr<T>,
     ) -> crate::ir::ast::Expr<T> {
-        CAPSULE.call([self.dir.clone().into(), self.radius.clone().into(), input])
+        CAPSULE
+            .specialize(spec)
+            .call([self.dir.clone().into(), self.radius.clone().into(), input])
     }
 }

@@ -10,9 +10,9 @@ use crate::{
         modify::{Isosurface, ISOSURFACE},
     },
     ir::{
-        as_ir::AsIR,
+        as_ir::{AsIR, FilterSpec},
         ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT},
-        module::{FunctionDefinition, InputDefinition, Type, SpecializationData},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
 
@@ -59,11 +59,26 @@ where
     }
 }
 
+impl<T> FilterSpec for Circle<T>
+where
+    T: TypeSpec,
+{
+    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
+        Point::filter_spec(spec).union(&Isosurface::<T>::filter_spec(spec))
+    }
+}
+
 impl<T> AsIR<T> for Circle<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self, spec: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+        let point_spec = Point::filter_spec(spec);
+        let isosurface_spec = Isosurface::<T>::filter_spec(spec);
+
         Point
             .functions(spec)
             .into_iter()
@@ -74,7 +89,7 @@ where
                 .functions(spec),
             )
             .chain(FunctionDefinition {
-                id: CIRCLE,
+                id: CIRCLE.specialize(spec),
                 public: false,
                 inputs: vec![
                     InputDefinition {
@@ -88,14 +103,24 @@ where
                 ],
                 output: &CONTEXT_STRUCT,
                 block: ISOSURFACE
-                    .call([RADIUS.read(), POINT.call(CONTEXT.read())])
+                    .specialize(&isosurface_spec)
+                    .call([
+                        RADIUS.read(),
+                        POINT.specialize(&point_spec).call(CONTEXT.read()),
+                    ])
                     .output()
                     .block(),
             })
             .collect()
     }
 
-    fn expression(&self, _: &SpecializationData, input: crate::ir::ast::Expr<T>) -> crate::ir::ast::Expr<T> {
-        CIRCLE.call([self.radius.clone().into(), input])
+    fn expression_impl(
+        &self,
+        spec: &SpecializationData,
+        input: crate::ir::ast::Expr<T>,
+    ) -> crate::ir::ast::Expr<T> {
+        CIRCLE
+            .specialize(spec)
+            .call([self.radius.clone().into(), input])
     }
 }

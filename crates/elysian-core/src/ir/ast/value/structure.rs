@@ -169,8 +169,34 @@ where
     {
         let value = self.get_ref(key);
         let Value::Vector2(v) = value else {
-        panic!("Value {value:#?} for key {key:?} is not a Vector2");
-    };
+            panic!("Value {value:#?} for key {key:?} is not a Vector2");
+        };
+
+        v.clone()
+    }
+
+    #[instrument]
+    pub fn get_vector3(&self, key: &Property) -> T::VECTOR3
+    where
+        T: TypeSpec,
+    {
+        let value = self.get_ref(key);
+        let Value::Vector3(v) = value else {
+            panic!("Value {value:#?} for key {key:?} is not a Vector3");
+        };
+
+        v.clone()
+    }
+
+    #[instrument]
+    pub fn get_vector4(&self, key: &Property) -> T::VECTOR4
+    where
+        T: TypeSpec,
+    {
+        let value = self.get_ref(key);
+        let Value::Vector4(v) = value else {
+            panic!("Value {value:#?} for key {key:?} is not a Vector4");
+        };
 
         v.clone()
     }

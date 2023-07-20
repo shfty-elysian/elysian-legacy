@@ -1,9 +1,9 @@
 use crate::{
     ast::combine::COMBINE_CONTEXT_STRUCT,
     ir::{
-        as_ir::AsIR,
+        as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, TypeSpec, COMBINE_CONTEXT, DISTANCE, LEFT,
+            Identifier, IntoBlock, IntoRead, IntoBind, TypeSpec, COMBINE_CONTEXT, DISTANCE, LEFT,
             OUT, RIGHT,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
@@ -21,11 +21,16 @@ pub const UNION: Identifier = Identifier::new("union", 1894363406191409858);
 pub const INTERSECTION: Identifier = Identifier::new("intersection", 18033822391797795038);
 pub const SUBTRACTION: Identifier = Identifier::new("subtraction", 1414822549598552032);
 
+impl FilterSpec for Boolean {}
+
 impl<T> AsIR<T> for Boolean
 where
     T: TypeSpec,
 {
-    fn functions(&self, _: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         vec![FunctionDefinition {
             id: match self {
                 Boolean::Union => UNION,
@@ -42,7 +47,7 @@ where
                 Boolean::Union | Boolean::Intersection => {
                     [
                         [COMBINE_CONTEXT, OUT]
-                            .write([COMBINE_CONTEXT, LEFT].read())
+                            .bind([COMBINE_CONTEXT, LEFT].read())
                             .if_else(
                                 match self {
                                     Boolean::Union => [COMBINE_CONTEXT, LEFT, DISTANCE]
@@ -53,18 +58,18 @@ where
                                         .gt([COMBINE_CONTEXT, RIGHT, DISTANCE].read()),
                                     _ => unreachable!(),
                                 },
-                                Some([COMBINE_CONTEXT, OUT].write([COMBINE_CONTEXT, RIGHT].read())),
+                                Some([COMBINE_CONTEXT, OUT].bind([COMBINE_CONTEXT, RIGHT].read())),
                             ),
                         COMBINE_CONTEXT.read().output(),
                     ]
                     .block()
                 }
                 Boolean::Subtraction => [
-                    [COMBINE_CONTEXT, OUT].write([COMBINE_CONTEXT, RIGHT].read()),
+                    [COMBINE_CONTEXT, OUT].bind([COMBINE_CONTEXT, RIGHT].read()),
                     [COMBINE_CONTEXT, OUT, DISTANCE]
-                        .write(-[COMBINE_CONTEXT, OUT, DISTANCE].read()),
+                        .bind(-[COMBINE_CONTEXT, OUT, DISTANCE].read()),
                     [COMBINE_CONTEXT, OUT]
-                        .write([COMBINE_CONTEXT, LEFT].read())
+                        .bind([COMBINE_CONTEXT, LEFT].read())
                         .if_else(
                             [COMBINE_CONTEXT, LEFT, DISTANCE].read().gt([
                                 COMBINE_CONTEXT,
@@ -81,7 +86,7 @@ where
         }]
     }
 
-    fn expression(
+    fn expression_impl(
         &self,
         _: &SpecializationData,
         input: crate::ir::ast::Expr<T>,

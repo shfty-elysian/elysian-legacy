@@ -5,9 +5,9 @@ use rust_gpu_bridge::{One, Two, Zero};
 use crate::{
     ast::{attribute::Attribute, combine::COMBINE_CONTEXT_STRUCT, expr::Expr},
     ir::{
-        as_ir::AsIR,
+        as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoLiteral, IntoRead, IntoValue, IntoWrite, Property, TypeSpec,
+            Identifier, IntoLiteral, IntoRead, IntoValue, IntoBind, Property, TypeSpec,
             COMBINE_CONTEXT, DISTANCE, LEFT, NUM, OUT, RIGHT,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
@@ -101,13 +101,18 @@ where
     }
 }
 
+impl<T> FilterSpec for Blend<T> where T: TypeSpec {}
+
 impl<T> AsIR<T> for Blend<T>
 where
     T: TypeSpec,
     T::NUMBER: IntoValue<T>,
     T::VECTOR2: IntoValue<T>,
 {
-    fn functions(&self, _: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
         vec![FunctionDefinition {
             id: match self {
                 Blend::SmoothUnion { attr, .. } => SMOOTH_UNION.concat(Property::from(*attr).id()),
@@ -135,7 +140,7 @@ where
                     let property: Property = attr.clone().into();
 
                     let mut block = vec![
-                        NUM.write(
+                        NUM.bind(
                             ((T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
                                 + (T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
                                     * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
@@ -144,7 +149,7 @@ where
                             .max(T::NUMBER::ZERO.literal())
                             .min(T::NUMBER::ONE.literal()),
                         ),
-                        [COMBINE_CONTEXT, OUT, property.clone()].write(
+                        [COMBINE_CONTEXT, OUT, property.clone()].bind(
                             [COMBINE_CONTEXT, RIGHT, property.clone()]
                                 .read()
                                 .mix([COMBINE_CONTEXT, LEFT, property.clone()].read(), NUM.read()),
@@ -152,7 +157,7 @@ where
                     ];
 
                     if property == DISTANCE {
-                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
+                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].bind(
                             [COMBINE_CONTEXT, OUT, DISTANCE].read()
                                 - K.read() * NUM.read() * (T::NUMBER::ONE.literal() - NUM.read()),
                         ))
@@ -166,7 +171,7 @@ where
                     let property: Property = attr.clone().into();
 
                     let mut block = vec![
-                        NUM.write(
+                        NUM.bind(
                             ((T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
                                 - (T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
                                     * ([RIGHT, DISTANCE].read() - [LEFT, DISTANCE].read())
@@ -174,7 +179,7 @@ where
                             .max(T::NUMBER::ZERO.literal())
                             .min(T::NUMBER::ONE.literal()),
                         ),
-                        property.clone().write(
+                        property.clone().bind(
                             [RIGHT, property.clone()]
                                 .read()
                                 .mix([LEFT, property.clone()].read(), NUM.read()),
@@ -182,13 +187,13 @@ where
                     ];
 
                     if property == DISTANCE {
-                        block.push(DISTANCE.write(
+                        block.push(DISTANCE.bind(
                             DISTANCE.read()
                                 + K.read() * NUM.read() * (T::NUMBER::ONE.literal() - NUM.read()),
                         ))
                     }
 
-                    block.push([OUT, property.clone()].write([OUT, property.clone()].read()));
+                    block.push([OUT, property.clone()].bind([OUT, property.clone()].read()));
 
                     block.into_iter().collect()
                 }
@@ -196,7 +201,7 @@ where
                     let property: Property = attr.clone().into();
 
                     let mut block = vec![
-                        NUM.write(
+                        NUM.bind(
                             ((T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
                                 - (T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
                                     * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
@@ -205,7 +210,7 @@ where
                             .max(T::NUMBER::ZERO.literal())
                             .min(T::NUMBER::ONE.literal()),
                         ),
-                        [COMBINE_CONTEXT, OUT, property.clone()].write(
+                        [COMBINE_CONTEXT, OUT, property.clone()].bind(
                             [COMBINE_CONTEXT, LEFT, property.clone()].read().mix(
                                 -[COMBINE_CONTEXT, RIGHT, property.clone()].read(),
                                 NUM.read(),
@@ -214,7 +219,7 @@ where
                     ];
 
                     if property == DISTANCE {
-                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
+                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].bind(
                             [COMBINE_CONTEXT, OUT, DISTANCE].read()
                                 + K.read() * NUM.read() * (T::NUMBER::ONE.literal() - NUM.read()),
                         ))
@@ -228,7 +233,7 @@ where
         }]
     }
 
-    fn expression(
+    fn expression_impl(
         &self,
         _: &SpecializationData,
         input: crate::ir::ast::Expr<T>,

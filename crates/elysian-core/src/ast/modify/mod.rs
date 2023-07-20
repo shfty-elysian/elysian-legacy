@@ -13,7 +13,8 @@ use crate::ir::{
     as_ir::{AsIR, DynAsIR},
     ast::{
         Identifier, IntoBlock, IntoValue, TypeSpec, COLOR, CONTEXT, DISTANCE, ERROR, GRADIENT_2D,
-        LIGHT, POSITION_2D, SUPPORT_2D, TANGENT_2D, TIME, UV,
+        GRADIENT_3D, LIGHT, NORMAL, POSITION_2D, POSITION_3D, SUPPORT_2D, SUPPORT_3D, TANGENT_2D,
+        TANGENT_3D, TIME, UV,
     },
     module::{
         AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
@@ -30,6 +31,10 @@ pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
             public: true,
         },
         FieldDefinition {
+            prop: POSITION_3D,
+            public: true,
+        },
+        FieldDefinition {
             prop: TIME,
             public: true,
         },
@@ -42,11 +47,23 @@ pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
             public: true,
         },
         FieldDefinition {
+            prop: GRADIENT_3D,
+            public: true,
+        },
+        FieldDefinition {
+            prop: NORMAL,
+            public: true,
+        },
+        FieldDefinition {
             prop: UV,
             public: true,
         },
         FieldDefinition {
             prop: TANGENT_2D,
+            public: true,
+        },
+        FieldDefinition {
+            prop: TANGENT_3D,
             public: true,
         },
         FieldDefinition {
@@ -59,6 +76,10 @@ pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
         },
         FieldDefinition {
             prop: SUPPORT_2D,
+            public: true,
+        },
+        FieldDefinition {
+            prop: SUPPORT_3D,
             public: true,
         },
         FieldDefinition {
@@ -120,6 +141,14 @@ where
         self.post_modifiers.push(Box::new(Manifold));
         self
     }
+
+    pub fn gradient_normals(mut self) -> Modify<T>
+    where
+        T::NUMBER: IntoValue<T>,
+    {
+        self.post_modifiers.push(Box::new(GradientNormals));
+        self
+    }
 }
 
 impl<T> AsModule<T> for Modify<T>
@@ -172,7 +201,7 @@ where
     }
 
     fn structs(&self) -> Vec<StructDefinition> {
-        vec![CONTEXT_STRUCT.clone()]
+        self.field.structs()
     }
 }
 

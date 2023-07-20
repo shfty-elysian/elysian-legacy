@@ -10,7 +10,7 @@ use crate::{
         modify::{Isosurface, Manifold, ISOSURFACE, MANIFOLD},
     },
     ir::{
-        as_ir::AsIR,
+        as_ir::{AsIR, FilterSpec},
         ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT},
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -63,11 +63,29 @@ where
     }
 }
 
+impl<T> FilterSpec for Ring<T>
+where
+    T: TypeSpec,
+{
+    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
+        Circle::<T>::filter_spec(spec)
+            .union(&Manifold::filter_spec(spec))
+            .union(&Isosurface::<T>::filter_spec(spec))
+    }
+}
+
 impl<T> AsIR<T> for Ring<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self, spec: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+        let isosurface_spec = Isosurface::<T>::filter_spec(spec);
+        let manifold_spec = Manifold::filter_spec(spec);
+        let circle_spec = Circle::<T>::filter_spec(spec);
+
         Circle {
             radius: self.radius.clone(),
         }
@@ -81,7 +99,7 @@ where
             .functions(spec),
         )
         .chain(FunctionDefinition {
-            id: RING,
+            id: RING.specialize(spec),
             public: false,
             inputs: vec![
                 InputDefinition {
@@ -99,9 +117,14 @@ where
             ],
             output: CONTEXT_STRUCT,
             block: ISOSURFACE
+                .specialize(&isosurface_spec)
                 .call([
                     WIDTH.read(),
-                    MANIFOLD.call(CIRCLE.call([RADIUS.read(), CONTEXT.read()])),
+                    MANIFOLD.specialize(&manifold_spec).call(
+                        CIRCLE
+                            .specialize(&circle_spec)
+                            .call([RADIUS.read(), CONTEXT.read()]),
+                    ),
                 ])
                 .output()
                 .block(),
@@ -109,11 +132,12 @@ where
         .collect()
     }
 
-    fn expression(
+    fn expression_impl(
         &self,
-        _: &SpecializationData,
+        spec: &SpecializationData,
         input: crate::ir::ast::Expr<T>,
     ) -> crate::ir::ast::Expr<T> {
-        RING.call([self.radius.clone().into(), self.width.clone().into(), input])
+        RING.specialize(spec)
+            .call([self.radius.clone().into(), self.width.clone().into(), input])
     }
 }

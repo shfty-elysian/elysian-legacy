@@ -7,11 +7,11 @@ use crate::{
     ast::{
         expr::Expr,
         field::{Point, CONTEXT_STRUCT},
-        modify::{Elongate, DIR_2D, ELONGATE},
+        modify::{Elongate, DIR_2D, DIR_3D, ELONGATE},
     },
     ir::{
-        as_ir::AsIR,
-        ast::{Identifier, IntoBlock, TypeSpec, CONTEXT},
+        as_ir::{AsIR, FilterSpec},
+        ast::{Identifier, IntoBlock, TypeSpec, CONTEXT, POSITION_2D, POSITION_3D},
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
 };
@@ -56,11 +56,34 @@ where
     }
 }
 
+impl<T> FilterSpec for Line<T>
+where
+    T: TypeSpec,
+{
+    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
+        Point::filter_spec(spec).union(&Elongate::<T>::filter_spec(spec))
+    }
+}
+
 impl<T> AsIR<T> for Line<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self, spec: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+        let dir = if spec.contains(POSITION_2D.id()) {
+            DIR_2D
+        } else if spec.contains(POSITION_3D.id()) {
+            DIR_3D
+        } else {
+            panic!("No position domain set")
+        };
+
+        let point_spec = Point::filter_spec(spec);
+        let elongate_spec = Elongate::<T>::filter_spec(spec);
+
         Point
             .functions(spec)
             .into_iter()
@@ -72,11 +95,11 @@ where
                 .functions(spec),
             )
             .chain(FunctionDefinition {
-                id: LINE,
+                id: LINE.specialize(spec),
                 public: false,
                 inputs: vec![
                     InputDefinition {
-                        prop: DIR_2D,
+                        prop: dir.clone(),
                         mutable: false,
                     },
                     InputDefinition {
@@ -86,18 +109,21 @@ where
                 ],
                 output: CONTEXT_STRUCT,
                 block: POINT
-                    .call(ELONGATE.call([DIR_2D.read(), CONTEXT.read()]))
+                    .specialize(&point_spec)
+                    .call([ELONGATE
+                        .specialize(&elongate_spec)
+                        .call([dir.read(), CONTEXT.read()])])
                     .output()
                     .block(),
             })
             .collect()
     }
 
-    fn expression(
+    fn expression_impl(
         &self,
-        _: &SpecializationData,
+        spec: &SpecializationData,
         input: crate::ir::ast::Expr<T>,
     ) -> crate::ir::ast::Expr<T> {
-        LINE.call([self.dir.clone().into(), input])
+        LINE.specialize(spec).call([self.dir.clone().into(), input])
     }
 }

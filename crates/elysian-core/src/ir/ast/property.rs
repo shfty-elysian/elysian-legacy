@@ -11,19 +11,28 @@ use crate::{
 
 use super::{Identifier, TypeSpec};
 
+pub const X: Property = Property::new_primitive("x", Type::Number);
+pub const Y: Property = Property::new_primitive("y", Type::Number);
+pub const Z: Property = Property::new_primitive("z", Type::Number);
+
 pub const POSITION_2D: Property = Property::new("position_2d", Type::Vector2, 19300293251480055481);
 pub const POSITION_3D: Property = Property::new("position_3d", Type::Vector3, 2063026210185456313);
 pub const TIME: Property = Property::new("time", Type::Number, 391570251245214947);
 pub const DISTANCE: Property = Property::new("distance", Type::Number, 20699600731090380932);
 pub const GRADIENT_2D: Property = Property::new("gradient_2d", Type::Vector2, 16702807221222221695);
 pub const GRADIENT_3D: Property = Property::new("gradient_3d", Type::Vector3, 1183200891820394544);
+pub const NORMAL: Property = Property::new("normal", Type::Vector3, 1183200891820394544);
 pub const UV: Property = Property::new("uv", Type::Vector2, 1527481748115194786);
 pub const TANGENT_2D: Property = Property::new("tangent_2d", Type::Vector2, 12976793731289731131);
 pub const TANGENT_3D: Property = Property::new("tangent_3d", Type::Vector3, 17286461381478601027);
 pub const COLOR: Property = Property::new("color", Type::Vector4, 84604795624457789);
 pub const LIGHT: Property = Property::new("light", Type::Number, 1330409404139204842);
 pub const SUPPORT_2D: Property = Property::new("support_2d", Type::Vector2, 85970193295239647);
-pub const SUPPORT_3D: Property = Property::new("support_3d", Type::Vector3, 5120220911040556255970193295239647);
+pub const SUPPORT_3D: Property = Property::new(
+    "support_3d",
+    Type::Vector3,
+    5120220911040556255970193295239647,
+);
 pub const ERROR: Property = Property::new("error", Type::Number, 209621851525461471);
 pub const NUM: Property = Property::new("num", Type::Number, 1349662877516236181);
 
@@ -65,6 +74,13 @@ impl Property {
         }
     }
 
+    pub const fn new_primitive(name: &'static str, ty: Type) -> Self {
+        Property {
+            id: Identifier::new(name, 0),
+            ty,
+        }
+    }
+
     pub const fn id(&self) -> &Identifier {
         &self.id
     }
@@ -88,11 +104,23 @@ impl Property {
         Read(None, vec![self])
     }
 
+    pub fn bind<T>(self, expr: Expr<T>) -> Stmt<T>
+    where
+        T: TypeSpec,
+    {
+        Write {
+            bind: true,
+            path: vec![self],
+            expr,
+        }
+    }
+
     pub fn write<T>(self, expr: Expr<T>) -> Stmt<T>
     where
         T: TypeSpec,
     {
         Write {
+            bind: false,
             path: vec![self],
             expr,
         }
@@ -131,6 +159,27 @@ where
     }
 }
 
+pub trait IntoBind<T>
+where
+    T: TypeSpec,
+{
+    fn bind(self, expr: Expr<T>) -> Stmt<T>;
+}
+
+impl<T, U> IntoBind<U> for T
+where
+    U: TypeSpec,
+    T: IntoIterator<Item = Property>,
+{
+    fn bind(self, expr: Expr<U>) -> Stmt<U> {
+        Write {
+            bind: true,
+            path: self.into_iter().collect(),
+            expr,
+        }
+    }
+}
+
 pub trait IntoWrite<T>
 where
     T: TypeSpec,
@@ -145,6 +194,7 @@ where
 {
     fn write(self, expr: Expr<U>) -> Stmt<U> {
         Write {
+            bind: false,
             path: self.into_iter().collect(),
             expr,
         }

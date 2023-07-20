@@ -17,6 +17,7 @@ where
     Write {
         path: Vec<Property>,
         expr: Expr<T>,
+        bind: bool,
     },
     If {
         cond: Expr<T>,
@@ -50,10 +51,11 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Block(arg0) => f.debug_tuple("Block").field(arg0).finish(),
-            Self::Write { path, expr } => f
+            Self::Write { path, expr, bind } => f
                 .debug_struct("Write")
                 .field("path", path)
                 .field("expr", expr)
+                .field("bind", bind)
                 .finish(),
             Self::If {
                 cond,
@@ -79,9 +81,10 @@ where
     fn clone(&self) -> Self {
         match self {
             Self::Block(arg0) => Self::Block(arg0.clone()),
-            Self::Write { path, expr } => Self::Write {
+            Self::Write { path, expr, bind } => Self::Write {
                 path: path.clone(),
                 expr: expr.clone(),
+                bind: bind.clone(),
             },
             Self::If {
                 cond,

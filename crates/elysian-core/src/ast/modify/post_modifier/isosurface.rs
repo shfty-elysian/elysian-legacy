@@ -3,8 +3,8 @@ use std::{fmt::Debug, hash::Hash};
 use crate::{
     ast::modify::CONTEXT_STRUCT,
     ir::{
-        as_ir::AsIR,
-        ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, TypeSpec, CONTEXT, DISTANCE},
+        as_ir::{AsIR, FilterSpec},
+        ast::{Identifier, IntoBlock, IntoRead, IntoBind, Property, TypeSpec, CONTEXT, DISTANCE},
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
@@ -52,13 +52,15 @@ where
     }
 }
 
+impl<T> FilterSpec for Isosurface<T> where T: TypeSpec {}
+
 impl<T> AsIR<T> for Isosurface<T>
 where
     T: TypeSpec,
 {
-    fn functions(&self, _: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
         vec![FunctionDefinition {
-            id: ISOSURFACE,
+            id: ISOSURFACE.specialize(spec),
             public: false,
             inputs: vec![
                 InputDefinition {
@@ -72,18 +74,20 @@ where
             ],
             output: &CONTEXT_STRUCT,
             block: [
-                [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - DIST.read()),
+                [CONTEXT, DISTANCE].bind([CONTEXT, DISTANCE].read() - DIST.read()),
                 CONTEXT.read().output(),
             ]
             .block(),
         }]
     }
 
-    fn expression(
+    fn expression_impl(
         &self,
-        _: &SpecializationData,
+        spec: &SpecializationData,
         input: crate::ir::ast::Expr<T>,
     ) -> crate::ir::ast::Expr<T> {
-        ISOSURFACE.call([self.dist.clone().into(), input])
+        ISOSURFACE
+            .specialize(spec)
+            .call([self.dist.clone().into(), input])
     }
 }

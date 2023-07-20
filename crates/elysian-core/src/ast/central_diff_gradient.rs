@@ -6,14 +6,15 @@ use std::{
 use rust_gpu_bridge::glam::{Vec2, Vec3};
 
 use crate::ir::{
+    as_ir::FilterSpec,
     ast::{
-        Expr, GlamF32, Identifier, IntoBlock, IntoLiteral, IntoWrite, TypeSpec, CONTEXT, DISTANCE,
+        Expr, GlamF32, Identifier, IntoBlock, IntoLiteral, IntoBind, TypeSpec, CONTEXT, DISTANCE,
         GRADIENT_2D, GRADIENT_3D,
     },
     module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
 };
 
-use super::modify::{CONTEXT_STRUCT, TRANSLATE};
+use super::modify::{Translate, CONTEXT_STRUCT, TRANSLATE};
 
 pub struct CentralDiffGradient<T>
 where
@@ -53,16 +54,51 @@ impl AsModule<GlamF32> for CentralDiffGradient<GlamF32> {
         spec: &SpecializationData,
         entry_point: &Identifier,
     ) -> Vec<crate::ir::module::FunctionDefinition<GlamF32>> {
-        let (gradient, vec_x, vec_y) = if spec.domains.contains(&GRADIENT_2D) {
+        let (gradient, vec_x, vec_y) = if spec.contains(GRADIENT_2D.id()) {
             (GRADIENT_2D, Vec2::X.literal(), Vec2::Y.literal())
-        } else if spec.domains.contains(&GRADIENT_3D) {
-            (GRADIENT_2D, Vec3::X.literal(), Vec3::Y.literal())
+        } else if spec.contains(GRADIENT_3D.id()) {
+            (GRADIENT_3D, Vec3::X.literal(), Vec3::Y.literal())
         } else {
             panic!("No gradient domain");
         };
 
+        let translate_spec = Translate::<GlamF32>::filter_spec(spec);
+
         let field_entry_point = self.field.entry_point();
         let epsilon = self.epsilon.literal();
+
+        let expr_x = field_entry_point
+            .call(
+                TRANSLATE
+                    .specialize(&translate_spec)
+                    .call([vec_x.clone() * -epsilon.clone(), CONTEXT.read()]),
+            )
+            .read(DISTANCE)
+            - field_entry_point
+                .call(
+                    TRANSLATE
+                        .specialize(&translate_spec)
+                        .call([vec_x * epsilon.clone(), CONTEXT.read()]),
+                )
+                .read(DISTANCE);
+
+        let expr_y = field_entry_point
+            .call(
+                TRANSLATE
+                    .specialize(&translate_spec)
+                    .call([vec_y.clone() * -epsilon.clone(), CONTEXT.read()]),
+            )
+            .read(DISTANCE)
+            - field_entry_point
+                .call(
+                    TRANSLATE
+                        .specialize(&translate_spec)
+                        .call([vec_y * epsilon.clone(), CONTEXT.read()]),
+                )
+                .read(DISTANCE);
+
+        let expr_vec = Expr::vector2(expr_x, expr_y);
+
         self.field
             .functions(spec, &field_entry_point)
             .into_iter()
@@ -75,30 +111,8 @@ impl AsModule<GlamF32> for CentralDiffGradient<GlamF32> {
                 }],
                 output: CONTEXT_STRUCT,
                 block: [
-                    CONTEXT.write(field_entry_point.call(CONTEXT.read())),
-                    [CONTEXT, gradient].write(
-                        Expr::vector2(
-                            field_entry_point
-                                .call(
-                                    TRANSLATE
-                                        .call([vec_x.clone() * -epsilon.clone(), CONTEXT.read()]),
-                                )
-                                .read(DISTANCE)
-                                - field_entry_point
-                                    .call(TRANSLATE.call([vec_x * epsilon.clone(), CONTEXT.read()]))
-                                    .read(DISTANCE),
-                            field_entry_point
-                                .call(
-                                    TRANSLATE
-                                        .call([vec_y.clone() * -epsilon.clone(), CONTEXT.read()]),
-                                )
-                                .read(DISTANCE)
-                                - field_entry_point
-                                    .call(TRANSLATE.call([vec_y * epsilon, CONTEXT.read()]))
-                                    .read(DISTANCE),
-                        )
-                        .normalize(),
-                    ),
+                    CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
+                    [CONTEXT, gradient].bind(expr_vec),
                     CONTEXT.read().output(),
                 ]
                 .block(),

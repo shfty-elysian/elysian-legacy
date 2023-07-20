@@ -860,6 +860,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-syn"
+version = "0.1.0"
+dependencies = [
+ "elysian",
+ "test-shapes",
+]
+
+[[package]]
 name = "tiff"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

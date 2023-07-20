@@ -106,7 +106,7 @@ where
 {
     match stmt {
         Block(block) => evaluate_block(interpreter, block),
-        Write { path, expr } => {
+        Write { path, expr, .. } => {
             let v = evaluate_expr(&interpreter, expr);
 
             let prop = path.last().expect("Path is empty");

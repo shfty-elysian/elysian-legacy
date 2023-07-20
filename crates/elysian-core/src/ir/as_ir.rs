@@ -8,12 +8,44 @@ use super::{
     module::{FunctionDefinition, SpecializationData},
 };
 
-pub trait AsIR<T>: std::fmt::Debug + HashIR + CloneIR<T>
+pub trait FilterSpec {
+    fn filter_spec(_spec: &SpecializationData) -> SpecializationData {
+        Default::default()
+    }
+}
+
+pub trait FilterSpecDyn {
+    fn filter_spec_internal(&self, spec: &SpecializationData) -> SpecializationData;
+}
+
+impl<T> FilterSpecDyn for T
+where
+    T: FilterSpec,
+{
+    fn filter_spec_internal(&self, spec: &SpecializationData) -> SpecializationData {
+        T::filter_spec(spec)
+    }
+}
+
+impl<T> FilterSpecDyn for Box<dyn AsIR<T>> {
+    fn filter_spec_internal(&self, spec: &SpecializationData) -> SpecializationData {
+        (**self).filter_spec_internal(spec)
+    }
+}
+
+pub trait AsIR<T>: std::fmt::Debug + HashIR + CloneIR<T> + FilterSpecDyn
 where
     T: TypeSpec,
 {
-    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>>;
-    fn expression(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T>;
+    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+        self.functions_impl(&self.filter_spec_internal(spec))
+    }
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>>;
+
+    fn expression(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T> {
+        self.expression_impl(&self.filter_spec_internal(spec), input)
+    }
+    fn expression_impl(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T>;
 }
 
 pub type DynAsIR<T> = Box<dyn AsIR<T>>;
@@ -26,8 +58,16 @@ where
         (**self).functions(spec)
     }
 
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+        (**self).functions_impl(spec)
+    }
+
     fn expression(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T> {
         (**self).expression(spec, input)
+    }
+
+    fn expression_impl(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T> {
+        (**self).expression_impl(spec, input)
     }
 }
 

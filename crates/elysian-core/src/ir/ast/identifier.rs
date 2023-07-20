@@ -2,6 +2,8 @@ use std::borrow::Cow;
 
 use uuid::Uuid;
 
+use crate::ir::module::SpecializationData;
+
 use super::{Expr, TypeSpec};
 
 /// Named unique identifier
@@ -37,11 +39,16 @@ impl Identifier {
     }
 
     pub fn name_unique(&self) -> String {
-        format!(
-            "{}_{}",
-            self.name(),
-            self.uuid().as_simple().to_string().trim_start_matches('0')
-        )
+        let uuid = self.uuid();
+        if *uuid == Uuid::default() {
+            self.name().into()
+        } else {
+            format!(
+                "{}_{}",
+                self.name(),
+                self.uuid().as_simple().to_string().trim_start_matches('0')
+            )
+        }
     }
 
     pub fn concat(&self, rhs: &Identifier) -> Identifier {
@@ -59,5 +66,9 @@ impl Identifier {
             function: self.clone(),
             args: args.into_iter().collect(),
         }
+    }
+
+    pub fn specialize(self, spec: &SpecializationData) -> Self {
+        spec.specialize_id(self)
     }
 }

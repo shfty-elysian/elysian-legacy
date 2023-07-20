@@ -415,8 +415,8 @@ fn stmt_to_syn(stmt: &IrStmt<GlamF32>) -> Stmt {
             }),
             Default::default(),
         ),
-        IrStmt::Write { path, expr } => Stmt::Expr(
-            if path.len() == 1 {
+        IrStmt::Write { bind, path, expr } => Stmt::Expr(
+            if *bind && path.len() == 1 {
                 Expr::Let(syn::ExprLet {
                     attrs: vec![],
                     let_token: Default::default(),
@@ -557,6 +557,54 @@ fn expr_to_syn(expr: &IrExpr<GlamF32>) -> Expr {
                 .into_iter()
                 .collect(),
             }),
+            elysian_core::ir::ast::Value::Vector3(v) => Expr::Call(ExprCall {
+                attrs: vec![],
+                func: Box::new(Expr::Path(ExprPath {
+                    attrs: vec![],
+                    qself: None,
+                    path: Path {
+                        leading_colon: Default::default(),
+                        segments: [
+                            PathSegment {
+                                ident: Ident::new("Vec3", Span::call_site()),
+                                arguments: Default::default(),
+                            },
+                            PathSegment {
+                                ident: Ident::new("new", Span::call_site()),
+                                arguments: Default::default(),
+                            },
+                        ]
+                        .into_iter()
+                        .collect(),
+                    },
+                })),
+                paren_token: Default::default(),
+                args: [
+                    Expr::Lit(ExprLit {
+                        attrs: vec![],
+                        lit: Lit::Float(LitFloat::new(
+                            &(v.x.to_string() + &"f32"),
+                            Span::call_site(),
+                        )),
+                    }),
+                    Expr::Lit(ExprLit {
+                        attrs: vec![],
+                        lit: Lit::Float(LitFloat::new(
+                            &(v.y.to_string() + &"f32"),
+                            Span::call_site(),
+                        )),
+                    }),
+                    Expr::Lit(ExprLit {
+                        attrs: vec![],
+                        lit: Lit::Float(LitFloat::new(
+                            &(v.z.to_string() + &"f32"),
+                            Span::call_site(),
+                        )),
+                    }),
+                ]
+                .into_iter()
+                .collect(),
+            }),
             elysian_core::ir::ast::Value::Struct(_) => {
                 unimplemented!()
             }
@@ -596,6 +644,63 @@ fn expr_to_syn(expr: &IrExpr<GlamF32>) -> Expr {
             })),
             paren_token: Default::default(),
             args: [expr_to_syn(x), expr_to_syn(y)].into_iter().collect(),
+        }),
+        IrExpr::Vector3(x, y, z) => Expr::Call(ExprCall {
+            attrs: vec![],
+            func: Box::new(Expr::Path(ExprPath {
+                attrs: vec![],
+                qself: None,
+                path: Path {
+                    leading_colon: None,
+                    segments: [
+                        PathSegment {
+                            ident: Ident::new("Vec3", Span::call_site()),
+                            arguments: Default::default(),
+                        },
+                        PathSegment {
+                            ident: Ident::new("new", Span::call_site()),
+                            arguments: Default::default(),
+                        },
+                    ]
+                    .into_iter()
+                    .collect(),
+                },
+            })),
+            paren_token: Default::default(),
+            args: [expr_to_syn(x), expr_to_syn(y), expr_to_syn(z)]
+                .into_iter()
+                .collect(),
+        }),
+        IrExpr::Vector4(x, y, z, w) => Expr::Call(ExprCall {
+            attrs: vec![],
+            func: Box::new(Expr::Path(ExprPath {
+                attrs: vec![],
+                qself: None,
+                path: Path {
+                    leading_colon: None,
+                    segments: [
+                        PathSegment {
+                            ident: Ident::new("Vec4", Span::call_site()),
+                            arguments: Default::default(),
+                        },
+                        PathSegment {
+                            ident: Ident::new("new", Span::call_site()),
+                            arguments: Default::default(),
+                        },
+                    ]
+                    .into_iter()
+                    .collect(),
+                },
+            })),
+            paren_token: Default::default(),
+            args: [
+                expr_to_syn(x),
+                expr_to_syn(y),
+                expr_to_syn(z),
+                expr_to_syn(w),
+            ]
+            .into_iter()
+            .collect(),
         }),
         IrExpr::Struct(structure, fields) => Expr::Struct(ExprStruct {
             attrs: vec![],

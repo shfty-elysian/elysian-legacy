@@ -1,11 +1,11 @@
 use image::RgbImage;
-use rust_gpu_bridge::glam::Vec2;
+use rust_gpu_bridge::glam::{Vec2, Vec3};
 use tracing::instrument;
 
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use elysian_core::ir::{
-    ast::{GlamF32, Struct, StructIO, Value, DISTANCE, GRADIENT_2D, POSITION_2D},
+    ast::{GlamF32, Struct, StructIO, Value, DISTANCE, NORMAL, POSITION_2D},
     module::{AsModule, SpecializationData},
 };
 use elysian_syn::static_shapes::dispatch_shape_f32;
@@ -48,20 +48,20 @@ where
                     let ctx = shape(ctx);
 
                     let d: f32 = ctx.get_number(&DISTANCE);
-                    let g: Vec2 = ctx.get_vector2(&GRADIENT_2D);
+                    let n: Vec3 = ctx.get_vector3(&NORMAL);
 
-                    if d.abs() < 2.0 / width as f32 {
+                    if d >= 0.0 && d <= 4.0 / width as f32 {
                         [255, 255, 255]
-                    } else if d < 0.0 {
+                    } else if d <= 0.0 {
                         [
-                            ((g.x * 0.5 + 0.5) * 255.0).round() as u8,
-                            ((g.y * 0.5 + 0.5) * 255.0).round() as u8,
-                            255,
+                            ((n.x * 0.5 + 0.5) * 255.0).round() as u8,
+                            ((n.y * 0.5 + 0.5) * 255.0).round() as u8,
+                            ((n.z * 0.5 + 0.5) * 255.0).round() as u8,
                         ]
                     } else {
                         [
-                            ((g.x * 0.5 + 0.5) * 255.0).round() as u8,
-                            ((g.y * 0.5 + 0.5) * 255.0).round() as u8,
+                            ((n.x * 0.5 + 0.5) * 127.0).round() as u8,
+                            ((n.y * 0.5 + 0.5) * 127.0).round() as u8,
                             0,
                         ]
                     }

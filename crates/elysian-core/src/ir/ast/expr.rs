@@ -21,6 +21,8 @@ where
         args: Vec<Expr<T>>,
     },
     Vector2(BoxExpr<T>, BoxExpr<T>),
+    Vector3(BoxExpr<T>, BoxExpr<T>, BoxExpr<T>),
+    Vector4(BoxExpr<T>, BoxExpr<T>, BoxExpr<T>, BoxExpr<T>),
     Struct(&'static StructDefinition, BTreeMap<Property, Expr<T>>),
     Add(BoxExpr<T>, BoxExpr<T>),
     Sub(BoxExpr<T>, BoxExpr<T>),
@@ -74,8 +76,21 @@ where
                 .field("function", function)
                 .field("args", args)
                 .finish(),
-            Self::Vector2(arg0, arg1) => f.debug_tuple("MakeVec2").field(arg0).field(arg1).finish(),
-            Self::Struct(arg0, arg1) => f.debug_tuple("Construct").field(arg0).field(arg1).finish(),
+            Self::Vector2(arg0, arg1) => f.debug_tuple("Vector2").field(arg0).field(arg1).finish(),
+            Self::Vector3(arg0, arg1, arg2) => f
+                .debug_tuple("Vector3")
+                .field(arg0)
+                .field(arg1)
+                .field(arg2)
+                .finish(),
+            Self::Vector4(arg0, arg1, arg2, arg3) => f
+                .debug_tuple("Vector4")
+                .field(arg0)
+                .field(arg1)
+                .field(arg2)
+                .field(arg3)
+                .finish(),
+            Self::Struct(arg0, arg1) => f.debug_tuple("Struct").field(arg0).field(arg1).finish(),
             Self::Add(arg0, arg1) => f.debug_tuple("Add").field(arg0).field(arg1).finish(),
             Self::Sub(arg0, arg1) => f.debug_tuple("Sub").field(arg0).field(arg1).finish(),
             Self::Mul(arg0, arg1) => f.debug_tuple("Mul").field(arg0).field(arg1).finish(),
@@ -113,6 +128,12 @@ where
                 args: args.clone(),
             },
             Self::Vector2(arg0, arg1) => Self::Vector2(arg0.clone(), arg1.clone()),
+            Self::Vector3(arg0, arg1, arg2) => {
+                Self::Vector3(arg0.clone(), arg1.clone(), arg2.clone())
+            }
+            Self::Vector4(arg0, arg1, arg2, arg3) => {
+                Self::Vector4(arg0.clone(), arg1.clone(), arg2.clone(), arg3.clone())
+            }
             Self::Struct(arg0, arg1) => Self::Struct(arg0.clone(), arg1.clone()),
             Self::Add(arg0, arg1) => Self::Add(arg0.clone(), arg1.clone()),
             Self::Sub(arg0, arg1) => Self::Sub(arg0.clone(), arg1.clone()),
@@ -320,6 +341,14 @@ where
 
     pub fn vector2(x: Expr<T>, y: Expr<T>) -> Expr<T> {
         Expr::Vector2(Box::new(x), Box::new(y))
+    }
+
+    pub fn vector3(x: Expr<T>, y: Expr<T>, z: Expr<T>) -> Expr<T> {
+        Expr::Vector3(Box::new(x), Box::new(y), Box::new(z))
+    }
+
+    pub fn vector4(x: Expr<T>, y: Expr<T>, z: Expr<T>, w: Expr<T>) -> Expr<T> {
+        Expr::Vector4(Box::new(x), Box::new(y), Box::new(z), Box::new(w))
     }
 }
 

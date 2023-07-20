@@ -44,6 +44,12 @@
   * Some cases unavoidable due to what appear to be bugs in parse_quote
     * ex. Struct expressions not outputting a , between the last member and terminating ..
 
+* Fix mutability warnings
+  * Need to include mutability info, or infer it somehow
+
+* Fix parsing for infinite floats
+  * Can't set a value to f32::consts::INFINITE via literal as-is
+
 * Generate Context / CombineContext structs conditionally
   * Currently outputting a hardcoded set of members
   * Both structs are always emitted

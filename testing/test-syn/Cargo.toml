@@ -1,0 +1,8 @@
+[package]
+name = "test-syn"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elysian = { path = "../.." }
+test-shapes = { path = "../test-shapes" }
