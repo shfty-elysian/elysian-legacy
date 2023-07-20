@@ -5,8 +5,8 @@ use crate::{
     ir::{
         as_ir::FilterSpec,
         ast::{
-            Expr, Identifier, IntoBlock, IntoRead, IntoBind, TypeSpec, CONTEXT, DISTANCE,
-            GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
+            Expr, Identifier, IntoBind, IntoBlock, IntoRead, CONTEXT, DISTANCE, GRADIENT_2D,
+            GRADIENT_3D, POSITION_2D, POSITION_3D,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -31,11 +31,8 @@ impl FilterSpec for Point {
     }
 }
 
-impl<T> AsIR<T> for Point
-where
-    T: TypeSpec,
-{
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+impl AsIR for Point {
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let position = if spec.contains(POSITION_2D.id()) {
             POSITION_2D
         } else if spec.contains(POSITION_3D.id()) {
@@ -77,7 +74,7 @@ where
         }]
     }
 
-    fn expression_impl(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T> {
+    fn expression_impl(&self, spec: &SpecializationData, input: Expr) -> Expr {
         POINT.specialize(spec).call(input)
     }
 }

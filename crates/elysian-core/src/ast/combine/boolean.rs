@@ -3,8 +3,7 @@ use crate::{
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoBind, TypeSpec, COMBINE_CONTEXT, DISTANCE, LEFT,
-            OUT, RIGHT,
+            Identifier, IntoBind, IntoBlock, IntoRead, COMBINE_CONTEXT, DISTANCE, LEFT, OUT, RIGHT,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -23,14 +22,8 @@ pub const SUBTRACTION: Identifier = Identifier::new("subtraction", 1414822549598
 
 impl FilterSpec for Boolean {}
 
-impl<T> AsIR<T> for Boolean
-where
-    T: TypeSpec,
-{
-    fn functions_impl(
-        &self,
-        _: &SpecializationData,
-    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+impl AsIR for Boolean {
+    fn functions_impl(&self, _: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition> {
         vec![FunctionDefinition {
             id: match self {
                 Boolean::Union => UNION,
@@ -66,8 +59,7 @@ where
                 }
                 Boolean::Subtraction => [
                     [COMBINE_CONTEXT, OUT].bind([COMBINE_CONTEXT, RIGHT].read()),
-                    [COMBINE_CONTEXT, OUT, DISTANCE]
-                        .bind(-[COMBINE_CONTEXT, OUT, DISTANCE].read()),
+                    [COMBINE_CONTEXT, OUT, DISTANCE].bind(-[COMBINE_CONTEXT, OUT, DISTANCE].read()),
                     [COMBINE_CONTEXT, OUT]
                         .bind([COMBINE_CONTEXT, LEFT].read())
                         .if_else(
@@ -89,8 +81,8 @@ where
     fn expression_impl(
         &self,
         _: &SpecializationData,
-        input: crate::ir::ast::Expr<T>,
-    ) -> crate::ir::ast::Expr<T> {
+        input: crate::ir::ast::Expr,
+    ) -> crate::ir::ast::Expr {
         match self {
             Boolean::Union => crate::ir::ast::Expr::Call {
                 function: UNION,

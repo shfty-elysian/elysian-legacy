@@ -1,17 +1,11 @@
 use std::fmt::Debug;
 
-use crate::ir::{
-    as_ir::HashIR,
-    ast::{Identifier, TypeSpec},
-};
+use crate::ir::{as_ir::HashIR, ast::Identifier};
 
 use super::{FunctionDefinition, Module, SpecializationData, StructDefinition};
 
-pub trait AsModule<T>: 'static + Debug + HashIR
-where
-    T: TypeSpec,
-{
-    fn module(&self, spec: &SpecializationData) -> Module<T> {
+pub trait AsModule: 'static + Debug + HashIR {
+    fn module(&self, spec: &SpecializationData) -> Module {
         let entry_point = self.entry_point();
         let mut functions = self.functions(spec, &entry_point);
         functions.sort_by(|lhs, rhs| lhs.id.cmp(&rhs.id));
@@ -29,17 +23,14 @@ where
         &self,
         spec: &SpecializationData,
         entry_point: &Identifier,
-    ) -> Vec<FunctionDefinition<T>>;
+    ) -> Vec<FunctionDefinition>;
     fn structs(&self) -> Vec<StructDefinition>;
 }
 
-pub type DynAsModule<T> = Box<dyn AsModule<T>>;
+pub type DynAsModule = Box<dyn AsModule>;
 
-impl<T> AsModule<T> for DynAsModule<T>
-where
-    T: TypeSpec,
-{
-    fn module(&self, spec: &SpecializationData) -> Module<T> {
+impl AsModule for DynAsModule {
+    fn module(&self, spec: &SpecializationData) -> Module {
         (**self).module(spec)
     }
 
@@ -51,7 +42,7 @@ where
         &self,
         spec: &SpecializationData,
         entry_point: &Identifier,
-    ) -> Vec<FunctionDefinition<T>> {
+    ) -> Vec<FunctionDefinition> {
         (**self).functions(spec, entry_point)
     }
 
@@ -60,7 +51,7 @@ where
     }
 }
 
-impl<T> HashIR for DynAsModule<T> {
+impl HashIR for DynAsModule {
     fn hash_ir(&self) -> u64 {
         (**self).hash_ir()
     }

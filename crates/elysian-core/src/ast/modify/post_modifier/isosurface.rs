@@ -4,7 +4,7 @@ use crate::{
     ast::modify::CONTEXT_STRUCT,
     ir::{
         as_ir::{AsIR, FilterSpec},
-        ast::{Identifier, IntoBlock, IntoRead, IntoBind, Property, TypeSpec, CONTEXT, DISTANCE},
+        ast::{Identifier, IntoBind, IntoBlock, IntoRead, Property, CONTEXT, DISTANCE},
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
@@ -14,17 +14,11 @@ use crate::ast::expr::Expr;
 pub const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
 pub const DIST: Property = Property::new("property", Type::Number, 463524741302033362);
 
-pub struct Isosurface<T>
-where
-    T: TypeSpec,
-{
-    pub dist: Expr<T>,
+pub struct Isosurface {
+    pub dist: Expr,
 }
 
-impl<T> Debug for Isosurface<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Isosurface {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Isosurface")
             .field("dist", &self.dist)
@@ -32,10 +26,7 @@ where
     }
 }
 
-impl<T> Clone for Isosurface<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Isosurface {
     fn clone(&self) -> Self {
         Self {
             dist: self.dist.clone(),
@@ -43,22 +34,16 @@ where
     }
 }
 
-impl<T> Hash for Isosurface<T>
-where
-    T: TypeSpec,
-{
+impl Hash for Isosurface {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.dist.hash(state);
     }
 }
 
-impl<T> FilterSpec for Isosurface<T> where T: TypeSpec {}
+impl FilterSpec for Isosurface {}
 
-impl<T> AsIR<T> for Isosurface<T>
-where
-    T: TypeSpec,
-{
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+impl AsIR for Isosurface {
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         vec![FunctionDefinition {
             id: ISOSURFACE.specialize(spec),
             public: false,
@@ -84,8 +69,8 @@ where
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr<T>,
-    ) -> crate::ir::ast::Expr<T> {
+        input: crate::ir::ast::Expr,
+    ) -> crate::ir::ast::Expr {
         ISOSURFACE
             .specialize(spec)
             .call([self.dist.clone().into(), input])

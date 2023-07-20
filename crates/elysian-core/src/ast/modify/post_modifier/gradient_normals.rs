@@ -1,14 +1,12 @@
 use std::{fmt::Debug, hash::Hash};
 
-use rust_gpu_bridge::One;
-
 use crate::{
     ast::modify::CONTEXT_STRUCT,
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoValue, IntoWrite, TypeSpec,
-            CONTEXT, GRADIENT_2D, GRADIENT_3D, NORMAL, X, Y,
+            Expr, Identifier, IntoBlock, IntoRead, IntoWrite, Number, CONTEXT, GRADIENT_2D,
+            GRADIENT_3D, NORMAL, X, Y,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -25,12 +23,8 @@ impl FilterSpec for GradientNormals {
     }
 }
 
-impl<T> AsIR<T> for GradientNormals
-where
-    T: TypeSpec,
-    T::NUMBER: One + IntoValue<T>,
-{
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+impl AsIR for GradientNormals {
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         vec![FunctionDefinition {
             id: GRADIENT_NORMALS.specialize(spec),
             public: false,
@@ -46,7 +40,7 @@ where
                         Expr::vector3(
                             [GRADIENT_2D, X].read(),
                             [GRADIENT_2D, Y].read(),
-                            T::NUMBER::ONE.literal(),
+                            Number::Float(1.0).literal(),
                         )
                         .normalize(),
                     ),
@@ -68,8 +62,8 @@ where
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr<T>,
-    ) -> crate::ir::ast::Expr<T> {
+        input: crate::ir::ast::Expr,
+    ) -> crate::ir::ast::Expr {
         GRADIENT_NORMALS.specialize(spec).call(input)
     }
 }

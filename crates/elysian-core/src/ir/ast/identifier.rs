@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::ir::module::SpecializationData;
 
-use super::{Expr, TypeSpec};
+use super::Expr;
 
 /// Named unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -58,10 +58,7 @@ impl Identifier {
         }
     }
 
-    pub fn call<T, I: IntoIterator<Item = Expr<T>>>(&self, args: I) -> Expr<T>
-    where
-        T: TypeSpec,
-    {
+    pub fn call<I: IntoIterator<Item = Expr>>(&self, args: I) -> Expr {
         Expr::Call {
             function: self.clone(),
             args: args.into_iter().collect(),

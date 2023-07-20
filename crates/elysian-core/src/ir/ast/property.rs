@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     ast::{attribute::Attribute, combine::COMBINE_CONTEXT_STRUCT, modify::CONTEXT_STRUCT},
     ir::{
@@ -9,7 +11,7 @@ use crate::{
     },
 };
 
-use super::{Identifier, TypeSpec};
+use super::Identifier;
 
 pub const X: Property = Property::new_primitive("x", Type::Number);
 pub const Y: Property = Property::new_primitive("y", Type::Number);
@@ -56,6 +58,12 @@ pub struct Property {
     ty: Type,
 }
 
+impl Display for Property {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.id.name())
+    }
+}
+
 impl IntoIterator for Property {
     type Item = Self;
 
@@ -97,17 +105,11 @@ impl Property {
         self.id.name_unique()
     }
 
-    pub fn read<T>(self) -> Expr<T>
-    where
-        T: TypeSpec,
-    {
+    pub fn read(self) -> Expr {
         Read(None, vec![self])
     }
 
-    pub fn bind<T>(self, expr: Expr<T>) -> Stmt<T>
-    where
-        T: TypeSpec,
-    {
+    pub fn bind(self, expr: Expr) -> Stmt {
         Write {
             bind: true,
             path: vec![self],
@@ -115,10 +117,7 @@ impl Property {
         }
     }
 
-    pub fn write<T>(self, expr: Expr<T>) -> Stmt<T>
-    where
-        T: TypeSpec,
-    {
+    pub fn write(self, expr: Expr) -> Stmt {
         Write {
             bind: false,
             path: vec![self],
@@ -142,36 +141,28 @@ impl From<Attribute> for Property {
     }
 }
 
-pub trait IntoRead<T>
-where
-    T: TypeSpec,
-{
-    fn read(self) -> Expr<T>;
+pub trait IntoRead {
+    fn read(self) -> Expr;
 }
 
-impl<T, U> IntoRead<U> for T
+impl<T> IntoRead for T
 where
-    U: TypeSpec,
     T: IntoIterator<Item = Property>,
 {
-    fn read(self) -> Expr<U> {
+    fn read(self) -> Expr {
         Read(None, self.into_iter().collect())
     }
 }
 
-pub trait IntoBind<T>
-where
-    T: TypeSpec,
-{
-    fn bind(self, expr: Expr<T>) -> Stmt<T>;
+pub trait IntoBind {
+    fn bind(self, expr: Expr) -> Stmt;
 }
 
-impl<T, U> IntoBind<U> for T
+impl<T> IntoBind for T
 where
-    U: TypeSpec,
     T: IntoIterator<Item = Property>,
 {
-    fn bind(self, expr: Expr<U>) -> Stmt<U> {
+    fn bind(self, expr: Expr) -> Stmt {
         Write {
             bind: true,
             path: self.into_iter().collect(),
@@ -180,19 +171,15 @@ where
     }
 }
 
-pub trait IntoWrite<T>
-where
-    T: TypeSpec,
-{
-    fn write(self, expr: Expr<T>) -> Stmt<T>;
+pub trait IntoWrite {
+    fn write(self, expr: Expr) -> Stmt;
 }
 
-impl<T, U> IntoWrite<U> for T
+impl<T> IntoWrite for T
 where
-    U: TypeSpec,
     T: IntoIterator<Item = Property>,
 {
-    fn write(self, expr: Expr<U>) -> Stmt<U> {
+    fn write(self, expr: Expr) -> Stmt {
         Write {
             bind: false,
             path: self.into_iter().collect(),

@@ -12,9 +12,8 @@ use std::{
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
     ast::{
-        Identifier, IntoBlock, IntoValue, TypeSpec, COLOR, CONTEXT, DISTANCE, ERROR, GRADIENT_2D,
-        GRADIENT_3D, LIGHT, NORMAL, POSITION_2D, POSITION_3D, SUPPORT_2D, SUPPORT_3D, TANGENT_2D,
-        TANGENT_3D, TIME, UV,
+        Identifier, IntoBlock, COLOR, CONTEXT, DISTANCE, ERROR, GRADIENT_2D, GRADIENT_3D, LIGHT,
+        NORMAL, POSITION_2D, POSITION_3D, SUPPORT_2D, SUPPORT_3D, TANGENT_2D, TANGENT_3D, TIME, UV,
     },
     module::{
         AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
@@ -89,13 +88,13 @@ pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
     ],
 };
 
-pub struct Modify<T> {
-    pub pre_modifiers: Vec<DynAsIR<T>>,
-    pub field: DynAsModule<T>,
-    pub post_modifiers: Vec<DynAsIR<T>>,
+pub struct Modify {
+    pub pre_modifiers: Vec<DynAsIR>,
+    pub field: DynAsModule,
+    pub post_modifiers: Vec<DynAsIR>,
 }
 
-impl<T> Debug for Modify<T> {
+impl Debug for Modify {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Modify")
             .field("pre_modifiers", &self.pre_modifiers)
@@ -105,7 +104,7 @@ impl<T> Debug for Modify<T> {
     }
 }
 
-impl<T> Hash for Modify<T> {
+impl Hash for Modify {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for modifier in &self.pre_modifiers {
             state.write_u64(modifier.hash_ir());
@@ -117,46 +116,35 @@ impl<T> Hash for Modify<T> {
     }
 }
 
-impl<T> Modify<T>
-where
-    T: TypeSpec,
-{
-    pub fn translate(mut self, delta: crate::ast::expr::Expr<T>) -> Modify<T> {
+impl Modify {
+    pub fn translate(mut self, delta: crate::ast::expr::Expr) -> Modify {
         self.pre_modifiers.push(Box::new(Translate { delta }));
         self
     }
 
-    pub fn elongate(mut self, dir: crate::ast::expr::Expr<T>, infinite: bool) -> Modify<T> {
+    pub fn elongate(mut self, dir: crate::ast::expr::Expr, infinite: bool) -> Modify {
         self.pre_modifiers
             .push(Box::new(Elongate { dir, infinite }));
         self
     }
 
-    pub fn isosurface(mut self, dist: crate::ast::expr::Expr<T>) -> Modify<T> {
+    pub fn isosurface(mut self, dist: crate::ast::expr::Expr) -> Modify {
         self.post_modifiers.push(Box::new(Isosurface { dist }));
         self
     }
 
-    pub fn manifold(mut self) -> Modify<T> {
+    pub fn manifold(mut self) -> Modify {
         self.post_modifiers.push(Box::new(Manifold));
         self
     }
 
-    pub fn gradient_normals(mut self) -> Modify<T>
-    where
-        T::NUMBER: IntoValue<T>,
-    {
+    pub fn gradient_normals(mut self) -> Modify {
         self.post_modifiers.push(Box::new(GradientNormals));
         self
     }
 }
 
-impl<T> AsModule<T> for Modify<T>
-where
-    T: TypeSpec,
-    T::NUMBER: IntoValue<T>,
-    T::VECTOR2: IntoValue<T>,
-{
+impl AsModule for Modify {
     fn entry_point(&self) -> Identifier {
         Identifier::new_dynamic("modify")
     }
@@ -165,7 +153,7 @@ where
         &self,
         spec: &SpecializationData,
         entry_point: &Identifier,
-    ) -> Vec<FunctionDefinition<T>> {
+    ) -> Vec<FunctionDefinition> {
         let field_entry_point = self.field.entry_point();
         self.pre_modifiers
             .iter()
@@ -205,11 +193,8 @@ where
     }
 }
 
-pub trait IntoModify<T>: 'static + Sized + AsModule<T>
-where
-    T: TypeSpec,
-{
-    fn modify(self) -> Modify<T> {
+pub trait IntoModify: 'static + Sized + AsModule {
+    fn modify(self) -> Modify {
         Modify {
             pre_modifiers: Default::default(),
             field: Box::new(self),
@@ -218,9 +203,4 @@ where
     }
 }
 
-impl<T, U> IntoModify<U> for T
-where
-    T: 'static + Sized + AsModule<U>,
-    U: TypeSpec,
-{
-}
+impl<T> IntoModify for T where T: 'static + Sized + AsModule {}

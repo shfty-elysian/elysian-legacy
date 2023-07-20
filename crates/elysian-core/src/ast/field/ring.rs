@@ -6,33 +6,26 @@ use std::{
 use crate::{
     ast::{
         expr::Expr,
-        field::{Circle, CONTEXT_STRUCT},
-        modify::{Isosurface, Manifold, ISOSURFACE, MANIFOLD},
+        modify::{Isosurface, Manifold, CONTEXT_STRUCT, ISOSURFACE, MANIFOLD},
     },
     ir::{
         as_ir::{AsIR, FilterSpec},
-        ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT},
+        ast::{Identifier, IntoBlock, Property, CONTEXT},
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
 
-use super::{CIRCLE, RADIUS};
+use super::{Circle, CIRCLE, RADIUS};
 
 pub const RING: Identifier = Identifier::new("ring", 18972348581943461950);
 pub const WIDTH: Property = Property::new("width", Type::Number, 2742125101201765597);
 
-pub struct Ring<T>
-where
-    T: TypeSpec,
-{
-    pub radius: Expr<T>,
-    pub width: Expr<T>,
+pub struct Ring {
+    pub radius: Expr,
+    pub width: Expr,
 }
 
-impl<T> Debug for Ring<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Ring {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Ring")
             .field("radius", &self.radius)
@@ -41,10 +34,7 @@ where
     }
 }
 
-impl<T> Clone for Ring<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Ring {
     fn clone(&self) -> Self {
         Self {
             radius: self.radius.clone(),
@@ -53,38 +43,29 @@ where
     }
 }
 
-impl<T> Hash for Ring<T>
-where
-    T: TypeSpec,
-{
+impl Hash for Ring {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.radius.hash(state);
         self.width.hash(state);
     }
 }
 
-impl<T> FilterSpec for Ring<T>
-where
-    T: TypeSpec,
-{
+impl FilterSpec for Ring {
     fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        Circle::<T>::filter_spec(spec)
+        Circle::filter_spec(spec)
             .union(&Manifold::filter_spec(spec))
-            .union(&Isosurface::<T>::filter_spec(spec))
+            .union(&Isosurface::filter_spec(spec))
     }
 }
 
-impl<T> AsIR<T> for Ring<T>
-where
-    T: TypeSpec,
-{
+impl AsIR for Ring {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
-    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
-        let isosurface_spec = Isosurface::<T>::filter_spec(spec);
+    ) -> Vec<crate::ir::module::FunctionDefinition> {
+        let isosurface_spec = Isosurface::filter_spec(spec);
         let manifold_spec = Manifold::filter_spec(spec);
-        let circle_spec = Circle::<T>::filter_spec(spec);
+        let circle_spec = Circle::filter_spec(spec);
 
         Circle {
             radius: self.radius.clone(),
@@ -135,8 +116,8 @@ where
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr<T>,
-    ) -> crate::ir::ast::Expr<T> {
+        input: crate::ir::ast::Expr,
+    ) -> crate::ir::ast::Expr {
         RING.specialize(spec)
             .call([self.radius.clone().into(), self.width.clone().into(), input])
     }

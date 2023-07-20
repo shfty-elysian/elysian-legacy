@@ -5,26 +5,26 @@ pub mod cross_section;
 pub mod expr;
 pub mod field;
 pub mod modify;
-pub mod value;
 pub mod raymarch;
+pub mod value;
 
 use crate::ir::{as_ir::DynAsIR, module::DynAsModule};
 
 use self::combine::Combine;
 
-pub trait IntoCombine<T> {
-    fn combine<U>(self, combinator: U) -> Combine<T>
+pub trait IntoCombine {
+    fn combine<U>(self, combinator: U) -> Combine
     where
-        U: IntoIterator<Item = DynAsIR<T>>;
+        U: IntoIterator<Item = DynAsIR>;
 }
 
-impl<T, U> IntoCombine<U> for T
+impl<T> IntoCombine for T
 where
-    T: IntoIterator<Item = DynAsModule<U>>,
+    T: IntoIterator<Item = DynAsModule>,
 {
-    fn combine<V>(self, combinator: V) -> Combine<U>
+    fn combine<V>(self, combinator: V) -> Combine
     where
-        V: IntoIterator<Item = DynAsIR<U>>,
+        V: IntoIterator<Item = DynAsIR>,
     {
         Combine {
             combinator: combinator.into_iter().collect(),

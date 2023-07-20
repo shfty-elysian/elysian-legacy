@@ -3,12 +3,10 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use rust_gpu_bridge::{MaxBound, One, Two, Zero};
-
 use crate::ir::{
     ast::{
-        Expr, Identifier, IntoBind, IntoBlock, IntoLiteral, IntoRead, IntoValue, IntoWrite,
-        Property, Stmt, TypeSpec, CONTEXT, DISTANCE, POSITION_2D, POSITION_3D, X, Y,
+        Expr, Identifier, IntoBind, IntoBlock, IntoRead, IntoWrite, Number, Property, Stmt,
+        CONTEXT, DISTANCE, POSITION_2D, POSITION_3D, X, Y,
     },
     module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
 };
@@ -24,19 +22,13 @@ pub const TEMP: Property = Property::new("temp", Type::Struct(CONTEXT_STRUCT), 1
 pub const STEPS: Property = Property::new("steps", Type::Number, 1682585060223888912);
 pub const MAX_STEPS: Property = Property::new("max_steps", Type::Number, 1146747975614382616);
 
-pub struct Raymarch<T>
-where
-    T: TypeSpec,
-{
-    pub step_size: crate::ast::expr::Expr<T>,
-    pub max_steps: crate::ast::expr::Expr<T>,
-    pub field: Box<dyn AsModule<T>>,
+pub struct Raymarch {
+    pub step_size: crate::ast::expr::Expr,
+    pub max_steps: crate::ast::expr::Expr,
+    pub field: Box<dyn AsModule>,
 }
 
-impl<T> Debug for Raymarch<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Raymarch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Raymarch")
             .field("field", &self.field)
@@ -44,20 +36,13 @@ where
     }
 }
 
-impl<T> Hash for Raymarch<T>
-where
-    T: TypeSpec,
-{
+impl Hash for Raymarch {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_u64(self.field.hash_ir())
     }
 }
 
-impl<T> AsModule<T> for Raymarch<T>
-where
-    T: TypeSpec,
-    T::NUMBER: Zero + One + Two + MaxBound + IntoValue<T>,
-{
+impl AsModule for Raymarch {
     fn entry_point(&self) -> Identifier {
         CROSS_SECTION
     }
@@ -66,7 +51,7 @@ where
         &self,
         spec: &SpecializationData,
         _: &Identifier,
-    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    ) -> Vec<crate::ir::module::FunctionDefinition> {
         if !spec.contains(POSITION_2D.id()) {
             panic!("CrossSection is only compatible with the 2D position domain");
         }
@@ -88,15 +73,15 @@ where
                     RAY_POS.bind(Expr::vector3(
                         [CONTEXT, POSITION_2D, X].read(),
                         [CONTEXT, POSITION_2D, Y].read(),
-                        T::NUMBER::ZERO.literal(),
+                        Number::Float(0.0).literal(),
                     )),
                     RAY_DIR.bind(Expr::vector3(
-                        T::NUMBER::ZERO.literal(),
-                        T::NUMBER::ZERO.literal(),
-                        -T::NUMBER::ONE.literal(),
+                        Number::Float(0.0).literal(),
+                        Number::Float(0.0).literal(),
+                        Number::Float(-1.0).literal(),
                     )),
                     STEP_SIZE.bind(self.step_size.clone().into()),
-                    STEPS.bind(T::NUMBER::ZERO.literal()),
+                    STEPS.bind(Number::Float(0.0).literal()),
                     MAX_STEPS.bind(self.max_steps.clone().into()),
                     [CONTEXT, DISTANCE].write(STEP_SIZE.read() * MAX_STEPS.read()),
                     Stmt::Loop {
@@ -109,10 +94,10 @@ where
                                     None,
                                 ),
                                 Stmt::Break.if_else(
-                                    [CONTEXT, DISTANCE].read().lt(T::NUMBER::ZERO.literal()),
+                                    [CONTEXT, DISTANCE].read().lt(Number::Float(0.0).literal()),
                                     None,
                                 ),
-                                STEPS.write(STEPS.read() + T::NUMBER::ONE.literal()),
+                                STEPS.write(STEPS.read() + Number::Float(1.0).literal()),
                                 Stmt::Break.if_else(STEPS.read().gt(MAX_STEPS.read()), None),
                                 RAY_POS.write(RAY_POS.read() + RAY_DIR.read() * STEP_SIZE.read()),
                             ]

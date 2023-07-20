@@ -4,7 +4,7 @@ use std::{
 };
 
 use super::{
-    ast::{Expr, TypeSpec},
+    ast::Expr,
     module::{FunctionDefinition, SpecializationData},
 };
 
@@ -27,46 +27,40 @@ where
     }
 }
 
-impl<T> FilterSpecDyn for Box<dyn AsIR<T>> {
+impl FilterSpecDyn for Box<dyn AsIR> {
     fn filter_spec_internal(&self, spec: &SpecializationData) -> SpecializationData {
         (**self).filter_spec_internal(spec)
     }
 }
 
-pub trait AsIR<T>: std::fmt::Debug + HashIR + CloneIR<T> + FilterSpecDyn
-where
-    T: TypeSpec,
-{
-    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+pub trait AsIR: std::fmt::Debug + HashIR + CloneIR + FilterSpecDyn {
+    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         self.functions_impl(&self.filter_spec_internal(spec))
     }
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>>;
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition>;
 
-    fn expression(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T> {
+    fn expression(&self, spec: &SpecializationData, input: Expr) -> Expr {
         self.expression_impl(&self.filter_spec_internal(spec), input)
     }
-    fn expression_impl(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T>;
+    fn expression_impl(&self, spec: &SpecializationData, input: Expr) -> Expr;
 }
 
-pub type DynAsIR<T> = Box<dyn AsIR<T>>;
+pub type DynAsIR = Box<dyn AsIR>;
 
-impl<T> AsIR<T> for Box<dyn AsIR<T>>
-where
-    T: TypeSpec,
-{
-    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+impl AsIR for Box<dyn AsIR> {
+    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         (**self).functions(spec)
     }
 
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         (**self).functions_impl(spec)
     }
 
-    fn expression(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T> {
+    fn expression(&self, spec: &SpecializationData, input: Expr) -> Expr {
         (**self).expression(spec, input)
     }
 
-    fn expression_impl(&self, spec: &SpecializationData, input: Expr<T>) -> Expr<T> {
+    fn expression_impl(&self, spec: &SpecializationData, input: Expr) -> Expr {
         (**self).expression_impl(spec, input)
     }
 }
@@ -86,34 +80,27 @@ where
     }
 }
 
-impl<T> HashIR for Box<dyn AsIR<T>> {
+impl HashIR for Box<dyn AsIR> {
     fn hash_ir(&self) -> u64 {
         (**self).hash_ir()
     }
 }
 
-pub trait CloneIR<T>: 'static
-where
-    T: TypeSpec,
-{
-    fn clone_ir(&self) -> Box<dyn AsIR<T>>;
+pub trait CloneIR: 'static {
+    fn clone_ir(&self) -> Box<dyn AsIR>;
 }
 
-impl<T, U> CloneIR<U> for T
+impl<T> CloneIR for T
 where
-    U: TypeSpec,
-    T: 'static + Clone + AsIR<U>,
+    T: 'static + Clone + AsIR,
 {
-    fn clone_ir(&self) -> Box<dyn AsIR<U>> {
+    fn clone_ir(&self) -> Box<dyn AsIR> {
         Box::new(self.clone())
     }
 }
 
-impl<T> CloneIR<T> for Box<dyn AsIR<T>>
-where
-    T: TypeSpec,
-{
-    fn clone_ir(&self) -> Box<dyn AsIR<T>> {
+impl CloneIR for Box<dyn AsIR> {
+    fn clone_ir(&self) -> Box<dyn AsIR> {
         (**self).clone_ir()
     }
 }

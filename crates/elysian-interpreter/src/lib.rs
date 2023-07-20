@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 use elysian_core::ir::{
     ast::Stmt::{self, *},
     ast::{
-        Expr, Identifier, Struct, StructIO, TypeSpec,
+        Expr, Identifier, Struct,
         Value::{self, *},
         CONTEXT,
     },
@@ -11,19 +11,13 @@ use elysian_core::ir::{
 };
 use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
 
-pub struct Interpreter<T>
-where
-    T: TypeSpec,
-{
-    pub context: Struct<T>,
-    pub functions: BTreeMap<Identifier, FunctionDefinition<T>>,
-    pub output: Option<Value<T>>,
+pub struct Interpreter {
+    pub context: Struct,
+    pub functions: BTreeMap<Identifier, FunctionDefinition>,
+    pub output: Option<Value>,
 }
 
-impl<T> Debug for Interpreter<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Interpreter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Interpreter")
             .field("context", &self.context)
@@ -33,10 +27,7 @@ where
     }
 }
 
-impl<T> Default for Interpreter<T>
-where
-    T: TypeSpec,
-{
+impl Default for Interpreter {
     fn default() -> Self {
         Self {
             context: Default::default(),
@@ -46,10 +37,7 @@ where
     }
 }
 
-impl<T> Clone for Interpreter<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Interpreter {
     fn clone(&self) -> Self {
         Self {
             context: self.context.clone(),
@@ -59,10 +47,7 @@ where
     }
 }
 
-impl<T> std::hash::Hash for Interpreter<T>
-where
-    T: TypeSpec,
-{
+impl std::hash::Hash for Interpreter {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.context.hash(state);
         self.functions.hash(state);
@@ -70,10 +55,7 @@ where
     }
 }
 
-pub fn evaluate_module<T>(mut interpreter: Interpreter<T>, module: &Module<T>) -> Struct<T>
-where
-    T: TypeSpec,
-{
+pub fn evaluate_module(mut interpreter: Interpreter, module: &Module) -> Struct {
     interpreter.context = Struct::default().set(CONTEXT, Value::Struct(interpreter.context));
     interpreter.functions = module
         .function_definitions
@@ -100,10 +82,7 @@ where
     context
 }
 
-pub fn evaluate_stmt<T>(mut interpreter: Interpreter<T>, stmt: &Stmt<T>) -> Interpreter<T>
-where
-    T: TypeSpec,
-{
+pub fn evaluate_stmt(mut interpreter: Interpreter, stmt: &Stmt) -> Interpreter {
     match stmt {
         Block(block) => evaluate_block(interpreter, block),
         Write { path, expr, .. } => {
@@ -164,23 +143,14 @@ where
     }
 }
 
-pub fn evaluate_block<T>(
-    interpreter: Interpreter<T>,
-    elysian_core::ir::ast::Block(list): &elysian_core::ir::ast::Block<T>,
-) -> Interpreter<T>
-where
-    T: TypeSpec,
-{
+pub fn evaluate_block(
+    interpreter: Interpreter,
+    elysian_core::ir::ast::Block(list): &elysian_core::ir::ast::Block,
+) -> Interpreter {
     list.iter().fold(interpreter, evaluate_stmt)
 }
 
-pub fn evaluate_expr<T>(
-    interpreter: &Interpreter<T>,
-    expr: &elysian_core::ir::ast::Expr<T>,
-) -> Value<T>
-where
-    T: TypeSpec,
-{
+pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Expr) -> Value {
     match expr {
         Expr::Literal(l) => l.clone(),
         Expr::Read(expr, path) => path.iter().fold(
@@ -227,115 +197,30 @@ where
             .output
             .expect("Function returned nothing")
         }
-        Expr::Add(lhs, rhs) => match (
-            evaluate_expr(interpreter, lhs),
-            evaluate_expr(interpreter, rhs),
-        ) {
-            (Number(lhs), Number(rhs)) => Number(lhs + rhs),
-            (Vector2(lhs), Vector2(rhs)) => Vector2(lhs + rhs),
-            (Number(lhs), Vector2(rhs)) => Vector2(lhs + rhs),
-            (Vector2(lhs), Number(rhs)) => Vector2(lhs + rhs),
-            _ => panic!("Invalid Add"),
-        },
-        Expr::Sub(lhs, rhs) => match (
-            evaluate_expr(interpreter, lhs),
-            evaluate_expr(interpreter, rhs),
-        ) {
-            (Number(lhs), Number(rhs)) => Number(lhs - rhs),
-            (Vector2(lhs), Vector2(rhs)) => Vector2(lhs - rhs),
-            (Number(lhs), Vector2(rhs)) => Vector2(lhs - rhs),
-            (Vector2(lhs), Number(rhs)) => Vector2(lhs - rhs),
-            _ => panic!("Invalid Sub"),
-        },
-        Expr::Mul(lhs, rhs) => match (
-            evaluate_expr(interpreter, lhs),
-            evaluate_expr(interpreter, rhs),
-        ) {
-            (Number(lhs), Number(rhs)) => Number(lhs * rhs),
-            (Vector2(lhs), Vector2(rhs)) => Vector2(lhs * rhs),
-            (Number(lhs), Vector2(rhs)) => Vector2(lhs * rhs),
-            (Vector2(lhs), Number(rhs)) => Vector2(lhs * rhs),
-            _ => panic!("Invalid Mul"),
-        },
-        Expr::Div(lhs, rhs) => match (
-            evaluate_expr(interpreter, lhs),
-            evaluate_expr(interpreter, rhs),
-        ) {
-            (Number(lhs), Number(rhs)) => Number(lhs / rhs),
-            (Vector2(lhs), Vector2(rhs)) => Vector2(lhs / rhs),
-            (Number(lhs), Vector2(rhs)) => Vector2(lhs / rhs),
-            (Vector2(lhs), Number(rhs)) => Vector2(lhs / rhs),
-            _ => panic!("Invalid Div"),
-        },
-        Expr::Lt(lhs, rhs) => match (
-            evaluate_expr(interpreter, lhs),
-            evaluate_expr(interpreter, rhs),
-        ) {
-            (Number(lhs), Number(rhs)) => Boolean(lhs < rhs),
-            _ => panic!("Invalid Lt"),
-        },
-        Expr::Gt(lhs, rhs) => match (
-            evaluate_expr(interpreter, lhs),
-            evaluate_expr(interpreter, rhs),
-        ) {
-            (Number(lhs), Number(rhs)) => Boolean(lhs > rhs),
-            _ => panic!("Invalid Gt"),
-        },
-        Expr::Min(lhs, rhs) => match (
-            evaluate_expr(interpreter, lhs),
-            evaluate_expr(interpreter, rhs),
-        ) {
-            (Number(lhs), Number(rhs)) => Number(lhs.min(rhs)),
-            _ => panic!("Invalid Min"),
-        },
-        Expr::Max(lhs, rhs) => match (
-            evaluate_expr(interpreter, lhs),
-            evaluate_expr(interpreter, rhs),
-        ) {
-            (Number(lhs), Number(rhs)) => Number(lhs.max(rhs)),
-            _ => panic!("Invalid Max"),
-        },
-        Expr::Mix(lhs, rhs, t) => match (
-            evaluate_expr(interpreter, lhs),
-            evaluate_expr(interpreter, rhs),
-            evaluate_expr(interpreter, t),
-        ) {
-            (Number(lhs), Number(rhs), Number(t)) => Number(lhs.mix(rhs, t)),
-            (Vector2(lhs), Vector2(rhs), Number(t)) => Vector2(lhs.mix(rhs, t)),
-            _ => panic!("Invalid Mix"),
-        },
-        Expr::Neg(op) => match evaluate_expr(interpreter, op) {
-            Number(n) => Number(-n),
-            Vector2(v) => Vector2(-v),
-            _ => panic!("Invalid Neg"),
-        },
-        Expr::Abs(op) => match evaluate_expr(interpreter, op) {
-            Number(n) => Number(n.abs()),
-            Vector2(v) => Vector2(v.abs()),
-            _ => panic!("Invalid Abs"),
-        },
-        Expr::Sign(op) => match evaluate_expr(interpreter, op) {
-            Number(n) => Number(n.sign()),
-            _ => panic!("Invalid Sign"),
-        },
-        Expr::Length(op) => match evaluate_expr(interpreter, op) {
-            Number(n) => Number(n),
-            Vector2(v) => Number(v.length()),
-            _ => panic!("Invalid Length"),
-        },
-        Expr::Normalize(op) => match evaluate_expr(interpreter, op) {
-            Number(n) => Number(n.sign()),
-            Vector2(v) => Vector2(v.normalize()),
-            _ => panic!("Invalid Normalize"),
-        },
-        Expr::Dot(lhs, rhs) => match (
-            evaluate_expr(interpreter, lhs),
-            evaluate_expr(interpreter, rhs),
-        ) {
-            (Number(lhs), Number(rhs)) => Number(lhs * rhs),
-            (Vector2(lhs), Vector2(rhs)) => Number(lhs.dot(rhs)),
-            _ => panic!("Invalid Div"),
-        },
+        Expr::Add(lhs, rhs) => evaluate_expr(interpreter, lhs) + evaluate_expr(interpreter, rhs),
+        Expr::Sub(lhs, rhs) => evaluate_expr(interpreter, lhs) - evaluate_expr(interpreter, rhs),
+        Expr::Mul(lhs, rhs) => evaluate_expr(interpreter, lhs) * evaluate_expr(interpreter, rhs),
+        Expr::Div(lhs, rhs) => evaluate_expr(interpreter, lhs) / evaluate_expr(interpreter, rhs),
+        Expr::Lt(lhs, rhs) => {
+            (evaluate_expr(interpreter, lhs) < evaluate_expr(interpreter, rhs)).into()
+        }
+        Expr::Gt(lhs, rhs) => {
+            (evaluate_expr(interpreter, lhs) > evaluate_expr(interpreter, rhs)).into()
+        }
+        Expr::Min(lhs, rhs) => evaluate_expr(interpreter, lhs).min(evaluate_expr(interpreter, rhs)),
+        Expr::Max(lhs, rhs) => evaluate_expr(interpreter, lhs).max(evaluate_expr(interpreter, rhs)),
+        Expr::Mix(lhs, rhs, t) => evaluate_expr(interpreter, lhs)
+            .mix(
+                evaluate_expr(interpreter, rhs),
+                evaluate_expr(interpreter, t),
+            )
+            .into(),
+        Expr::Neg(op) => -evaluate_expr(interpreter, op),
+        Expr::Abs(op) => evaluate_expr(interpreter, op).abs(),
+        Expr::Sign(op) => evaluate_expr(interpreter, op).sign(),
+        Expr::Length(op) => evaluate_expr(interpreter, op).length(),
+        Expr::Normalize(op) => evaluate_expr(interpreter, op).normalize(),
+        Expr::Dot(lhs, rhs) => evaluate_expr(interpreter, lhs).dot(evaluate_expr(interpreter, rhs)),
         _ => unimplemented!(),
     }
 }

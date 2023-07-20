@@ -1,40 +1,29 @@
 use std::fmt::Debug;
 
-use crate::ir::ast::TypeSpec;
+use super::{attribute::Attribute, value::Value};
 
-use super::{
-    attribute::Attribute,
-    value::{IntoValue, Value},
-};
-
-pub type BoxExpr<T> = Box<Expr<T>>;
-pub enum Expr<T>
-where
-    T: TypeSpec,
-{
-    Literal(Value<T>),
+pub type BoxExpr = Box<Expr>;
+pub enum Expr {
+    Literal(Value),
     Read(Attribute),
-    Add(BoxExpr<T>, BoxExpr<T>),
-    Sub(BoxExpr<T>, BoxExpr<T>),
-    Mul(BoxExpr<T>, BoxExpr<T>),
-    Div(BoxExpr<T>, BoxExpr<T>),
-    Min(BoxExpr<T>, BoxExpr<T>),
-    Max(BoxExpr<T>, BoxExpr<T>),
-    Mix(BoxExpr<T>, BoxExpr<T>, BoxExpr<T>),
-    Lt(BoxExpr<T>, BoxExpr<T>),
-    Gt(BoxExpr<T>, BoxExpr<T>),
-    Neg(BoxExpr<T>),
-    Abs(BoxExpr<T>),
-    Sign(BoxExpr<T>),
-    Length(BoxExpr<T>),
-    Normalize(BoxExpr<T>),
-    Dot(BoxExpr<T>, BoxExpr<T>),
+    Add(BoxExpr, BoxExpr),
+    Sub(BoxExpr, BoxExpr),
+    Mul(BoxExpr, BoxExpr),
+    Div(BoxExpr, BoxExpr),
+    Min(BoxExpr, BoxExpr),
+    Max(BoxExpr, BoxExpr),
+    Mix(BoxExpr, BoxExpr, BoxExpr),
+    Lt(BoxExpr, BoxExpr),
+    Gt(BoxExpr, BoxExpr),
+    Neg(BoxExpr),
+    Abs(BoxExpr),
+    Sign(BoxExpr),
+    Length(BoxExpr),
+    Normalize(BoxExpr),
+    Dot(BoxExpr, BoxExpr),
 }
 
-impl<T> Debug for Expr<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Literal(arg0) => f.debug_tuple("Literal").field(arg0).finish(),
@@ -63,10 +52,7 @@ where
     }
 }
 
-impl<T> Clone for Expr<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Expr {
     fn clone(&self) -> Self {
         match self {
             Self::Literal(arg0) => Self::Literal(arg0.clone()),
@@ -90,28 +76,21 @@ where
     }
 }
 
-impl<T> std::hash::Hash for Expr<T>
-where
-    T: TypeSpec,
-{
+impl std::hash::Hash for Expr {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         core::mem::discriminant(self).hash(state);
     }
 }
 
-pub trait IntoLiteral<T>: IntoValue<T>
-where
-    T: TypeSpec,
-{
-    fn literal(self) -> Expr<T>;
+pub trait IntoLiteral: Into<Value> {
+    fn literal(self) -> Expr;
 }
 
-impl<T, U> IntoLiteral<U> for T
+impl<T> IntoLiteral for T
 where
-    U: TypeSpec,
-    T: IntoValue<U>,
+    T: Into<Value>,
 {
-    fn literal(self) -> Expr<U> {
-        Expr::Literal(self.value())
+    fn literal(self) -> Expr {
+        Expr::Literal(self.into())
     }
 }

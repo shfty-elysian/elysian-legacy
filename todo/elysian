@@ -188,6 +188,18 @@
         * Tricky, since it's desirable to support integers for things like Distance, Position, Gradient
         * Perhaps the properties themselves will need to be able to specialize
 
+* Consider moving test-bin build.rs into test-shapes
+  * Would result in better encapsulation if feasible
+  * May be worth feature-gating to avoid compiling static shapes where unnecessary
+    * ex. In the syn crate
+
+* Implementation specialization for Raymarch
+  * Pick between different marching strategies
+    * Naive fixed-step march
+    * Naive sphere trace march
+    * K-based sphere trace march
+    * Theoretical segment tracing implementation
+
 * Replace Expr::Literal with Expr::Number
   * Better to model the available datatypes rigidly rather than to mix-match with concrete structs
 
@@ -196,7 +208,7 @@
   * Compose Exprs that produce vectors
 
 * Split Bind out from Write expression
-  * Better for API, since Bind only takes one path element
+  * Explicitness is better for API, since Bind only takes one path element
     * Prevents existing issue of multi-elements binds secretly being writes
 
 * Better generalization for AsIR / AsModule
@@ -206,6 +218,7 @@
       conversion required for static shape dispatch
     * Feels like there should be some abstraction that can
       subsume both, have its features consumed a-la carte
+    * Things like GradientNormals don't feel first-class as is, whereas AsIR implementors do
 
 * Domain evaluation
   i.e. Being able to evaluate a subset of a given field's computations
@@ -232,3 +245,6 @@
     * Raw engine + minimal set of modules
   * Would simplify rust -> IR -> output process
   * Opens up a lot of potential for extensibility
+  * Gut feeling says rhai isn't the right choice for internals,
+    since its specializations differ from those of the existing IR;
+    better to consider it for frontend scripting or such

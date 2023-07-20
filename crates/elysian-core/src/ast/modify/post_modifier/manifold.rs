@@ -5,8 +5,8 @@ use crate::{
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoBind, TypeSpec, CONTEXT, DISTANCE, GRADIENT_2D,
-            GRADIENT_3D, NUM,
+            Identifier, IntoBind, IntoBlock, IntoRead, CONTEXT, DISTANCE, GRADIENT_2D, GRADIENT_3D,
+            NUM,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -23,11 +23,8 @@ impl FilterSpec for Manifold {
     }
 }
 
-impl<T> AsIR<T> for Manifold
-where
-    T: TypeSpec,
-{
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+impl AsIR for Manifold {
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let gradient = if spec.contains(GRADIENT_2D.id()) {
             GRADIENT_2D
         } else if spec.contains(GRADIENT_3D.id()) {
@@ -57,8 +54,8 @@ where
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr<T>,
-    ) -> crate::ir::ast::Expr<T> {
+        input: crate::ir::ast::Expr,
+    ) -> crate::ir::ast::Expr {
         MANIFOLD.specialize(spec).call(input)
     }
 }

@@ -8,26 +8,20 @@ use rust_gpu_bridge::glam::{Vec2, Vec3};
 use crate::ir::{
     as_ir::FilterSpec,
     ast::{
-        Expr, GlamF32, Identifier, IntoBlock, IntoLiteral, IntoBind, TypeSpec, CONTEXT, DISTANCE,
-        GRADIENT_2D, GRADIENT_3D,
+        Expr, Identifier, IntoBind, IntoBlock, IntoLiteral, Number, CONTEXT, DISTANCE, GRADIENT_2D,
+        GRADIENT_3D,
     },
     module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
 };
 
 use super::modify::{Translate, CONTEXT_STRUCT, TRANSLATE};
 
-pub struct CentralDiffGradient<T>
-where
-    T: TypeSpec,
-{
-    pub field: Box<dyn AsModule<T>>,
-    pub epsilon: T::NUMBER,
+pub struct CentralDiffGradient {
+    pub field: Box<dyn AsModule>,
+    pub epsilon: Number,
 }
 
-impl<T> Debug for CentralDiffGradient<T>
-where
-    T: TypeSpec,
-{
+impl Debug for CentralDiffGradient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CentralDiffGradient")
             .field("field", &self.field)
@@ -35,16 +29,13 @@ where
     }
 }
 
-impl<T> Hash for CentralDiffGradient<T>
-where
-    T: TypeSpec,
-{
+impl Hash for CentralDiffGradient {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_u64(self.field.hash_ir());
     }
 }
 
-impl AsModule<GlamF32> for CentralDiffGradient<GlamF32> {
+impl AsModule for CentralDiffGradient {
     fn entry_point(&self) -> Identifier {
         Identifier::new_dynamic("central_diff_gradient")
     }
@@ -53,7 +44,7 @@ impl AsModule<GlamF32> for CentralDiffGradient<GlamF32> {
         &self,
         spec: &SpecializationData,
         entry_point: &Identifier,
-    ) -> Vec<crate::ir::module::FunctionDefinition<GlamF32>> {
+    ) -> Vec<crate::ir::module::FunctionDefinition> {
         let (gradient, vec_x, vec_y) = if spec.contains(GRADIENT_2D.id()) {
             (GRADIENT_2D, Vec2::X.literal(), Vec2::Y.literal())
         } else if spec.contains(GRADIENT_3D.id()) {
@@ -62,7 +53,7 @@ impl AsModule<GlamF32> for CentralDiffGradient<GlamF32> {
             panic!("No gradient domain");
         };
 
-        let translate_spec = Translate::<GlamF32>::filter_spec(spec);
+        let translate_spec = Translate::filter_spec(spec);
 
         let field_entry_point = self.field.entry_point();
         let epsilon = self.epsilon.literal();

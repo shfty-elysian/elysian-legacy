@@ -17,36 +17,29 @@ use std::{
 
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
-    ast::{Identifier, IntoBlock, TypeSpec, CONTEXT},
+    ast::{Identifier, IntoBlock, CONTEXT},
     module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, StructDefinition},
 };
 
-use crate::ir::ast::IntoValue;
-
 use super::modify::CONTEXT_STRUCT;
 
-pub struct Field<T> {
-    pub field: DynAsIR<T>,
+pub struct Field {
+    pub field: DynAsIR,
 }
 
-impl<T> Debug for Field<T> {
+impl Debug for Field {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Field").field("field", &self.field).finish()
     }
 }
 
-impl<T> Hash for Field<T> {
+impl Hash for Field {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_u64(self.field.hash_ir());
     }
 }
 
-impl<T> AsModule<T> for Field<T>
-where
-    T: TypeSpec,
-    T::NUMBER: IntoValue<T>,
-    T::VECTOR2: IntoValue<T>,
-{
+impl AsModule for Field {
     fn entry_point(&self) -> Identifier {
         Identifier::new_dynamic("field")
     }
@@ -55,7 +48,7 @@ where
         &self,
         spec: &SpecializationData,
         entry_point: &Identifier,
-    ) -> Vec<FunctionDefinition<T>> {
+    ) -> Vec<FunctionDefinition> {
         self.field
             .functions(spec)
             .into_iter()
@@ -77,20 +70,12 @@ where
     }
 }
 
-pub trait IntoField<T>: 'static + Sized + AsIR<T>
-where
-    T: TypeSpec,
-{
-    fn field(self) -> Field<T> {
+pub trait IntoField: 'static + Sized + AsIR {
+    fn field(self) -> Field {
         Field {
             field: Box::new(self),
         }
     }
 }
 
-impl<T, U> IntoField<U> for T
-where
-    T: 'static + Sized + AsIR<U>,
-    U: TypeSpec,
-{
-}
+impl<T> IntoField for T where T: 'static + Sized + AsIR {}

@@ -5,36 +5,28 @@ use std::{
 
 use crate::ir::ast::{Block, Expr, Property};
 
-use super::TypeSpec;
-
 /// Statement consuming the result of an expression
 #[non_exhaustive]
-pub enum Stmt<T>
-where
-    T: TypeSpec,
-{
-    Block(Block<T>),
+pub enum Stmt {
+    Block(Block),
     Write {
         path: Vec<Property>,
-        expr: Expr<T>,
+        expr: Expr,
         bind: bool,
     },
     If {
-        cond: Expr<T>,
-        then: Box<Stmt<T>>,
-        otherwise: Option<Box<Stmt<T>>>,
+        cond: Expr,
+        then: Box<Stmt>,
+        otherwise: Option<Box<Stmt>>,
     },
     Loop {
-        stmt: Box<Stmt<T>>,
+        stmt: Box<Stmt>,
     },
     Break,
-    Output(Expr<T>),
+    Output(Expr),
 }
 
-impl<T> IntoIterator for Stmt<T>
-where
-    T: TypeSpec,
-{
+impl IntoIterator for Stmt {
     type Item = Self;
 
     type IntoIter = std::iter::Once<Self>;
@@ -44,10 +36,7 @@ where
     }
 }
 
-impl<T> Debug for Stmt<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Stmt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Block(arg0) => f.debug_tuple("Block").field(arg0).finish(),
@@ -74,10 +63,7 @@ where
     }
 }
 
-impl<T> Clone for Stmt<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Stmt {
     fn clone(&self) -> Self {
         match self {
             Self::Block(arg0) => Self::Block(arg0.clone()),
@@ -102,20 +88,14 @@ where
     }
 }
 
-impl<T> Hash for Stmt<T>
-where
-    T: TypeSpec,
-{
+impl Hash for Stmt {
     fn hash<H: Hasher>(&self, state: &mut H) {
         core::mem::discriminant(self).hash(state);
     }
 }
 
-impl<T> Stmt<T>
-where
-    T: TypeSpec,
-{
-    pub fn if_else(self, cond: Expr<T>, otherwise: Option<Stmt<T>>) -> Self {
+impl Stmt {
+    pub fn if_else(self, cond: Expr, otherwise: Option<Stmt>) -> Self {
         Stmt::If {
             cond,
             then: Box::new(self),

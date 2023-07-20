@@ -13,7 +13,7 @@ use crate::{
     },
     ir::{
         as_ir::AsIR,
-        ast::{Identifier, IntoBlock, TypeSpec, CONTEXT},
+        ast::{Identifier, IntoBlock, CONTEXT},
         module::{FunctionDefinition, InputDefinition},
     },
 };
@@ -22,18 +22,12 @@ use super::{LINE, RADIUS};
 
 pub const CAPSULE: Identifier = Identifier::new("capsule", 14339483921749952476);
 
-pub struct Capsule<T>
-where
-    T: TypeSpec,
-{
-    pub dir: Expr<T>,
-    pub radius: Expr<T>,
+pub struct Capsule {
+    pub dir: Expr,
+    pub radius: Expr,
 }
 
-impl<T> Debug for Capsule<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Capsule {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Capsule")
             .field("dir", &self.dir)
@@ -42,10 +36,7 @@ where
     }
 }
 
-impl<T> Clone for Capsule<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Capsule {
     fn clone(&self) -> Self {
         Self {
             dir: self.dir.clone(),
@@ -54,33 +45,24 @@ where
     }
 }
 
-impl<T> Hash for Capsule<T>
-where
-    T: TypeSpec,
-{
+impl Hash for Capsule {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.dir.hash(state);
         self.radius.hash(state);
     }
 }
 
-impl<T> FilterSpec for Capsule<T>
-where
-    T: TypeSpec,
-{
+impl FilterSpec for Capsule {
     fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        Line::<T>::filter_spec(spec).union(&Isosurface::<T>::filter_spec(spec))
+        Line::filter_spec(spec).union(&Isosurface::filter_spec(spec))
     }
 }
 
-impl<T> AsIR<T> for Capsule<T>
-where
-    T: TypeSpec,
-{
+impl AsIR for Capsule {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
-    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    ) -> Vec<crate::ir::module::FunctionDefinition> {
         let dir = if spec.contains(POSITION_2D.id()) {
             DIR_2D
         } else if spec.contains(POSITION_3D.id()) {
@@ -89,8 +71,8 @@ where
             panic!("No position domain");
         };
 
-        let isosurface_spec = Isosurface::<T>::filter_spec(spec);
-        let line_spec = Line::<T>::filter_spec(spec);
+        let isosurface_spec = Isosurface::filter_spec(spec);
+        let line_spec = Line::filter_spec(spec);
 
         Line {
             dir: self.dir.clone(),
@@ -137,8 +119,8 @@ where
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr<T>,
-    ) -> crate::ir::ast::Expr<T> {
+        input: crate::ir::ast::Expr,
+    ) -> crate::ir::ast::Expr {
         CAPSULE
             .specialize(spec)
             .call([self.dir.clone().into(), self.radius.clone().into(), input])

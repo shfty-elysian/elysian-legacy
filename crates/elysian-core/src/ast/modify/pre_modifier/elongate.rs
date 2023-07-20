@@ -8,8 +8,7 @@ use crate::{
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoBind, Property, TypeSpec, CONTEXT, POSITION_2D,
-            POSITION_3D,
+            Identifier, IntoBind, IntoBlock, IntoRead, Property, CONTEXT, POSITION_2D, POSITION_3D,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -22,18 +21,12 @@ pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1
 pub const DIR_2D: Property = Property::new("dir_2d", Type::Vector2, 10994004961423687819);
 pub const DIR_3D: Property = Property::new("dir_3d", Type::Vector3, 66909101541205811);
 
-pub struct Elongate<T>
-where
-    T: TypeSpec,
-{
-    pub dir: Expr<T>,
+pub struct Elongate {
+    pub dir: Expr,
     pub infinite: bool,
 }
 
-impl<T> Debug for Elongate<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Elongate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Elongate")
             .field("dir", &self.dir)
@@ -42,10 +35,7 @@ where
     }
 }
 
-impl<T> Clone for Elongate<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Elongate {
     fn clone(&self) -> Self {
         Self {
             dir: self.dir.clone(),
@@ -54,30 +44,21 @@ where
     }
 }
 
-impl<T> Hash for Elongate<T>
-where
-    T: TypeSpec,
-{
+impl Hash for Elongate {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.dir.hash(state);
         self.infinite.hash(state);
     }
 }
 
-impl<T> FilterSpec for Elongate<T>
-where
-    T: TypeSpec,
-{
+impl FilterSpec for Elongate {
     fn filter_spec(spec: &SpecializationData) -> SpecializationData {
         spec.filter([POSITION_2D.id(), POSITION_3D.id()])
     }
 }
 
-impl<T> AsIR<T> for Elongate<T>
-where
-    T: TypeSpec,
-{
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition<T>> {
+impl AsIR for Elongate {
+    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let (position, dir) = if spec.contains(POSITION_2D.id()) {
             (POSITION_2D, DIR_2D)
         } else if spec.contains(POSITION_3D.id()) {
@@ -130,8 +111,8 @@ where
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr<T>,
-    ) -> crate::ir::ast::Expr<T> {
+        input: crate::ir::ast::Expr,
+    ) -> crate::ir::ast::Expr {
         if self.infinite {
             ELONGATE_INFINITE.specialize(spec)
         } else {

@@ -8,10 +8,10 @@ use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 use crate::ast::modify::CONTEXT_STRUCT;
-use crate::ir::ast::{TypeSpec, CONTEXT};
+use crate::ir::ast::CONTEXT;
 use crate::ir::module::{InputDefinition, SpecializationData};
 use crate::ir::{
-    ast::{Block, Expr, IntoValue, LEFT, OUT, RIGHT},
+    ast::{Block, Expr, LEFT, OUT, RIGHT},
     module::{FieldDefinition, FunctionDefinition, StructDefinition},
 };
 
@@ -40,12 +40,12 @@ pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition 
     ],
 };
 
-pub struct Combine<T> {
-    pub combinator: Vec<Box<dyn AsIR<T>>>,
-    pub shapes: Vec<DynAsModule<T>>,
+pub struct Combine {
+    pub combinator: Vec<Box<dyn AsIR>>,
+    pub shapes: Vec<DynAsModule>,
 }
 
-impl<T> Debug for Combine<T> {
+impl Debug for Combine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Combine")
             .field("combinator", &self.combinator)
@@ -54,7 +54,7 @@ impl<T> Debug for Combine<T> {
     }
 }
 
-impl<T> Hash for Combine<T> {
+impl Hash for Combine {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for combinator in &self.combinator {
             state.write_u64(combinator.hash_ir())
@@ -65,12 +65,7 @@ impl<T> Hash for Combine<T> {
     }
 }
 
-impl<T> AsModule<T> for Combine<T>
-where
-    T: TypeSpec,
-    T::NUMBER: IntoValue<T>,
-    T::VECTOR2: IntoValue<T>,
-{
+impl AsModule for Combine {
     fn entry_point(&self) -> Identifier {
         Identifier::new_dynamic("combine")
     }
@@ -79,7 +74,7 @@ where
         &self,
         spec: &SpecializationData,
         entry_point: &Identifier,
-    ) -> Vec<FunctionDefinition<T>> {
+    ) -> Vec<FunctionDefinition> {
         let (shape_entry_points, shape_functions): (Vec<_>, Vec<_>) = self
             .shapes
             .iter()
@@ -99,7 +94,7 @@ where
                 self.combinator.iter().fold(
                     COMBINE_CONTEXT_STRUCT
                         .construct([(LEFT, acc), (RIGHT, next.call(CONTEXT.read()))]),
-                    |acc: Expr<T>, next| {
+                    |acc: Expr, next| {
                         let Expr::Call{ function, args } = next.expression(spec, acc) else  {
                             panic!("Combinator expression is not a CallResult")
                         };

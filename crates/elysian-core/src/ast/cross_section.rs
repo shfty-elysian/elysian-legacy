@@ -5,7 +5,7 @@ use std::{
 
 use crate::ir::{
     ast::{
-        Expr, Identifier, IntoBlock, IntoRead, IntoBind, TypeSpec, CONTEXT, GRADIENT_2D,
+        Expr, Identifier, IntoBind, IntoBlock, IntoRead, CONTEXT, GRADIENT_2D,
         GRADIENT_3D, POSITION_2D, POSITION_3D, X, Y,
     },
     module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
@@ -15,19 +15,13 @@ use super::modify::CONTEXT_STRUCT;
 
 pub const CROSS_SECTION: Identifier = Identifier::new("cross_section", 11670715461129592823);
 
-pub struct CrossSection<T>
-where
-    T: TypeSpec,
-{
-    pub field: Box<dyn AsModule<T>>,
-    pub x_axis: crate::ast::expr::Expr<T>,
-    pub y_axis: crate::ast::expr::Expr<T>,
+pub struct CrossSection {
+    pub field: Box<dyn AsModule>,
+    pub x_axis: crate::ast::expr::Expr,
+    pub y_axis: crate::ast::expr::Expr,
 }
 
-impl<T> Debug for CrossSection<T>
-where
-    T: TypeSpec,
-{
+impl Debug for CrossSection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Raymarch")
             .field("field", &self.field)
@@ -35,19 +29,13 @@ where
     }
 }
 
-impl<T> Hash for CrossSection<T>
-where
-    T: TypeSpec,
-{
+impl Hash for CrossSection {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_u64(self.field.hash_ir())
     }
 }
 
-impl<T> AsModule<T> for CrossSection<T>
-where
-    T: TypeSpec,
-{
+impl AsModule for CrossSection {
     fn entry_point(&self) -> Identifier {
         CROSS_SECTION
     }
@@ -56,7 +44,7 @@ where
         &self,
         spec: &SpecializationData,
         _: &Identifier,
-    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    ) -> Vec<crate::ir::module::FunctionDefinition> {
         if !spec.contains(POSITION_2D.id()) {
             panic!("CrossSection is only compatible with the 2D position domain");
         }

@@ -1,14 +1,12 @@
 use std::fmt::Debug;
 
-use rust_gpu_bridge::{One, Two, Zero};
-
 use crate::{
     ast::{attribute::Attribute, combine::COMBINE_CONTEXT_STRUCT, expr::Expr},
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoLiteral, IntoRead, IntoValue, IntoBind, Property, TypeSpec,
-            COMBINE_CONTEXT, DISTANCE, LEFT, NUM, OUT, RIGHT,
+            Identifier, IntoBind, IntoRead, Number, Property, COMBINE_CONTEXT, DISTANCE, LEFT, NUM,
+            OUT, RIGHT,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -22,19 +20,13 @@ pub const SMOOTH_SUBTRACTION: Identifier =
 
 pub const K: Property = Property::new("k", Type::Number, 12632115441234896764);
 
-pub enum Blend<T>
-where
-    T: TypeSpec,
-{
-    SmoothUnion { attr: Attribute, k: Expr<T> },
-    SmoothIntersection { attr: Attribute, k: Expr<T> },
-    SmoothSubtraction { attr: Attribute, k: Expr<T> },
+pub enum Blend {
+    SmoothUnion { attr: Attribute, k: Expr },
+    SmoothIntersection { attr: Attribute, k: Expr },
+    SmoothSubtraction { attr: Attribute, k: Expr },
 }
 
-impl<T> Debug for Blend<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Blend {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::SmoothUnion { attr, k } => f
@@ -56,10 +48,7 @@ where
     }
 }
 
-impl<T> Clone for Blend<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Blend {
     fn clone(&self) -> Self {
         match self {
             Self::SmoothUnion { attr, k } => Self::SmoothUnion {
@@ -78,10 +67,7 @@ where
     }
 }
 
-impl<T> std::hash::Hash for Blend<T>
-where
-    T: TypeSpec,
-{
+impl std::hash::Hash for Blend {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         core::mem::discriminant(self).hash(state);
         match self {
@@ -101,18 +87,10 @@ where
     }
 }
 
-impl<T> FilterSpec for Blend<T> where T: TypeSpec {}
+impl FilterSpec for Blend {}
 
-impl<T> AsIR<T> for Blend<T>
-where
-    T: TypeSpec,
-    T::NUMBER: IntoValue<T>,
-    T::VECTOR2: IntoValue<T>,
-{
-    fn functions_impl(
-        &self,
-        _: &SpecializationData,
-    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+impl AsIR for Blend {
+    fn functions_impl(&self, _: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition> {
         vec![FunctionDefinition {
             id: match self {
                 Blend::SmoothUnion { attr, .. } => SMOOTH_UNION.concat(Property::from(*attr).id()),
@@ -141,13 +119,13 @@ where
 
                     let mut block = vec![
                         NUM.bind(
-                            ((T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
-                                + (T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
+                            ((Number::Float(0.5).literal())
+                                + (Number::Float(0.5).literal())
                                     * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
                                         - [COMBINE_CONTEXT, LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(T::NUMBER::ZERO.literal())
-                            .min(T::NUMBER::ONE.literal()),
+                            .max(Number::Float(0.0).literal())
+                            .min(Number::Float(1.0).literal()),
                         ),
                         [COMBINE_CONTEXT, OUT, property.clone()].bind(
                             [COMBINE_CONTEXT, RIGHT, property.clone()]
@@ -159,7 +137,9 @@ where
                     if property == DISTANCE {
                         block.push([COMBINE_CONTEXT, OUT, DISTANCE].bind(
                             [COMBINE_CONTEXT, OUT, DISTANCE].read()
-                                - K.read() * NUM.read() * (T::NUMBER::ONE.literal() - NUM.read()),
+                                - K.read()
+                                    * NUM.read()
+                                    * (Number::Float(1.0).literal() - NUM.read()),
                         ))
                     }
 
@@ -172,12 +152,12 @@ where
 
                     let mut block = vec![
                         NUM.bind(
-                            ((T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
-                                - (T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
+                            (Number::Float(0.5).literal()
+                                - Number::Float(0.5).literal()
                                     * ([RIGHT, DISTANCE].read() - [LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(T::NUMBER::ZERO.literal())
-                            .min(T::NUMBER::ONE.literal()),
+                            .max(Number::Float(0.0).literal())
+                            .min(Number::Float(1.0).literal()),
                         ),
                         property.clone().bind(
                             [RIGHT, property.clone()]
@@ -189,7 +169,9 @@ where
                     if property == DISTANCE {
                         block.push(DISTANCE.bind(
                             DISTANCE.read()
-                                + K.read() * NUM.read() * (T::NUMBER::ONE.literal() - NUM.read()),
+                                + K.read()
+                                    * NUM.read()
+                                    * (Number::Float(1.0).literal() - NUM.read()),
                         ))
                     }
 
@@ -202,13 +184,13 @@ where
 
                     let mut block = vec![
                         NUM.bind(
-                            ((T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
-                                - (T::NUMBER::ONE.literal() / T::NUMBER::TWO.literal())
+                            (Number::Float(0.5).literal()
+                                - Number::Float(0.5).literal()
                                     * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
                                         + [COMBINE_CONTEXT, LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(T::NUMBER::ZERO.literal())
-                            .min(T::NUMBER::ONE.literal()),
+                            .max(Number::Float(0.0).literal())
+                            .min(Number::Float(1.0).literal()),
                         ),
                         [COMBINE_CONTEXT, OUT, property.clone()].bind(
                             [COMBINE_CONTEXT, LEFT, property.clone()].read().mix(
@@ -221,7 +203,9 @@ where
                     if property == DISTANCE {
                         block.push([COMBINE_CONTEXT, OUT, DISTANCE].bind(
                             [COMBINE_CONTEXT, OUT, DISTANCE].read()
-                                + K.read() * NUM.read() * (T::NUMBER::ONE.literal() - NUM.read()),
+                                + K.read()
+                                    * NUM.read()
+                                    * (Number::Float(1.0).literal() - NUM.read()),
                         ))
                     }
 
@@ -236,8 +220,8 @@ where
     fn expression_impl(
         &self,
         _: &SpecializationData,
-        input: crate::ir::ast::Expr<T>,
-    ) -> crate::ir::ast::Expr<T> {
+        input: crate::ir::ast::Expr,
+    ) -> crate::ir::ast::Expr {
         match self {
             Blend::SmoothUnion { attr, k } => crate::ir::ast::Expr::Call {
                 function: SMOOTH_UNION.concat(Property::from(*attr).id()),

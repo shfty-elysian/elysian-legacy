@@ -11,7 +11,7 @@ use crate::{
     },
     ir::{
         as_ir::{AsIR, FilterSpec},
-        ast::{Identifier, IntoBlock, TypeSpec, CONTEXT, POSITION_2D, POSITION_3D},
+        ast::{Identifier, IntoBlock, CONTEXT, POSITION_2D, POSITION_3D},
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
 };
@@ -20,26 +20,17 @@ use super::POINT;
 
 pub const LINE: Identifier = Identifier::new("line", 14339483921749952476);
 
-pub struct Line<T>
-where
-    T: TypeSpec,
-{
-    pub dir: Expr<T>,
+pub struct Line {
+    pub dir: Expr,
 }
 
-impl<T> Debug for Line<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Line {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Line").field("dir", &self.dir).finish()
     }
 }
 
-impl<T> Clone for Line<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Line {
     fn clone(&self) -> Self {
         Self {
             dir: self.dir.clone(),
@@ -47,32 +38,23 @@ where
     }
 }
 
-impl<T> Hash for Line<T>
-where
-    T: TypeSpec,
-{
+impl Hash for Line {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.dir.hash(state);
     }
 }
 
-impl<T> FilterSpec for Line<T>
-where
-    T: TypeSpec,
-{
+impl FilterSpec for Line {
     fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        Point::filter_spec(spec).union(&Elongate::<T>::filter_spec(spec))
+        Point::filter_spec(spec).union(&Elongate::filter_spec(spec))
     }
 }
 
-impl<T> AsIR<T> for Line<T>
-where
-    T: TypeSpec,
-{
+impl AsIR for Line {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
-    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    ) -> Vec<crate::ir::module::FunctionDefinition> {
         let dir = if spec.contains(POSITION_2D.id()) {
             DIR_2D
         } else if spec.contains(POSITION_3D.id()) {
@@ -82,7 +64,7 @@ where
         };
 
         let point_spec = Point::filter_spec(spec);
-        let elongate_spec = Elongate::<T>::filter_spec(spec);
+        let elongate_spec = Elongate::filter_spec(spec);
 
         Point
             .functions(spec)
@@ -122,8 +104,8 @@ where
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr<T>,
-    ) -> crate::ir::ast::Expr<T> {
+        input: crate::ir::ast::Expr,
+    ) -> crate::ir::ast::Expr {
         LINE.specialize(spec).call([self.dir.clone().into(), input])
     }
 }

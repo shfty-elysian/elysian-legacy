@@ -9,56 +9,37 @@ use std::{
 
 use crate::ir::ast::Stmt;
 
-use super::TypeSpec;
-
 /// List of statements
-pub struct Block<T>(pub Vec<Stmt<T>>)
-where
-    T: TypeSpec;
+pub struct Block(pub Vec<Stmt>);
 
-impl<T> Debug for Block<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Block {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Block").field(&self.0).finish()
     }
 }
 
-impl<T> Default for Block<T>
-where
-    T: TypeSpec,
-{
+impl Default for Block {
     fn default() -> Self {
         Self(Default::default())
     }
 }
 
-impl<T> Clone for Block<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Block {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<T> Hash for Block<T>
-where
-    T: TypeSpec,
-{
+impl Hash for Block {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.hash(state);
     }
 }
 
-impl<T> IntoIterator for Block<T>
-where
-    T: TypeSpec,
-{
-    type Item = Stmt<T>;
+impl IntoIterator for Block {
+    type Item = Stmt;
 
-    type IntoIter = std::vec::IntoIter<Stmt<T>>;
+    type IntoIter = std::vec::IntoIter<Stmt>;
 
     fn into_iter(self) -> Self::IntoIter {
         match self {
@@ -68,35 +49,25 @@ where
     }
 }
 
-impl<T> FromIterator<Stmt<T>> for Block<T>
-where
-    T: TypeSpec,
-{
-    fn from_iter<U: IntoIterator<Item = Stmt<T>>>(iter: U) -> Self {
+impl FromIterator<Stmt> for Block {
+    fn from_iter<U: IntoIterator<Item = Stmt>>(iter: U) -> Self {
         Block(iter.into_iter().collect())
     }
 }
 
-pub trait ComposeBlocks<T>: IntoIterator<Item = Stmt<T>>
-where
-    T: TypeSpec,
-{
-    fn compose<I: IntoIterator<Item = Stmt<T>>>(self, i: I) -> Stmt<T>;
+pub trait ComposeBlocks: IntoIterator<Item = Stmt> {
+    fn compose<I: IntoIterator<Item = Stmt>>(self, i: I) -> Stmt;
 }
 
-pub fn into_block_stmt<T, I: IntoIterator<Item = Stmt<T>>>(t: I) -> Stmt<T>
-where
-    T: TypeSpec,
-{
+pub fn into_block_stmt<I: IntoIterator<Item = Stmt>>(t: I) -> Stmt {
     Stmt::Block(crate::ir::ast::Block(t.into_iter().collect()))
 }
 
-impl<T, U> ComposeBlocks<U> for T
+impl<T> ComposeBlocks for T
 where
-    U: TypeSpec,
-    T: IntoIterator<Item = Stmt<U>>,
+    T: IntoIterator<Item = Stmt>,
 {
-    fn compose<I: IntoIterator<Item = Stmt<U>>>(self, rhs: I) -> Stmt<U> {
+    fn compose<I: IntoIterator<Item = Stmt>>(self, rhs: I) -> Stmt {
         let Stmt::Block(lhs) = into_block_stmt(self) else {
             panic!("Compose LHS is not a Block");
         };

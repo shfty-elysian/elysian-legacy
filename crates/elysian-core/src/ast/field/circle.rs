@@ -11,7 +11,7 @@ use crate::{
     },
     ir::{
         as_ir::{AsIR, FilterSpec},
-        ast::{Identifier, IntoBlock, Property, TypeSpec, CONTEXT},
+        ast::{Identifier, IntoBlock, Property, CONTEXT},
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
@@ -21,17 +21,11 @@ use super::POINT;
 pub const CIRCLE: Identifier = Identifier::new("circle", 15738477621793375359);
 pub const RADIUS: Property = Property::new("radius", Type::Number, 213754678517975478);
 
-pub struct Circle<T>
-where
-    T: TypeSpec,
-{
-    pub radius: Expr<T>,
+pub struct Circle {
+    pub radius: Expr,
 }
 
-impl<T> Debug for Circle<T>
-where
-    T: TypeSpec,
-{
+impl Debug for Circle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Circle")
             .field("radius", &self.radius)
@@ -39,10 +33,7 @@ where
     }
 }
 
-impl<T> Clone for Circle<T>
-where
-    T: TypeSpec,
-{
+impl Clone for Circle {
     fn clone(&self) -> Self {
         Self {
             radius: self.radius.clone(),
@@ -50,34 +41,25 @@ where
     }
 }
 
-impl<T> Hash for Circle<T>
-where
-    T: TypeSpec,
-{
+impl Hash for Circle {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.radius.hash(state);
     }
 }
 
-impl<T> FilterSpec for Circle<T>
-where
-    T: TypeSpec,
-{
+impl FilterSpec for Circle {
     fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        Point::filter_spec(spec).union(&Isosurface::<T>::filter_spec(spec))
+        Point::filter_spec(spec).union(&Isosurface::filter_spec(spec))
     }
 }
 
-impl<T> AsIR<T> for Circle<T>
-where
-    T: TypeSpec,
-{
+impl AsIR for Circle {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
-    ) -> Vec<crate::ir::module::FunctionDefinition<T>> {
+    ) -> Vec<crate::ir::module::FunctionDefinition> {
         let point_spec = Point::filter_spec(spec);
-        let isosurface_spec = Isosurface::<T>::filter_spec(spec);
+        let isosurface_spec = Isosurface::filter_spec(spec);
 
         Point
             .functions(spec)
@@ -117,8 +99,8 @@ where
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr<T>,
-    ) -> crate::ir::ast::Expr<T> {
+        input: crate::ir::ast::Expr,
+    ) -> crate::ir::ast::Expr {
         CIRCLE
             .specialize(spec)
             .call([self.radius.clone().into(), input])
