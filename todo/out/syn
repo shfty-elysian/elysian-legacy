@@ -37,6 +37,11 @@
 
   DONE: Implemented as StaticShape
 
+* Fix parsing for infinite floats
+  * Can't set a value to f32::consts::INFINITE via literal as-is
+
+  SKIPPED: syn doesn't appear to support infinity, so switched to using MAX instead
+
 ============================================================================================
 
 * Clean up syn usage
@@ -46,9 +51,6 @@
 
 * Fix mutability warnings
   * Need to include mutability info, or infer it somehow
-
-* Fix parsing for infinite floats
-  * Can't set a value to f32::consts::INFINITE via literal as-is
 
 * Generate Context / CombineContext structs conditionally
   * Currently outputting a hardcoded set of members

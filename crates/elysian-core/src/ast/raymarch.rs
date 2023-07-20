@@ -53,7 +53,7 @@ impl AsModule for Raymarch {
         _: &Identifier,
     ) -> Vec<crate::ir::module::FunctionDefinition> {
         if !spec.contains(POSITION_2D.id()) {
-            panic!("CrossSection is only compatible with the 2D position domain");
+            panic!("Raymarch is only compatible with the 2D position domain");
         }
 
         let spec_3d = SpecializationData::new_3d();
@@ -81,9 +81,9 @@ impl AsModule for Raymarch {
                         Number::Float(-1.0).literal(),
                     )),
                     STEP_SIZE.bind(self.step_size.clone().into()),
-                    STEPS.bind(Number::Float(0.0).literal()),
+                    STEPS.bind(Number::Int(0).literal()),
                     MAX_STEPS.bind(self.max_steps.clone().into()),
-                    [CONTEXT, DISTANCE].write(STEP_SIZE.read() * MAX_STEPS.read()),
+                    [CONTEXT, DISTANCE].write(Number::Float(f32::MAX).literal()),
                     Stmt::Loop {
                         stmt: Box::new(Stmt::Block(
                             [
@@ -97,7 +97,7 @@ impl AsModule for Raymarch {
                                     [CONTEXT, DISTANCE].read().lt(Number::Float(0.0).literal()),
                                     None,
                                 ),
-                                STEPS.write(STEPS.read() + Number::Float(1.0).literal()),
+                                STEPS.write(STEPS.read() + Number::Int(1).literal()),
                                 Stmt::Break.if_else(STEPS.read().gt(MAX_STEPS.read()), None),
                                 RAY_POS.write(RAY_POS.read() + RAY_DIR.read() * STEP_SIZE.read()),
                             ]

@@ -14,15 +14,15 @@ use super::{stmt::Stmt, Identifier};
 #[non_exhaustive]
 pub enum Expr {
     Literal(Value),
+    Vector2(BoxExpr, BoxExpr),
+    Vector3(BoxExpr, BoxExpr, BoxExpr),
+    Vector4(BoxExpr, BoxExpr, BoxExpr, BoxExpr),
+    Struct(&'static StructDefinition, BTreeMap<Property, Expr>),
     Read(Option<Box<Expr>>, Vec<Property>),
     Call {
         function: Identifier,
         args: Vec<Expr>,
     },
-    Vector2(BoxExpr, BoxExpr),
-    Vector3(BoxExpr, BoxExpr, BoxExpr),
-    Vector4(BoxExpr, BoxExpr, BoxExpr, BoxExpr),
-    Struct(&'static StructDefinition, BTreeMap<Property, Expr>),
     Add(BoxExpr, BoxExpr),
     Sub(BoxExpr, BoxExpr),
     Mul(BoxExpr, BoxExpr),

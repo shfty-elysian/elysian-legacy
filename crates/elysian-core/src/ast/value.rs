@@ -11,6 +11,12 @@ pub enum Value {
     Vector4(Number, Number, Number, Number),
 }
 
+impl From<i32> for Value {
+    fn from(value: i32) -> Self {
+        Value::Number(value.into())
+    }
+}
+
 impl From<f32> for Value {
     fn from(value: f32) -> Self {
         Value::Number(value.into())

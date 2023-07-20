@@ -8,7 +8,7 @@ use syn::{
     ExprField, ExprIf, ExprLit, ExprLoop, ExprMethodCall, ExprPath, ExprReturn, ExprStruct,
     ExprUnary, Field, FieldMutability, FieldValue, Fields, FieldsNamed, File, FnArg, Generics,
     Item, ItemFn, ItemMod, ItemStruct, Lit, LitBool, LitFloat, Pat, PatIdent, Path, PathSegment,
-    ReturnType, Signature, Stmt, Type, TypePath, Visibility,
+    ReturnType, Signature, Stmt, Type, TypePath, Visibility, LitInt,
 };
 
 use elysian_core::ir::{
@@ -492,7 +492,14 @@ fn expr_to_syn(expr: &IrExpr) -> Expr {
             }),
             elysian_core::ir::ast::Value::Number(n) => Expr::Lit(ExprLit {
                 attrs: vec![],
-                lit: Lit::Float(LitFloat::new(&(n.to_string() + &"f32"), Span::call_site())),
+                lit: match n {
+                    elysian_core::ir::ast::Number::Int(n) => {
+                        Lit::Int(LitInt::new(&(n.to_string() + &"i32"), Span::call_site()))
+                    },
+                    elysian_core::ir::ast::Number::Float(n) => {
+                        Lit::Float(LitFloat::new(&(n.to_string() + &"f32"), Span::call_site()))
+                    }
+                },
             }),
             elysian_core::ir::ast::Value::Vector2(x, y) => Expr::Call(ExprCall {
                 attrs: vec![],

@@ -86,7 +86,7 @@ pub fn kettle_bell() -> DynAsModule {
 pub fn point() -> DynAsModule {
     Box::new(Raymarch {
         step_size: (1.0_f32 / 10.0).literal(),
-        max_steps: 100.0_f32.literal(),
+        max_steps: 100i32.literal(),
         field: Box::new(
             Point
                 .field()

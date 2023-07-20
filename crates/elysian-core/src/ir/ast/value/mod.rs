@@ -16,14 +16,22 @@ use super::Expr;
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum Number {
+    Int(i32),
     Float(f32),
 }
 
 impl Display for Number {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Number::Int(n) => write!(f, "{n:}"),
             Number::Float(n) => write!(f, "{n:}"),
         }
+    }
+}
+
+impl From<i32> for Number {
+    fn from(value: i32) -> Self {
+        Number::Int(value)
     }
 }
 
@@ -37,6 +45,7 @@ impl From<Number> for f32 {
     fn from(value: Number) -> Self {
         match value {
             Number::Float(n) => n,
+            _ => panic!("Number is not a Float"),
         }
     }
 }
@@ -52,7 +61,9 @@ impl Add for Number {
 
     fn add(self, rhs: Number) -> Self::Output {
         match (self, rhs) {
+            (Number::Int(a), Number::Int(b)) => Number::Int(a + b),
             (Number::Float(a), Number::Float(b)) => Number::Float(a + b),
+            _ => panic!("Invalid Add")
         }
     }
 }
@@ -62,7 +73,9 @@ impl Sub for Number {
 
     fn sub(self, rhs: Number) -> Self::Output {
         match (self, rhs) {
+            (Number::Int(a), Number::Int(b)) => Number::Int(a - b),
             (Number::Float(a), Number::Float(b)) => Number::Float(a - b),
+            _ => panic!("Invalid Sub")
         }
     }
 }
@@ -72,7 +85,9 @@ impl Mul for Number {
 
     fn mul(self, rhs: Number) -> Self::Output {
         match (self, rhs) {
+            (Number::Int(a), Number::Int(b)) => Number::Int(a * b),
             (Number::Float(a), Number::Float(b)) => Number::Float(a * b),
+            _ => panic!("Invalid Mul")
         }
     }
 }
@@ -82,7 +97,9 @@ impl Div for Number {
 
     fn div(self, rhs: Number) -> Self::Output {
         match (self, rhs) {
+            (Number::Int(a), Number::Int(b)) => Number::Int(a / b),
             (Number::Float(a), Number::Float(b)) => Number::Float(a / b),
+            _ => panic!("Invalid Div")
         }
     }
 }
@@ -294,7 +311,7 @@ impl Hash for Value {
 impl From<crate::ast::value::Value> for Value {
     fn from(value: crate::ast::value::Value) -> Self {
         match value {
-            crate::ast::value::Value::Number(Number::Float(n)) => Value::Number(Number::Float(n)),
+            crate::ast::value::Value::Number(n) => Value::Number(n),
             crate::ast::value::Value::Vector2(Number::Float(x), Number::Float(y)) => {
                 Value::Vector2(Number::Float(x), Number::Float(y))
             }
@@ -314,6 +331,7 @@ impl From<crate::ast::value::Value> for Value {
                 Number::Float(z),
                 Number::Float(w),
             ),
+            _ => panic!("Invalid Value")
         }
     }
 }
