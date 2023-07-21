@@ -1,17 +1,14 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{
-        field::Field,
-        modify::{Modify, CONTEXT_STRUCT},
-    },
+    ast::modify::{Modify, CONTEXT_STRUCT},
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
             Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D,
             GRADIENT_3D, NORMAL, X, Y,
         },
-        module::{FunctionDefinition, InputDefinition, SpecializationData},
+        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
     },
 };
 
@@ -75,19 +72,15 @@ pub trait IntoGradientNormals {
     fn gradient_normals(self) -> Modify;
 }
 
-impl IntoGradientNormals for Field {
+impl<T> IntoGradientNormals for T
+where
+    T: AsModule,
+{
     fn gradient_normals(self) -> Modify {
         Modify {
             pre_modifiers: Default::default(),
             field: Box::new(self),
             post_modifiers: vec![Box::new(GradientNormals)],
         }
-    }
-}
-
-impl IntoGradientNormals for Modify {
-    fn gradient_normals(mut self) -> Modify {
-        self.post_modifiers.push(Box::new(GradientNormals));
-        self
     }
 }

@@ -1,18 +1,16 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use crate::ast::modify::CONTEXT_STRUCT;
-use crate::ir::ast::CONTEXT;
-use crate::ir::module::{InputDefinition, SpecializationData};
-use crate::ir::{
-    ast::{Block, Expr, LEFT, OUT, RIGHT},
-    module::{FieldDefinition, FunctionDefinition, StructDefinition},
-};
-
-use crate::ir::{
-    as_ir::{AsIR, HashIR},
-    ast::Identifier,
-    module::{AsModule, DynAsModule},
+use crate::{
+    ast::modify::CONTEXT_STRUCT,
+    ir::{
+        as_ir::{AsIR, DynAsIR, HashIR},
+        ast::{Block, Expr, Identifier, CONTEXT, LEFT, OUT, RIGHT},
+        module::{
+            AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
+            SpecializationData, StructDefinition,
+        },
+    },
 };
 
 pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
@@ -83,9 +81,10 @@ impl AsModule for Combine {
         let mut iter = shape_entry_points.iter();
         let base = iter.next().expect("Empty list").clone();
 
-        let block = Block(vec![iter
-            .fold(base.call(CONTEXT.read()), |acc, next| {
-                self.combinator.iter().fold(
+        let block =
+            Block(vec![iter
+                .fold(base.call(CONTEXT.read()), |acc, next| {
+                    self.combinator.iter().fold(
                     COMBINE_CONTEXT_STRUCT
                         .construct([(LEFT, acc), (RIGHT, next.call(CONTEXT.read()))]),
                     |acc: Expr, next| {
@@ -96,9 +95,9 @@ impl AsModule for Combine {
                         Expr::Call { function, args }
                     },
                 )
-            })
             .read([OUT])
-            .output()]);
+                })
+                .output()]);
 
         self.combinator
             .iter()
@@ -119,5 +118,28 @@ impl AsModule for Combine {
 
     fn structs(&self) -> Vec<StructDefinition> {
         vec![CONTEXT_STRUCT.clone(), COMBINE_CONTEXT_STRUCT.clone()]
+    }
+}
+
+pub trait IntoCombine {
+    fn combine<U>(self, combinator: U) -> Combine
+    where
+        U: IntoIterator<Item = DynAsIR>;
+}
+
+impl<T> IntoCombine for T
+where
+    T: IntoIterator<Item = DynAsModule>,
+{
+    fn combine<V>(self, combinator: V) -> Combine
+    where
+        V: IntoIterator<Item = DynAsIR>,
+    {
+        let shapes: Vec<_> = self.into_iter().collect();
+        assert!(shapes.len() >= 2, "Combine must have at least two shapes");
+        Combine {
+            combinator: combinator.into_iter().collect(),
+            shapes,
+        }
     }
 }

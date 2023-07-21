@@ -1,12 +1,15 @@
 use elysian_core::{
     ast::{
         attribute::Attribute::{self, *},
+        combine::IntoCombine,
         expr::IntoLiteral,
         field::IntoField,
         modify::IntoModify,
-        IntoCombine,
     },
-    ir::{as_ir::DynAsIR, module::DynAsModule},
+    ir::{
+        as_ir::{AsIR, DynAsIR},
+        module::{AsModule, DynAsModule},
+    },
 };
 use elysian_shapes::{
     central_diff_gradient::CentralDiffGradient,
@@ -95,15 +98,37 @@ pub fn point() -> DynAsModule {
         projection: projection.literal(),
         inv_projection: projection.inverse().literal(),
         field: Box::new(
-            Point
-                .field()
-                .modify()
-                .translate([0.5, 0.5, -2.0].literal())
-                .elongate([0.5, 0.0, 0.0].literal(), false)
-                .isosurface(1.0.literal())
-                .manifold()
-                .isosurface(0.2.literal())
-                .gradient_normals(),
+            [
+                Box::new(
+                    Point
+                        .field()
+                        .translate([0.5, 0.5, -2.0].literal())
+                        .elongate([0.5, 0.0, 0.0].literal(), false)
+                        .isosurface(1.0.literal())
+                        .manifold()
+                        .isosurface(0.2.literal()),
+                ) as Box<dyn AsModule>,
+                Box::new(
+                    Point
+                        .field()
+                        .translate([-0.5, -0.5, -2.5].literal())
+                        .elongate([0.5, 0.0, 0.0].literal(), false)
+                        .isosurface(1.0.literal())
+                        .manifold()
+                        .isosurface(0.2.literal()),
+                ),
+                Box::new(
+                    Point
+                        .field()
+                        .translate([1.0, -1.5, -3.0].literal())
+                        .elongate([0.5, 0.0, 0.0].literal(), false)
+                        .isosurface(1.0.literal())
+                        .manifold()
+                        .isosurface(0.2.literal()),
+                ),
+            ]
+            .combine([Box::new(Boolean::Union) as Box<dyn AsIR>])
+            .gradient_normals(),
         ),
     })
 }
