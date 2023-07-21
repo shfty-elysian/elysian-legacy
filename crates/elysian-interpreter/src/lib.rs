@@ -2,11 +2,7 @@ use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 
 use elysian_core::ir::{
     ast::Stmt::{self, *},
-    ast::{
-        Expr, Identifier, Struct,
-        Value::{self, *},
-        CONTEXT,
-    },
+    ast::{Expr, Identifier, Struct, Value, Vector, CONTEXT},
     module::{FunctionDefinition, Module},
 };
 use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
@@ -85,7 +81,12 @@ pub fn evaluate_module(mut interpreter: Interpreter, module: &Module) -> Struct 
 pub fn evaluate_stmt(mut interpreter: Interpreter, stmt: &Stmt) -> Interpreter {
     match stmt {
         Block(block) => evaluate_block(interpreter, block),
-        Write { path, expr, .. } => {
+        Bind { prop, expr } => {
+            let v = evaluate_expr(&interpreter, expr);
+            interpreter.context.set_mut(prop.clone(), v);
+            interpreter
+        }
+        Write { path, expr } => {
             let v = evaluate_expr(&interpreter, expr);
 
             let prop = path.last().expect("Path is empty");
@@ -94,7 +95,7 @@ pub fn evaluate_stmt(mut interpreter: Interpreter, stmt: &Stmt) -> Interpreter {
                 path.iter()
                     .take(path.len() - 1)
                     .fold(&mut interpreter.context, |acc, next| {
-                        let Struct(s) = acc.get_mut(next) else {
+                        let Value::Struct(s) = acc.get_mut(next) else {
                             panic!("Path element is not a struct");
                         };
 
@@ -134,12 +135,12 @@ pub fn evaluate_stmt(mut interpreter: Interpreter, stmt: &Stmt) -> Interpreter {
 
             interpreter
         }
+        Break => interpreter,
         Output(o) => {
             let o = evaluate_expr(&interpreter, o);
             interpreter.output = Some(o);
             interpreter
         }
-        _ => unimplemented!(),
     }
 }
 
@@ -153,11 +154,27 @@ pub fn evaluate_block(
 pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Expr) -> Value {
     match expr {
         Expr::Literal(l) => l.clone(),
+        Expr::Vector2(x, y) => Value::Vector(Vector::Vector2(
+            evaluate_expr(interpreter, x).into(),
+            evaluate_expr(interpreter, y).into(),
+        )),
+        Expr::Vector3(x, y, z) => Value::Vector(Vector::Vector3(
+            evaluate_expr(interpreter, x).into(),
+            evaluate_expr(interpreter, y).into(),
+            evaluate_expr(interpreter, z).into(),
+        )),
+        Expr::Vector4(x, y, z, w) => Value::Vector(Vector::Vector4(
+            evaluate_expr(interpreter, x).into(),
+            evaluate_expr(interpreter, y).into(),
+            evaluate_expr(interpreter, z).into(),
+            evaluate_expr(interpreter, w).into(),
+        )),
+
         Expr::Read(expr, path) => path.iter().fold(
             if let Some(expr) = expr {
                 evaluate_expr(interpreter, expr)
             } else {
-                Struct(interpreter.context.clone())
+                Value::Struct(interpreter.context.clone())
             },
             |acc, next| match acc {
                 Value::Struct(s) => s.get(next),
@@ -221,6 +238,5 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
         Expr::Length(op) => evaluate_expr(interpreter, op).length(),
         Expr::Normalize(op) => evaluate_expr(interpreter, op).normalize(),
         Expr::Dot(lhs, rhs) => evaluate_expr(interpreter, lhs).dot(evaluate_expr(interpreter, rhs)),
-        _ => unimplemented!(),
     }
 }

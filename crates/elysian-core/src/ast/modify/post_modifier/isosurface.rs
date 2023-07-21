@@ -4,7 +4,7 @@ use crate::{
     ast::modify::CONTEXT_STRUCT,
     ir::{
         as_ir::{AsIR, FilterSpec},
-        ast::{Identifier, IntoBind, IntoBlock, IntoRead, Property, CONTEXT, DISTANCE},
+        ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, DISTANCE},
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
@@ -59,7 +59,7 @@ impl AsIR for Isosurface {
             ],
             output: &CONTEXT_STRUCT,
             block: [
-                [CONTEXT, DISTANCE].bind([CONTEXT, DISTANCE].read() - DIST.read()),
+                [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - DIST.read()),
                 CONTEXT.read().output(),
             ]
             .block(),

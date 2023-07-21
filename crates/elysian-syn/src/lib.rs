@@ -1,4 +1,10 @@
-use elysian_core::{ast::modify::CONTEXT_STRUCT, ir::module::SpecializationData};
+use elysian_core::{
+    ast::modify::CONTEXT_STRUCT,
+    ir::{
+        ast::{Matrix, Vector},
+        module::SpecializationData,
+    },
+};
 pub use prettyplease;
 
 use proc_macro2::{Ident, Span, TokenStream};
@@ -7,8 +13,8 @@ use syn::{
     parse_quote, token::Mut, BinOp, Block, Expr, ExprAssign, ExprBinary, ExprBlock, ExprCall,
     ExprField, ExprIf, ExprLit, ExprLoop, ExprMethodCall, ExprPath, ExprReturn, ExprStruct,
     ExprUnary, Field, FieldMutability, FieldValue, Fields, FieldsNamed, File, FnArg, Generics,
-    Item, ItemFn, ItemMod, ItemStruct, Lit, LitBool, LitFloat, Pat, PatIdent, Path, PathSegment,
-    ReturnType, Signature, Stmt, Type, TypePath, Visibility, LitInt,
+    Item, ItemFn, ItemMod, ItemStruct, Lit, LitBool, LitFloat, LitInt, Pat, PatIdent, Path,
+    PathSegment, ReturnType, Signature, Stmt, Type, TypePath, Visibility,
 };
 
 use elysian_core::ir::{
@@ -55,7 +61,7 @@ pub mod static_shapes {
     static STATIC_SHAPES_MAP: OnceLock<BTreeMap<ShapeHash, ShapeFn>> = OnceLock::new();
 
     /// Accessor for STATIC_SHAPES_MAP_F32
-    pub fn static_shapes_map_f32() -> &'static BTreeMap<ShapeHash, ShapeFn> {
+    pub fn static_shapes_map() -> &'static BTreeMap<ShapeHash, ShapeFn> {
         STATIC_SHAPES_MAP.get_or_init(|| {
             STATIC_SHAPES
                 .into_iter()
@@ -94,7 +100,7 @@ pub mod static_shapes {
 
     /// Return a function that calls the static implementation of a given shape if it exists,
     /// falling back to the interpreter otherwise.
-    pub fn dispatch_shape_f32<T>(
+    pub fn dispatch_shape<T>(
         shape: &T,
         spec: &SpecializationData,
     ) -> Box<dyn Fn(Struct) -> Struct + Send + Sync>
@@ -103,7 +109,7 @@ pub mod static_shapes {
     {
         let hash = shape.hash_ir();
 
-        if let Some(f) = static_shapes_map_f32().get(&hash) {
+        if let Some(f) = static_shapes_map().get(&hash) {
             println!("Dispatching to static function");
             Box::new(|context| f(context))
         } else {
@@ -129,6 +135,9 @@ pub fn type_to_syn(ty: &elysian_core::ir::module::Type) -> TokenStream {
         elysian_core::ir::module::Type::Vector2 => quote!(Type::Vector2),
         elysian_core::ir::module::Type::Vector3 => quote!(Type::Vector3),
         elysian_core::ir::module::Type::Vector4 => quote!(Type::Vector4),
+        elysian_core::ir::module::Type::Matrix2 => quote!(Type::Matrix2),
+        elysian_core::ir::module::Type::Matrix3 => quote!(Type::Matrix3),
+        elysian_core::ir::module::Type::Matrix4 => quote!(Type::Matrix4),
         elysian_core::ir::module::Type::Struct(_) => unimplemented!(),
     }
 }
@@ -140,6 +149,9 @@ pub fn type_to_value(ty: &elysian_core::ir::module::Type) -> TokenStream {
         elysian_core::ir::module::Type::Vector2 => quote!(Value::Vector2),
         elysian_core::ir::module::Type::Vector3 => quote!(Value::Vector3),
         elysian_core::ir::module::Type::Vector4 => quote!(Value::Vector4),
+        elysian_core::ir::module::Type::Matrix2 => quote!(Value::Matrix2),
+        elysian_core::ir::module::Type::Matrix3 => quote!(Value::Matrix3),
+        elysian_core::ir::module::Type::Matrix4 => quote!(Value::Matrix4),
         elysian_core::ir::module::Type::Struct(_) => unimplemented!(),
     }
 }
@@ -393,29 +405,29 @@ fn stmt_to_syn(stmt: &IrStmt) -> Stmt {
             }),
             Default::default(),
         ),
-        IrStmt::Write { bind, path, expr } => Stmt::Expr(
-            if *bind && path.len() == 1 {
-                Expr::Let(syn::ExprLet {
+        IrStmt::Bind { prop, expr } => Stmt::Expr(
+            Expr::Let(syn::ExprLet {
+                attrs: vec![],
+                let_token: Default::default(),
+                pat: Box::new(Pat::Ident(PatIdent {
                     attrs: vec![],
-                    let_token: Default::default(),
-                    pat: Box::new(Pat::Ident(PatIdent {
-                        attrs: vec![],
-                        by_ref: None,
-                        mutability: Some(Default::default()),
-                        ident: Ident::new(&path[0].name_unique(), Span::call_site()),
-                        subpat: None,
-                    })),
-                    eq_token: Default::default(),
-                    expr: Box::new(expr_to_syn(expr)),
-                })
-            } else {
-                Expr::Assign(ExprAssign {
-                    attrs: vec![],
-                    left: Box::new(path_to_syn(None, path)),
-                    eq_token: Default::default(),
-                    right: Box::new(expr_to_syn(expr)),
-                })
-            },
+                    by_ref: None,
+                    mutability: Some(Default::default()),
+                    ident: Ident::new(&prop.name_unique(), Span::call_site()),
+                    subpat: None,
+                })),
+                eq_token: Default::default(),
+                expr: Box::new(expr_to_syn(expr)),
+            }),
+            Some(Default::default()),
+        ),
+        IrStmt::Write { path, expr } => Stmt::Expr(
+            Expr::Assign(ExprAssign {
+                attrs: vec![],
+                left: Box::new(path_to_syn(None, path)),
+                eq_token: Default::default(),
+                right: Box::new(expr_to_syn(expr)),
+            }),
             Some(Default::default()),
         ),
         IrStmt::If {
@@ -476,8 +488,55 @@ fn stmt_to_syn(stmt: &IrStmt) -> Stmt {
             }),
             Default::default(),
         ),
-        _ => unimplemented!(),
     }
+}
+
+fn vector_to_syn(v: &Vector) -> Expr {
+    let (ident, args) = match v {
+        Vector::Vector2(x, y) => ("Vec2", vec![x, y]),
+        Vector::Vector3(x, y, z) => ("Vec3", vec![x, y, z]),
+        Vector::Vector4(x, y, z, w) => ("Vec4", vec![x, y, z, w]),
+    };
+
+    let ident = Ident::new(ident, Span::call_site());
+
+    let args = args
+        .into_iter()
+        .map(|arg| {
+            Expr::Lit(ExprLit {
+                attrs: vec![],
+                lit: Lit::Float(LitFloat::new(
+                    &(arg.to_string() + &"f32"),
+                    Span::call_site(),
+                )),
+            })
+        })
+        .collect();
+
+    Expr::Call(ExprCall {
+        attrs: vec![],
+        func: Box::new(Expr::Path(ExprPath {
+            attrs: vec![],
+            qself: None,
+            path: Path {
+                leading_colon: Default::default(),
+                segments: [
+                    PathSegment {
+                        ident,
+                        arguments: Default::default(),
+                    },
+                    PathSegment {
+                        ident: Ident::new("new", Span::call_site()),
+                        arguments: Default::default(),
+                    },
+                ]
+                .into_iter()
+                .collect(),
+            },
+        })),
+        paren_token: Default::default(),
+        args,
+    })
 }
 
 fn expr_to_syn(expr: &IrExpr) -> Expr {
@@ -493,162 +552,57 @@ fn expr_to_syn(expr: &IrExpr) -> Expr {
             elysian_core::ir::ast::Value::Number(n) => Expr::Lit(ExprLit {
                 attrs: vec![],
                 lit: match n {
-                    elysian_core::ir::ast::Number::Int(n) => {
+                    elysian_core::ir::ast::Number::UInt(n) => {
+                        Lit::Int(LitInt::new(&(n.to_string() + &"u32"), Span::call_site()))
+                    }
+                    elysian_core::ir::ast::Number::SInt(n) => {
                         Lit::Int(LitInt::new(&(n.to_string() + &"i32"), Span::call_site()))
-                    },
+                    }
                     elysian_core::ir::ast::Number::Float(n) => {
                         Lit::Float(LitFloat::new(&(n.to_string() + &"f32"), Span::call_site()))
                     }
                 },
             }),
-            elysian_core::ir::ast::Value::Vector2(x, y) => Expr::Call(ExprCall {
-                attrs: vec![],
-                func: Box::new(Expr::Path(ExprPath {
+            elysian_core::ir::ast::Value::Vector(v) => vector_to_syn(v),
+            elysian_core::ir::ast::Value::Matrix(m) => {
+                let (ident, args) = match m {
+                    Matrix::Matrix2(x, y) => ("Mat2", vec![x, y]),
+                    Matrix::Matrix3(x, y, z) => ("Mat3", vec![x, y, z]),
+                    Matrix::Matrix4(x, y, z, w) => ("Mat4", vec![x, y, z, w]),
+                };
+
+                let ident = Ident::new(ident, Span::call_site());
+
+                let args = args.into_iter().map(vector_to_syn).collect();
+
+                Expr::Call(ExprCall {
                     attrs: vec![],
-                    qself: None,
-                    path: Path {
-                        leading_colon: Default::default(),
-                        segments: [
-                            PathSegment {
-                                ident: Ident::new("Vec2", Span::call_site()),
-                                arguments: Default::default(),
-                            },
-                            PathSegment {
-                                ident: Ident::new("new", Span::call_site()),
-                                arguments: Default::default(),
-                            },
-                        ]
-                        .into_iter()
-                        .collect(),
-                    },
-                })),
-                paren_token: Default::default(),
-                args: [
-                    Expr::Lit(ExprLit {
+                    func: Box::new(Expr::Path(ExprPath {
                         attrs: vec![],
-                        lit: Lit::Float(LitFloat::new(
-                            &(x.to_string() + &"f32"),
-                            Span::call_site(),
-                        )),
-                    }),
-                    Expr::Lit(ExprLit {
-                        attrs: vec![],
-                        lit: Lit::Float(LitFloat::new(
-                            &(y.to_string() + &"f32"),
-                            Span::call_site(),
-                        )),
-                    }),
-                ]
-                .into_iter()
-                .collect(),
-            }),
-            elysian_core::ir::ast::Value::Vector3(x, y, z) => Expr::Call(ExprCall {
-                attrs: vec![],
-                func: Box::new(Expr::Path(ExprPath {
-                    attrs: vec![],
-                    qself: None,
-                    path: Path {
-                        leading_colon: Default::default(),
-                        segments: [
-                            PathSegment {
-                                ident: Ident::new("Vec3", Span::call_site()),
-                                arguments: Default::default(),
-                            },
-                            PathSegment {
-                                ident: Ident::new("new", Span::call_site()),
-                                arguments: Default::default(),
-                            },
-                        ]
-                        .into_iter()
-                        .collect(),
-                    },
-                })),
-                paren_token: Default::default(),
-                args: [
-                    Expr::Lit(ExprLit {
-                        attrs: vec![],
-                        lit: Lit::Float(LitFloat::new(
-                            &(x.to_string() + &"f32"),
-                            Span::call_site(),
-                        )),
-                    }),
-                    Expr::Lit(ExprLit {
-                        attrs: vec![],
-                        lit: Lit::Float(LitFloat::new(
-                            &(y.to_string() + &"f32"),
-                            Span::call_site(),
-                        )),
-                    }),
-                    Expr::Lit(ExprLit {
-                        attrs: vec![],
-                        lit: Lit::Float(LitFloat::new(
-                            &(z.to_string() + &"f32"),
-                            Span::call_site(),
-                        )),
-                    }),
-                ]
-                .into_iter()
-                .collect(),
-            }),
-            elysian_core::ir::ast::Value::Vector4(x, y, z, w) => Expr::Call(ExprCall {
-                attrs: vec![],
-                func: Box::new(Expr::Path(ExprPath {
-                    attrs: vec![],
-                    qself: None,
-                    path: Path {
-                        leading_colon: Default::default(),
-                        segments: [
-                            PathSegment {
-                                ident: Ident::new("Vec4", Span::call_site()),
-                                arguments: Default::default(),
-                            },
-                            PathSegment {
-                                ident: Ident::new("new", Span::call_site()),
-                                arguments: Default::default(),
-                            },
-                        ]
-                        .into_iter()
-                        .collect(),
-                    },
-                })),
-                paren_token: Default::default(),
-                args: [
-                    Expr::Lit(ExprLit {
-                        attrs: vec![],
-                        lit: Lit::Float(LitFloat::new(
-                            &(x.to_string() + &"f32"),
-                            Span::call_site(),
-                        )),
-                    }),
-                    Expr::Lit(ExprLit {
-                        attrs: vec![],
-                        lit: Lit::Float(LitFloat::new(
-                            &(y.to_string() + &"f32"),
-                            Span::call_site(),
-                        )),
-                    }),
-                    Expr::Lit(ExprLit {
-                        attrs: vec![],
-                        lit: Lit::Float(LitFloat::new(
-                            &(z.to_string() + &"f32"),
-                            Span::call_site(),
-                        )),
-                    }),
-                    Expr::Lit(ExprLit {
-                        attrs: vec![],
-                        lit: Lit::Float(LitFloat::new(
-                            &(w.to_string() + &"f32"),
-                            Span::call_site(),
-                        )),
-                    }),
-                ]
-                .into_iter()
-                .collect(),
-            }),
+                        qself: None,
+                        path: Path {
+                            leading_colon: Default::default(),
+                            segments: [
+                                PathSegment {
+                                    ident,
+                                    arguments: Default::default(),
+                                },
+                                PathSegment {
+                                    ident: Ident::new("from_cols", Span::call_site()),
+                                    arguments: Default::default(),
+                                },
+                            ]
+                            .into_iter()
+                            .collect(),
+                        },
+                    })),
+                    paren_token: Default::default(),
+                    args,
+                })
+            }
             elysian_core::ir::ast::Value::Struct(_) => {
                 unimplemented!()
             }
-            _ => unimplemented!(),
         },
         IrExpr::Read(expr, path) => path_to_syn(expr.clone().map(|e| *e), path),
         IrExpr::Call { function, args } => Expr::Call(ExprCall {
@@ -877,7 +831,6 @@ fn expr_to_syn(expr: &IrExpr) -> Expr {
                 args: Default::default(),
             })
         }
-        _ => unimplemented!(),
     }
 }
 

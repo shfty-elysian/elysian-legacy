@@ -11,7 +11,6 @@ use crate::{
 use super::{stmt::Stmt, Identifier};
 
 /// Expression resulting in a value
-#[non_exhaustive]
 pub enum Expr {
     Literal(Value),
     Vector2(BoxExpr, BoxExpr),

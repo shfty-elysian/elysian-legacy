@@ -3,7 +3,7 @@ use crate::{
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoBind, IntoBlock, IntoRead, COMBINE_CONTEXT, DISTANCE, LEFT, OUT, RIGHT,
+            Identifier, IntoBlock, IntoRead, IntoWrite, COMBINE_CONTEXT, DISTANCE, LEFT, OUT, RIGHT,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -40,7 +40,7 @@ impl AsIR for Boolean {
                 Boolean::Union | Boolean::Intersection => {
                     [
                         [COMBINE_CONTEXT, OUT]
-                            .bind([COMBINE_CONTEXT, LEFT].read())
+                            .write([COMBINE_CONTEXT, LEFT].read())
                             .if_else(
                                 match self {
                                     Boolean::Union => [COMBINE_CONTEXT, LEFT, DISTANCE]
@@ -51,17 +51,18 @@ impl AsIR for Boolean {
                                         .gt([COMBINE_CONTEXT, RIGHT, DISTANCE].read()),
                                     _ => unreachable!(),
                                 },
-                                Some([COMBINE_CONTEXT, OUT].bind([COMBINE_CONTEXT, RIGHT].read())),
+                                Some([COMBINE_CONTEXT, OUT].write([COMBINE_CONTEXT, RIGHT].read())),
                             ),
                         COMBINE_CONTEXT.read().output(),
                     ]
                     .block()
                 }
                 Boolean::Subtraction => [
-                    [COMBINE_CONTEXT, OUT].bind([COMBINE_CONTEXT, RIGHT].read()),
-                    [COMBINE_CONTEXT, OUT, DISTANCE].bind(-[COMBINE_CONTEXT, OUT, DISTANCE].read()),
+                    [COMBINE_CONTEXT, OUT].write([COMBINE_CONTEXT, RIGHT].read()),
+                    [COMBINE_CONTEXT, OUT, DISTANCE]
+                        .write(-[COMBINE_CONTEXT, OUT, DISTANCE].read()),
                     [COMBINE_CONTEXT, OUT]
-                        .bind([COMBINE_CONTEXT, LEFT].read())
+                        .write([COMBINE_CONTEXT, LEFT].read())
                         .if_else(
                             [COMBINE_CONTEXT, LEFT, DISTANCE].read().gt([
                                 COMBINE_CONTEXT,

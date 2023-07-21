@@ -5,8 +5,8 @@ use std::{
 
 use crate::ir::{
     ast::{
-        Expr, Identifier, IntoBind, IntoBlock, IntoRead, CONTEXT, GRADIENT_2D,
-        GRADIENT_3D, POSITION_2D, POSITION_3D, X, Y,
+        Expr, Identifier, IntoBlock, IntoRead, CONTEXT, GRADIENT_2D, GRADIENT_3D, POSITION_2D,
+        POSITION_3D, X, Y, IntoWrite,
     },
     module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
 };
@@ -63,12 +63,12 @@ impl AsModule for CrossSection {
                 }],
                 output: CONTEXT_STRUCT,
                 block: [
-                    [CONTEXT, POSITION_3D].bind(
+                    [CONTEXT, POSITION_3D].write(
                         Expr::from(self.x_axis.clone()) * [CONTEXT, POSITION_2D, X].read()
                             + Expr::from(self.y_axis.clone()) * [CONTEXT, POSITION_2D, Y].read(),
                     ),
                     CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
-                    [CONTEXT, GRADIENT_2D].bind(Expr::vector2(
+                    [CONTEXT, GRADIENT_2D].write(Expr::vector2(
                         [CONTEXT, GRADIENT_3D, X].read(),
                         [CONTEXT, GRADIENT_3D, Y].read(),
                     )),

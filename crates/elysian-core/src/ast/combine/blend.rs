@@ -5,8 +5,8 @@ use crate::{
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoBind, IntoRead, Number, Property, COMBINE_CONTEXT, DISTANCE, LEFT, NUM,
-            OUT, RIGHT,
+            Identifier, IntoLiteral, IntoRead, IntoWrite, Property, COMBINE_CONTEXT, DISTANCE,
+            LEFT, NUM, OUT, RIGHT,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -119,15 +119,15 @@ impl AsIR for Blend {
 
                     let mut block = vec![
                         NUM.bind(
-                            ((Number::Float(0.5).literal())
-                                + (Number::Float(0.5).literal())
+                            (0.5.literal()
+                                + 0.5.literal()
                                     * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
                                         - [COMBINE_CONTEXT, LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(Number::Float(0.0).literal())
-                            .min(Number::Float(1.0).literal()),
+                            .max(0.0.literal())
+                            .min(1.0.literal()),
                         ),
-                        [COMBINE_CONTEXT, OUT, property.clone()].bind(
+                        [COMBINE_CONTEXT, OUT, property.clone()].write(
                             [COMBINE_CONTEXT, RIGHT, property.clone()]
                                 .read()
                                 .mix([COMBINE_CONTEXT, LEFT, property.clone()].read(), NUM.read()),
@@ -135,11 +135,9 @@ impl AsIR for Blend {
                     ];
 
                     if property == DISTANCE {
-                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].bind(
+                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
                             [COMBINE_CONTEXT, OUT, DISTANCE].read()
-                                - K.read()
-                                    * NUM.read()
-                                    * (Number::Float(1.0).literal() - NUM.read()),
+                                - K.read() * NUM.read() * (1.0.literal() - NUM.read()),
                         ))
                     }
 
@@ -152,12 +150,12 @@ impl AsIR for Blend {
 
                     let mut block = vec![
                         NUM.bind(
-                            (Number::Float(0.5).literal()
-                                - Number::Float(0.5).literal()
+                            (0.5.literal()
+                                - 0.5.literal()
                                     * ([RIGHT, DISTANCE].read() - [LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(Number::Float(0.0).literal())
-                            .min(Number::Float(1.0).literal()),
+                            .max(0.0.literal())
+                            .min(1.0.literal()),
                         ),
                         property.clone().bind(
                             [RIGHT, property.clone()]
@@ -168,14 +166,11 @@ impl AsIR for Blend {
 
                     if property == DISTANCE {
                         block.push(DISTANCE.bind(
-                            DISTANCE.read()
-                                + K.read()
-                                    * NUM.read()
-                                    * (Number::Float(1.0).literal() - NUM.read()),
+                            DISTANCE.read() + K.read() * NUM.read() * (1.0.literal() - NUM.read()),
                         ))
                     }
 
-                    block.push([OUT, property.clone()].bind([OUT, property.clone()].read()));
+                    block.push([OUT, property.clone()].write([OUT, property.clone()].read()));
 
                     block.into_iter().collect()
                 }
@@ -184,15 +179,15 @@ impl AsIR for Blend {
 
                     let mut block = vec![
                         NUM.bind(
-                            (Number::Float(0.5).literal()
-                                - Number::Float(0.5).literal()
+                            (0.5.literal()
+                                - 0.5.literal()
                                     * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
                                         + [COMBINE_CONTEXT, LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(Number::Float(0.0).literal())
-                            .min(Number::Float(1.0).literal()),
+                            .max(0.0.literal())
+                            .min(1.0.literal()),
                         ),
-                        [COMBINE_CONTEXT, OUT, property.clone()].bind(
+                        [COMBINE_CONTEXT, OUT, property.clone()].write(
                             [COMBINE_CONTEXT, LEFT, property.clone()].read().mix(
                                 -[COMBINE_CONTEXT, RIGHT, property.clone()].read(),
                                 NUM.read(),
@@ -201,11 +196,9 @@ impl AsIR for Blend {
                     ];
 
                     if property == DISTANCE {
-                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].bind(
+                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
                             [COMBINE_CONTEXT, OUT, DISTANCE].read()
-                                + K.read()
-                                    * NUM.read()
-                                    * (Number::Float(1.0).literal() - NUM.read()),
+                                + K.read() * NUM.read() * (1.0.literal() - NUM.read()),
                         ))
                     }
 

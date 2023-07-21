@@ -5,8 +5,8 @@ use crate::{
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Expr, Identifier, IntoBlock, IntoRead, IntoWrite, Number, CONTEXT, GRADIENT_2D,
-            GRADIENT_3D, NORMAL, X, Y,
+            Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D,
+            GRADIENT_3D, NORMAL, X, Y, IntoLiteral,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -40,7 +40,7 @@ impl AsIR for GradientNormals {
                         Expr::vector3(
                             [GRADIENT_2D, X].read(),
                             [GRADIENT_2D, Y].read(),
-                            Number::Float(1.0).literal(),
+                            1.0.literal(),
                         )
                         .normalize(),
                     ),

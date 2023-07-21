@@ -8,7 +8,7 @@ use crate::{
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoBind, IntoBlock, IntoRead, Property, CONTEXT, POSITION_2D, POSITION_3D,
+            Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION_2D, POSITION_3D,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -91,7 +91,7 @@ impl AsIR for Elongate {
                     .dot(dir.clone().read().normalize());
 
                 [
-                    [CONTEXT, position.clone()].bind(
+                    [CONTEXT, position.clone()].write(
                         [CONTEXT, position].read()
                             - dir.clone().read().normalize()
                                 * if self.infinite {

@@ -16,6 +16,7 @@ use super::Identifier;
 pub const X: Property = Property::new_primitive("x", Type::Number);
 pub const Y: Property = Property::new_primitive("y", Type::Number);
 pub const Z: Property = Property::new_primitive("z", Type::Number);
+pub const W: Property = Property::new_primitive("w", Type::Number);
 
 pub const POSITION_2D: Property = Property::new("position_2d", Type::Vector2, 19300293251480055481);
 pub const POSITION_3D: Property = Property::new("position_3d", Type::Vector3, 2063026210185456313);
@@ -110,16 +111,11 @@ impl Property {
     }
 
     pub fn bind(self, expr: Expr) -> Stmt {
-        Write {
-            bind: true,
-            path: vec![self],
-            expr,
-        }
+        Bind { prop: self, expr }
     }
 
     pub fn write(self, expr: Expr) -> Stmt {
         Write {
-            bind: false,
             path: vec![self],
             expr,
         }
@@ -154,23 +150,6 @@ where
     }
 }
 
-pub trait IntoBind {
-    fn bind(self, expr: Expr) -> Stmt;
-}
-
-impl<T> IntoBind for T
-where
-    T: IntoIterator<Item = Property>,
-{
-    fn bind(self, expr: Expr) -> Stmt {
-        Write {
-            bind: true,
-            path: self.into_iter().collect(),
-            expr,
-        }
-    }
-}
-
 pub trait IntoWrite {
     fn write(self, expr: Expr) -> Stmt;
 }
@@ -181,7 +160,6 @@ where
 {
     fn write(self, expr: Expr) -> Stmt {
         Write {
-            bind: false,
             path: self.into_iter().collect(),
             expr,
         }

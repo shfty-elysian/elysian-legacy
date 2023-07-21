@@ -1,13 +1,14 @@
 use image::RgbImage;
+use rust_gpu_bridge::glam::Vec3;
 use tracing::instrument;
 
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use elysian_core::ir::{
-    ast::{Number, Struct, Value, DISTANCE, NORMAL, POSITION_2D},
+    ast::{Struct, Value, Vector, DISTANCE, NORMAL, POSITION_2D},
     module::{AsModule, SpecializationData},
 };
-use elysian_syn::static_shapes::dispatch_shape_f32;
+use elysian_syn::static_shapes::dispatch_shape;
 
 #[instrument]
 pub fn rasterize<T>(
@@ -20,7 +21,7 @@ pub fn rasterize<T>(
 where
     T: AsModule,
 {
-    let shape = dispatch_shape_f32(shape, spec);
+    let shape = dispatch_shape(shape, spec);
 
     let indices: Vec<_> = (0..height)
         .into_iter()
@@ -38,34 +39,29 @@ where
                 .flat_map(|(x, y)| {
                     let ctx = Struct::default().set(
                         POSITION_2D,
-                        Value::Vector2(
+                        Value::Vector(Vector::Vector2(
                             (((x as f32 / width as f32) - 0.5) * 2.0 / scale).into(),
-                            (((y as f32 / height as f32) - 0.5) * 2.0 / scale).into(),
-                        ),
+                            (((y as f32 / height as f32) - 0.5) * -2.0 / scale).into(),
+                        )),
                     );
 
                     let ctx = shape(ctx);
 
-                    let Value::Number(Number::Float(d)) = ctx.get(&DISTANCE) else {
-                        panic!("Value is not a Float Number");
-                    };
-
-                    let Value::Vector3(Number::Float(x), Number::Float(y), Number::Float(z)) = ctx.get(&NORMAL) else {
-                        panic!("Value is not a Float Vector3")
-                    };
+                    let d: f32 = ctx.get(&DISTANCE).into();
+                    let n: Vec3 = ctx.get(&NORMAL).into();
 
                     if d >= 0.0 && d <= 4.0 / width as f32 {
                         [255, 255, 255]
                     } else if d <= 0.0 {
                         [
-                            ((x * 0.5 + 0.5) * 255.0).round() as u8,
-                            ((y * 0.5 + 0.5) * 255.0).round() as u8,
-                            ((z * 0.5 + 0.5) * 255.0).round() as u8,
+                            ((n.x * 0.5 + 0.5) * 255.0).round() as u8,
+                            ((n.y * 0.5 + 0.5) * 255.0).round() as u8,
+                            ((n.z * 0.5 + 0.5) * 255.0).round() as u8,
                         ]
                     } else {
                         [
-                            ((x * 0.5 + 0.5) * 127.0).round() as u8,
-                            ((y * 0.5 + 0.5) * 127.0).round() as u8,
+                            ((n.x * 0.5 + 0.5) * 127.0).round() as u8,
+                            ((n.y * 0.5 + 0.5) * 127.0).round() as u8,
                             0,
                         ]
                     }

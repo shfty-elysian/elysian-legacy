@@ -3,13 +3,11 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use rust_gpu_bridge::glam::{Vec2, Vec3};
-
 use crate::ir::{
     as_ir::FilterSpec,
     ast::{
-        Expr, Identifier, IntoBind, IntoBlock, IntoLiteral, Number, CONTEXT, DISTANCE, GRADIENT_2D,
-        GRADIENT_3D,
+        Expr, Identifier, IntoBlock, IntoLiteral, IntoWrite, Number, CONTEXT, DISTANCE,
+        GRADIENT_2D, GRADIENT_3D,
     },
     module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
 };
@@ -46,9 +44,13 @@ impl AsModule for CentralDiffGradient {
         entry_point: &Identifier,
     ) -> Vec<crate::ir::module::FunctionDefinition> {
         let (gradient, vec_x, vec_y) = if spec.contains(GRADIENT_2D.id()) {
-            (GRADIENT_2D, Vec2::X.literal(), Vec2::Y.literal())
+            (GRADIENT_2D, [1.0, 0.0].literal(), [0.0, 1.0].literal())
         } else if spec.contains(GRADIENT_3D.id()) {
-            (GRADIENT_3D, Vec3::X.literal(), Vec3::Y.literal())
+            (
+                GRADIENT_3D,
+                [1.0, 0.0, 0.0].literal(),
+                [0.0, 1.0, 0.0].literal(),
+            )
         } else {
             panic!("No gradient domain");
         };
@@ -103,7 +105,7 @@ impl AsModule for CentralDiffGradient {
                 output: CONTEXT_STRUCT,
                 block: [
                     CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
-                    [CONTEXT, gradient].bind(expr_vec),
+                    [CONTEXT, gradient].write(expr_vec),
                     CONTEXT.read().output(),
                 ]
                 .block(),

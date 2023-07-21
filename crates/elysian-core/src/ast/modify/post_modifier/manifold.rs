@@ -5,8 +5,8 @@ use crate::{
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoBind, IntoBlock, IntoRead, CONTEXT, DISTANCE, GRADIENT_2D, GRADIENT_3D,
-            NUM,
+            Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT_2D,
+            GRADIENT_3D, NUM,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -43,8 +43,8 @@ impl AsIR for Manifold {
             output: &CONTEXT_STRUCT,
             block: [
                 NUM.bind([CONTEXT, DISTANCE].read()),
-                [CONTEXT, DISTANCE].bind(NUM.read().abs()),
-                [CONTEXT, gradient.clone()].bind([CONTEXT, gradient].read() * NUM.read().sign()),
+                [CONTEXT, DISTANCE].write(NUM.read().abs()),
+                [CONTEXT, gradient.clone()].write([CONTEXT, gradient].read() * NUM.read().sign()),
                 CONTEXT.read().output(),
             ]
             .block(),

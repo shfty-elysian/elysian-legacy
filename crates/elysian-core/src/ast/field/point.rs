@@ -5,7 +5,7 @@ use crate::{
     ir::{
         as_ir::FilterSpec,
         ast::{
-            Expr, Identifier, IntoBind, IntoBlock, IntoRead, CONTEXT, DISTANCE, GRADIENT_2D,
+            Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT_2D,
             GRADIENT_3D, POSITION_2D, POSITION_3D,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
@@ -53,11 +53,11 @@ impl AsIR for Point {
 
         let mut block = vec![];
         if distance {
-            block.push([CONTEXT, DISTANCE].bind([CONTEXT, position.clone()].read().length()))
+            block.push([CONTEXT, DISTANCE].write([CONTEXT, position.clone()].read().length()))
         };
 
         if let Some(gradient) = gradient {
-            block.push([CONTEXT, gradient].bind([CONTEXT, position].read().normalize()));
+            block.push([CONTEXT, gradient].write([CONTEXT, position].read().normalize()));
         }
 
         block.push(CONTEXT.read().output());

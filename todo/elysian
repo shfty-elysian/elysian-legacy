@@ -167,7 +167,19 @@
 
   DONE: Implemented via specialization machinery
 
-=========================================================================================================
+* Factor out generic params in favour of enums
+
+  DONE: Value is now authoritative over its own types
+
+* Integer support
+  
+  DONE: Now using integers for loop indexing
+
+* Split Bind out from Write expression
+  * Explicitness is better for API, since Bind only takes one path element
+    * Prevents existing issue of multi-elements binds secretly being writes
+
+  DONE: Binding variables and writing to bound variables are now discrete concepts
 
 * Can SpecializationData subsume TypeSpec?
   * i.e. Use int / float / double tags inside spec data instead of a type parameter,
@@ -188,37 +200,31 @@
         * Tricky, since it's desirable to support integers for things like Distance, Position, Gradient
         * Perhaps the properties themselves will need to be able to specialize
 
-* Consider moving test-bin build.rs into test-shapes
-  * Would result in better encapsulation if feasible
-  * May be worth feature-gating to avoid compiling static shapes where unnecessary
-    * ex. In the syn crate
+  PARTIAL: Switched to enum-based uint / sint / float / number / vector representation
+           covering rust's primitive types; properties are individually typed,
+           and will panic if an invalid operation is attempted.
+
+* Replace Expr::Literal with Expr::Number
+  * Better to model the available datatypes rigidly rather than to mix-match with concrete structs
+
+  SKIPPED: Not viable; at least one variant containing a Value must exist.
+
+* Mat3, Mat4 types
+  * Needed for raymarch projection
+  * Compose Exprs that produce vectors
+
+  DONE: Implemented as Value::Matrix, Matrix::Matrix*, integrated into Raymarch
 
 * Implementation specialization for Raymarch
   * Pick between different marching strategies
     * Naive fixed-step march
     * Naive sphere trace march
     * K-based sphere trace march
-    * Theoretical segment tracing implementation
+    * Theoretical segment tracing Implementation
 
-* Replace Expr::Literal with Expr::Number
-  * Better to model the available datatypes rigidly rather than to mix-match with concrete structs
+  DONE: Implemented via the March enum
 
-* Mat3, Mat4 types
-  * Needed for raymarch projection
-  * Compose Exprs that produce vectors
-
-* Split Bind out from Write expression
-  * Explicitness is better for API, since Bind only takes one path element
-    * Prevents existing issue of multi-elements binds secretly being writes
-
-* Better generalization for AsIR / AsModule
-  * AsModule is currently lacking certain features that AsIR has
-    * ex. Entrypoint specialization
-    * This is in part to simplify the Struct -> Context -> Struct
-      conversion required for static shape dispatch
-    * Feels like there should be some abstraction that can
-      subsume both, have its features consumed a-la carte
-    * Things like GradientNormals don't feel first-class as is, whereas AsIR implementors do
+=========================================================================================================
 
 * Domain evaluation
   i.e. Being able to evaluate a subset of a given field's computations
@@ -230,6 +236,15 @@
   * Will need to split each domain statement into its own function,
     call from central function w/conditional specialization
 
+* Better generalization for AsIR / AsModule
+  * AsModule is currently lacking certain features that AsIR has
+    * ex. Entrypoint specialization
+    * This is in part to simplify the Struct -> Context -> Struct
+      conversion required for static shape dispatch
+    * Feels like there should be some abstraction that can
+      subsume both, have its features consumed a-la carte
+    * Things like GradientNormals don't feel first-class as is, whereas AsIR implementors do
+
 * Stronger typing for pre / post / field IR conversion
   * At minimum, create separate traits to identify a given symbol as each
     * May be better for Modifier to be a single trait with pre / post methods
@@ -239,6 +254,11 @@
 
 * Error handling pass
   * Replace panics with Result and error types
+
+* Consider moving test-bin build.rs into test-shapes
+  * Would result in better encapsulation if feasible
+  * May be worth feature-gating to avoid compiling static shapes where unnecessary
+    * ex. In the syn crate
 
 * Long-term: Consider using a subset of rhai for IR / interpreter purposes
   * Large in scope, but offers simplification via disabling functionality

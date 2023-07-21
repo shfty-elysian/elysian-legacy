@@ -5,7 +5,7 @@ use crate::{
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Identifier, IntoBind, IntoBlock, IntoRead, Property, CONTEXT, POSITION_2D, POSITION_3D,
+            Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION_2D, POSITION_3D,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -74,7 +74,7 @@ impl AsIR for Translate {
             ],
             output: &CONTEXT_STRUCT,
             block: [
-                [CONTEXT, position.clone()].bind([CONTEXT, position].read() - delta.read()),
+                [CONTEXT, position.clone()].write([CONTEXT, position].read() - delta.read()),
                 CONTEXT.read().output(),
             ]
             .block(),
