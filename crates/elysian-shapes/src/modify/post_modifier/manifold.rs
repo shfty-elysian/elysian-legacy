@@ -1,7 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::{
-    ast::modify::CONTEXT_STRUCT,
+use elysian_core::{
+    ast::{
+        field::Field,
+        modify::{Modify, CONTEXT_STRUCT},
+    },
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
@@ -54,8 +57,29 @@ impl AsIR for Manifold {
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         MANIFOLD.specialize(spec).call(input)
+    }
+}
+
+pub trait IntoManifold {
+    fn manifold(self) -> Modify;
+}
+
+impl IntoManifold for Field {
+    fn manifold(self) -> Modify {
+        Modify {
+            pre_modifiers: Default::default(),
+            field: Box::new(self),
+            post_modifiers: vec![Box::new(Manifold)],
+        }
+    }
+}
+
+impl IntoManifold for Modify {
+    fn manifold(mut self) -> Modify {
+        self.post_modifiers.push(Box::new(Manifold));
+        self
     }
 }

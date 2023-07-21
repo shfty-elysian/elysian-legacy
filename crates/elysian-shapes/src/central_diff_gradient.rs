@@ -3,16 +3,19 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::ir::{
-    as_ir::FilterSpec,
-    ast::{
-        Expr, Identifier, IntoBlock, IntoLiteral, IntoWrite, Number, CONTEXT, DISTANCE,
-        GRADIENT_2D, GRADIENT_3D,
+use elysian_core::{
+    ast::modify::CONTEXT_STRUCT,
+    ir::{
+        as_ir::FilterSpec,
+        ast::{
+            Expr, Identifier, IntoBlock, IntoLiteral, IntoWrite, Number, CONTEXT, DISTANCE,
+            GRADIENT_2D, GRADIENT_3D,
+        },
+        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
     },
-    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
 };
 
-use super::modify::{Translate, CONTEXT_STRUCT, TRANSLATE};
+use crate::modify::{Translate, TRANSLATE};
 
 pub struct CentralDiffGradient {
     pub field: Box<dyn AsModule>,
@@ -42,7 +45,7 @@ impl AsModule for CentralDiffGradient {
         &self,
         spec: &SpecializationData,
         entry_point: &Identifier,
-    ) -> Vec<crate::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let (gradient, vec_x, vec_y) = if spec.contains(GRADIENT_2D.id()) {
             (GRADIENT_2D, [1.0, 0.0].literal(), [0.0, 1.0].literal())
         } else if spec.contains(GRADIENT_3D.id()) {
@@ -113,7 +116,7 @@ impl AsModule for CentralDiffGradient {
             .collect()
     }
 
-    fn structs(&self) -> Vec<crate::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
         self.field.structs()
     }
 }

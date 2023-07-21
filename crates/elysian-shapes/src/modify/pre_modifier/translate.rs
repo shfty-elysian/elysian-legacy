@@ -1,7 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::{
-    ast::modify::CONTEXT_STRUCT,
+use elysian_core::{
+    ast::{
+        field::Field,
+        modify::{Modify, CONTEXT_STRUCT},
+    },
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
@@ -11,7 +14,7 @@ use crate::{
     },
 };
 
-use crate::ast::expr::Expr;
+use elysian_core::ast::expr::Expr;
 
 pub const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
 pub const DELTA_2D: Property = Property::new("delta_2d", Type::Vector2, 1292788437813720044);
@@ -84,10 +87,31 @@ impl AsIR for Translate {
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         TRANSLATE
             .specialize(spec)
             .call([self.delta.clone().into(), input])
+    }
+}
+
+pub trait IntoTranslate {
+    fn translate(self, delta: elysian_core::ast::expr::Expr) -> Modify;
+}
+
+impl IntoTranslate for Field {
+    fn translate(self, delta: elysian_core::ast::expr::Expr) -> Modify {
+        Modify {
+            pre_modifiers: vec![Box::new(Translate { delta })],
+            field: Box::new(self),
+            post_modifiers: Default::default(),
+        }
+    }
+}
+
+impl IntoTranslate for Modify {
+    fn translate(mut self, delta: elysian_core::ast::expr::Expr) -> Modify {
+        self.pre_modifiers.push(Box::new(Translate { delta }));
+        self
     }
 }

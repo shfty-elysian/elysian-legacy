@@ -1,9 +1,3 @@
-pub mod post_modifier;
-pub mod pre_modifier;
-
-pub use post_modifier::*;
-pub use pre_modifier::*;
-
 use std::{
     fmt::Debug,
     hash::{Hash, Hasher},
@@ -113,34 +107,6 @@ impl Hash for Modify {
         for modifier in &self.post_modifiers {
             state.write_u64(modifier.hash_ir());
         }
-    }
-}
-
-impl Modify {
-    pub fn translate(mut self, delta: crate::ast::expr::Expr) -> Modify {
-        self.pre_modifiers.push(Box::new(Translate { delta }));
-        self
-    }
-
-    pub fn elongate(mut self, dir: crate::ast::expr::Expr, infinite: bool) -> Modify {
-        self.pre_modifiers
-            .push(Box::new(Elongate { dir, infinite }));
-        self
-    }
-
-    pub fn isosurface(mut self, dist: crate::ast::expr::Expr) -> Modify {
-        self.post_modifiers.push(Box::new(Isosurface { dist }));
-        self
-    }
-
-    pub fn manifold(mut self) -> Modify {
-        self.post_modifiers.push(Box::new(Manifold));
-        self
-    }
-
-    pub fn gradient_normals(mut self) -> Modify {
-        self.post_modifiers.push(Box::new(GradientNormals));
-        self
     }
 }
 

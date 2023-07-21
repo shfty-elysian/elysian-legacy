@@ -3,12 +3,8 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::{
-    ast::{
-        expr::Expr,
-        field::{point::Point, CONTEXT_STRUCT},
-        modify::{Isosurface, ISOSURFACE},
-    },
+use elysian_core::{
+    ast::{expr::Expr, modify::CONTEXT_STRUCT},
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{Identifier, IntoBlock, Property, CONTEXT},
@@ -16,7 +12,9 @@ use crate::{
     },
 };
 
-use super::POINT;
+use crate::modify::{Isosurface, ISOSURFACE};
+
+use super::{Point, POINT};
 
 pub const CIRCLE: Identifier = Identifier::new("circle", 15738477621793375359);
 pub const RADIUS: Property = Property::new("radius", Type::Number, 213754678517975478);
@@ -57,7 +55,7 @@ impl AsIR for Circle {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
-    ) -> Vec<crate::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let point_spec = Point::filter_spec(spec);
         let isosurface_spec = Isosurface::filter_spec(spec);
 
@@ -99,8 +97,8 @@ impl AsIR for Circle {
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         CIRCLE
             .specialize(spec)
             .call([self.radius.clone().into(), input])

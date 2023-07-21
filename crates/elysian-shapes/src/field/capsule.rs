@@ -1,24 +1,20 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use crate::ast::modify::{DIR_3D, ISOSURFACE};
-use crate::ir::as_ir::FilterSpec;
-use crate::ir::ast::{POSITION_2D, POSITION_3D};
-use crate::ir::module::SpecializationData;
-use crate::{
-    ast::{
-        expr::Expr,
-        field::{Line, CONTEXT_STRUCT},
-        modify::{Isosurface, DIR_2D},
-    },
+use elysian_core::ast::modify::CONTEXT_STRUCT;
+use elysian_core::ir::ast::IntoBlock;
+use elysian_core::{
+    ast::expr::Expr,
     ir::{
-        as_ir::AsIR,
-        ast::{Identifier, IntoBlock, CONTEXT},
-        module::{FunctionDefinition, InputDefinition},
+        as_ir::{AsIR, FilterSpec},
+        ast::{Identifier, CONTEXT, POSITION_2D, POSITION_3D},
+        module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
 };
 
-use super::{LINE, RADIUS};
+use crate::modify::{Isosurface, DIR_2D, DIR_3D, ISOSURFACE};
+
+use super::{Line, LINE, RADIUS};
 
 pub const CAPSULE: Identifier = Identifier::new("capsule", 14339483921749952476);
 
@@ -62,7 +58,7 @@ impl AsIR for Capsule {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
-    ) -> Vec<crate::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let dir = if spec.contains(POSITION_2D.id()) {
             DIR_2D
         } else if spec.contains(POSITION_3D.id()) {
@@ -119,8 +115,8 @@ impl AsIR for Capsule {
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         CAPSULE
             .specialize(spec)
             .call([self.dir.clone().into(), self.radius.clone().into(), input])

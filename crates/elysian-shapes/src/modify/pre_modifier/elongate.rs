@@ -3,8 +3,11 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::{
-    ast::modify::CONTEXT_STRUCT,
+use elysian_core::{
+    ast::{
+        field::Field,
+        modify::{Modify, CONTEXT_STRUCT},
+    },
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
@@ -14,7 +17,7 @@ use crate::{
     },
 };
 
-use crate::ast::expr::Expr;
+use elysian_core::ast::expr::Expr;
 
 pub const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324);
 pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1799909959882308009);
@@ -111,13 +114,35 @@ impl AsIR for Elongate {
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         if self.infinite {
             ELONGATE_INFINITE.specialize(spec)
         } else {
             ELONGATE.specialize(spec)
         }
         .call([self.dir.clone().into(), input])
+    }
+}
+
+pub trait IntoElongate {
+    fn elongate(self, dir: elysian_core::ast::expr::Expr, infinite: bool) -> Modify;
+}
+
+impl IntoElongate for Field {
+    fn elongate(self, dir: elysian_core::ast::expr::Expr, infinite: bool) -> Modify {
+        Modify {
+            pre_modifiers: vec![Box::new(Elongate { dir, infinite })],
+            field: Box::new(self),
+            post_modifiers: Default::default(),
+        }
+    }
+}
+
+impl IntoElongate for Modify {
+    fn elongate(mut self, dir: elysian_core::ast::expr::Expr, infinite: bool) -> Modify {
+        self.pre_modifiers
+            .push(Box::new(Elongate { dir, infinite }));
+        self
     }
 }

@@ -1,15 +1,19 @@
 use elysian_core::{
     ast::{
         attribute::Attribute::{self, *},
-        central_diff_gradient::CentralDiffGradient,
-        combine::{Blend, Boolean},
         expr::IntoLiteral,
-        field::{Capsule, Circle, IntoField, Point, Ring},
+        field::IntoField,
         modify::IntoModify,
-        raymarch::{March, Raymarch},
         IntoCombine,
     },
     ir::{as_ir::DynAsIR, module::DynAsModule},
+};
+use elysian_shapes::{
+    central_diff_gradient::CentralDiffGradient,
+    combine::{Blend, Boolean},
+    field::{Capsule, Circle, Point, Ring},
+    modify::{IntoElongate, IntoGradientNormals, IntoIsosurface, IntoManifold, IntoTranslate},
+    raymarch::{March, Raymarch},
 };
 use rust_gpu_bridge::glam::Mat4;
 
@@ -44,7 +48,6 @@ pub fn kettle_bell() -> DynAsModule {
                 radius: 1.0.literal(),
             }
             .field()
-            .modify()
             .translate([0.0, 0.5].literal()),
         ),
         Box::new(
@@ -53,7 +56,6 @@ pub fn kettle_bell() -> DynAsModule {
                 width: 0.15.literal(),
             }
             .field()
-            .modify()
             .translate([0.0, -0.25].literal()),
         ),
     ];
@@ -66,7 +68,6 @@ pub fn kettle_bell() -> DynAsModule {
                 radius: 0.2.literal(),
             }
             .field()
-            .modify()
             .translate([0.0, 0.5].literal()),
         ),
     ];

@@ -1,4 +1,4 @@
-use crate::{
+use elysian_core::{
     ast::combine::COMBINE_CONTEXT_STRUCT,
     ir::{
         as_ir::{AsIR, FilterSpec},
@@ -23,7 +23,10 @@ pub const SUBTRACTION: Identifier = Identifier::new("subtraction", 1414822549598
 impl FilterSpec for Boolean {}
 
 impl AsIR for Boolean {
-    fn functions_impl(&self, _: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         vec![FunctionDefinition {
             id: match self {
                 Boolean::Union => UNION,
@@ -82,18 +85,18 @@ impl AsIR for Boolean {
     fn expression_impl(
         &self,
         _: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         match self {
-            Boolean::Union => crate::ir::ast::Expr::Call {
+            Boolean::Union => elysian_core::ir::ast::Expr::Call {
                 function: UNION,
                 args: vec![input],
             },
-            Boolean::Intersection => crate::ir::ast::Expr::Call {
+            Boolean::Intersection => elysian_core::ir::ast::Expr::Call {
                 function: INTERSECTION,
                 args: vec![input],
             },
-            Boolean::Subtraction => crate::ir::ast::Expr::Call {
+            Boolean::Subtraction => elysian_core::ir::ast::Expr::Call {
                 function: SUBTRACTION,
                 args: vec![input],
             },

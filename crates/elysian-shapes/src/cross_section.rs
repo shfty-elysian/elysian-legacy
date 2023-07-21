@@ -3,22 +3,20 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::ir::{
+use elysian_core::{ir::{
     ast::{
         Expr, Identifier, IntoBlock, IntoRead, CONTEXT, GRADIENT_2D, GRADIENT_3D, POSITION_2D,
         POSITION_3D, X, Y, IntoWrite,
     },
     module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
-};
-
-use super::modify::CONTEXT_STRUCT;
+}, ast::modify::CONTEXT_STRUCT};
 
 pub const CROSS_SECTION: Identifier = Identifier::new("cross_section", 11670715461129592823);
 
 pub struct CrossSection {
     pub field: Box<dyn AsModule>,
-    pub x_axis: crate::ast::expr::Expr,
-    pub y_axis: crate::ast::expr::Expr,
+    pub x_axis: elysian_core::ast::expr::Expr,
+    pub y_axis: elysian_core::ast::expr::Expr,
 }
 
 impl Debug for CrossSection {
@@ -44,7 +42,7 @@ impl AsModule for CrossSection {
         &self,
         spec: &SpecializationData,
         _: &Identifier,
-    ) -> Vec<crate::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         if !spec.contains(POSITION_2D.id()) {
             panic!("CrossSection is only compatible with the 2D position domain");
         }
@@ -79,7 +77,7 @@ impl AsModule for CrossSection {
             .collect()
     }
 
-    fn structs(&self) -> Vec<crate::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
         self.field.structs()
     }
 }

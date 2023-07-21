@@ -3,17 +3,16 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::{
-    ast::{
-        expr::Expr,
-        modify::{Isosurface, Manifold, CONTEXT_STRUCT, ISOSURFACE, MANIFOLD},
-    },
+use elysian_core::{
+    ast::{expr::Expr, modify::CONTEXT_STRUCT},
     ir::{
         as_ir::{AsIR, FilterSpec},
-        ast::{Identifier, IntoBlock, Property, CONTEXT},
+        ast::{Identifier, Property, CONTEXT, IntoBlock},
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
+
+use crate::modify::{Manifold, Isosurface, ISOSURFACE, MANIFOLD};
 
 use super::{Circle, CIRCLE, RADIUS};
 
@@ -62,7 +61,7 @@ impl AsIR for Ring {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
-    ) -> Vec<crate::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let isosurface_spec = Isosurface::filter_spec(spec);
         let manifold_spec = Manifold::filter_spec(spec);
         let circle_spec = Circle::filter_spec(spec);
@@ -116,8 +115,8 @@ impl AsIR for Ring {
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         RING.specialize(spec)
             .call([self.radius.clone().into(), self.width.clone().into(), input])
     }

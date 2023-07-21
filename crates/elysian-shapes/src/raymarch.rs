@@ -3,15 +3,13 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::ir::{
+use elysian_core::{ir::{
     ast::{
         Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, Property, Stmt,
         CONTEXT, DISTANCE, POSITION_2D, POSITION_3D, W, X, Y, Z,
     },
     module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
-};
-
-use super::modify::CONTEXT_STRUCT;
+}, ast::modify::CONTEXT_STRUCT};
 
 pub const CROSS_SECTION: Identifier = Identifier::new("raymarch", 11670715461129592823);
 
@@ -35,14 +33,14 @@ pub const MAX_STEPS: Property = Property::new("max_steps", Type::Number, 1146747
 
 pub enum March {
     Fixed {
-        step_size: crate::ast::expr::Expr,
+        step_size: elysian_core::ast::expr::Expr,
     },
     Sphere {
-        epsilon: crate::ast::expr::Expr,
+        epsilon: elysian_core::ast::expr::Expr,
     },
     Lipschitz {
-        epsilon: crate::ast::expr::Expr,
-        falloff_k: crate::ast::expr::Expr,
+        epsilon: elysian_core::ast::expr::Expr,
+        falloff_k: elysian_core::ast::expr::Expr,
     },
 }
 
@@ -51,10 +49,10 @@ pub fn falloff_k(e: f32, r: f32) -> f32 {
 }
 
 pub struct Raymarch {
-    pub max_steps: crate::ast::expr::Expr,
+    pub max_steps: elysian_core::ast::expr::Expr,
     pub march: March,
-    pub projection: crate::ast::expr::Expr,
-    pub inv_projection: crate::ast::expr::Expr,
+    pub projection: elysian_core::ast::expr::Expr,
+    pub inv_projection: elysian_core::ast::expr::Expr,
     pub field: Box<dyn AsModule>,
 }
 
@@ -81,7 +79,7 @@ impl AsModule for Raymarch {
         &self,
         spec: &SpecializationData,
         _: &Identifier,
-    ) -> Vec<crate::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         if !spec.contains(POSITION_2D.id()) {
             panic!("Raymarch is only compatible with the 2D position domain");
         }
@@ -178,7 +176,7 @@ impl AsModule for Raymarch {
             .collect()
     }
 
-    fn structs(&self) -> Vec<crate::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
         self.field.structs()
     }
 }

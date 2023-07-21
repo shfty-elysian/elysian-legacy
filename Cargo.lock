@@ -220,6 +220,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "elysian-shapes"
+version = "0.1.0"
+dependencies = [
+ "elysian-core",
+]
+
+[[package]]
 name = "elysian-syn"
 version = "0.1.0"
 dependencies = [
@@ -856,6 +863,7 @@ name = "test-shapes"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-shapes",
  "rust-gpu-bridge",
 ]
 

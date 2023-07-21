@@ -3,12 +3,8 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::{
-    ast::{
-        expr::Expr,
-        field::{Point, CONTEXT_STRUCT},
-        modify::{Elongate, DIR_2D, DIR_3D, ELONGATE},
-    },
+use elysian_core::{
+    ast::{expr::Expr, modify::CONTEXT_STRUCT},
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{Identifier, IntoBlock, CONTEXT, POSITION_2D, POSITION_3D},
@@ -16,7 +12,9 @@ use crate::{
     },
 };
 
-use super::POINT;
+use crate::modify::{Elongate, DIR_2D, DIR_3D, ELONGATE};
+
+use super::{POINT, Point};
 
 pub const LINE: Identifier = Identifier::new("line", 14339483921749952476);
 
@@ -54,7 +52,7 @@ impl AsIR for Line {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
-    ) -> Vec<crate::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let dir = if spec.contains(POSITION_2D.id()) {
             DIR_2D
         } else if spec.contains(POSITION_3D.id()) {
@@ -104,8 +102,8 @@ impl AsIR for Line {
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         LINE.specialize(spec).call([self.dir.clone().into(), input])
     }
 }

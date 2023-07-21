@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{
+use elysian_core::{
     ast::{attribute::Attribute, combine::COMBINE_CONTEXT_STRUCT, expr::Expr},
     ir::{
         as_ir::{AsIR, FilterSpec},
@@ -90,7 +90,10 @@ impl std::hash::Hash for Blend {
 impl FilterSpec for Blend {}
 
 impl AsIR for Blend {
-    fn functions_impl(&self, _: &SpecializationData) -> Vec<crate::ir::module::FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         vec![FunctionDefinition {
             id: match self {
                 Blend::SmoothUnion { attr, .. } => SMOOTH_UNION.concat(Property::from(*attr).id()),
@@ -213,18 +216,18 @@ impl AsIR for Blend {
     fn expression_impl(
         &self,
         _: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         match self {
-            Blend::SmoothUnion { attr, k } => crate::ir::ast::Expr::Call {
+            Blend::SmoothUnion { attr, k } => elysian_core::ir::ast::Expr::Call {
                 function: SMOOTH_UNION.concat(Property::from(*attr).id()),
                 args: vec![k.clone().into(), input],
             },
-            Blend::SmoothIntersection { attr, k } => crate::ir::ast::Expr::Call {
+            Blend::SmoothIntersection { attr, k } => elysian_core::ir::ast::Expr::Call {
                 function: SMOOTH_INTERSECTION.concat(Property::from(*attr).id()),
                 args: vec![k.clone().into(), input],
             },
-            Blend::SmoothSubtraction { attr, k } => crate::ir::ast::Expr::Call {
+            Blend::SmoothSubtraction { attr, k } => elysian_core::ir::ast::Expr::Call {
                 function: SMOOTH_SUBTRACTION.concat(Property::from(*attr).id()),
                 args: vec![k.clone().into(), input],
             },

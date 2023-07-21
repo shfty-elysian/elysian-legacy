@@ -1,12 +1,15 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::{
-    ast::modify::CONTEXT_STRUCT,
+use elysian_core::{
+    ast::{
+        field::Field,
+        modify::{Modify, CONTEXT_STRUCT},
+    },
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{
-            Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D,
-            GRADIENT_3D, NORMAL, X, Y, IntoLiteral,
+            Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D,
+            GRADIENT_3D, NORMAL, X, Y,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -62,8 +65,29 @@ impl AsIR for GradientNormals {
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         GRADIENT_NORMALS.specialize(spec).call(input)
+    }
+}
+
+pub trait IntoGradientNormals {
+    fn gradient_normals(self) -> Modify;
+}
+
+impl IntoGradientNormals for Field {
+    fn gradient_normals(self) -> Modify {
+        Modify {
+            pre_modifiers: Default::default(),
+            field: Box::new(self),
+            post_modifiers: vec![Box::new(GradientNormals)],
+        }
+    }
+}
+
+impl IntoGradientNormals for Modify {
+    fn gradient_normals(mut self) -> Modify {
+        self.post_modifiers.push(Box::new(GradientNormals));
+        self
     }
 }

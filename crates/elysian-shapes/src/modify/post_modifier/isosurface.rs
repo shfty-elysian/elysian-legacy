@@ -1,7 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::{
-    ast::modify::CONTEXT_STRUCT,
+use elysian_core::{
+    ast::{
+        field::Field,
+        modify::{Modify, CONTEXT_STRUCT},
+    },
     ir::{
         as_ir::{AsIR, FilterSpec},
         ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, DISTANCE},
@@ -9,7 +12,7 @@ use crate::{
     },
 };
 
-use crate::ast::expr::Expr;
+use elysian_core::ast::expr::Expr;
 
 pub const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
 pub const DIST: Property = Property::new("property", Type::Number, 463524741302033362);
@@ -69,10 +72,31 @@ impl AsIR for Isosurface {
     fn expression_impl(
         &self,
         spec: &SpecializationData,
-        input: crate::ir::ast::Expr,
-    ) -> crate::ir::ast::Expr {
+        input: elysian_core::ir::ast::Expr,
+    ) -> elysian_core::ir::ast::Expr {
         ISOSURFACE
             .specialize(spec)
             .call([self.dist.clone().into(), input])
+    }
+}
+
+pub trait IntoIsosurface {
+    fn isosurface(self, dist: elysian_core::ast::expr::Expr) -> Modify;
+}
+
+impl IntoIsosurface for Field {
+    fn isosurface(self, dist: elysian_core::ast::expr::Expr) -> Modify {
+        Modify {
+            pre_modifiers: Default::default(),
+            field: Box::new(self),
+            post_modifiers: vec![Box::new(Isosurface { dist })],
+        }
+    }
+}
+
+impl IntoIsosurface for Modify {
+    fn isosurface(mut self, dist: elysian_core::ast::expr::Expr) -> Modify {
+        self.post_modifiers.push(Box::new(Isosurface { dist }));
+        self
     }
 }

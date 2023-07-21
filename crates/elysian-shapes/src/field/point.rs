@@ -1,18 +1,15 @@
 use std::hash::Hash;
 
-use crate::{
-    ast::field::CONTEXT_STRUCT,
+use elysian_core::{
     ir::{
-        as_ir::FilterSpec,
+        as_ir::{FilterSpec, AsIR},
         ast::{
             Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT_2D,
             GRADIENT_3D, POSITION_2D, POSITION_3D,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
-    },
+    }, ast::modify::CONTEXT_STRUCT,
 };
-
-use super::AsIR;
 
 pub const POINT: Identifier = Identifier::new("point", 2023836058494613125);
 
