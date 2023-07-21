@@ -6,7 +6,7 @@ use std::{
 use elysian_core::{
     ast::{expr::Expr, modify::CONTEXT_STRUCT},
     ir::{
-        as_ir::{AsIR, FilterSpec},
+        as_ir::{AsIR, Domains},
         ast::{Identifier, IntoBlock, CONTEXT, POSITION_2D, POSITION_3D},
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -14,7 +14,7 @@ use elysian_core::{
 
 use crate::modify::{Elongate, DIR_2D, DIR_3D, ELONGATE};
 
-use super::{POINT, Point};
+use super::{Point, POINT};
 
 pub const LINE: Identifier = Identifier::new("line", 14339483921749952476);
 
@@ -42,9 +42,12 @@ impl Hash for Line {
     }
 }
 
-impl FilterSpec for Line {
-    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        Point::filter_spec(spec).union(&Elongate::filter_spec(spec))
+impl Domains for Line {
+    fn domains() -> Vec<Identifier> {
+        Point::domains()
+            .into_iter()
+            .chain(Elongate::domains())
+            .collect()
     }
 }
 
@@ -61,8 +64,8 @@ impl AsIR for Line {
             panic!("No position domain set")
         };
 
-        let point_spec = Point::filter_spec(spec);
-        let elongate_spec = Elongate::filter_spec(spec);
+        let point_spec = spec.filter(Point::domains());
+        let elongate_spec = spec.filter(Elongate::domains());
 
         Point
             .functions(spec)

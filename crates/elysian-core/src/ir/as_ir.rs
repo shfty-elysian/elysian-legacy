@@ -4,43 +4,43 @@ use std::{
 };
 
 use super::{
-    ast::Expr,
+    ast::{Expr, Identifier},
     module::{FunctionDefinition, SpecializationData},
 };
 
-pub trait FilterSpec {
-    fn filter_spec(_spec: &SpecializationData) -> SpecializationData {
+pub trait Domains {
+    fn domains() -> Vec<Identifier> {
         Default::default()
     }
 }
 
 pub trait FilterSpecDyn {
-    fn filter_spec_internal(&self, spec: &SpecializationData) -> SpecializationData;
+    fn filter_spec_internal(&self) -> Vec<Identifier>;
 }
 
 impl<T> FilterSpecDyn for T
 where
-    T: FilterSpec,
+    T: Domains,
 {
-    fn filter_spec_internal(&self, spec: &SpecializationData) -> SpecializationData {
-        T::filter_spec(spec)
+    fn filter_spec_internal(&self) -> Vec<Identifier> {
+        T::domains()
     }
 }
 
 impl FilterSpecDyn for Box<dyn AsIR> {
-    fn filter_spec_internal(&self, spec: &SpecializationData) -> SpecializationData {
-        (**self).filter_spec_internal(spec)
+    fn filter_spec_internal(&self) -> Vec<Identifier> {
+        (**self).filter_spec_internal()
     }
 }
 
 pub trait AsIR: std::fmt::Debug + HashIR + CloneIR + FilterSpecDyn {
     fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        self.functions_impl(&self.filter_spec_internal(spec))
+        self.functions_impl(&spec.filter(self.filter_spec_internal()))
     }
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition>;
 
     fn expression(&self, spec: &SpecializationData, input: Expr) -> Expr {
-        self.expression_impl(&self.filter_spec_internal(spec), input)
+        self.expression_impl(&spec.filter(self.filter_spec_internal()), input)
     }
     fn expression_impl(&self, spec: &SpecializationData, input: Expr) -> Expr;
 }

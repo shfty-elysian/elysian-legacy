@@ -1,7 +1,7 @@
 use elysian_core::{
     ast::combine::COMBINE_CONTEXT_STRUCT,
     ir::{
-        as_ir::{AsIR, FilterSpec},
+        as_ir::{AsIR, Domains},
         ast::{
             Identifier, IntoBlock, IntoRead, IntoWrite, COMBINE_CONTEXT, DISTANCE, LEFT, OUT, RIGHT,
         },
@@ -20,7 +20,7 @@ pub const UNION: Identifier = Identifier::new("union", 1894363406191409858);
 pub const INTERSECTION: Identifier = Identifier::new("intersection", 18033822391797795038);
 pub const SUBTRACTION: Identifier = Identifier::new("subtraction", 1414822549598552032);
 
-impl FilterSpec for Boolean {}
+impl Domains for Boolean {}
 
 impl AsIR for Boolean {
     fn functions_impl(

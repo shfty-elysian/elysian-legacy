@@ -9,7 +9,7 @@ use elysian_core::{
         modify::{Modify, CONTEXT_STRUCT},
     },
     ir::{
-        as_ir::{AsIR, FilterSpec},
+        as_ir::{AsIR, Domains},
         ast::{
             Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION_2D, POSITION_3D,
         },
@@ -54,9 +54,9 @@ impl Hash for Elongate {
     }
 }
 
-impl FilterSpec for Elongate {
-    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        spec.filter([POSITION_2D.id(), POSITION_3D.id()])
+impl Domains for Elongate {
+    fn domains() -> Vec<Identifier> {
+        vec![POSITION_2D.id().clone(), POSITION_3D.id().clone()]
     }
 }
 

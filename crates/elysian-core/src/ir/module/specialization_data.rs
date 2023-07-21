@@ -30,7 +30,7 @@ impl SpecializationData {
         self.domains.contains(prop)
     }
 
-    pub fn filter<'a, I: IntoIterator<Item = &'a Identifier>>(&self, props: I) -> Self {
+    pub fn filter<I: IntoIterator<Item = Identifier>>(&self, props: I) -> Self {
         let props: BTreeSet<_> = props.into_iter().collect();
         SpecializationData {
             domains: self

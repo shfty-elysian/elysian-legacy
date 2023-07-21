@@ -6,7 +6,7 @@ use std::{
 use elysian_core::{
     ast::modify::CONTEXT_STRUCT,
     ir::{
-        as_ir::FilterSpec,
+        as_ir::Domains,
         ast::{
             Expr, Identifier, IntoBlock, IntoLiteral, IntoWrite, Number, CONTEXT, DISTANCE,
             GRADIENT_2D, GRADIENT_3D,
@@ -46,6 +46,8 @@ impl AsModule for CentralDiffGradient {
         spec: &SpecializationData,
         entry_point: &Identifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+        let field_entry_point = self.field.entry_point();
+
         let (gradient, vec_x, vec_y) = if spec.contains(GRADIENT_2D.id()) {
             (GRADIENT_2D, [1.0, 0.0].literal(), [0.0, 1.0].literal())
         } else if spec.contains(GRADIENT_3D.id()) {
@@ -55,12 +57,24 @@ impl AsModule for CentralDiffGradient {
                 [0.0, 1.0, 0.0].literal(),
             )
         } else {
-            panic!("No gradient domain");
+            return self.field
+                .functions(spec, &field_entry_point)
+                .into_iter()
+                .chain([FunctionDefinition {
+                    id: entry_point.clone(),
+                    public: true,
+                    inputs: vec![InputDefinition {
+                        prop: CONTEXT,
+                        mutable: true,
+                    }],
+                    output: CONTEXT_STRUCT,
+                    block: [CONTEXT.read().output()].block(),
+                }])
+                .collect()
         };
 
-        let translate_spec = Translate::filter_spec(spec);
+        let translate_spec = spec.filter(Translate::domains());
 
-        let field_entry_point = self.field.entry_point();
         let epsilon = self.epsilon.literal();
 
         let expr_x = field_entry_point

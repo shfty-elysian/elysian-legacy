@@ -49,7 +49,7 @@ impl PartialOrd for Value {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (Value::Boolean(a), Value::Boolean(b)) => a.partial_cmp(b),
-            (Value::Number(Number::Float(a)), Value::Number(Number::Float(b))) => a.partial_cmp(b),
+            (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
             _ => panic!("Invalid PartialOrd"),
         }
     }
@@ -64,6 +64,7 @@ impl Add<Value> for Value {
             (Value::Number(a), Value::Vector(b)) => (a + b).into(),
             (Value::Vector(a), Value::Number(b)) => (a + b).into(),
             (Value::Vector(a), Value::Vector(b)) => (a + b).into(),
+            (Value::Matrix(a), Value::Matrix(b)) => (a + b).into(),
             _ => panic!("Invalid Add"),
         }
     }
@@ -78,6 +79,7 @@ impl Sub<Value> for Value {
             (Value::Number(a), Value::Vector(b)) => (a - b).into(),
             (Value::Vector(a), Value::Number(b)) => (a - b).into(),
             (Value::Vector(a), Value::Vector(b)) => (a - b).into(),
+            (Value::Matrix(a), Value::Matrix(b)) => (a - b).into(),
             _ => panic!("Invalid Sub"),
         }
     }
@@ -92,7 +94,10 @@ impl Mul<Value> for Value {
             (Value::Number(a), Value::Vector(b)) => (a * b).into(),
             (Value::Vector(a), Value::Number(b)) => (a * b).into(),
             (Value::Vector(a), Value::Vector(b)) => (a * b).into(),
-            _ => panic!("Invalid Mul"),
+            (Value::Matrix(a), Value::Matrix(b)) => (a * b).into(),
+            (Value::Matrix(a), Value::Vector(b)) => (a * b).into(),
+            (Value::Matrix(a), Value::Number(b)) => (a * b).into(),
+            t => panic!("Invalid Mul {t:#?}"),
         }
     }
 }
@@ -197,6 +202,7 @@ impl Min for Value {
     fn min(self, rhs: Self) -> Self {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => a.min(b).into(),
+            (Value::Vector(a), Value::Vector(b)) => a.min(b).into(),
             _ => panic!("Invalid Min"),
         }
     }
@@ -206,6 +212,7 @@ impl Max for Value {
     fn max(self, rhs: Self) -> Self {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => a.max(b).into(),
+            (Value::Vector(a), Value::Vector(b)) => a.max(b).into(),
             _ => panic!("Invalid Min"),
         }
     }
@@ -352,6 +359,12 @@ impl From<Vec4> for Value {
 impl From<Vector> for Value {
     fn from(value: Vector) -> Self {
         Value::Vector(value)
+    }
+}
+
+impl From<Matrix> for Value {
+    fn from(value: Matrix) -> Self {
+        Value::Matrix(value)
     }
 }
 

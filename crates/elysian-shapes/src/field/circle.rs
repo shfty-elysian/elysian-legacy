@@ -6,7 +6,7 @@ use std::{
 use elysian_core::{
     ast::{expr::Expr, modify::CONTEXT_STRUCT},
     ir::{
-        as_ir::{AsIR, FilterSpec},
+        as_ir::{AsIR, Domains},
         ast::{Identifier, IntoBlock, Property, CONTEXT},
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -45,9 +45,12 @@ impl Hash for Circle {
     }
 }
 
-impl FilterSpec for Circle {
-    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        Point::filter_spec(spec).union(&Isosurface::filter_spec(spec))
+impl Domains for Circle {
+    fn domains() -> Vec<Identifier> {
+        Point::domains()
+            .into_iter()
+            .chain(Isosurface::domains())
+            .collect()
     }
 }
 
@@ -56,8 +59,8 @@ impl AsIR for Circle {
         &self,
         spec: &SpecializationData,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let point_spec = Point::filter_spec(spec);
-        let isosurface_spec = Isosurface::filter_spec(spec);
+        let point_spec = spec.filter(Point::domains());
+        let isosurface_spec = spec.filter(Isosurface::domains());
 
         Point
             .functions(spec)

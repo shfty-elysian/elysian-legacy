@@ -1,14 +1,15 @@
 use std::hash::Hash;
 
 use elysian_core::{
+    ast::modify::CONTEXT_STRUCT,
     ir::{
-        as_ir::{FilterSpec, AsIR},
+        as_ir::{AsIR, Domains},
         ast::{
             Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT_2D,
             GRADIENT_3D, POSITION_2D, POSITION_3D,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData},
-    }, ast::modify::CONTEXT_STRUCT,
+    },
 };
 
 pub const POINT: Identifier = Identifier::new("point", 2023836058494613125);
@@ -16,15 +17,15 @@ pub const POINT: Identifier = Identifier::new("point", 2023836058494613125);
 #[derive(Debug, Copy, Clone, Hash)]
 pub struct Point;
 
-impl FilterSpec for Point {
-    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        spec.filter([
-            POSITION_2D.id(),
-            POSITION_3D.id(),
-            DISTANCE.id(),
-            GRADIENT_2D.id(),
-            GRADIENT_3D.id(),
-        ])
+impl Domains for Point {
+    fn domains() -> Vec<Identifier> {
+        vec![
+            POSITION_2D.id().clone(),
+            POSITION_3D.id().clone(),
+            DISTANCE.id().clone(),
+            GRADIENT_2D.id().clone(),
+            GRADIENT_3D.id().clone(),
+        ]
     }
 }
 

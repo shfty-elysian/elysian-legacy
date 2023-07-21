@@ -6,7 +6,7 @@ use elysian_core::{
         modify::{Modify, CONTEXT_STRUCT},
     },
     ir::{
-        as_ir::{AsIR, FilterSpec},
+        as_ir::{AsIR, Domains},
         ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, DISTANCE},
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -43,10 +43,24 @@ impl Hash for Isosurface {
     }
 }
 
-impl FilterSpec for Isosurface {}
+impl Domains for Isosurface {
+    fn domains() -> Vec<Identifier> {
+        vec![DISTANCE.id().clone()]
+    }
+}
 
 impl AsIR for Isosurface {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+        let block = if spec.contains(DISTANCE.id()) {
+            [
+                [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - DIST.read()),
+                CONTEXT.read().output(),
+            ]
+            .block()
+        } else {
+            [CONTEXT.read().output()].block()
+        };
+
         vec![FunctionDefinition {
             id: ISOSURFACE.specialize(spec),
             public: false,
@@ -61,11 +75,7 @@ impl AsIR for Isosurface {
                 },
             ],
             output: &CONTEXT_STRUCT,
-            block: [
-                [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - DIST.read()),
-                CONTEXT.read().output(),
-            ]
-            .block(),
+            block,
         }]
     }
 

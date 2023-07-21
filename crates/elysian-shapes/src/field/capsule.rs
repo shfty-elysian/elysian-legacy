@@ -6,7 +6,7 @@ use elysian_core::ir::ast::IntoBlock;
 use elysian_core::{
     ast::expr::Expr,
     ir::{
-        as_ir::{AsIR, FilterSpec},
+        as_ir::{AsIR, Domains},
         ast::{Identifier, CONTEXT, POSITION_2D, POSITION_3D},
         module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -48,9 +48,12 @@ impl Hash for Capsule {
     }
 }
 
-impl FilterSpec for Capsule {
-    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        Line::filter_spec(spec).union(&Isosurface::filter_spec(spec))
+impl Domains for Capsule {
+    fn domains() -> Vec<Identifier> {
+        Line::domains()
+            .into_iter()
+            .chain(Isosurface::domains())
+            .collect()
     }
 }
 
@@ -67,8 +70,8 @@ impl AsIR for Capsule {
             panic!("No position domain");
         };
 
-        let isosurface_spec = Isosurface::filter_spec(spec);
-        let line_spec = Line::filter_spec(spec);
+        let isosurface_spec = spec.filter(Isosurface::domains());
+        let line_spec = spec.filter(Line::domains());
 
         Line {
             dir: self.dir.clone(),

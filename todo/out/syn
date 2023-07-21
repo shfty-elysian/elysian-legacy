@@ -44,6 +44,11 @@
 
 ============================================================================================
 
+* Stronger typing for emitted code
+  * Currently able to bind properties with implicit types,
+    which is a violation of strong typing semantics
+  * To wit, binds need to emit type annotations to prevent this
+
 * Clean up syn usage
   * Should be using parse_quote where possible to avoid boilerplate
   * Some cases unavoidable due to what appear to be bugs in parse_quote

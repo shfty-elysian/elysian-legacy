@@ -6,7 +6,7 @@ use elysian_core::{
         modify::{Modify, CONTEXT_STRUCT},
     },
     ir::{
-        as_ir::{AsIR, FilterSpec},
+        as_ir::{AsIR, Domains},
         ast::{
             Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT_2D,
             GRADIENT_3D, NUM,
@@ -20,9 +20,9 @@ pub const MANIFOLD: Identifier = Identifier::new("manifold", 7861274791729269697
 #[derive(Debug, Clone, Hash)]
 pub struct Manifold;
 
-impl FilterSpec for Manifold {
-    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        spec.filter([GRADIENT_2D.id(), GRADIENT_3D.id()])
+impl Domains for Manifold {
+    fn domains() -> Vec<Identifier> {
+        vec![GRADIENT_2D.id().clone(), GRADIENT_3D.id().clone()]
     }
 }
 
@@ -33,7 +33,16 @@ impl AsIR for Manifold {
         } else if spec.contains(GRADIENT_3D.id()) {
             GRADIENT_3D
         } else {
-            panic!("No gradient domain")
+            return vec![FunctionDefinition {
+                id: MANIFOLD.specialize(spec),
+                public: false,
+                inputs: vec![InputDefinition {
+                    prop: CONTEXT,
+                    mutable: true,
+                }],
+                output: &CONTEXT_STRUCT,
+                block: [CONTEXT.read().output()].block(),
+            }];
         };
 
         vec![FunctionDefinition {

@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 
 use elysian_core::ir::{
     ast::Stmt::{self, *},
-    ast::{Expr, Identifier, Struct, Value, Vector, CONTEXT},
+    ast::{Expr, Identifier, Struct, Value, Vector, CONTEXT, W, X, Y, Z},
     module::{FunctionDefinition, Module},
 };
 use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
@@ -10,6 +10,7 @@ use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
 pub struct Interpreter {
     pub context: Struct,
     pub functions: BTreeMap<Identifier, FunctionDefinition>,
+    pub should_break: bool,
     pub output: Option<Value>,
 }
 
@@ -28,6 +29,7 @@ impl Default for Interpreter {
         Self {
             context: Default::default(),
             functions: Default::default(),
+            should_break: Default::default(),
             output: Default::default(),
         }
     }
@@ -38,6 +40,7 @@ impl Clone for Interpreter {
         Self {
             context: self.context.clone(),
             functions: self.functions.clone(),
+            should_break: Default::default(),
             output: self.output.clone(),
         }
     }
@@ -127,15 +130,19 @@ pub fn evaluate_stmt(mut interpreter: Interpreter, stmt: &Stmt) -> Interpreter {
         }
         Loop { stmt } => {
             loop {
-                match &**stmt {
-                    Stmt::Break => break,
-                    stmt => interpreter = evaluate_stmt(interpreter, &stmt),
+                interpreter = evaluate_stmt(interpreter, &stmt);
+                if interpreter.should_break {
+                    interpreter.should_break = false;
+                    break;
                 }
             }
 
             interpreter
         }
-        Break => interpreter,
+        Break => {
+            interpreter.should_break = true;
+            interpreter
+        },
         Output(o) => {
             let o = evaluate_expr(&interpreter, o);
             interpreter.output = Some(o);
@@ -178,6 +185,41 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
             },
             |acc, next| match acc {
                 Value::Struct(s) => s.get(next),
+                Value::Vector(v) => match v {
+                    Vector::Vector2(x, y) => {
+                        if *next == X {
+                            x.into()
+                        } else if *next == Y {
+                            y.into()
+                        } else {
+                            panic!("Invalid Read")
+                        }
+                    }
+                    Vector::Vector3(x, y, z) => {
+                        if *next == X {
+                            x.into()
+                        } else if *next == Y {
+                            y.into()
+                        } else if *next == Z {
+                            z.into()
+                        } else {
+                            panic!("Invalid Read")
+                        }
+                    }
+                    Vector::Vector4(x, y, z, w) => {
+                        if *next == X {
+                            x.into()
+                        } else if *next == Y {
+                            y.into()
+                        } else if *next == Z {
+                            z.into()
+                        } else if *next == W {
+                            w.into()
+                        } else {
+                            panic!("Invalid Read")
+                        }
+                    }
+                },
                 v => v,
             },
         ),
@@ -207,7 +249,8 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
                 Interpreter {
                     context,
                     functions: interpreter.functions.clone(),
-                    output: None,
+                    should_break: Default::default(),
+                    output: Default::default(),
                 },
                 &f.block,
             )

@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use elysian_core::{
     ast::{attribute::Attribute, combine::COMBINE_CONTEXT_STRUCT, expr::Expr},
     ir::{
-        as_ir::{AsIR, FilterSpec},
+        as_ir::{AsIR, Domains},
         ast::{
             Identifier, IntoLiteral, IntoRead, IntoWrite, Property, COMBINE_CONTEXT, DISTANCE,
             LEFT, NUM, OUT, RIGHT,
@@ -87,7 +87,7 @@ impl std::hash::Hash for Blend {
     }
 }
 
-impl FilterSpec for Blend {}
+impl Domains for Blend {}
 
 impl AsIR for Blend {
     fn functions_impl(

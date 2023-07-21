@@ -92,39 +92,38 @@ pub fn point() -> DynAsModule {
     let projection = Mat4::perspective_infinite_rh(std::f32::consts::PI * 0.5, 1.0, 0.01);
     Box::new(Raymarch {
         march: March::Sphere {
-            epsilon: 0.0001.literal(),
+            epsilon: 0.0001f32.literal(),
         },
         max_steps: 100u32.literal(),
-        projection: projection.literal(),
         inv_projection: projection.inverse().literal(),
         field: Box::new(
             [
                 Box::new(
                     Point
                         .field()
-                        .translate([0.5, 0.5, -2.0].literal())
-                        .elongate([0.5, 0.0, 0.0].literal(), false)
-                        .isosurface(1.0.literal())
+                        .translate([0.5f32, 0.5f32, -2.0f32].literal())
+                        .elongate([0.5f32, 0.0f32, 0.0f32].literal(), false)
+                        .isosurface(1.0f32.literal())
                         .manifold()
-                        .isosurface(0.2.literal()),
+                        .isosurface(0.2f32.literal()),
                 ) as Box<dyn AsModule>,
                 Box::new(
                     Point
                         .field()
-                        .translate([-0.5, -0.5, -2.5].literal())
-                        .elongate([0.5, 0.0, 0.0].literal(), false)
-                        .isosurface(1.0.literal())
+                        .translate([-0.5f32, -0.5f32, -2.5f32].literal())
+                        .elongate([0.5f32, 0.0f32, 0.0f32].literal(), false)
+                        .isosurface(1.0f32.literal())
                         .manifold()
-                        .isosurface(0.2.literal()),
+                        .isosurface(0.2f32.literal()),
                 ),
                 Box::new(
                     Point
                         .field()
-                        .translate([1.0, -1.5, -3.0].literal())
-                        .elongate([0.5, 0.0, 0.0].literal(), false)
-                        .isosurface(1.0.literal())
+                        .translate([1.0f32, -1.5f32, -3.0f32].literal())
+                        .elongate([0.5f32, 0.0f32, 0.0f32].literal(), false)
+                        .isosurface(1.0f32.literal())
                         .manifold()
-                        .isosurface(0.2.literal()),
+                        .isosurface(0.2f32.literal()),
                 ),
             ]
             .combine([Box::new(Boolean::Union) as Box<dyn AsIR>])

@@ -6,13 +6,13 @@ use std::{
 use elysian_core::{
     ast::{expr::Expr, modify::CONTEXT_STRUCT},
     ir::{
-        as_ir::{AsIR, FilterSpec},
-        ast::{Identifier, Property, CONTEXT, IntoBlock},
+        as_ir::{AsIR, Domains},
+        ast::{Identifier, IntoBlock, Property, CONTEXT},
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
 
-use crate::modify::{Manifold, Isosurface, ISOSURFACE, MANIFOLD};
+use crate::modify::{Isosurface, Manifold, ISOSURFACE, MANIFOLD};
 
 use super::{Circle, CIRCLE, RADIUS};
 
@@ -49,11 +49,13 @@ impl Hash for Ring {
     }
 }
 
-impl FilterSpec for Ring {
-    fn filter_spec(spec: &SpecializationData) -> SpecializationData {
-        Circle::filter_spec(spec)
-            .union(&Manifold::filter_spec(spec))
-            .union(&Isosurface::filter_spec(spec))
+impl Domains for Ring {
+    fn domains() -> Vec<Identifier> {
+        Circle::domains()
+            .into_iter()
+            .chain(Manifold::domains())
+            .chain(Isosurface::domains())
+            .collect()
     }
 }
 
@@ -62,9 +64,9 @@ impl AsIR for Ring {
         &self,
         spec: &SpecializationData,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let isosurface_spec = Isosurface::filter_spec(spec);
-        let manifold_spec = Manifold::filter_spec(spec);
-        let circle_spec = Circle::filter_spec(spec);
+        let isosurface_spec = spec.filter(Isosurface::domains());
+        let manifold_spec = spec.filter(Manifold::domains());
+        let circle_spec = spec.filter(Circle::domains());
 
         Circle {
             radius: self.radius.clone(),

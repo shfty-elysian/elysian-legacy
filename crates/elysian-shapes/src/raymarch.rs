@@ -18,7 +18,6 @@ pub const RAY_TO: Property = Property::new("ray_to", Type::Vector3, 136224706373
 pub const RAY_POS: Property = Property::new("ray_pos", Type::Vector3, 203470946369255426);
 pub const RAY_DIR: Property = Property::new("ray_dir", Type::Vector3, 11883607992066663879);
 pub const T: Property = Property::new("t", Type::Number, 93144116760520780);
-pub const PROJECTION: Property = Property::new("proj", Type::Matrix4, 585611411191453384);
 pub const INV_PROJECTION: Property = Property::new("inv_proj", Type::Matrix4, 1835117139336577900);
 pub const STEP_SIZE: Property = Property::new("step_size", Type::Number, 7777887281564637643);
 pub const EPSILON: Property = Property::new("epsilon", Type::Number, 32338215630771851);
@@ -51,7 +50,6 @@ pub fn falloff_k(e: f32, r: f32) -> f32 {
 pub struct Raymarch {
     pub max_steps: elysian_core::ast::expr::Expr,
     pub march: March,
-    pub projection: elysian_core::ast::expr::Expr,
     pub inv_projection: elysian_core::ast::expr::Expr,
     pub field: Box<dyn AsModule>,
 }
@@ -81,7 +79,11 @@ impl AsModule for Raymarch {
         _: &Identifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         if !spec.contains(POSITION_2D.id()) {
-            panic!("Raymarch is only compatible with the 2D position domain");
+            panic!("Raymarch is only compatible with the 2D Position domain");
+        }
+
+        if !spec.contains(DISTANCE.id()) {
+            panic!("Raymarch requires the Distance domain");
         }
 
         let spec_3d = SpecializationData::new_3d();
@@ -90,19 +92,18 @@ impl AsModule for Raymarch {
         let mut block = vec![];
         block.extend([
             MAX_STEPS.bind(self.max_steps.clone().into()),
-            STEPS.bind(Number::from(0u32).literal()),
+            STEPS.bind(0u32.literal()),
         ]);
 
         block.extend([
-            PROJECTION.bind(self.projection.clone().into()),
             INV_PROJECTION.bind(self.inv_projection.clone().into()),
             RAY_FROM.bind(
                 INV_PROJECTION.read()
                     * Expr::vector4(
                         [CONTEXT, POSITION_2D, X].read(),
                         [CONTEXT, POSITION_2D, Y].read(),
-                        Number::from(0.0).literal(),
-                        Number::from(1.0).literal(),
+                        0.0_f32.literal(),
+                        1.0_f32.literal(),
                     ),
             ),
             RAY_FROM.write(RAY_FROM.read() / [RAY_FROM, W].read()),
@@ -111,14 +112,14 @@ impl AsModule for Raymarch {
                     * Expr::vector4(
                         [CONTEXT, POSITION_2D, X].read(),
                         [CONTEXT, POSITION_2D, Y].read(),
-                        Number::from(-1.0).literal(),
-                        Number::from(1.0).literal(),
+                        -1.0_f32.literal(),
+                        1.0_f32.literal(),
                     ),
             ),
             RAY_TO.write(RAY_TO.read() / [RAY_TO, W].read()),
             RAY_DIR.bind((RAY_FROM.read() - RAY_TO.read()).normalize()),
             [CONTEXT, DISTANCE].write(Number::from(f32::MAX).literal()),
-            T.bind(0.0.literal()),
+            T.bind(0.0_f32.literal()),
         ]);
 
         let mut loop_body = vec![
@@ -134,10 +135,10 @@ impl AsModule for Raymarch {
                 None,
             ),
             Stmt::Break.if_else(
-                [CONTEXT, DISTANCE].read().lt(Number::from(0.0).literal()),
+                [CONTEXT, DISTANCE].read().lt(0.0_f32.literal()),
                 None,
             ),
-            STEPS.write(STEPS.read() + Number::from(1u32).literal()),
+            STEPS.write(STEPS.read() + 1u32.literal()),
             Stmt::Break.if_else(STEPS.read().gt(MAX_STEPS.read()), None),
         ];
 

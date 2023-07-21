@@ -224,7 +224,12 @@
 
   DONE: Implemented via the March enum
 
-=========================================================================================================
+* Use AsIR expressions directly instead of specializing identifier
+  * Identifier specialization doesn't cover expression specialization,
+    so fails if ex. Ring tries to call a specialized MANIFOLD function that doesn't exist
+
+  SKIPPED: Conflicts with argument passing strata, opted to implement
+           by specializing functions to no-op instead.
 
 * Domain evaluation
   i.e. Being able to evaluate a subset of a given field's computations
@@ -235,6 +240,13 @@
          * Evaluate rest of domains
   * Will need to split each domain statement into its own function,
     call from central function w/conditional specialization
+
+  DONE: Functions now properly specialize around the supplied domains
+
+=========================================================================================================
+
+* Implement conditional boolean operators
+  * Needs to be its own AsModule to be able to orchestrate execution
 
 * Better generalization for AsIR / AsModule
   * AsModule is currently lacking certain features that AsIR has

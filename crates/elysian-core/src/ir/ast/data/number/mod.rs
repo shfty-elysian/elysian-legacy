@@ -48,9 +48,10 @@ impl Add<Number> for Number {
 
     fn add(self, rhs: Number) -> Self::Output {
         match (self, rhs) {
+            (Number::UInt(a), Number::UInt(b)) => Number::UInt(a + b),
             (Number::SInt(a), Number::SInt(b)) => Number::SInt(a + b),
             (Number::Float(a), Number::Float(b)) => Number::Float(a + b),
-            _ => panic!("Invalid Add"),
+            n => panic!("Invalid Add {n:#?}"),
         }
     }
 }
@@ -60,6 +61,7 @@ impl Sub<Number> for Number {
 
     fn sub(self, rhs: Number) -> Self::Output {
         match (self, rhs) {
+            (Number::UInt(a), Number::UInt(b)) => Number::UInt(a - b),
             (Number::SInt(a), Number::SInt(b)) => Number::SInt(a - b),
             (Number::Float(a), Number::Float(b)) => Number::Float(a - b),
             _ => panic!("Invalid Sub"),
@@ -72,6 +74,7 @@ impl Mul<Number> for Number {
 
     fn mul(self, rhs: Number) -> Self::Output {
         match (self, rhs) {
+            (Number::UInt(a), Number::UInt(b)) => Number::UInt(a * b),
             (Number::SInt(a), Number::SInt(b)) => Number::SInt(a * b),
             (Number::Float(a), Number::Float(b)) => Number::Float(a * b),
             _ => panic!("Invalid Mul"),
@@ -84,6 +87,7 @@ impl Div<Number> for Number {
 
     fn div(self, rhs: Number) -> Self::Output {
         match (self, rhs) {
+            (Number::UInt(a), Number::UInt(b)) => Number::UInt(a / b),
             (Number::SInt(a), Number::SInt(b)) => Number::SInt(a / b),
             (Number::Float(a), Number::Float(b)) => Number::Float(a / b),
             _ => panic!("Invalid Div"),
@@ -239,8 +243,8 @@ impl From<Number> for Value {
 impl From<Value> for Number {
     fn from(value: Value) -> Self {
         let Value::Number(n) = value else {
-        panic!("Value is not a Number")
-    };
+            panic!("Value {value:#?} is not a Number")
+        };
 
         n
     }
@@ -322,7 +326,7 @@ impl From<Number> for u8 {
     fn from(value: Number) -> Self {
         match value {
             Number::UInt(UInt::U8(n)) => n,
-            _ => panic!("Number is not a u8"),
+            n => panic!("Number {n:#?} is not a u8"),
         }
     }
 }
@@ -331,7 +335,7 @@ impl From<Number> for u16 {
     fn from(value: Number) -> Self {
         match value {
             Number::UInt(UInt::U16(n)) => n,
-            _ => panic!("Number is not a u16"),
+            n => panic!("Number {n:#?} is not a u16"),
         }
     }
 }
@@ -340,7 +344,7 @@ impl From<Number> for u32 {
     fn from(value: Number) -> Self {
         match value {
             Number::UInt(UInt::U32(n)) => n,
-            _ => panic!("Number is not a u32"),
+            n => panic!("Number {n:#?} is not a u32"),
         }
     }
 }
@@ -349,7 +353,7 @@ impl From<Number> for u64 {
     fn from(value: Number) -> Self {
         match value {
             Number::UInt(UInt::U64(n)) => n,
-            _ => panic!("Number is not a u64"),
+            n => panic!("Number {n:#?} is not a u64"),
         }
     }
 }
@@ -358,7 +362,7 @@ impl From<Number> for i8 {
     fn from(value: Number) -> Self {
         match value {
             Number::SInt(SInt::I8(n)) => n,
-            _ => panic!("Number is not a i8"),
+            n => panic!("Number {n:#?} is not a i8"),
         }
     }
 }
@@ -367,7 +371,7 @@ impl From<Number> for i16 {
     fn from(value: Number) -> Self {
         match value {
             Number::SInt(SInt::I16(n)) => n,
-            _ => panic!("Number is not a i16"),
+            n => panic!("Number {n:#?} is not a i16"),
         }
     }
 }
@@ -376,7 +380,7 @@ impl From<Number> for i32 {
     fn from(value: Number) -> Self {
         match value {
             Number::SInt(SInt::I32(n)) => n,
-            _ => panic!("Number is not a i32"),
+            n => panic!("Number {n:#?} is not a i32"),
         }
     }
 }
@@ -385,7 +389,7 @@ impl From<Number> for i64 {
     fn from(value: Number) -> Self {
         match value {
             Number::SInt(SInt::I64(n)) => n,
-            _ => panic!("Number is not a i64"),
+            n => panic!("Number {n:#?} is not a i64"),
         }
     }
 }
@@ -394,7 +398,7 @@ impl From<Number> for f32 {
     fn from(value: Number) -> Self {
         match value {
             Number::Float(Float::F32(n)) => n,
-            _ => panic!("Number is not an f32"),
+            n => panic!("Number {n:#?} is not an f32"),
         }
     }
 }
@@ -403,7 +407,7 @@ impl From<Number> for f64 {
     fn from(value: Number) -> Self {
         match value {
             Number::Float(Float::F64(n)) => n,
-            _ => panic!("Number is not an f64"),
+            n => panic!("Number {n:#?} is not an f64"),
         }
     }
 }
