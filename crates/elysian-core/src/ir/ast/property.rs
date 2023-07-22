@@ -13,11 +13,6 @@ use crate::{
 
 use super::Identifier;
 
-pub const X: Property = Property::new_primitive("x", Type::Number);
-pub const Y: Property = Property::new_primitive("y", Type::Number);
-pub const Z: Property = Property::new_primitive("z", Type::Number);
-pub const W: Property = Property::new_primitive("w", Type::Number);
-
 pub const POSITION_2D: Property = Property::new("position_2d", Type::Vector2, 19300293251480055481);
 pub const POSITION_3D: Property = Property::new("position_3d", Type::Vector3, 2063026210185456313);
 pub const TIME: Property = Property::new("time", Type::Number, 391570251245214947);
