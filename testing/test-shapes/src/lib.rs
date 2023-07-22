@@ -25,11 +25,11 @@ pub fn kettle_bell() -> DynAsModule {
         Box::new(Boolean::Union),
         Box::new(Blend::SmoothUnion {
             attr: Distance,
-            k: 0.4.literal(),
+            k: 0.4_f32.literal(),
         }),
         Box::new(Blend::SmoothUnion {
             attr: Gradient,
-            k: 0.4.literal(),
+            k: 0.4_f32.literal(),
         }),
     ];
 
@@ -37,29 +37,29 @@ pub fn kettle_bell() -> DynAsModule {
         Box::new(Boolean::Subtraction),
         Box::new(Blend::SmoothSubtraction {
             attr: Attribute::Distance,
-            k: 0.4.literal(),
+            k: 0.4_f32.literal(),
         }),
         Box::new(Blend::SmoothSubtraction {
             attr: Attribute::Gradient,
-            k: 0.4.literal(),
+            k: 0.4_f32.literal(),
         }),
     ];
 
     let shape_a: [DynAsModule; 2] = [
         Box::new(
             Circle {
-                radius: 1.0.literal(),
+                radius: 1.0_f32.literal(),
             }
             .field()
-            .translate([0.0, 0.5].literal()),
+            .translate([0.0_f32, -0.5_f32].literal()),
         ),
         Box::new(
             Ring {
-                radius: 0.9.literal(),
-                width: 0.15.literal(),
+                radius: 0.9_f32.literal(),
+                width: 0.15_f32.literal(),
             }
             .field()
-            .translate([0.0, -0.25].literal()),
+            .translate([0.0_f32, 0.25_f32].literal()),
         ),
     ];
 
@@ -67,11 +67,11 @@ pub fn kettle_bell() -> DynAsModule {
         Box::new(shape_a.combine(smooth_union)),
         Box::new(
             Capsule {
-                dir: [1.5, 0.0].literal(),
-                radius: 0.2.literal(),
+                dir: [1.5_f32, 0.0_f32].literal(),
+                radius: 0.2_f32.literal(),
             }
             .field()
-            .translate([0.0, 0.5].literal()),
+            .translate([0.0_f32, -0.5_f32].literal()),
         ),
     ];
 
@@ -79,7 +79,7 @@ pub fn kettle_bell() -> DynAsModule {
 
     let shape_d = CentralDiffGradient {
         field: Box::new(shape_c),
-        epsilon: 0.01.into(),
+        epsilon: 0.01_f32.into(),
     };
 
     let shape_e = shape_d.modify().gradient_normals();

@@ -142,7 +142,7 @@ pub fn evaluate_stmt(mut interpreter: Interpreter, stmt: &Stmt) -> Interpreter {
         Break => {
             interpreter.should_break = true;
             interpreter
-        },
+        }
         Output(o) => {
             let o = evaluate_expr(&interpreter, o);
             interpreter.output = Some(o);
@@ -177,12 +177,8 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
             evaluate_expr(interpreter, w).into(),
         )),
 
-        Expr::Read(expr, path) => path.iter().fold(
-            if let Some(expr) = expr {
-                evaluate_expr(interpreter, expr)
-            } else {
-                Value::Struct(interpreter.context.clone())
-            },
+        Expr::Read(path) => path.iter().fold(
+            Value::Struct(interpreter.context.clone()),
             |acc, next| match acc {
                 Value::Struct(s) => s.get(next),
                 Value::Vector(v) => match v {

@@ -1,0 +1,9 @@
+[package]
+name = "elysian-naga"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elysian-core = { path = "../elysian-core" }
+
+naga = "0.13.0"

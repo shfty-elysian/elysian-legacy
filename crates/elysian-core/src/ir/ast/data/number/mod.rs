@@ -12,19 +12,11 @@ use crate::ir::ast::Expr;
 
 use super::{Value, Vector};
 
-mod float;
-mod sint;
-mod uint;
-
-pub use float::*;
-pub use sint::*;
-pub use uint::*;
-
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum Number {
-    UInt(UInt),
-    SInt(SInt),
-    Float(Float),
+    UInt(u64),
+    SInt(i64),
+    Float(f64),
 }
 
 impl Display for Number {
@@ -310,22 +302,10 @@ impl From<f64> for Number {
     }
 }
 
-impl From<UInt> for Number {
-    fn from(value: UInt) -> Self {
-        Number::UInt(value)
-    }
-}
-
-impl From<SInt> for Number {
-    fn from(value: SInt) -> Self {
-        Number::SInt(value)
-    }
-}
-
 impl From<Number> for u8 {
     fn from(value: Number) -> Self {
         match value {
-            Number::UInt(UInt::U8(n)) => n,
+            Number::UInt(n) => n as u8,
             n => panic!("Number {n:#?} is not a u8"),
         }
     }
@@ -334,7 +314,7 @@ impl From<Number> for u8 {
 impl From<Number> for u16 {
     fn from(value: Number) -> Self {
         match value {
-            Number::UInt(UInt::U16(n)) => n,
+            Number::UInt(n) => n as u16,
             n => panic!("Number {n:#?} is not a u16"),
         }
     }
@@ -343,7 +323,7 @@ impl From<Number> for u16 {
 impl From<Number> for u32 {
     fn from(value: Number) -> Self {
         match value {
-            Number::UInt(UInt::U32(n)) => n,
+            Number::UInt(n) => n as u32,
             n => panic!("Number {n:#?} is not a u32"),
         }
     }
@@ -352,7 +332,7 @@ impl From<Number> for u32 {
 impl From<Number> for u64 {
     fn from(value: Number) -> Self {
         match value {
-            Number::UInt(UInt::U64(n)) => n,
+            Number::UInt(n) => n,
             n => panic!("Number {n:#?} is not a u64"),
         }
     }
@@ -361,7 +341,7 @@ impl From<Number> for u64 {
 impl From<Number> for i8 {
     fn from(value: Number) -> Self {
         match value {
-            Number::SInt(SInt::I8(n)) => n,
+            Number::SInt(n) => n as i8,
             n => panic!("Number {n:#?} is not a i8"),
         }
     }
@@ -370,7 +350,7 @@ impl From<Number> for i8 {
 impl From<Number> for i16 {
     fn from(value: Number) -> Self {
         match value {
-            Number::SInt(SInt::I16(n)) => n,
+            Number::SInt(n) => n as i16,
             n => panic!("Number {n:#?} is not a i16"),
         }
     }
@@ -379,7 +359,7 @@ impl From<Number> for i16 {
 impl From<Number> for i32 {
     fn from(value: Number) -> Self {
         match value {
-            Number::SInt(SInt::I32(n)) => n,
+            Number::SInt(n) => n as i32,
             n => panic!("Number {n:#?} is not a i32"),
         }
     }
@@ -388,7 +368,7 @@ impl From<Number> for i32 {
 impl From<Number> for i64 {
     fn from(value: Number) -> Self {
         match value {
-            Number::SInt(SInt::I64(n)) => n,
+            Number::SInt(n) => n,
             n => panic!("Number {n:#?} is not a i64"),
         }
     }
@@ -397,7 +377,7 @@ impl From<Number> for i64 {
 impl From<Number> for f32 {
     fn from(value: Number) -> Self {
         match value {
-            Number::Float(Float::F32(n)) => n,
+            Number::Float(n) => n as f32,
             n => panic!("Number {n:#?} is not an f32"),
         }
     }
@@ -406,14 +386,8 @@ impl From<Number> for f32 {
 impl From<Number> for f64 {
     fn from(value: Number) -> Self {
         match value {
-            Number::Float(Float::F64(n)) => n,
+            Number::Float(n) => n,
             n => panic!("Number {n:#?} is not an f64"),
         }
-    }
-}
-
-impl From<Float> for Number {
-    fn from(value: Float) -> Self {
-        Number::Float(value)
     }
 }

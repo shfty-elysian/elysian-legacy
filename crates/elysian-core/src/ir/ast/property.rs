@@ -107,7 +107,7 @@ impl Property {
     }
 
     pub fn read(self) -> Expr {
-        Read(None, vec![self])
+        Read(vec![self])
     }
 
     pub fn bind(self, expr: Expr) -> Stmt {
@@ -146,7 +146,7 @@ where
     T: IntoIterator<Item = Property>,
 {
     fn read(self) -> Expr {
-        Read(None, self.into_iter().collect())
+        Read(self.into_iter().collect())
     }
 }
 

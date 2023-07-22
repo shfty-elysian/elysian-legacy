@@ -1,11 +1,11 @@
 use elysian::{
     core::ir::module::SpecializationData,
-    syn::{elysian_to_syn, prettyplease},
+    syn::{module_to_syn, prettyplease},
 };
 
 fn main() {
-    let source = elysian_to_syn(
-        &test_shapes::point(),
+    let source = module_to_syn(
+        &test_shapes::kettle_bell(),
         &SpecializationData::new_2d(),
         "test",
     );

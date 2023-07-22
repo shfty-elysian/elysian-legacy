@@ -32,7 +32,7 @@ impl AsIR for GradientNormals {
                     Expr::vector3(
                         [GRADIENT_2D, X].read(),
                         [GRADIENT_2D, Y].read(),
-                        1.0.literal(),
+                        1.0_f32.literal(),
                     )
                     .normalize(),
                 ),

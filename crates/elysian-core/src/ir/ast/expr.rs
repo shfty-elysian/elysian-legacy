@@ -17,7 +17,7 @@ pub enum Expr {
     Vector3(BoxExpr, BoxExpr, BoxExpr),
     Vector4(BoxExpr, BoxExpr, BoxExpr, BoxExpr),
     Struct(&'static StructDefinition, BTreeMap<Property, Expr>),
-    Read(Option<Box<Expr>>, Vec<Property>),
+    Read(Vec<Property>),
     Call {
         function: Identifier,
         args: Vec<Expr>,
@@ -49,22 +49,10 @@ impl IntoIterator for Expr {
     }
 }
 
-impl Expr {
-    pub fn read<I: IntoIterator<Item = Property>>(self, path: I) -> Expr {
-        Read(Some(Box::new(self)), path.into_iter().collect())
-    }
-}
-
 impl Debug for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Literal(arg0) => f.debug_tuple("Literal").field(arg0).finish(),
-            Self::Read(arg0, arg1) => f.debug_tuple("Read").field(arg0).field(arg1).finish(),
-            Self::Call { function, args } => f
-                .debug_struct("Call")
-                .field("function", function)
-                .field("args", args)
-                .finish(),
             Self::Vector2(arg0, arg1) => f.debug_tuple("Vector2").field(arg0).field(arg1).finish(),
             Self::Vector3(arg0, arg1, arg2) => f
                 .debug_tuple("Vector3")
@@ -80,6 +68,12 @@ impl Debug for Expr {
                 .field(arg3)
                 .finish(),
             Self::Struct(arg0, arg1) => f.debug_tuple("Struct").field(arg0).field(arg1).finish(),
+            Self::Read(arg0) => f.debug_tuple("Read").field(arg0).finish(),
+            Self::Call { function, args } => f
+                .debug_struct("Call")
+                .field("function", function)
+                .field("args", args)
+                .finish(),
             Self::Add(arg0, arg1) => f.debug_tuple("Add").field(arg0).field(arg1).finish(),
             Self::Sub(arg0, arg1) => f.debug_tuple("Sub").field(arg0).field(arg1).finish(),
             Self::Mul(arg0, arg1) => f.debug_tuple("Mul").field(arg0).field(arg1).finish(),
@@ -108,11 +102,6 @@ impl Clone for Expr {
     fn clone(&self) -> Self {
         match self {
             Self::Literal(arg0) => Self::Literal(arg0.clone()),
-            Self::Read(arg0, arg1) => Self::Read(arg0.clone(), arg1.clone()),
-            Self::Call { function, args } => Self::Call {
-                function: function.clone(),
-                args: args.clone(),
-            },
             Self::Vector2(arg0, arg1) => Self::Vector2(arg0.clone(), arg1.clone()),
             Self::Vector3(arg0, arg1, arg2) => {
                 Self::Vector3(arg0.clone(), arg1.clone(), arg2.clone())
@@ -121,6 +110,11 @@ impl Clone for Expr {
                 Self::Vector4(arg0.clone(), arg1.clone(), arg2.clone(), arg3.clone())
             }
             Self::Struct(arg0, arg1) => Self::Struct(arg0.clone(), arg1.clone()),
+            Self::Read(arg0) => Self::Read(arg0.clone()),
+            Self::Call { function, args } => Self::Call {
+                function: function.clone(),
+                args: args.clone(),
+            },
             Self::Add(arg0, arg1) => Self::Add(arg0.clone(), arg1.clone()),
             Self::Sub(arg0, arg1) => Self::Sub(arg0.clone(), arg1.clone()),
             Self::Mul(arg0, arg1) => Self::Mul(arg0.clone(), arg1.clone()),
@@ -144,7 +138,15 @@ impl PartialEq for Expr {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Literal(l0), Self::Literal(r0)) => l0 == r0,
-            (Self::Read(l0, l1), Self::Read(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::Vector2(l0, l1), Self::Vector2(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::Vector3(l0, l1, l2), Self::Vector3(r0, r1, r2)) => {
+                l0 == r0 && l1 == r1 && l2 == r2
+            }
+            (Self::Vector4(l0, l1, l2, l3), Self::Vector4(r0, r1, r2, r3)) => {
+                l0 == r0 && l1 == r1 && l2 == r2 && l3 == r3
+            }
+            (Self::Struct(l0, l1), Self::Struct(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::Read(l0), Self::Read(r0)) => l0 == r0,
             (
                 Self::Call {
                     function: l_function,
@@ -155,8 +157,6 @@ impl PartialEq for Expr {
                     args: r_args,
                 },
             ) => l_function == r_function && l_args == r_args,
-            (Self::Vector2(l0, l1), Self::Vector2(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Struct(l0, l1), Self::Struct(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Add(l0, l1), Self::Add(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Sub(l0, l1), Self::Sub(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Mul(l0, l1), Self::Mul(r0, r1)) => l0 == r0 && l1 == r1,
@@ -183,7 +183,7 @@ impl From<ElysianExpr> for Expr {
     fn from(value: ElysianExpr) -> Self {
         match value {
             ElysianExpr::Literal(v) => Expr::Literal(v.into()),
-            ElysianExpr::Read(p) => Expr::Read(None, vec![p.into()]),
+            ElysianExpr::Read(p) => Expr::Read(vec![p.into()]),
             ElysianExpr::Add(lhs, rhs) => Expr::Add(lhs.into(), rhs.into()),
             ElysianExpr::Sub(lhs, rhs) => Expr::Sub(lhs.into(), rhs.into()),
             ElysianExpr::Mul(lhs, rhs) => Expr::Mul(lhs.into(), rhs.into()),

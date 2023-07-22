@@ -1,0 +1,9 @@
+[package]
+name = "test-naga"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elysian = { path = "../.." }
+test-shapes = { path = "../test-shapes" }
+naga = { version = "0.13.0", features = ["wgsl-out"] }

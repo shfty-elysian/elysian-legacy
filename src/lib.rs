@@ -9,3 +9,7 @@ pub mod image {
 pub mod syn {
     pub use elysian_syn::*;
 }
+
+pub mod naga {
+    pub use elysian_naga::*;
+}

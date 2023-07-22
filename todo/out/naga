@@ -1,7 +1,21 @@
 * Generate naga IR from Elysian IR
+  
+  DONE: Now generating complete IR, but needs a correctness pass
+
+===============================================================================================
+
+* Switch to an Interpreter-like approach of storing data in an intermediate context
+
+* Store current function definition in context to allow looking up input defs
+
+* Correctness pass
+  * Read from correct function argument instead of always picking 0
+  * Type error on combine_context.left = combine_context.out when validation is enabled
 
 * Iteration pipeline
   * Visualization via bevy requires textual preprocessing to handle bind groups, builtins, etc.
-  * Practical approach is probably to generate a WGSL / GLSL function, then feed that into a bevy Shader
+  * Practical approach is probably to generate a WGSL / GLSL function,
+    then feed that into a bevy Shader
   * Perhaps use shadertoy? Likely easier than rigging up the corresponding bevy machinery.
+  * Eventually, create a small winit + wgpu viewer that renders to a full-screen quad
 

@@ -3,15 +3,18 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::{ir::{
-    ast::{
-        Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, Property, Stmt,
-        CONTEXT, DISTANCE, POSITION_2D, POSITION_3D, W, X, Y, Z,
+use elysian_core::{
+    ast::modify::CONTEXT_STRUCT,
+    ir::{
+        ast::{
+            Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, Property, Stmt,
+            CONTEXT, DISTANCE, POSITION_2D, POSITION_3D, W, X, Y, Z,
+        },
+        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
-    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
-}, ast::modify::CONTEXT_STRUCT};
+};
 
-pub const CROSS_SECTION: Identifier = Identifier::new("raymarch", 11670715461129592823);
+pub const RAYMARCH: Identifier = Identifier::new("raymarch", 11670715461129592823);
 
 pub const RAY_FROM: Property = Property::new("ray_from", Type::Vector3, 1031119209943889737);
 pub const RAY_TO: Property = Property::new("ray_to", Type::Vector3, 1362247063737049192);
@@ -70,7 +73,7 @@ impl Hash for Raymarch {
 
 impl AsModule for Raymarch {
     fn entry_point(&self) -> Identifier {
-        CROSS_SECTION
+        RAYMARCH
     }
 
     fn functions(
@@ -134,10 +137,7 @@ impl AsModule for Raymarch {
                 [CANDIDATE, DISTANCE].read().lt([CONTEXT, DISTANCE].read()),
                 None,
             ),
-            Stmt::Break.if_else(
-                [CONTEXT, DISTANCE].read().lt(0.0_f32.literal()),
-                None,
-            ),
+            Stmt::Break.if_else([CONTEXT, DISTANCE].read().lt(0.0_f32.literal()), None),
             STEPS.write(STEPS.read() + 1u32.literal()),
             Stmt::Break.if_else(STEPS.read().gt(MAX_STEPS.read()), None),
         ];
@@ -165,7 +165,7 @@ impl AsModule for Raymarch {
             .functions(&spec_3d, &field_entry_point)
             .into_iter()
             .chain([FunctionDefinition {
-                id: CROSS_SECTION,
+                id: RAYMARCH,
                 public: false,
                 inputs: vec![InputDefinition {
                     prop: CONTEXT,

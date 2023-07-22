@@ -245,6 +245,25 @@
 
 =========================================================================================================
 
+* Formalize value type handling
+  * Backends are currently fixed to f32 due to the need to inject literals
+  * Consuming code is currently forced to annotate types for all literals
+  * Backends should have control over the final type
+    * Need to be able to guarantee output type rather than relying on literals,
+      while still allowing arbitrary storage for the sake of nice API
+    * ex. naga backend should be able to downcast f64 to f32,
+          enable the FLOAT64 capability and upcast everything to f64,
+          or enable the FLOAT64 capability but otherwise leave types as-is
+          to allow mix-matching in cases where it makes sense(??)
+    * May be wiser to simply store as highest-common-denominator types
+      * Given that Matrix, Vector and Number are necessary,
+        how much extra boilerplate and complexity is introduced by
+        UInt, SInt and Float versus u64 / i64 / f64?
+      * Already spending the full 64 bits in memory via enums
+    * Specifying format per-property in SpecializationData is probably the way to go
+      * Switch back from identifiers to properties to preserve type information
+      * Augment with a new numeric type enum so backends can cast appropriately
+
 * Implement conditional boolean operators
   * Needs to be its own AsModule to be able to orchestrate execution
 

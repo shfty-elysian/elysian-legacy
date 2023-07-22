@@ -9,7 +9,7 @@ use rust_gpu_bridge::{
     Abs, Dot, Length, Max, Min, Mix, Normalize, Sign,
 };
 
-use super::{Float, Matrix, Number, Struct, Vector};
+use super::{Matrix, Number, Struct, Vector};
 
 /// Concrete value
 #[derive(Debug, Clone)]
@@ -410,17 +410,17 @@ impl From<Value> for bool {
 
 impl From<Value> for f32 {
     fn from(value: Value) -> Self {
-        let Value::Number(Number::Float(Float::F32(n))) = value else {
+        let Value::Number(Number::Float(n)) = value else {
         panic!("Value is not a f32")
     };
 
-        n
+        n as f32
     }
 }
 
 impl From<Value> for f64 {
     fn from(value: Value) -> Self {
-        let Value::Number(Number::Float(Float::F64(n))) = value else {
+        let Value::Number(Number::Float(n)) = value else {
         panic!("Value is not a f64")
     };
 
@@ -430,30 +430,30 @@ impl From<Value> for f64 {
 
 impl From<Value> for Vec2 {
     fn from(value: Value) -> Self {
-        let Value::Vector(Vector::Vector2(Number::Float(Float::F32(x)), Number::Float(Float::F32(y)))) = value else {
+        let Value::Vector(Vector::Vector2(Number::Float(x), Number::Float(y))) = value else {
         panic!("Value is not a Float Vector2")
     };
 
-        Vec2::new(x, y)
+        Vec2::new(x as f32, y as f32)
     }
 }
 
 impl From<Value> for Vec3 {
     fn from(value: Value) -> Self {
-        let Value::Vector(Vector::Vector3(Number::Float(Float::F32(x)), Number::Float(Float::F32(y)), Number::Float(Float::F32(z)))) = value else {
+        let Value::Vector(Vector::Vector3(Number::Float(x), Number::Float(y), Number::Float(z))) = value else {
         panic!("Value is not a Vector3")
     };
 
-        Vec3::new(x, y, z)
+        Vec3::new(x as f32, y as f32, z as f32)
     }
 }
 
 impl From<Value> for Vec4 {
     fn from(value: Value) -> Self {
-        let Value::Vector(Vector::Vector4(Number::Float(Float::F32(x)), Number::Float(Float::F32(y)), Number::Float(Float::F32(z)), Number::Float(Float::F32(w)))) = value else {
+        let Value::Vector(Vector::Vector4(Number::Float(x), Number::Float(y), Number::Float(z), Number::Float(w))) = value else {
         panic!("Value is not a Vector4")
     };
 
-        Vec4::new(x, y, z, w)
+        Vec4::new(x as f32, y as f32, z as f32, w as f32)
     }
 }

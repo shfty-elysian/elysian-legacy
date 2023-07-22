@@ -8,8 +8,8 @@ use elysian_core::{
     ir::{
         as_ir::Domains,
         ast::{
-            Expr, Identifier, IntoBlock, IntoLiteral, IntoWrite, Number, CONTEXT, DISTANCE,
-            GRADIENT_2D, GRADIENT_3D,
+            Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, CONTEXT,
+            DISTANCE, GRADIENT_2D, GRADIENT_3D, LEFT, RIGHT, X, Y,
         },
         module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -49,15 +49,20 @@ impl AsModule for CentralDiffGradient {
         let field_entry_point = self.field.entry_point();
 
         let (gradient, vec_x, vec_y) = if spec.contains(GRADIENT_2D.id()) {
-            (GRADIENT_2D, [1.0, 0.0].literal(), [0.0, 1.0].literal())
+            (
+                GRADIENT_2D,
+                [1.0_f32, 0.0_f32].literal(),
+                [0.0_f32, 1.0_f32].literal(),
+            )
         } else if spec.contains(GRADIENT_3D.id()) {
             (
                 GRADIENT_3D,
-                [1.0, 0.0, 0.0].literal(),
-                [0.0, 1.0, 0.0].literal(),
+                [1.0_f32, 0.0_f32, 0.0_f32].literal(),
+                [0.0_f32, 1.0_f32, 0.0_f32].literal(),
             )
         } else {
-            return self.field
+            return self
+                .field
                 .functions(spec, &field_entry_point)
                 .into_iter()
                 .chain([FunctionDefinition {
@@ -70,44 +75,36 @@ impl AsModule for CentralDiffGradient {
                     output: CONTEXT_STRUCT,
                     block: [CONTEXT.read().output()].block(),
                 }])
-                .collect()
+                .collect();
         };
 
         let translate_spec = spec.filter(Translate::domains());
 
         let epsilon = self.epsilon.literal();
 
-        let expr_x = field_entry_point
-            .call(
-                TRANSLATE
-                    .specialize(&translate_spec)
-                    .call([vec_x.clone() * -epsilon.clone(), CONTEXT.read()]),
-            )
-            .read(DISTANCE)
-            - field_entry_point
-                .call(
-                    TRANSLATE
-                        .specialize(&translate_spec)
-                        .call([vec_x * epsilon.clone(), CONTEXT.read()]),
-                )
-                .read(DISTANCE);
+        let expr_lx = field_entry_point.call(
+            TRANSLATE
+                .specialize(&translate_spec)
+                .call([vec_x.clone() * -epsilon.clone(), CONTEXT.read()]),
+        );
 
-        let expr_y = field_entry_point
-            .call(
-                TRANSLATE
-                    .specialize(&translate_spec)
-                    .call([vec_y.clone() * -epsilon.clone(), CONTEXT.read()]),
-            )
-            .read(DISTANCE)
-            - field_entry_point
-                .call(
-                    TRANSLATE
-                        .specialize(&translate_spec)
-                        .call([vec_y * epsilon.clone(), CONTEXT.read()]),
-                )
-                .read(DISTANCE);
+        let expr_rx = field_entry_point.call(
+            TRANSLATE
+                .specialize(&translate_spec)
+                .call([vec_x * epsilon.clone(), CONTEXT.read()]),
+        );
 
-        let expr_vec = Expr::vector2(expr_x, expr_y);
+        let expr_ly = field_entry_point.call(
+            TRANSLATE
+                .specialize(&translate_spec)
+                .call([vec_y.clone() * -epsilon.clone(), CONTEXT.read()]),
+        );
+
+        let expr_ry = field_entry_point.call(
+            TRANSLATE
+                .specialize(&translate_spec)
+                .call([vec_y * epsilon.clone(), CONTEXT.read()]),
+        );
 
         self.field
             .functions(spec, &field_entry_point)
@@ -122,7 +119,13 @@ impl AsModule for CentralDiffGradient {
                 output: CONTEXT_STRUCT,
                 block: [
                     CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
-                    [CONTEXT, gradient].write(expr_vec),
+                    LEFT.bind(expr_lx),
+                    RIGHT.bind(expr_rx),
+                    X.bind([LEFT, DISTANCE].read() - [RIGHT, DISTANCE].read()),
+                    LEFT.bind(expr_ly),
+                    RIGHT.bind(expr_ry),
+                    Y.bind([LEFT, DISTANCE].read() - [RIGHT, DISTANCE].read()),
+                    [CONTEXT, gradient].write(Expr::vector2(X.read(), Y.read())),
                     CONTEXT.read().output(),
                 ]
                 .block(),

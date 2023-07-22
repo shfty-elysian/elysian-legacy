@@ -1,3 +1,5 @@
+pub mod static_shapes;
+
 use elysian_core::{
     ast::modify::CONTEXT_STRUCT,
     ir::{
@@ -21,112 +23,6 @@ use elysian_core::ir::{
     ast::{Block as IrBlock, Expr as IrExpr, Property, Stmt as IrStmt},
     module::AsModule,
 };
-
-pub mod static_shapes {
-    use elysian_core::ir::module::SpecializationData;
-    use elysian_interpreter::{evaluate_module, Interpreter};
-    pub use prettyplease;
-
-    use std::{collections::BTreeMap, sync::OnceLock};
-
-    use elysian_core::ir::{ast::Struct, module::AsModule};
-
-    use crate::elysian_to_syn;
-
-    pub type ShapeHash = u64;
-    pub type ShapeFn = fn(Struct) -> Struct;
-
-    pub struct StaticShape {
-        pub hash: ShapeHash,
-        pub function: ShapeFn,
-    }
-
-    impl Clone for StaticShape {
-        fn clone(&self) -> Self {
-            Self {
-                hash: self.hash.clone(),
-                function: self.function.clone(),
-            }
-        }
-    }
-
-    impl Copy for StaticShape {}
-
-    /// Distributed slice of shape hash -> shape function pairs
-    /// Populated at link-time by auto-generated shape modules
-    #[linkme::distributed_slice]
-    pub static STATIC_SHAPES: [StaticShape] = [..];
-
-    /// Runtime storage for static shape data
-    static STATIC_SHAPES_MAP: OnceLock<BTreeMap<ShapeHash, ShapeFn>> = OnceLock::new();
-
-    /// Accessor for STATIC_SHAPES_MAP_F32
-    pub fn static_shapes_map() -> &'static BTreeMap<ShapeHash, ShapeFn> {
-        STATIC_SHAPES_MAP.get_or_init(|| {
-            STATIC_SHAPES
-                .into_iter()
-                .copied()
-                .map(|t| (t.hash, t.function))
-                .collect()
-        })
-        //STATIC_SHAPES_MAP.get_or_init(Default::default)
-    }
-
-    /// Build.rs static shape registrar
-    pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, Box<dyn AsModule>)>>(
-        t: T,
-        spec: &SpecializationData,
-    ) {
-        let source: String = t
-            .into_iter()
-            .map(|(name, shape)| {
-                let syn = elysian_to_syn(&shape, spec, name);
-                prettyplease::unparse(&syn)
-            })
-            .collect();
-
-        let out_dir = std::env::var_os("OUT_DIR").expect("No OUT_DIR environment variable");
-        let dest_path = std::path::Path::new(&out_dir).join("static_shapes.rs");
-        std::fs::write(&dest_path, source).unwrap();
-    }
-
-    /// Convenience macro for including generated static shape code
-    #[macro_export]
-    macro_rules! include_static_shapes {
-        () => {
-            include!(concat!(env!("OUT_DIR"), "/static_shapes.rs"));
-        };
-    }
-
-    /// Return a function that calls the static implementation of a given shape if it exists,
-    /// falling back to the interpreter otherwise.
-    pub fn dispatch_shape<T>(
-        shape: &T,
-        spec: &SpecializationData,
-    ) -> Box<dyn Fn(Struct) -> Struct + Send + Sync>
-    where
-        T: AsModule,
-    {
-        let hash = shape.hash_ir();
-
-        if let Some(f) = static_shapes_map().get(&hash) {
-            println!("Dispatching to static function");
-            Box::new(|context| f(context))
-        } else {
-            println!("Dispatching to dynamic interpreter");
-            let module = shape.module(spec);
-            Box::new(move |context| {
-                evaluate_module(
-                    Interpreter {
-                        context,
-                        ..Default::default()
-                    },
-                    &module,
-                )
-            })
-        }
-    }
-}
 
 pub fn type_to_syn(ty: &elysian_core::ir::module::Type) -> TokenStream {
     match ty {
@@ -165,7 +61,7 @@ pub fn property_to_syn(prop: &Property) -> TokenStream {
     }
 }
 
-pub fn elysian_to_syn<T>(input: &T, spec: &SpecializationData, name: &str) -> File
+pub fn module_to_syn<T>(input: &T, spec: &SpecializationData, name: &str) -> File
 where
     T: AsModule,
 {
@@ -424,7 +320,7 @@ fn stmt_to_syn(stmt: &IrStmt) -> Stmt {
         IrStmt::Write { path, expr } => Stmt::Expr(
             Expr::Assign(ExprAssign {
                 attrs: vec![],
-                left: Box::new(path_to_syn(None, path)),
+                left: Box::new(path_to_syn(path)),
                 eq_token: Default::default(),
                 right: Box::new(expr_to_syn(expr)),
             }),
@@ -553,12 +449,15 @@ fn expr_to_syn(expr: &IrExpr) -> Expr {
                 attrs: vec![],
                 lit: match n {
                     elysian_core::ir::ast::Number::UInt(n) => {
+                        let n = *n as u32;
                         Lit::Int(LitInt::new(&(n.to_string() + &"u32"), Span::call_site()))
                     }
                     elysian_core::ir::ast::Number::SInt(n) => {
+                        let n = *n as i32;
                         Lit::Int(LitInt::new(&(n.to_string() + &"i32"), Span::call_site()))
                     }
                     elysian_core::ir::ast::Number::Float(n) => {
+                        let n = *n as f32;
                         Lit::Float(LitFloat::new(&(n.to_string() + &"f32"), Span::call_site()))
                     }
                 },
@@ -604,7 +503,7 @@ fn expr_to_syn(expr: &IrExpr) -> Expr {
                 unimplemented!()
             }
         },
-        IrExpr::Read(expr, path) => path_to_syn(expr.clone().map(|e| *e), path),
+        IrExpr::Read(path) => path_to_syn(path),
         IrExpr::Call { function, args } => Expr::Call(ExprCall {
             attrs: vec![],
             func: Box::new(Expr::Path(ExprPath {
@@ -834,22 +733,18 @@ fn expr_to_syn(expr: &IrExpr) -> Expr {
     }
 }
 
-fn path_to_syn(expr: Option<IrExpr>, path: &Vec<Property>) -> Expr {
+fn path_to_syn(path: &Vec<Property>) -> Expr {
     let mut iter = path.iter();
 
-    let base = if let Some(expr) = expr {
-        expr_to_syn(&expr)
-    } else {
-        Expr::Path(ExprPath {
-            attrs: vec![],
-            qself: None,
-            path: Ident::new(
-                &iter.next().expect("Empty path").name_unique(),
-                Span::call_site(),
-            )
-            .into(),
-        })
-    };
+    let base = Expr::Path(ExprPath {
+        attrs: vec![],
+        qself: None,
+        path: Ident::new(
+            &iter.next().expect("Empty path").name_unique(),
+            Span::call_site(),
+        )
+        .into(),
+    });
 
     iter.fold(base, |acc, next| {
         Expr::Field(ExprField {

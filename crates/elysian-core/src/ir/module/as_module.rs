@@ -1,4 +1,7 @@
-use std::fmt::Debug;
+use std::{
+    collections::{HashSet},
+    fmt::Debug,
+};
 
 use crate::ir::{as_ir::HashIR, ast::Identifier};
 
@@ -8,8 +11,9 @@ pub trait AsModule: 'static + Debug + HashIR {
     fn module(&self, spec: &SpecializationData) -> Module {
         let entry_point = self.entry_point();
         let mut functions = self.functions(spec, &entry_point);
-        functions.sort_by(|lhs, rhs| lhs.id.cmp(&rhs.id));
-        functions.dedup_by(|lhs, rhs| lhs.id == rhs.id);
+
+        let mut set = HashSet::new();
+        functions.retain(|x| set.insert(x.id.clone()));
 
         Module {
             entry_point,
