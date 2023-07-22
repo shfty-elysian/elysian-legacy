@@ -122,13 +122,13 @@ impl AsIR for Blend {
 
                     let mut block = vec![
                         NUM.bind(
-                            (0.5_f32.literal()
-                                + 0.5_f32.literal()
+                            (0.5.literal()
+                                + 0.5.literal()
                                     * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
                                         - [COMBINE_CONTEXT, LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(0.0_f32.literal())
-                            .min(1.0_f32.literal()),
+                            .max(0.0.literal())
+                            .min(1.0.literal()),
                         ),
                         [COMBINE_CONTEXT, OUT, property.clone()].write(
                             [COMBINE_CONTEXT, RIGHT, property.clone()]
@@ -140,7 +140,7 @@ impl AsIR for Blend {
                     if property == DISTANCE {
                         block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
                             [COMBINE_CONTEXT, OUT, DISTANCE].read()
-                                - K.read() * NUM.read() * (1.0_f32.literal() - NUM.read()),
+                                - K.read() * NUM.read() * (1.0.literal() - NUM.read()),
                         ))
                     }
 
@@ -153,12 +153,12 @@ impl AsIR for Blend {
 
                     let mut block = vec![
                         NUM.bind(
-                            (0.5_f32.literal()
-                                - 0.5_f32.literal()
+                            (0.5.literal()
+                                - 0.5.literal()
                                     * ([RIGHT, DISTANCE].read() - [LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(0.0_f32.literal())
-                            .min(1.0_f32.literal()),
+                            .max(0.0.literal())
+                            .min(1.0.literal()),
                         ),
                         property.clone().bind(
                             [RIGHT, property.clone()]
@@ -169,7 +169,7 @@ impl AsIR for Blend {
 
                     if property == DISTANCE {
                         block.push(DISTANCE.bind(
-                            DISTANCE.read() + K.read() * NUM.read() * (1.0_f32.literal() - NUM.read()),
+                            DISTANCE.read() + K.read() * NUM.read() * (1.0.literal() - NUM.read()),
                         ))
                     }
 
@@ -182,13 +182,13 @@ impl AsIR for Blend {
 
                     let mut block = vec![
                         NUM.bind(
-                            (0.5_f32.literal()
-                                - 0.5_f32.literal()
+                            (0.5.literal()
+                                - 0.5.literal()
                                     * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
                                         + [COMBINE_CONTEXT, LEFT, DISTANCE].read())
                                     / K.read())
-                            .max(0.0_f32.literal())
-                            .min(1.0_f32.literal()),
+                            .max(0.0.literal())
+                            .min(1.0.literal()),
                         ),
                         [COMBINE_CONTEXT, OUT, property.clone()].write(
                             [COMBINE_CONTEXT, LEFT, property.clone()].read().mix(
@@ -201,7 +201,7 @@ impl AsIR for Blend {
                     if property == DISTANCE {
                         block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
                             [COMBINE_CONTEXT, OUT, DISTANCE].read()
-                                + K.read() * NUM.read() * (1.0_f32.literal() - NUM.read()),
+                                + K.read() * NUM.read() * (1.0.literal() - NUM.read()),
                         ))
                     }
 

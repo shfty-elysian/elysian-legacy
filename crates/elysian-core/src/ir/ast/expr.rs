@@ -13,9 +13,6 @@ use super::{stmt::Stmt, Identifier};
 /// Expression resulting in a value
 pub enum Expr {
     Literal(Value),
-    Vector2(BoxExpr, BoxExpr),
-    Vector3(BoxExpr, BoxExpr, BoxExpr),
-    Vector4(BoxExpr, BoxExpr, BoxExpr, BoxExpr),
     Struct(&'static StructDefinition, BTreeMap<Property, Expr>),
     Read(Vec<Property>),
     Call {
@@ -53,20 +50,6 @@ impl Debug for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Literal(arg0) => f.debug_tuple("Literal").field(arg0).finish(),
-            Self::Vector2(arg0, arg1) => f.debug_tuple("Vector2").field(arg0).field(arg1).finish(),
-            Self::Vector3(arg0, arg1, arg2) => f
-                .debug_tuple("Vector3")
-                .field(arg0)
-                .field(arg1)
-                .field(arg2)
-                .finish(),
-            Self::Vector4(arg0, arg1, arg2, arg3) => f
-                .debug_tuple("Vector4")
-                .field(arg0)
-                .field(arg1)
-                .field(arg2)
-                .field(arg3)
-                .finish(),
             Self::Struct(arg0, arg1) => f.debug_tuple("Struct").field(arg0).field(arg1).finish(),
             Self::Read(arg0) => f.debug_tuple("Read").field(arg0).finish(),
             Self::Call { function, args } => f
@@ -102,13 +85,6 @@ impl Clone for Expr {
     fn clone(&self) -> Self {
         match self {
             Self::Literal(arg0) => Self::Literal(arg0.clone()),
-            Self::Vector2(arg0, arg1) => Self::Vector2(arg0.clone(), arg1.clone()),
-            Self::Vector3(arg0, arg1, arg2) => {
-                Self::Vector3(arg0.clone(), arg1.clone(), arg2.clone())
-            }
-            Self::Vector4(arg0, arg1, arg2, arg3) => {
-                Self::Vector4(arg0.clone(), arg1.clone(), arg2.clone(), arg3.clone())
-            }
             Self::Struct(arg0, arg1) => Self::Struct(arg0.clone(), arg1.clone()),
             Self::Read(arg0) => Self::Read(arg0.clone()),
             Self::Call { function, args } => Self::Call {
@@ -138,13 +114,6 @@ impl PartialEq for Expr {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Literal(l0), Self::Literal(r0)) => l0 == r0,
-            (Self::Vector2(l0, l1), Self::Vector2(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Vector3(l0, l1, l2), Self::Vector3(r0, r1, r2)) => {
-                l0 == r0 && l1 == r1 && l2 == r2
-            }
-            (Self::Vector4(l0, l1, l2, l3), Self::Vector4(r0, r1, r2, r3)) => {
-                l0 == r0 && l1 == r1 && l2 == r2 && l3 == r3
-            }
             (Self::Struct(l0, l1), Self::Struct(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Read(l0), Self::Read(r0)) => l0 == r0,
             (
@@ -294,18 +263,6 @@ impl Expr {
 
     pub fn output(self) -> Stmt {
         Stmt::Output(self)
-    }
-
-    pub fn vector2(x: Expr, y: Expr) -> Expr {
-        Expr::Vector2(Box::new(x), Box::new(y))
-    }
-
-    pub fn vector3(x: Expr, y: Expr, z: Expr) -> Expr {
-        Expr::Vector3(Box::new(x), Box::new(y), Box::new(z))
-    }
-
-    pub fn vector4(x: Expr, y: Expr, z: Expr, w: Expr) -> Expr {
-        Expr::Vector4(Box::new(x), Box::new(y), Box::new(z), Box::new(w))
     }
 }
 

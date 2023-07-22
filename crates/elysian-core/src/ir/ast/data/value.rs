@@ -9,15 +9,17 @@ use rust_gpu_bridge::{
     Abs, Dot, Length, Max, Min, Mix, Normalize, Sign,
 };
 
-use super::{Matrix, Number, Struct, Vector};
+use super::{
+    Number, Struct, MATRIX2_STRUCT, MATRIX3_STRUCT, MATRIX4_STRUCT, VECTOR2_STRUCT, VECTOR3_STRUCT,
+    VECTOR4_STRUCT, W, W_AXIS_4, X, X_AXIS_2, X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4,
+    Z, Z_AXIS_3, Z_AXIS_4,
+};
 
 /// Concrete value
 #[derive(Debug, Clone)]
 pub enum Value {
     Boolean(bool),
     Number(Number),
-    Vector(Vector),
-    Matrix(Matrix),
     Struct(Struct),
 }
 
@@ -26,8 +28,6 @@ impl Display for Value {
         match self {
             Value::Boolean(b) => write!(f, "{b:}"),
             Value::Number(n) => write!(f, "{n:}"),
-            Value::Vector(v) => write!(f, "{v:}"),
-            Value::Matrix(m) => write!(f, "{m:}"),
             Value::Struct(s) => write!(f, "{s:}"),
         }
     }
@@ -38,7 +38,6 @@ impl PartialEq for Value {
         match (self, other) {
             (Self::Boolean(l0), Self::Boolean(r0)) => l0 == r0,
             (Self::Number(l0), Self::Number(r0)) => l0 == r0,
-            (Self::Vector(l0), Self::Vector(r0)) => l0 == r0,
             (Self::Struct(l0), Self::Struct(r0)) => l0 == r0,
             _ => false,
         }
@@ -50,6 +49,7 @@ impl PartialOrd for Value {
         match (self, other) {
             (Value::Boolean(a), Value::Boolean(b)) => a.partial_cmp(b),
             (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
+            (Value::Struct(a), Value::Struct(b)) => a.partial_cmp(b),
             _ => panic!("Invalid PartialOrd"),
         }
     }
@@ -61,10 +61,9 @@ impl Add<Value> for Value {
     fn add(self, rhs: Value) -> Self::Output {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => (a + b).into(),
-            (Value::Number(a), Value::Vector(b)) => (a + b).into(),
-            (Value::Vector(a), Value::Number(b)) => (a + b).into(),
-            (Value::Vector(a), Value::Vector(b)) => (a + b).into(),
-            (Value::Matrix(a), Value::Matrix(b)) => (a + b).into(),
+            (Value::Number(a), Value::Struct(b)) => (a + b).into(),
+            (Value::Struct(a), Value::Number(b)) => (a + b).into(),
+            (Value::Struct(a), Value::Struct(b)) => (a + b).into(),
             _ => panic!("Invalid Add"),
         }
     }
@@ -76,10 +75,9 @@ impl Sub<Value> for Value {
     fn sub(self, rhs: Value) -> Self::Output {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => (a - b).into(),
-            (Value::Number(a), Value::Vector(b)) => (a - b).into(),
-            (Value::Vector(a), Value::Number(b)) => (a - b).into(),
-            (Value::Vector(a), Value::Vector(b)) => (a - b).into(),
-            (Value::Matrix(a), Value::Matrix(b)) => (a - b).into(),
+            (Value::Number(a), Value::Struct(b)) => (a - b).into(),
+            (Value::Struct(a), Value::Number(b)) => (a - b).into(),
+            (Value::Struct(a), Value::Struct(b)) => (a - b).into(),
             _ => panic!("Invalid Sub"),
         }
     }
@@ -91,12 +89,9 @@ impl Mul<Value> for Value {
     fn mul(self, rhs: Value) -> Self::Output {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => (a * b).into(),
-            (Value::Number(a), Value::Vector(b)) => (a * b).into(),
-            (Value::Vector(a), Value::Number(b)) => (a * b).into(),
-            (Value::Vector(a), Value::Vector(b)) => (a * b).into(),
-            (Value::Matrix(a), Value::Matrix(b)) => (a * b).into(),
-            (Value::Matrix(a), Value::Vector(b)) => (a * b).into(),
-            (Value::Matrix(a), Value::Number(b)) => (a * b).into(),
+            (Value::Number(a), Value::Struct(b)) => (a * b).into(),
+            (Value::Struct(a), Value::Number(b)) => (a * b).into(),
+            (Value::Struct(a), Value::Struct(b)) => (a * b).into(),
             t => panic!("Invalid Mul {t:#?}"),
         }
     }
@@ -108,9 +103,9 @@ impl Div<Value> for Value {
     fn div(self, rhs: Value) -> Self::Output {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => (a / b).into(),
-            (Value::Number(a), Value::Vector(b)) => (a / b).into(),
-            (Value::Vector(a), Value::Number(b)) => (a / b).into(),
-            (Value::Vector(a), Value::Vector(b)) => (a / b).into(),
+            (Value::Number(a), Value::Struct(b)) => (a / b).into(),
+            (Value::Struct(a), Value::Number(b)) => (a / b).into(),
+            (Value::Struct(a), Value::Struct(b)) => (a / b).into(),
             _ => panic!("Invalid Div"),
         }
     }
@@ -126,7 +121,7 @@ impl Mix for Value {
 
         match (self, to) {
             (Value::Number(a), Value::Number(b)) => a.mix(b, t).into(),
-            (Value::Vector(a), Value::Vector(b)) => a.mix(b, t).into(),
+            (Value::Struct(a), Value::Struct(b)) => a.mix(b, t).into(),
             _ => panic!("Invalid Mix"),
         }
     }
@@ -138,7 +133,7 @@ impl Neg for Value {
     fn neg(self) -> Self::Output {
         match self {
             Value::Number(n) => (-n).into(),
-            Value::Vector(v) => (-v).into(),
+            Value::Struct(v) => (-v).into(),
             _ => panic!("Invalid Neg"),
         }
     }
@@ -148,7 +143,7 @@ impl Abs for Value {
     fn abs(self) -> Self {
         match self {
             Value::Number(n) => n.abs().into(),
-            Value::Vector(v) => v.abs().into(),
+            Value::Struct(v) => v.abs().into(),
             _ => panic!("Invalid Abs"),
         }
     }
@@ -158,7 +153,7 @@ impl Sign for Value {
     fn sign(self) -> Self {
         match self {
             Value::Number(n) => n.sign().into(),
-            Value::Vector(v) => v.sign().into(),
+            Value::Struct(v) => v.sign().into(),
             _ => panic!("Invalid Sign"),
         }
     }
@@ -170,7 +165,7 @@ impl Length for Value {
     fn length(self) -> Self::Output {
         match self {
             Value::Number(n) => n.abs().into(),
-            Value::Vector(v) => v.length().into(),
+            Value::Struct(v) => v.length().into(),
             _ => panic!("Invalid Normalize"),
         }
     }
@@ -180,7 +175,7 @@ impl Normalize for Value {
     fn normalize(self) -> Self {
         match self {
             Value::Number(n) => n.sign().into(),
-            Value::Vector(v) => v.normalize().into(),
+            Value::Struct(v) => v.normalize().into(),
             _ => panic!("Invalid Normalize"),
         }
     }
@@ -192,7 +187,7 @@ impl Dot for Value {
     fn dot(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => (a * b).into(),
-            (Value::Vector(a), Value::Vector(b)) => a.dot(b).into(),
+            (Value::Struct(a), Value::Struct(b)) => a.dot(b).into(),
             _ => panic!("Invalid Dot"),
         }
     }
@@ -202,7 +197,7 @@ impl Min for Value {
     fn min(self, rhs: Self) -> Self {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => a.min(b).into(),
-            (Value::Vector(a), Value::Vector(b)) => a.min(b).into(),
+            (Value::Struct(a), Value::Struct(b)) => a.min(b).into(),
             _ => panic!("Invalid Min"),
         }
     }
@@ -210,10 +205,10 @@ impl Min for Value {
 
 impl Max for Value {
     fn max(self, rhs: Self) -> Self {
-        match (self, rhs) {
-            (Value::Number(a), Value::Number(b)) => a.max(b).into(),
-            (Value::Vector(a), Value::Vector(b)) => a.max(b).into(),
-            _ => panic!("Invalid Min"),
+        match (&self, &rhs) {
+            (Value::Number(a), Value::Number(b)) => a.clone().max(b.clone()).into(),
+            (Value::Struct(a), Value::Struct(b)) => a.clone().max(b.clone()).into(),
+            _ => panic!("Invalid Max {:#?}, {:#?}", self, rhs),
         }
     }
 }
@@ -284,87 +279,120 @@ impl From<f64> for Value {
     }
 }
 
-impl<T> From<[T; 2]> for Value
+pub fn vector2<T>(t: [T; 2]) -> Value
 where
     T: Clone,
-    Number: From<T>,
+    Value: From<T>,
 {
-    fn from(value: [T; 2]) -> Self {
-        Value::Vector(Vector::Vector2(
-            value[0].clone().into(),
-            value[1].clone().into(),
-        ))
-    }
+    Value::Struct(
+        Struct::new(&VECTOR2_STRUCT)
+            .set(X, t[0].clone().into())
+            .set(Y, t[1].clone().into()),
+    )
 }
 
-impl<T> From<[T; 3]> for Value
+pub fn vector3<T>(t: [T; 3]) -> Value
 where
     T: Clone,
-    Number: From<T>,
+    Value: From<T>,
 {
-    fn from(value: [T; 3]) -> Self {
-        Value::Vector(Vector::Vector3(
-            value[0].clone().into(),
-            value[1].clone().into(),
-            value[2].clone().into(),
-        ))
-    }
+    Value::Struct(
+        Struct::new(&VECTOR3_STRUCT)
+            .set(X, t[0].clone().into())
+            .set(Y, t[1].clone().into())
+            .set(Z, t[2].clone().into()),
+    )
 }
 
-impl<T> From<[T; 4]> for Value
+pub fn vector4<T>(t: [T; 4]) -> Value
 where
     T: Clone,
-    Number: From<T>,
+    Value: From<T>,
 {
-    fn from(value: [T; 4]) -> Self {
-        Value::Vector(Vector::Vector4(
-            value[0].clone().into(),
-            value[1].clone().into(),
-            value[2].clone().into(),
-            value[3].clone().into(),
-        ))
-    }
+    Value::Struct(
+        Struct::new(&VECTOR4_STRUCT)
+            .set(X, t[0].clone().into())
+            .set(Y, t[1].clone().into())
+            .set(Z, t[2].clone().into())
+            .set(W, t[3].clone().into()),
+    )
+}
+
+pub fn matrix2<T>(t: [[T; 2]; 2]) -> Value
+where
+    T: Clone,
+    Value: From<T>,
+{
+    Value::Struct(
+        Struct::new(&MATRIX2_STRUCT)
+            .set(X_AXIS_2, vector2(t[0].clone()))
+            .set(Y_AXIS_2, vector2(t[1].clone())),
+    )
+}
+
+pub fn matrix3<T>(t: [[T; 3]; 3]) -> Value
+where
+    T: Clone,
+    Value: From<T>,
+{
+    Value::Struct(
+        Struct::new(&MATRIX3_STRUCT)
+            .set(X_AXIS_3, vector3(t[0].clone()))
+            .set(Y_AXIS_3, vector3(t[1].clone()))
+            .set(Z_AXIS_3, vector3(t[2].clone())),
+    )
+}
+
+pub fn matrix4<T>(t: [[T; 4]; 4]) -> Value
+where
+    T: Clone,
+    Value: From<T>,
+{
+    Value::Struct(
+        Struct::new(&MATRIX4_STRUCT)
+            .set(X_AXIS_4, vector4(t[0].clone()))
+            .set(Y_AXIS_4, vector4(t[1].clone()))
+            .set(Z_AXIS_4, vector4(t[2].clone()))
+            .set(W_AXIS_4, vector4(t[3].clone())),
+    )
 }
 
 impl From<Vec2> for Value {
     fn from(value: Vec2) -> Self {
-        Value::Vector(Vector::Vector2(
-            Number::Float(value.x.into()),
-            Number::Float(value.y.into()),
-        ))
+        Value::Struct(
+            Struct::new(&VECTOR2_STRUCT)
+                .set(X, value.x.into())
+                .set(Y, value.y.into()),
+        )
     }
 }
 
 impl From<Vec3> for Value {
     fn from(value: Vec3) -> Self {
-        Value::Vector(Vector::Vector3(
-            Number::Float(value.x.into()),
-            Number::Float(value.y.into()),
-            Number::Float(value.z.into()),
-        ))
+        Value::Struct(
+            Struct::new(&VECTOR3_STRUCT)
+                .set(X, value.x.into())
+                .set(Y, value.y.into())
+                .set(Z, value.z.into()),
+        )
     }
 }
 
 impl From<Vec4> for Value {
     fn from(value: Vec4) -> Self {
-        Value::Vector(Vector::Vector4(
-            Number::Float(value.x.into()),
-            Number::Float(value.y.into()),
-            Number::Float(value.z.into()),
-            Number::Float(value.w.into()),
-        ))
+        Value::Struct(
+            Struct::new(&VECTOR4_STRUCT)
+                .set(X, value.x.into())
+                .set(Y, value.y.into())
+                .set(Z, value.z.into())
+                .set(W, value.w.into()),
+        )
     }
 }
 
-impl From<Vector> for Value {
-    fn from(value: Vector) -> Self {
-        Value::Vector(value)
-    }
-}
-
-impl From<Matrix> for Value {
-    fn from(value: Matrix) -> Self {
-        Value::Matrix(value)
+impl From<Struct> for Value {
+    fn from(value: Struct) -> Self {
+        Value::Struct(value)
     }
 }
 
@@ -378,16 +406,12 @@ impl From<crate::ast::value::Value> for Value {
     fn from(value: crate::ast::value::Value) -> Self {
         match value {
             crate::ast::value::Value::Number(n) => Value::Number(n),
-            crate::ast::value::Value::Vector2(x, y) => Value::Vector(Vector::Vector2(x, y)),
-            crate::ast::value::Value::Vector3(x, y, z) => Value::Vector(Vector::Vector3(x, y, z)),
-            crate::ast::value::Value::Vector4(x, y, z, w) => {
-                Value::Vector(Vector::Vector4(x, y, z, w))
-            }
-            crate::ast::value::Value::Matrix2(x, y) => Value::Matrix(Matrix::Matrix2(x, y)),
-            crate::ast::value::Value::Matrix3(x, y, z) => Value::Matrix(Matrix::Matrix3(x, y, z)),
-            crate::ast::value::Value::Matrix4(x, y, z, w) => {
-                Value::Matrix(Matrix::Matrix4(x, y, z, w))
-            }
+            crate::ast::value::Value::Vector2(v) => vector2(v),
+            crate::ast::value::Value::Vector3(v) => vector3(v),
+            crate::ast::value::Value::Vector4(v) => vector4(v),
+            crate::ast::value::Value::Matrix2(m) => matrix2(m),
+            crate::ast::value::Value::Matrix3(m) => matrix3(m),
+            crate::ast::value::Value::Matrix4(m) => matrix4(m),
         }
     }
 }
@@ -411,7 +435,7 @@ impl From<Value> for bool {
 impl From<Value> for f32 {
     fn from(value: Value) -> Self {
         let Value::Number(Number::Float(n)) = value else {
-        panic!("Value is not a f32")
+        panic!("Value {value:#?} is not a f32")
     };
 
         n as f32
@@ -430,30 +454,35 @@ impl From<Value> for f64 {
 
 impl From<Value> for Vec2 {
     fn from(value: Value) -> Self {
-        let Value::Vector(Vector::Vector2(Number::Float(x), Number::Float(y))) = value else {
-        panic!("Value is not a Float Vector2")
-    };
+        let Value::Struct(s) = value else {
+            panic!("Value is not a Struct")
+        };
 
-        Vec2::new(x as f32, y as f32)
+        Vec2::new(s.get(&X).into(), s.get(&Y).into())
     }
 }
 
 impl From<Value> for Vec3 {
     fn from(value: Value) -> Self {
-        let Value::Vector(Vector::Vector3(Number::Float(x), Number::Float(y), Number::Float(z))) = value else {
-        panic!("Value is not a Vector3")
-    };
+        let Value::Struct(s) = value else {
+            panic!("Value is not a Struct")
+        };
 
-        Vec3::new(x as f32, y as f32, z as f32)
+        Vec3::new(s.get(&X).into(), s.get(&Y).into(), s.get(&Z).into())
     }
 }
 
 impl From<Value> for Vec4 {
     fn from(value: Value) -> Self {
-        let Value::Vector(Vector::Vector4(Number::Float(x), Number::Float(y), Number::Float(z), Number::Float(w))) = value else {
-        panic!("Value is not a Vector4")
+        let Value::Struct(s) = value else {
+        panic!("Value is not a Struct")
     };
 
-        Vec4::new(x as f32, y as f32, z as f32, w as f32)
+        Vec4::new(
+            s.get(&X).into(),
+            s.get(&Y).into(),
+            s.get(&Z).into(),
+            s.get(&W).into(),
+        )
     }
 }

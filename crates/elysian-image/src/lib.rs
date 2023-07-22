@@ -4,9 +4,12 @@ use tracing::instrument;
 
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
-use elysian_core::ir::{
-    ast::{Struct, Value, Vector, DISTANCE, NORMAL, POSITION_2D},
-    module::{AsModule, SpecializationData},
+use elysian_core::{
+    ast::modify::CONTEXT_STRUCT,
+    ir::{
+        ast::{Struct, Value, DISTANCE, NORMAL, POSITION_2D, VECTOR2_STRUCT, X, Y},
+        module::{AsModule, SpecializationData},
+    },
 };
 use elysian_syn::static_shapes::dispatch_shape;
 
@@ -37,12 +40,16 @@ where
             indices
                 .into_iter()
                 .flat_map(|(x, y)| {
-                    let ctx = Struct::default().set(
+                    let ctx = Struct::new(CONTEXT_STRUCT).set(
                         POSITION_2D,
-                        Value::Vector(Vector::Vector2(
-                            (((x as f32 / width as f32) - 0.5) * 2.0 / scale).into(),
-                            (((y as f32 / height as f32) - 0.5) * -2.0 / scale).into(),
-                        )),
+                        Value::Struct(
+                            Struct::new(VECTOR2_STRUCT)
+                                .set(X, (((x as f32 / width as f32) - 0.5) * 2.0 / scale).into())
+                                .set(
+                                    Y,
+                                    (((y as f32 / height as f32) - 0.5) * -2.0 / scale).into(),
+                                ),
+                        ),
                     );
 
                     let ctx = shape(ctx);

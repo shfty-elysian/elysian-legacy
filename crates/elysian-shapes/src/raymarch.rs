@@ -8,7 +8,8 @@ use elysian_core::{
     ir::{
         ast::{
             Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, Property, Stmt,
-            CONTEXT, DISTANCE, POSITION_2D, POSITION_3D, W, X, Y, Z,
+            CONTEXT, DISTANCE, POSITION_2D, POSITION_3D, VECTOR3_STRUCT, VECTOR4_STRUCT, W, X, Y,
+            Z,
         },
         module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -102,42 +103,57 @@ impl AsModule for Raymarch {
             INV_PROJECTION.bind(self.inv_projection.clone().into()),
             RAY_FROM.bind(
                 INV_PROJECTION.read()
-                    * Expr::vector4(
-                        [CONTEXT, POSITION_2D, X].read(),
-                        [CONTEXT, POSITION_2D, Y].read(),
-                        0.0_f32.literal(),
-                        1.0_f32.literal(),
+                    * Expr::Struct(
+                        VECTOR4_STRUCT,
+                        [
+                            (X, [CONTEXT, POSITION_2D, X].read()),
+                            (Y, [CONTEXT, POSITION_2D, Y].read()),
+                            (Z, 0.0.literal()),
+                            (W, 1.0.literal()),
+                        ]
+                        .into_iter()
+                        .collect(),
                     ),
             ),
             RAY_FROM.write(RAY_FROM.read() / [RAY_FROM, W].read()),
             RAY_TO.bind(
                 INV_PROJECTION.read()
-                    * Expr::vector4(
-                        [CONTEXT, POSITION_2D, X].read(),
-                        [CONTEXT, POSITION_2D, Y].read(),
-                        -1.0_f32.literal(),
-                        1.0_f32.literal(),
+                    * Expr::Struct(
+                        VECTOR4_STRUCT,
+                        [
+                            (X, [CONTEXT, POSITION_2D, X].read()),
+                            (Y, [CONTEXT, POSITION_2D, Y].read()),
+                            (Z, -1.0.literal()),
+                            (W, 1.0.literal()),
+                        ]
+                        .into_iter()
+                        .collect(),
                     ),
             ),
             RAY_TO.write(RAY_TO.read() / [RAY_TO, W].read()),
             RAY_DIR.bind((RAY_FROM.read() - RAY_TO.read()).normalize()),
             [CONTEXT, DISTANCE].write(Number::from(f32::MAX).literal()),
-            T.bind(0.0_f32.literal()),
+            T.bind(0.0.literal()),
         ]);
 
         let mut loop_body = vec![
             RAY_POS.bind(RAY_FROM.read() + RAY_DIR.read() * T.read()),
-            [CONTEXT, POSITION_3D].write(Expr::vector3(
-                [RAY_POS, X].read(),
-                [RAY_POS, Y].read(),
-                [RAY_POS, Z].read(),
+            [CONTEXT, POSITION_3D].write(Expr::Struct(
+                VECTOR3_STRUCT,
+                [
+                    (X, [RAY_POS, X].read()),
+                    (Y, [RAY_POS, Y].read()),
+                    (Z, [RAY_POS, Z].read()),
+                ]
+                .into_iter()
+                .collect(),
             )),
             CANDIDATE.bind(field_entry_point.call(CONTEXT.read())),
             CONTEXT.write(CANDIDATE.read()).if_else(
                 [CANDIDATE, DISTANCE].read().lt([CONTEXT, DISTANCE].read()),
                 None,
             ),
-            Stmt::Break.if_else([CONTEXT, DISTANCE].read().lt(0.0_f32.literal()), None),
+            Stmt::Break.if_else([CONTEXT, DISTANCE].read().lt(0.0.literal()), None),
             STEPS.write(STEPS.read() + 1u32.literal()),
             Stmt::Break.if_else(STEPS.read().gt(MAX_STEPS.read()), None),
         ];

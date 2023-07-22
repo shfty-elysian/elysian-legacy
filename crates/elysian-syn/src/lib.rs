@@ -3,7 +3,10 @@ pub mod static_shapes;
 use elysian_core::{
     ast::modify::CONTEXT_STRUCT,
     ir::{
-        ast::{Matrix, Vector},
+        ast::{
+            W, W_AXIS_4, X, X_AXIS_2, X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z,
+            Z_AXIS_3, Z_AXIS_4,
+        },
         module::SpecializationData,
     },
 };
@@ -81,12 +84,15 @@ where
 
     items.push(parse_quote! {
         use elysian::{
-            core::ir::{
-                ast::{
-                    Struct,
-                    Property,
+            core::{
+                ir::{
+                    ast::{
+                        Struct,
+                        Property,
+                    },
+                    module::Type,
                 },
-                module::Type,
+                ast::modify::CONTEXT_STRUCT,
             },
             syn::static_shapes::StaticShape,
         };
@@ -127,8 +133,11 @@ where
                         colon_token: Default::default(),
                         ty: Type::Path(TypePath {
                             qself: None,
-                            path: Ident::new(&field.prop.ty().name_unique(), Span::call_site())
-                                .into(),
+                            path: Ident::new(
+                                &builtin_types(&field.prop.ty().name_unique()),
+                                Span::call_site(),
+                            )
+                            .into(),
                         }),
                     })
                     .collect(),
@@ -170,7 +179,7 @@ where
     items.push(syn::parse_quote! {
         impl From<#struct_name> for Struct {
             fn from(s: #struct_name) -> Self {
-                let mut out = Self::default();
+                let mut out = Self::new(CONTEXT_STRUCT);
 
                 #(
                     out.set_mut(#members, s.#names.into());
@@ -195,7 +204,10 @@ where
                 };
 
                 let pat = Ident::new(&input.prop.name_unique(), Span::call_site());
-                let ty = Ident::new(&input.prop.ty().name_unique(), Span::call_site());
+                let ty = Ident::new(
+                    &builtin_types(&input.prop.ty().name_unique()),
+                    Span::call_site(),
+                );
 
                 parse_quote! {
                     #mutability #pat: #ty
@@ -281,6 +293,18 @@ where
         shebang: None,
         attrs: vec![],
         items,
+    }
+}
+
+fn builtin_types(name: &str) -> &str {
+    match name {
+        "Vector2" => "Vec2",
+        "Vector3" => "Vec3",
+        "Vector4" => "Vec4",
+        "Matrix2" => "Mat2",
+        "Matrix3" => "Mat3",
+        "Matrix4" => "Mat4",
+        _ => name,
     }
 }
 
@@ -387,54 +411,6 @@ fn stmt_to_syn(stmt: &IrStmt) -> Stmt {
     }
 }
 
-fn vector_to_syn(v: &Vector) -> Expr {
-    let (ident, args) = match v {
-        Vector::Vector2(x, y) => ("Vec2", vec![x, y]),
-        Vector::Vector3(x, y, z) => ("Vec3", vec![x, y, z]),
-        Vector::Vector4(x, y, z, w) => ("Vec4", vec![x, y, z, w]),
-    };
-
-    let ident = Ident::new(ident, Span::call_site());
-
-    let args = args
-        .into_iter()
-        .map(|arg| {
-            Expr::Lit(ExprLit {
-                attrs: vec![],
-                lit: Lit::Float(LitFloat::new(
-                    &(arg.to_string() + &"f32"),
-                    Span::call_site(),
-                )),
-            })
-        })
-        .collect();
-
-    Expr::Call(ExprCall {
-        attrs: vec![],
-        func: Box::new(Expr::Path(ExprPath {
-            attrs: vec![],
-            qself: None,
-            path: Path {
-                leading_colon: Default::default(),
-                segments: [
-                    PathSegment {
-                        ident,
-                        arguments: Default::default(),
-                    },
-                    PathSegment {
-                        ident: Ident::new("new", Span::call_site()),
-                        arguments: Default::default(),
-                    },
-                ]
-                .into_iter()
-                .collect(),
-            },
-        })),
-        paren_token: Default::default(),
-        args,
-    })
-}
-
 fn expr_to_syn(expr: &IrExpr) -> Expr {
     match expr {
         elysian_core::ir::ast::Expr::Literal(v) => match v {
@@ -462,46 +438,13 @@ fn expr_to_syn(expr: &IrExpr) -> Expr {
                     }
                 },
             }),
-            elysian_core::ir::ast::Value::Vector(v) => vector_to_syn(v),
-            elysian_core::ir::ast::Value::Matrix(m) => {
-                let (ident, args) = match m {
-                    Matrix::Matrix2(x, y) => ("Mat2", vec![x, y]),
-                    Matrix::Matrix3(x, y, z) => ("Mat3", vec![x, y, z]),
-                    Matrix::Matrix4(x, y, z, w) => ("Mat4", vec![x, y, z, w]),
-                };
-
-                let ident = Ident::new(ident, Span::call_site());
-
-                let args = args.into_iter().map(vector_to_syn).collect();
-
-                Expr::Call(ExprCall {
-                    attrs: vec![],
-                    func: Box::new(Expr::Path(ExprPath {
-                        attrs: vec![],
-                        qself: None,
-                        path: Path {
-                            leading_colon: Default::default(),
-                            segments: [
-                                PathSegment {
-                                    ident,
-                                    arguments: Default::default(),
-                                },
-                                PathSegment {
-                                    ident: Ident::new("from_cols", Span::call_site()),
-                                    arguments: Default::default(),
-                                },
-                            ]
-                            .into_iter()
-                            .collect(),
-                        },
-                    })),
-                    paren_token: Default::default(),
-                    args,
-                })
-            }
-            elysian_core::ir::ast::Value::Struct(_) => {
-                unimplemented!()
-            }
+            elysian_core::ir::ast::Value::Struct(s) => expr_to_syn(&IrExpr::Struct(
+                s.def,
+                s.members
+                    .iter()
+                    .map(|(k, v)| (k.clone(), IrExpr::Literal(v.clone())))
+                    .collect(),
+            )),
         },
         IrExpr::Read(path) => path_to_syn(path),
         IrExpr::Call { function, args } => Expr::Call(ExprCall {
@@ -514,149 +457,158 @@ fn expr_to_syn(expr: &IrExpr) -> Expr {
             paren_token: Default::default(),
             args: args.iter().map(|t| expr_to_syn(t)).collect(),
         }),
-        IrExpr::Vector2(x, y) => Expr::Call(ExprCall {
-            attrs: vec![],
-            func: Box::new(Expr::Path(ExprPath {
+        IrExpr::Struct(structure, fields) => match structure.name() {
+            "Vector2" | "Vector3" | "Vector4" | "Matrix2" | "Matrix3" | "Matrix4" => {
+                Expr::Call(ExprCall {
+                    attrs: vec![],
+                    func: Box::new(Expr::Path(ExprPath {
+                        attrs: vec![],
+                        qself: None,
+                        path: Path {
+                            leading_colon: None,
+                            segments: [
+                                PathSegment {
+                                    ident: Ident::new(
+                                        builtin_types(structure.name()),
+                                        Span::call_site(),
+                                    ),
+                                    arguments: Default::default(),
+                                },
+                                PathSegment {
+                                    ident: Ident::new(
+                                        match structure.name() {
+                                            "Vector2" | "Vector3" | "Vector4" => "new",
+                                            "Matrix2" | "Matrix3" | "Matrix4" => "from_cols",
+                                            _ => unreachable!(),
+                                        },
+                                        Span::call_site(),
+                                    ),
+                                    arguments: Default::default(),
+                                },
+                            ]
+                            .into_iter()
+                            .collect(),
+                        },
+                    })),
+                    paren_token: Default::default(),
+                    args: match structure.name() {
+                        "Vector2" => [
+                            expr_to_syn(fields.get(&X).expect("No X for Vec2")),
+                            expr_to_syn(fields.get(&Y).expect("No Y for Vec2")),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        "Vector3" => [
+                            expr_to_syn(fields.get(&X).expect("No X for Vec3")),
+                            expr_to_syn(fields.get(&Y).expect("No Y for Vec3")),
+                            expr_to_syn(fields.get(&Z).expect("No Z for Vec3")),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        "Vector4" => [
+                            expr_to_syn(fields.get(&X).unwrap_or_else(|| {
+                                panic!("No X in {fields:#?} for {structure:#?}")
+                            })),
+                            expr_to_syn(fields.get(&Y).unwrap_or_else(|| {
+                                panic!("No Y in {fields:#?} for {structure:#?}")
+                            })),
+                            expr_to_syn(fields.get(&Z).unwrap_or_else(|| {
+                                panic!("No Z in {fields:#?} for {structure:#?}")
+                            })),
+                            expr_to_syn(fields.get(&W).unwrap_or_else(|| {
+                                panic!("No W in {fields:#?} for {structure:#?}")
+                            })),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        "Matrix2" => [
+                            expr_to_syn(fields.get(&X_AXIS_2).expect("No X_AXIS for Matrix2")),
+                            expr_to_syn(fields.get(&Y_AXIS_2).expect("No Y_AXIS for Matrix2")),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        "Matrix3" => [
+                            expr_to_syn(fields.get(&X_AXIS_3).expect("No X_AXIS for Matrix3")),
+                            expr_to_syn(fields.get(&Y_AXIS_3).expect("No Y_AXIS for Matrix3")),
+                            expr_to_syn(fields.get(&Z_AXIS_3).expect("No Z_AXIS for Matrix3")),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        "Matrix4" => [
+                            expr_to_syn(fields.get(&X_AXIS_4).expect("No X_AXIS for Matrix4")),
+                            expr_to_syn(fields.get(&Y_AXIS_4).expect("No Y_AXIS for Matrix4")),
+                            expr_to_syn(fields.get(&Z_AXIS_4).expect("No Z_AXIS for Matrix4")),
+                            expr_to_syn(fields.get(&W_AXIS_4).expect("No W_AXIS for Matrix4")),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        _ => unreachable!(),
+                    },
+                })
+            }
+            _ => Expr::Struct(ExprStruct {
                 attrs: vec![],
                 qself: None,
-                path: Path {
-                    leading_colon: None,
-                    segments: [
-                        PathSegment {
-                            ident: Ident::new("Vec2", Span::call_site()),
-                            arguments: Default::default(),
-                        },
-                        PathSegment {
-                            ident: Ident::new("new", Span::call_site()),
-                            arguments: Default::default(),
-                        },
-                    ]
-                    .into_iter()
-                    .collect(),
-                },
-            })),
-            paren_token: Default::default(),
-            args: [expr_to_syn(x), expr_to_syn(y)].into_iter().collect(),
-        }),
-        IrExpr::Vector3(x, y, z) => Expr::Call(ExprCall {
-            attrs: vec![],
-            func: Box::new(Expr::Path(ExprPath {
-                attrs: vec![],
-                qself: None,
-                path: Path {
-                    leading_colon: None,
-                    segments: [
-                        PathSegment {
-                            ident: Ident::new("Vec3", Span::call_site()),
-                            arguments: Default::default(),
-                        },
-                        PathSegment {
-                            ident: Ident::new("new", Span::call_site()),
-                            arguments: Default::default(),
-                        },
-                    ]
-                    .into_iter()
-                    .collect(),
-                },
-            })),
-            paren_token: Default::default(),
-            args: [expr_to_syn(x), expr_to_syn(y), expr_to_syn(z)]
-                .into_iter()
-                .collect(),
-        }),
-        IrExpr::Vector4(x, y, z, w) => Expr::Call(ExprCall {
-            attrs: vec![],
-            func: Box::new(Expr::Path(ExprPath {
-                attrs: vec![],
-                qself: None,
-                path: Path {
-                    leading_colon: None,
-                    segments: [
-                        PathSegment {
-                            ident: Ident::new("Vec4", Span::call_site()),
-                            arguments: Default::default(),
-                        },
-                        PathSegment {
-                            ident: Ident::new("new", Span::call_site()),
-                            arguments: Default::default(),
-                        },
-                    ]
-                    .into_iter()
-                    .collect(),
-                },
-            })),
-            paren_token: Default::default(),
-            args: [
-                expr_to_syn(x),
-                expr_to_syn(y),
-                expr_to_syn(z),
-                expr_to_syn(w),
-            ]
-            .into_iter()
-            .collect(),
-        }),
-        IrExpr::Struct(structure, fields) => Expr::Struct(ExprStruct {
-            attrs: vec![],
-            qself: None,
-            path: Ident::new(&structure.name_unique(), Span::call_site()).into(),
-            brace_token: Default::default(),
-            fields: fields
-                .iter()
-                .map(|(prop, expr)| {
-                    let ident = Ident::new(&prop.name_unique(), Span::call_site());
-                    let expr = expr_to_syn(expr);
-                    let colon_token = if let Expr::Path(ExprPath { path, .. }) = &expr {
-                        if let Some(i) = path.get_ident() {
-                            if ident == *i {
-                                None
+                path: Ident::new(&structure.name_unique(), Span::call_site()).into(),
+                brace_token: Default::default(),
+                fields: fields
+                    .iter()
+                    .map(|(prop, expr)| {
+                        let ident = Ident::new(&prop.name_unique(), Span::call_site());
+                        let expr = expr_to_syn(expr);
+                        let colon_token = if let Expr::Path(ExprPath { path, .. }) = &expr {
+                            if let Some(i) = path.get_ident() {
+                                if ident == *i {
+                                    None
+                                } else {
+                                    Some(Default::default())
+                                }
                             } else {
                                 Some(Default::default())
                             }
                         } else {
                             Some(Default::default())
-                        }
-                    } else {
-                        Some(Default::default())
-                    };
+                        };
 
-                    FieldValue {
-                        attrs: vec![],
-                        member: syn::Member::Named(ident),
-                        colon_token,
-                        expr,
-                    }
-                })
-                .collect(),
-            dot2_token: if fields.len() == structure.fields.len() {
-                None
-            } else {
-                Some(Default::default())
-            },
-            rest: Some(Box::new(Expr::Call(ExprCall {
-                attrs: vec![],
-                func: Box::new(Expr::Path(ExprPath {
+                        FieldValue {
+                            attrs: vec![],
+                            member: syn::Member::Named(ident),
+                            colon_token,
+                            expr,
+                        }
+                    })
+                    .collect(),
+                dot2_token: if fields.len() == structure.fields.len() {
+                    None
+                } else {
+                    Some(Default::default())
+                },
+                rest: Some(Box::new(Expr::Call(ExprCall {
                     attrs: vec![],
-                    qself: None,
-                    path: Path {
-                        leading_colon: Default::default(),
-                        segments: [
-                            PathSegment {
-                                ident: Ident::new("Default", Span::call_site()),
-                                arguments: Default::default(),
-                            },
-                            PathSegment {
-                                ident: Ident::new("default", Span::call_site()),
-                                arguments: Default::default(),
-                            },
-                        ]
-                        .into_iter()
-                        .collect(),
-                    },
-                })),
-                paren_token: Default::default(),
-                args: Default::default(),
-            }))),
-        }),
+                    func: Box::new(Expr::Path(ExprPath {
+                        attrs: vec![],
+                        qself: None,
+                        path: Path {
+                            leading_colon: Default::default(),
+                            segments: [
+                                PathSegment {
+                                    ident: Ident::new("Default", Span::call_site()),
+                                    arguments: Default::default(),
+                                },
+                                PathSegment {
+                                    ident: Ident::new("default", Span::call_site()),
+                                    arguments: Default::default(),
+                                },
+                            ]
+                            .into_iter()
+                            .collect(),
+                        },
+                    })),
+                    paren_token: Default::default(),
+                    args: Default::default(),
+                }))),
+            }),
+        },
         IrExpr::Add(lhs, rhs)
         | IrExpr::Sub(lhs, rhs)
         | IrExpr::Mul(lhs, rhs)

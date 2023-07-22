@@ -6,7 +6,7 @@ use elysian_core::{
         as_ir::{AsIR, Domains},
         ast::{
             Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D,
-            GRADIENT_3D, NORMAL, X, Y,
+            GRADIENT_3D, NORMAL, VECTOR3_STRUCT, X, Y, Z,
         },
         module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -29,10 +29,15 @@ impl AsIR for GradientNormals {
             [
                 GRADIENT_2D.bind([CONTEXT, GRADIENT_2D].read().normalize()),
                 [CONTEXT, NORMAL].write(
-                    Expr::vector3(
-                        [GRADIENT_2D, X].read(),
-                        [GRADIENT_2D, Y].read(),
-                        1.0_f32.literal(),
+                    Expr::Struct(
+                        VECTOR3_STRUCT,
+                        [
+                            (X, [GRADIENT_2D, X].read()),
+                            (Y, [GRADIENT_2D, Y].read()),
+                            (Z, 1.0.literal()),
+                        ]
+                        .into_iter()
+                        .collect(),
                     )
                     .normalize(),
                 ),

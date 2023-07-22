@@ -8,8 +8,8 @@ use elysian_core::{
     ir::{
         as_ir::Domains,
         ast::{
-            Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, CONTEXT,
-            DISTANCE, GRADIENT_2D, GRADIENT_3D, LEFT, RIGHT, X, Y,
+            vector2, vector3, Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite,
+            Number, CONTEXT, DISTANCE, GRADIENT_2D, GRADIENT_3D, LEFT, RIGHT, VECTOR2_STRUCT, X, Y,
         },
         module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -51,14 +51,14 @@ impl AsModule for CentralDiffGradient {
         let (gradient, vec_x, vec_y) = if spec.contains(GRADIENT_2D.id()) {
             (
                 GRADIENT_2D,
-                [1.0_f32, 0.0_f32].literal(),
-                [0.0_f32, 1.0_f32].literal(),
+                vector2([1.0, 0.0]).literal(),
+                vector2([0.0, 1.0]).literal(),
             )
         } else if spec.contains(GRADIENT_3D.id()) {
             (
                 GRADIENT_3D,
-                [1.0_f32, 0.0_f32, 0.0_f32].literal(),
-                [0.0_f32, 1.0_f32, 0.0_f32].literal(),
+                vector3([1.0, 0.0, 0.0]).literal(),
+                vector3([0.0, 1.0, 0.0]).literal(),
             )
         } else {
             return self
@@ -125,7 +125,10 @@ impl AsModule for CentralDiffGradient {
                     LEFT.bind(expr_ly),
                     RIGHT.bind(expr_ry),
                     Y.bind([LEFT, DISTANCE].read() - [RIGHT, DISTANCE].read()),
-                    [CONTEXT, gradient].write(Expr::vector2(X.read(), Y.read())),
+                    [CONTEXT, gradient].write(Expr::Struct(
+                        VECTOR2_STRUCT,
+                        [(X, X.read()), (Y, Y.read())].into_iter().collect(),
+                    )),
                     CONTEXT.read().output(),
                 ]
                 .block(),

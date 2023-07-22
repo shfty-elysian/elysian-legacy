@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use elysian_core::ir::{
-    ast::{Expr, Matrix, Number, Property, Stmt, Value, Vector},
+    ast::{Expr, Number, Property, Stmt, Value},
     module::{AsModule, FunctionDefinition, SpecializationData, StructDefinition},
 };
 use naga::{
@@ -59,7 +59,7 @@ fn structs_to_naga(defs: &Vec<StructDefinition>) -> UniqueArena<Type> {
 
     let vec2 = types.insert(
         Type {
-            name: Some("Vec2".to_string()),
+            name: Some("Vector2".to_string()),
             inner: TypeInner::Vector {
                 size: VectorSize::Bi,
                 kind: ScalarKind::Float,
@@ -71,7 +71,7 @@ fn structs_to_naga(defs: &Vec<StructDefinition>) -> UniqueArena<Type> {
 
     let vec3 = types.insert(
         Type {
-            name: Some("Vec3".to_string()),
+            name: Some("Vector3".to_string()),
             inner: TypeInner::Vector {
                 size: VectorSize::Tri,
                 kind: ScalarKind::Float,
@@ -83,7 +83,7 @@ fn structs_to_naga(defs: &Vec<StructDefinition>) -> UniqueArena<Type> {
 
     let vec4 = types.insert(
         Type {
-            name: Some("Vec4".to_string()),
+            name: Some("Vector4".to_string()),
             inner: TypeInner::Vector {
                 size: VectorSize::Quad,
                 kind: ScalarKind::Float,
@@ -95,7 +95,7 @@ fn structs_to_naga(defs: &Vec<StructDefinition>) -> UniqueArena<Type> {
 
     let mat2 = types.insert(
         Type {
-            name: Some("Mat2".to_string()),
+            name: Some("Matrix2".to_string()),
             inner: TypeInner::Matrix {
                 columns: VectorSize::Bi,
                 rows: VectorSize::Bi,
@@ -107,7 +107,7 @@ fn structs_to_naga(defs: &Vec<StructDefinition>) -> UniqueArena<Type> {
 
     let mat3 = types.insert(
         Type {
-            name: Some("Mat3".to_string()),
+            name: Some("Matrix3".to_string()),
             inner: TypeInner::Matrix {
                 columns: VectorSize::Tri,
                 rows: VectorSize::Tri,
@@ -119,7 +119,7 @@ fn structs_to_naga(defs: &Vec<StructDefinition>) -> UniqueArena<Type> {
 
     let mat4 = types.insert(
         Type {
-            name: Some("Mat4".to_string()),
+            name: Some("Matrix4".to_string()),
             inner: TypeInner::Matrix {
                 columns: VectorSize::Quad,
                 rows: VectorSize::Quad,
@@ -146,7 +146,7 @@ fn structs_to_naga(defs: &Vec<StructDefinition>) -> UniqueArena<Type> {
                         elysian_core::ir::module::Type::Struct(s) => {
                             let (handle, ty) = types
                                 .iter()
-                                .find(|(_, v)| v.name == Some(s.id.name_unique()))
+                                .find(|(_, v)| v.name == Some(s.id.name().to_string()))
                                 .unwrap();
                             let TypeInner::Struct {
                                 span,
@@ -158,7 +158,7 @@ fn structs_to_naga(defs: &Vec<StructDefinition>) -> UniqueArena<Type> {
                         }
                     };
                     members.push(StructMember {
-                        name: Some(next.prop.name_unique()),
+                        name: Some(next.prop.name().to_string()),
                         ty: member,
                         binding: None,
                         offset: total_span,
@@ -167,7 +167,7 @@ fn structs_to_naga(defs: &Vec<StructDefinition>) -> UniqueArena<Type> {
                 });
 
         let ty = Type {
-            name: Some(def.name_unique()),
+            name: Some(def.name().to_string()),
             inner: TypeInner::Struct { members, span },
         };
 
@@ -186,15 +186,15 @@ fn functions_to_naga(defs: &Vec<FunctionDefinition>, tys: &UniqueArena<Type>) ->
             (
                 functions.append(
                     Function {
-                        name: Some(def.name_unique()),
+                        name: Some(def.name().to_string()),
                         arguments: def
                             .inputs
                             .iter()
                             .map(|input| FunctionArgument {
-                                name: Some(input.prop.name_unique()),
+                                name: Some(input.prop.name().to_string()),
                                 ty: tys
                                     .iter()
-                                    .find(|(_, v)| v.name == Some(def.output.name_unique()))
+                                    .find(|(_, v)| v.name == Some(def.output.name().to_string()))
                                     .expect("No type")
                                     .0,
                                 binding: None,
@@ -203,7 +203,7 @@ fn functions_to_naga(defs: &Vec<FunctionDefinition>, tys: &UniqueArena<Type>) ->
                         result: Some(FunctionResult {
                             ty: tys
                                 .iter()
-                                .find(|(_, v)| v.name == Some(def.output.name_unique()))
+                                .find(|(_, v)| v.name == Some(def.output.name().to_string()))
                                 .expect("No type")
                                 .0,
                             binding: None,
@@ -315,12 +315,12 @@ fn stmt_to_naga(
                 naga::Expression::LocalVariable(
                     local_variables.append(
                         naga::LocalVariable {
-                            name: Some(prop.name_unique()),
+                            name: Some(prop.name().to_string()),
                             ty: tys
                                 .iter()
-                                .find(|(_, v)| v.name == Some(prop.ty().name_unique()))
+                                .find(|(_, v)| v.name == Some(prop.ty().name().to_string()))
                                 .unwrap_or_else(|| {
-                                    panic!("No Type for {}", prop.ty().name_unique())
+                                    panic!("No Type for {}", prop.ty().name())
                                 })
                                 .0,
                             init: None,
@@ -346,7 +346,7 @@ fn stmt_to_naga(
 
             let base_expr = if let Some(k) = local_variables
                 .iter()
-                .find(|(_, v)| v.name == Some(base.name_unique()))
+                .find(|(_, v)| v.name == Some(base.name().to_string()))
                 .map(|(k, _)| k)
             {
                 let base_expr = expressions.append(Expression::LocalVariable(k), Span::UNDEFINED);
@@ -466,57 +466,6 @@ fn expr_to_naga(
             let value = value_to_naga(v, tys, expressions);
             expressions.append(value, Span::UNDEFINED)
         }
-        Expr::Vector2(x, y) => {
-            let x = expr_to_naga(x, tys, functions, body, local_variables, expressions);
-            let y = expr_to_naga(y, tys, functions, body, local_variables, expressions);
-
-            expressions.append(
-                Expression::Compose {
-                    ty: tys
-                        .iter()
-                        .find(|(_, v)| v.name == Some("Vec2".to_string()))
-                        .unwrap()
-                        .0,
-                    components: vec![x, y],
-                },
-                Span::UNDEFINED,
-            )
-        }
-        Expr::Vector3(x, y, z) => {
-            let x = expr_to_naga(x, tys, functions, body, local_variables, expressions);
-            let y = expr_to_naga(y, tys, functions, body, local_variables, expressions);
-            let z = expr_to_naga(z, tys, functions, body, local_variables, expressions);
-
-            expressions.append(
-                Expression::Compose {
-                    ty: tys
-                        .iter()
-                        .find(|(_, v)| v.name == Some("Vec3".to_string()))
-                        .unwrap()
-                        .0,
-                    components: vec![x, y, z],
-                },
-                Span::UNDEFINED,
-            )
-        }
-        Expr::Vector4(x, y, z, w) => {
-            let x = expr_to_naga(x, tys, functions, body, local_variables, expressions);
-            let y = expr_to_naga(y, tys, functions, body, local_variables, expressions);
-            let z = expr_to_naga(z, tys, functions, body, local_variables, expressions);
-            let w = expr_to_naga(w, tys, functions, body, local_variables, expressions);
-
-            expressions.append(
-                Expression::Compose {
-                    ty: tys
-                        .iter()
-                        .find(|(_, v)| v.name == Some("Vec4".to_string()))
-                        .unwrap()
-                        .0,
-                    components: vec![x, y, z, w],
-                },
-                Span::UNDEFINED,
-            )
-        }
         Expr::Struct(def, members) => {
             let components = members
                 .into_iter()
@@ -528,7 +477,7 @@ fn expr_to_naga(
                 Expression::Compose {
                     ty: tys
                         .iter()
-                        .find(|(_, v)| v.name == Some(def.name_unique()))
+                        .find(|(_, v)| v.name == Some(def.name().to_string()))
                         .unwrap()
                         .0,
                     components,
@@ -543,7 +492,7 @@ fn expr_to_naga(
 
             let base_expr = if let Some(k) = local_variables
                 .iter()
-                .find(|(_, v)| v.name == Some(base.name_unique()))
+                .find(|(_, v)| v.name == Some(base.name().to_string()))
                 .map(|(k, _)| k)
             {
                 let base_expr = expressions.append(Expression::LocalVariable(k), Span::UNDEFINED);
@@ -570,7 +519,7 @@ fn expr_to_naga(
         Expr::Call { function, args } => {
             let function = functions
                 .iter()
-                .find(|(_, v)| v.name == Some(function.name_unique()))
+                .find(|(_, v)| v.name == Some(function.name().to_string()))
                 .unwrap()
                 .0;
 
@@ -691,51 +640,6 @@ fn number_to_naga(number: &Number) -> Expression {
     }
 }
 
-fn vector_to_naga(
-    vector: &Vector,
-    tys: &UniqueArena<Type>,
-    expressions: &mut Arena<Expression>,
-) -> Expression {
-    match vector {
-        Vector::Vector2(x, y) => Expression::Compose {
-            ty: tys
-                .iter()
-                .find(|(_, v)| v.name == Some("Vec2".to_string()))
-                .unwrap()
-                .0,
-            components: vec![
-                expressions.append(number_to_naga(x), Span::UNDEFINED),
-                expressions.append(number_to_naga(y), Span::UNDEFINED),
-            ],
-        },
-        Vector::Vector3(x, y, z) => Expression::Compose {
-            ty: tys
-                .iter()
-                .find(|(_, v)| v.name == Some("Vec3".to_string()))
-                .unwrap()
-                .0,
-            components: vec![
-                expressions.append(number_to_naga(x), Span::UNDEFINED),
-                expressions.append(number_to_naga(y), Span::UNDEFINED),
-                expressions.append(number_to_naga(z), Span::UNDEFINED),
-            ],
-        },
-        Vector::Vector4(x, y, z, w) => Expression::Compose {
-            ty: tys
-                .iter()
-                .find(|(_, v)| v.name == Some("Vec4".to_string()))
-                .unwrap()
-                .0,
-            components: vec![
-                expressions.append(number_to_naga(x), Span::UNDEFINED),
-                expressions.append(number_to_naga(y), Span::UNDEFINED),
-                expressions.append(number_to_naga(z), Span::UNDEFINED),
-                expressions.append(number_to_naga(w), Span::UNDEFINED),
-            ],
-        },
-    }
-}
-
 fn value_to_naga(
     value: &Value,
     tys: &UniqueArena<Type>,
@@ -744,62 +648,23 @@ fn value_to_naga(
     match value {
         Value::Boolean(b) => Expression::Literal(Literal::Bool(*b)),
         Value::Number(n) => number_to_naga(n),
-        Value::Vector(v) => vector_to_naga(v, tys, expressions),
-        Value::Matrix(m) => match m {
-            Matrix::Matrix2(x, y) => {
-                let x = vector_to_naga(x, tys, expressions);
-                let y = vector_to_naga(y, tys, expressions);
-                Expression::Compose {
-                    ty: tys
-                        .iter()
-                        .find(|(_, v)| v.name == Some("Mat2".to_string()))
-                        .unwrap()
-                        .0,
-                    components: vec![
-                        expressions.append(x, Span::UNDEFINED),
-                        expressions.append(y, Span::UNDEFINED),
-                    ],
-                }
-            }
-            Matrix::Matrix3(x, y, z) => {
-                let x = vector_to_naga(x, tys, expressions);
-                let y = vector_to_naga(y, tys, expressions);
-                let z = vector_to_naga(z, tys, expressions);
+        Value::Struct(s) => {
+            let ty = tys
+                .iter()
+                .find(|(_, v)| v.name == Some(s.def.name().to_string()))
+                .unwrap()
+                .0;
 
-                Expression::Compose {
-                    ty: tys
-                        .iter()
-                        .find(|(_, v)| v.name == Some("Mat3".to_string()))
-                        .unwrap()
-                        .0,
-                    components: vec![
-                        expressions.append(x, Span::UNDEFINED),
-                        expressions.append(y, Span::UNDEFINED),
-                        expressions.append(z, Span::UNDEFINED),
-                    ],
-                }
-            }
-            Matrix::Matrix4(x, y, z, w) => {
-                let x = vector_to_naga(x, tys, expressions);
-                let y = vector_to_naga(y, tys, expressions);
-                let z = vector_to_naga(z, tys, expressions);
-                let w = vector_to_naga(w, tys, expressions);
+            let mut components = vec![];
 
-                Expression::Compose {
-                    ty: tys
-                        .iter()
-                        .find(|(_, v)| v.name == Some("Mat4".to_string()))
-                        .unwrap()
-                        .0,
-                    components: vec![
-                        expressions.append(x, Span::UNDEFINED),
-                        expressions.append(y, Span::UNDEFINED),
-                        expressions.append(z, Span::UNDEFINED),
-                        expressions.append(w, Span::UNDEFINED),
-                    ],
-                }
+            for field in s.def.fields {
+                let v = s.get(&field.prop);
+                let v = value_to_naga(&v, tys, expressions);
+                let v = expressions.append(v, Span::UNDEFINED);
+                components.push(v);
             }
-        },
-        Value::Struct(s) => panic!("Can't construct a struct without knowing its type"),
+
+            Expression::Compose { ty, components }
+        }
     }
 }

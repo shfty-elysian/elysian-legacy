@@ -3,14 +3,11 @@ use std::{
     ops::{Add, Div, Mul, Neg, Sub},
 };
 
-use rust_gpu_bridge::{
-    glam::{Vec2, Vec3, Vec4},
-    Abs, Max, Min, Mix, Sign,
-};
+use rust_gpu_bridge::{Abs, Max, Min, Mix, Sign};
 
 use crate::ir::ast::Expr;
 
-use super::{Value, Vector};
+use super::{Struct, Value};
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum Number {
@@ -87,79 +84,47 @@ impl Div<Number> for Number {
     }
 }
 
-impl Add<Vector> for Number {
-    type Output = Vector;
+impl Add<Struct> for Number {
+    type Output = Struct;
 
-    fn add(self, rhs: Vector) -> Self::Output {
-        match (self, rhs) {
-            (a @ Number::Float(_), b @ Vector::Vector2(_, _)) => {
-                (f32::from(a) + Vec2::from(b)).into()
-            }
-            (a @ Number::Float(_), b @ Vector::Vector3(_, _, _)) => {
-                (f32::from(a) + Vec3::from(b)).into()
-            }
-            (a @ Number::Float(_), b @ Vector::Vector4(_, _, _, _)) => {
-                (f32::from(a) + Vec4::from(b)).into()
-            }
-            _ => panic!("Invalid Add"),
+    fn add(self, mut rhs: Struct) -> Self::Output {
+        for (_, value) in rhs.members.iter_mut() {
+            *value = Value::from(self.clone()) + value.clone();
         }
+        rhs
     }
 }
 
-impl Sub<Vector> for Number {
-    type Output = Vector;
+impl Sub<Struct> for Number {
+    type Output = Struct;
 
-    fn sub(self, rhs: Vector) -> Self::Output {
-        match (self, rhs) {
-            (a @ Number::Float(_), b @ Vector::Vector2(_, _)) => {
-                (f32::from(a) - Vec2::from(b)).into()
-            }
-            (a @ Number::Float(_), b @ Vector::Vector3(_, _, _)) => {
-                (f32::from(a) - Vec3::from(b)).into()
-            }
-            (a @ Number::Float(_), b @ Vector::Vector4(_, _, _, _)) => {
-                (f32::from(a) - Vec4::from(b)).into()
-            }
-            _ => panic!("Invalid Sub"),
+    fn sub(self, mut rhs: Struct) -> Self::Output {
+        for (_, value) in rhs.members.iter_mut() {
+            *value = Value::from(self.clone()) - value.clone();
         }
+        rhs
     }
 }
 
-impl Mul<Vector> for Number {
-    type Output = Vector;
+impl Mul<Struct> for Number {
+    type Output = Struct;
 
-    fn mul(self, rhs: Vector) -> Self::Output {
-        match (self, rhs) {
-            (a @ Number::Float(_), b @ Vector::Vector2(_, _)) => {
-                (f32::from(a) * Vec2::from(b)).into()
-            }
-            (a @ Number::Float(_), b @ Vector::Vector3(_, _, _)) => {
-                (f32::from(a) * Vec3::from(b)).into()
-            }
-            (a @ Number::Float(_), b @ Vector::Vector4(_, _, _, _)) => {
-                (f32::from(a) * Vec4::from(b)).into()
-            }
-            _ => panic!("Invalid Mul"),
+    fn mul(self, mut rhs: Struct) -> Self::Output {
+        for (_, value) in rhs.members.iter_mut() {
+            *value = Value::from(self.clone()) * value.clone();
         }
+        rhs
     }
 }
 
-impl Div<Vector> for Number {
-    type Output = Vector;
+impl Div<Struct> for Number {
+    type Output = Struct;
 
-    fn div(self, rhs: Vector) -> Self::Output {
-        match (self, rhs) {
-            (a @ Number::Float(_), b @ Vector::Vector2(_, _)) => {
-                (f32::from(a) / Vec2::from(b)).into()
-            }
-            (a @ Number::Float(_), b @ Vector::Vector3(_, _, _)) => {
-                (f32::from(a) / Vec3::from(b)).into()
-            }
-            (a @ Number::Float(_), b @ Vector::Vector4(_, _, _, _)) => {
-                (f32::from(a) / Vec4::from(b)).into()
-            }
-            _ => panic!("Invalid Div"),
+    fn div(self, mut rhs: Struct) -> Self::Output {
+        for (_, value) in rhs.members.iter_mut() {
+            *value = Value::from(self.clone()) / value.clone();
         }
+        rhs
     }
 }
 

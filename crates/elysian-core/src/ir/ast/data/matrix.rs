@@ -1,176 +1,77 @@
-use std::{
-    fmt::Display,
-    ops::{Add, Mul, Sub},
+use crate::ir::{
+    ast::{Identifier, Property},
+    module::{FieldDefinition, StructDefinition, Type},
 };
 
-use rust_gpu_bridge::glam::{Mat2, Mat3, Mat4, Vec2, Vec3, Vec4};
+use super::{VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT};
 
-use crate::ir::ast::Number;
+// New struct-based representation
 
-use super::Vector;
+pub const X_AXIS_2: Property = Property::new_primitive("x_axis", Type::Struct(&VECTOR2_STRUCT));
+pub const Y_AXIS_2: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR2_STRUCT));
 
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
-pub enum Matrix {
-    Matrix2(Vector, Vector),
-    Matrix3(Vector, Vector, Vector),
-    Matrix4(Vector, Vector, Vector, Vector),
-}
+pub const X_AXIS_3: Property = Property::new_primitive("x_axis", Type::Struct(&VECTOR3_STRUCT));
+pub const Y_AXIS_3: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR3_STRUCT));
+pub const Z_AXIS_3: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR3_STRUCT));
 
-impl Display for Matrix {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Matrix::Matrix2(x, y) => write!(f, "({x:}, {y:})"),
-            Matrix::Matrix3(x, y, z) => write!(f, "({x:}, {y:}, {z:})"),
-            Matrix::Matrix4(x, y, z, w) => write!(f, "({x:}, {y:}, {z:}, {w:})"),
-        }
-    }
-}
+pub const X_AXIS_4: Property = Property::new_primitive("x_axis", Type::Struct(&VECTOR4_STRUCT));
+pub const Y_AXIS_4: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR4_STRUCT));
+pub const Z_AXIS_4: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR4_STRUCT));
+pub const W_AXIS_4: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR4_STRUCT));
 
-impl Add<Matrix> for Matrix {
-    type Output = Matrix;
+pub const MATRIX2_STRUCT: &'static StructDefinition = &StructDefinition {
+    id: Identifier::new("Matrix2", 20261747501874881448),
+    public: false,
+    fields: &[
+        FieldDefinition {
+            prop: X_AXIS_2,
+            public: true,
+        },
+        FieldDefinition {
+            prop: Y_AXIS_2,
+            public: true,
+        },
+    ],
+};
 
-    fn add(self, rhs: Matrix) -> Self::Output {
-        match (self, rhs) {
-            (a @ Matrix::Matrix2(_, _), b @ Matrix::Matrix2(_, _)) => {
-                (Mat2::from(a) + Mat2::from(b)).into()
-            }
-            (a @ Matrix::Matrix3(_, _, _), b @ Matrix::Matrix3(_, _, _)) => {
-                (Mat3::from(a) + Mat3::from(b)).into()
-            }
-            (a @ Matrix::Matrix4(_, _, _, _), b @ Matrix::Matrix4(_, _, _, _)) => {
-                (Mat4::from(a) + Mat4::from(b)).into()
-            }
-            _ => panic!("Invalid Add"),
-        }
-    }
-}
+pub const MATRIX3_STRUCT: &'static StructDefinition = &StructDefinition {
+    id: Identifier::new("Matrix3", 7315148181882206775),
+    public: false,
+    fields: &[
+        FieldDefinition {
+            prop: X_AXIS_3,
+            public: true,
+        },
+        FieldDefinition {
+            prop: Y_AXIS_3,
+            public: true,
+        },
+        FieldDefinition {
+            prop: Z_AXIS_3,
+            public: true,
+        },
+    ],
+};
 
-impl Sub<Matrix> for Matrix {
-    type Output = Matrix;
-
-    fn sub(self, rhs: Matrix) -> Self::Output {
-        match (self, rhs) {
-            (a @ Matrix::Matrix2(_, _), b @ Matrix::Matrix2(_, _)) => {
-                (Mat2::from(a) - Mat2::from(b)).into()
-            }
-            (a @ Matrix::Matrix3(_, _, _), b @ Matrix::Matrix3(_, _, _)) => {
-                (Mat3::from(a) - Mat3::from(b)).into()
-            }
-            (a @ Matrix::Matrix4(_, _, _, _), b @ Matrix::Matrix4(_, _, _, _)) => {
-                (Mat4::from(a) - Mat4::from(b)).into()
-            }
-            _ => panic!("Invalid Add"),
-        }
-    }
-}
-
-impl Mul<Matrix> for Matrix {
-    type Output = Matrix;
-
-    fn mul(self, rhs: Matrix) -> Self::Output {
-        match (self, rhs) {
-            (a @ Matrix::Matrix2(..), b @ Matrix::Matrix2(..)) => {
-                (Mat2::from(a) * Mat2::from(b)).into()
-            }
-            (a @ Matrix::Matrix3(..), b @ Matrix::Matrix3(..)) => {
-                (Mat3::from(a) * Mat3::from(b)).into()
-            }
-            (a @ Matrix::Matrix4(..), b @ Matrix::Matrix4(..)) => {
-                (Mat4::from(a) * Mat4::from(b)).into()
-            }
-            _ => panic!("Invalid Add"),
-        }
-    }
-}
-
-impl Mul<Vector> for Matrix {
-    type Output = Vector;
-
-    fn mul(self, rhs: Vector) -> Self::Output {
-        match (self, rhs) {
-            (a @ Matrix::Matrix2(..), b @ Vector::Vector2(..)) => {
-                (Mat2::from(a) * Vec2::from(b)).into()
-            }
-            (a @ Matrix::Matrix3(..), b @ Vector::Vector3(..)) => {
-                (Mat3::from(a) * Vec3::from(b)).into()
-            }
-            (a @ Matrix::Matrix4(..), b @ Vector::Vector4(..)) => {
-                (Mat4::from(a) * Vec4::from(b)).into()
-            }
-            _ => panic!("Invalid Mul"),
-        }
-    }
-}
-
-impl Mul<Number> for Matrix {
-    type Output = Matrix;
-
-    fn mul(self, rhs: Number) -> Self::Output {
-        match (self, rhs) {
-            (a @ Matrix::Matrix2(..), b @ Number::Float(..)) => {
-                (Mat2::from(a) * f32::from(b)).into()
-            }
-            (a @ Matrix::Matrix3(..), b @ Number::Float(..)) => {
-                (Mat3::from(a) * f32::from(b)).into()
-            }
-            (a @ Matrix::Matrix4(..), b @ Number::Float(..)) => {
-                (Mat4::from(a) * f32::from(b)).into()
-            }
-            _ => panic!("Invalid Mul"),
-        }
-    }
-}
-
-impl From<Matrix> for Mat2 {
-    fn from(value: Matrix) -> Self {
-        match value {
-            Matrix::Matrix2(x, y) => Mat2::from_cols(x.into(), y.into()),
-            _ => panic!("Invalid conversion"),
-        }
-    }
-}
-
-impl From<Matrix> for Mat3 {
-    fn from(value: Matrix) -> Self {
-        match value {
-            Matrix::Matrix3(x, y, z) => Mat3::from_cols(x.into(), y.into(), z.into()),
-            _ => panic!("Invalid conversion"),
-        }
-    }
-}
-
-impl From<Matrix> for Mat4 {
-    fn from(value: Matrix) -> Self {
-        match value {
-            Matrix::Matrix4(x, y, z, w) => Mat4::from_cols(x.into(), y.into(), z.into(), w.into()),
-            _ => panic!("Invalid conversion"),
-        }
-    }
-}
-
-impl From<Mat2> for Matrix {
-    fn from(value: Mat2) -> Self {
-        Matrix::Matrix2(value.x_axis.into(), value.y_axis.into())
-    }
-}
-
-impl From<Mat3> for Matrix {
-    fn from(value: Mat3) -> Self {
-        Matrix::Matrix3(
-            value.x_axis.into(),
-            value.y_axis.into(),
-            value.z_axis.into(),
-        )
-    }
-}
-
-impl From<Mat4> for Matrix {
-    fn from(value: Mat4) -> Self {
-        Matrix::Matrix4(
-            value.x_axis.into(),
-            value.y_axis.into(),
-            value.z_axis.into(),
-            value.w_axis.into(),
-        )
-    }
-}
+pub const MATRIX4_STRUCT: &'static StructDefinition = &StructDefinition {
+    id: Identifier::new("Matrix4", 202137800871303460),
+    public: false,
+    fields: &[
+        FieldDefinition {
+            prop: X_AXIS_4,
+            public: true,
+        },
+        FieldDefinition {
+            prop: Y_AXIS_4,
+            public: true,
+        },
+        FieldDefinition {
+            prop: Z_AXIS_4,
+            public: true,
+        },
+        FieldDefinition {
+            prop: W_AXIS_4,
+            public: true,
+        },
+    ],
+};

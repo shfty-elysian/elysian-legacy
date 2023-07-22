@@ -18,12 +18,12 @@ impl Type {
         match self {
             Type::Boolean => "bool",
             Type::Number => "f32",
-            Type::Vector2 => "Vec2",
-            Type::Vector3 => "Vec3",
-            Type::Vector4 => "Vec4",
-            Type::Matrix2 => "Mat2",
-            Type::Matrix3 => "Mat3",
-            Type::Matrix4 => "Mat4",
+            Type::Vector2 => "Vector2",
+            Type::Vector3 => "Vector3",
+            Type::Vector4 => "Vector4",
+            Type::Matrix2 => "Matrix2",
+            Type::Matrix3 => "Matrix3",
+            Type::Matrix4 => "Matrix4",
             Type::Struct(s) => s.name(),
         }
     }

@@ -3,13 +3,16 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::{ir::{
-    ast::{
-        Expr, Identifier, IntoBlock, IntoRead, CONTEXT, GRADIENT_2D, GRADIENT_3D, POSITION_2D,
-        POSITION_3D, X, Y, IntoWrite,
+use elysian_core::{
+    ast::modify::CONTEXT_STRUCT,
+    ir::{
+        ast::{
+            Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D, GRADIENT_3D,
+            POSITION_2D, POSITION_3D, X, Y, VECTOR2_STRUCT,
+        },
+        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
     },
-    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
-}, ast::modify::CONTEXT_STRUCT};
+};
 
 pub const CROSS_SECTION: Identifier = Identifier::new("cross_section", 11670715461129592823);
 
@@ -66,9 +69,14 @@ impl AsModule for CrossSection {
                             + Expr::from(self.y_axis.clone()) * [CONTEXT, POSITION_2D, Y].read(),
                     ),
                     CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
-                    [CONTEXT, GRADIENT_2D].write(Expr::vector2(
-                        [CONTEXT, GRADIENT_3D, X].read(),
-                        [CONTEXT, GRADIENT_3D, Y].read(),
+                    [CONTEXT, GRADIENT_2D].write(Expr::Struct(
+                        VECTOR2_STRUCT,
+                        [
+                            (X, [CONTEXT, GRADIENT_3D, X].read()),
+                            (Y, [CONTEXT, GRADIENT_3D, Y].read()),
+                        ]
+                        .into_iter()
+                        .collect(),
                     )),
                     CONTEXT.read().output(),
                 ]
