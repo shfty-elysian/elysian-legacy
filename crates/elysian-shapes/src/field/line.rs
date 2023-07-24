@@ -90,7 +90,7 @@ impl AsIR for Line {
                         mutable: false,
                     },
                 ],
-                output: CONTEXT_STRUCT,
+                output: CONTEXT_STRUCT.clone(),
                 block: POINT
                     .specialize(&point_spec)
                     .call([ELONGATE

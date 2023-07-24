@@ -7,3 +7,4 @@ edition = "2021"
 elysian-core = { path = "../elysian-core" }
 
 naga = "0.13.0"
+indexmap = "2.0.0"

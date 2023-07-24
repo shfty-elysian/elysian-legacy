@@ -4,11 +4,12 @@ use crate::ir::ast::{Block, Identifier, Property};
 
 use super::StructDefinition;
 
+#[derive(Debug, Clone)]
 pub struct FunctionDefinition {
     pub id: Identifier,
     pub public: bool,
     pub inputs: Vec<InputDefinition>,
-    pub output: &'static StructDefinition,
+    pub output: StructDefinition,
     pub block: Block,
 }
 
@@ -22,27 +23,12 @@ impl IntoIterator for FunctionDefinition {
     }
 }
 
-impl std::fmt::Debug for FunctionDefinition {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("FunctionDefinition")
-            .field("id", &self.id)
-            .field("public", &self.public)
-            .field("inputs", &self.inputs)
-            .field("output", &self.output)
-            .field("block", &self.block)
-            .finish()
-    }
-}
-
-impl Clone for FunctionDefinition {
-    fn clone(&self) -> Self {
-        Self {
-            id: self.id.clone(),
-            public: self.public.clone(),
-            inputs: self.inputs.clone(),
-            output: self.output,
-            block: self.block.clone(),
-        }
+impl PartialEq for FunctionDefinition {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+            && self.public == other.public
+            && self.inputs == other.inputs
+            && self.output == other.output
     }
 }
 

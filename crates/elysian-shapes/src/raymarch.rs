@@ -8,31 +8,82 @@ use elysian_core::{
     ir::{
         ast::{
             Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, Property, Stmt,
-            CONTEXT, DISTANCE, POSITION_2D, POSITION_3D, VECTOR3_STRUCT, VECTOR4_STRUCT, W, X, Y,
-            Z,
+            CONTEXT, DISTANCE, MATRIX4_STRUCT, POSITION_2D, POSITION_3D, VECTOR3_STRUCT,
+            VECTOR4_STRUCT, W, X, Y, Z,
         },
-        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
+        module::{
+            AsModule, FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type,
+        },
     },
 };
 
 pub const RAYMARCH: Identifier = Identifier::new("raymarch", 11670715461129592823);
 
-pub const RAY_FROM: Property = Property::new("ray_from", Type::Vector3, 1031119209943889737);
-pub const RAY_TO: Property = Property::new("ray_to", Type::Vector3, 1362247063737049192);
-pub const RAY_POS: Property = Property::new("ray_pos", Type::Vector3, 203470946369255426);
-pub const RAY_DIR: Property = Property::new("ray_dir", Type::Vector3, 11883607992066663879);
-pub const T: Property = Property::new("t", Type::Number, 93144116760520780);
-pub const INV_PROJECTION: Property = Property::new("inv_proj", Type::Matrix4, 1835117139336577900);
-pub const STEP_SIZE: Property = Property::new("step_size", Type::Number, 7777887281564637643);
-pub const EPSILON: Property = Property::new("epsilon", Type::Number, 32338215630771851);
-pub const FRAC_1_K: Property = Property::new("frac_1_k", Type::Number, 5512322721559903899);
+pub const RAY_FROM_4: Property = Property::new(
+    "ray_from_4",
+    Type::Struct(VECTOR4_STRUCT),
+    1031119209943889737,
+);
+pub const RAY_TO_4: Property = Property::new(
+    "ray_to_4",
+    Type::Struct(VECTOR4_STRUCT),
+    1362247063737049192,
+);
+
+pub const RAY_FROM_3: Property = Property::new(
+    "ray_from_3",
+    Type::Struct(VECTOR3_STRUCT),
+    1031119209943889737,
+);
+pub const RAY_TO_3: Property = Property::new(
+    "ray_to_3",
+    Type::Struct(VECTOR3_STRUCT),
+    1362247063737049192,
+);
+
+pub const RAY_POS: Property =
+    Property::new("ray_pos", Type::Struct(VECTOR3_STRUCT), 203470946369255426);
+pub const RAY_DIR: Property = Property::new(
+    "ray_dir",
+    Type::Struct(VECTOR3_STRUCT),
+    11883607992066663879,
+);
+pub const T: Property = Property::new("t", Type::Number(NumericType::Float), 93144116760520780);
+pub const INV_PROJECTION: Property = Property::new(
+    "inv_proj",
+    Type::Struct(MATRIX4_STRUCT),
+    1835117139336577900,
+);
+pub const STEP_SIZE: Property = Property::new(
+    "step_size",
+    Type::Number(NumericType::Float),
+    7777887281564637643,
+);
+pub const EPSILON: Property = Property::new(
+    "epsilon",
+    Type::Number(NumericType::Float),
+    32338215630771851,
+);
+pub const FRAC_1_K: Property = Property::new(
+    "frac_1_k",
+    Type::Number(NumericType::Float),
+    5512322721559903899,
+);
 pub const CANDIDATE: Property = Property::new(
     "candidate",
     Type::Struct(CONTEXT_STRUCT),
     1956157168917067266,
 );
-pub const STEPS: Property = Property::new("steps", Type::Number, 1682585060223888912);
-pub const MAX_STEPS: Property = Property::new("max_steps", Type::Number, 1146747975614382616);
+pub const STEPS: Property = Property::new(
+    "steps",
+    Type::Number(NumericType::UInt),
+    1682585060223888912,
+);
+pub const MAX_STEPS: Property = Property::new(
+    "max_steps",
+    Type::Number(NumericType::UInt),
+    1146747975614382616,
+);
 
 pub enum March {
     Fixed {
@@ -101,7 +152,7 @@ impl AsModule for Raymarch {
 
         block.extend([
             INV_PROJECTION.bind(self.inv_projection.clone().into()),
-            RAY_FROM.bind(
+            RAY_FROM_4.bind(
                 INV_PROJECTION.read()
                     * Expr::Struct(
                         VECTOR4_STRUCT,
@@ -115,8 +166,17 @@ impl AsModule for Raymarch {
                         .collect(),
                     ),
             ),
-            RAY_FROM.write(RAY_FROM.read() / [RAY_FROM, W].read()),
-            RAY_TO.bind(
+            RAY_FROM_3.bind(Expr::Struct(
+                VECTOR3_STRUCT,
+                [
+                    (X, [RAY_FROM_4, X].read() / [RAY_FROM_4, W].read()),
+                    (Y, [RAY_FROM_4, Y].read() / [RAY_FROM_4, W].read()),
+                    (Z, [RAY_FROM_4, Z].read() / [RAY_FROM_4, W].read()),
+                ]
+                .into_iter()
+                .collect(),
+            )),
+            RAY_TO_4.bind(
                 INV_PROJECTION.read()
                     * Expr::Struct(
                         VECTOR4_STRUCT,
@@ -130,14 +190,23 @@ impl AsModule for Raymarch {
                         .collect(),
                     ),
             ),
-            RAY_TO.write(RAY_TO.read() / [RAY_TO, W].read()),
-            RAY_DIR.bind((RAY_FROM.read() - RAY_TO.read()).normalize()),
+            RAY_TO_3.bind(Expr::Struct(
+                VECTOR3_STRUCT,
+                [
+                    (X, [RAY_TO_4, X].read() / [RAY_TO_4, W].read()),
+                    (Y, [RAY_TO_4, Y].read() / [RAY_TO_4, W].read()),
+                    (Z, [RAY_TO_4, Z].read() / [RAY_TO_4, W].read()),
+                ]
+                .into_iter()
+                .collect(),
+            )),
+            RAY_DIR.bind((RAY_FROM_3.read() - RAY_TO_3.read()).normalize()),
             [CONTEXT, DISTANCE].write(Number::from(f32::MAX).literal()),
             T.bind(0.0.literal()),
         ]);
 
         let mut loop_body = vec![
-            RAY_POS.bind(RAY_FROM.read() + RAY_DIR.read() * T.read()),
+            RAY_POS.bind(RAY_FROM_3.read() + RAY_DIR.read() * T.read()),
             [CONTEXT, POSITION_3D].write(Expr::Struct(
                 VECTOR3_STRUCT,
                 [
@@ -187,7 +256,7 @@ impl AsModule for Raymarch {
                     prop: CONTEXT,
                     mutable: true,
                 }],
-                output: CONTEXT_STRUCT,
+                output: CONTEXT_STRUCT.clone(),
                 block: block.block(),
             }])
             .collect()

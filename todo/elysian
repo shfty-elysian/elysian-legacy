@@ -243,23 +243,67 @@
 
   DONE: Functions now properly specialize around the supplied domains
 
+* Factor out Float, SInt, UInt in favour of highest-common-denominator types
+  * Consuming code is currently forced to annotate types for all literals
+  * Given that Matrix, Vector and Number are necessary,
+    how much extra boilerplate and complexity is introduced by
+    UInt, SInt and Float versus u64 / i64 / f64?
+  * Already spending the full 64 bits in memory via enums
+
+  DONE: Now using highest-common denominators
+
+* Factor out explicit Vector / Matrix types, expressions, etc in favour of Struct system
+  * Simplifies IR, reduces boilerplate, eases implementation
+
+  DONE: Now using Struct as first-class compositional type in all cases
+
+* Test 3D scene and fix matrix handling following Struct refactor
+
+  DONE: 3D scene and matrices are now working
+
+* Refactor arbitrary image crate color function into post modifier/s over color
+  * Reduces integration boilerplate
+
+  DONE: Implemented DistanceColor, refactored consuming code to use color directly
+
 =========================================================================================================
 
-* Formalize value type handling
+* Extend base AST Expr with Vector / Matrix structuring and destructuring
+  * Should be able to encode ex. Distance -> Color via expression
+  * How to represent structure types?
+    * Explicit VectorN / MatrixN members composing arrays of BoxExpr?
+
+* Consider moving unary / binary / ternary ops into shareable enums
+  * Would likely need to make generic for compatibility across
+    base AST and IR AST, but should be workable with a concrete type in consuming structs
+
+* Move struct and function definitions from const-level to value-level,
+  * Use const-friendly identifiers to support existing use cases / extensibility
+  * Needed for conditional context struct generation
+
+* Generate Context / CombineContext structs conditionally
+  * Currently outputting a hardcoded set of members
+  * Need to walk the elysian tree and aggregate properties,
+    use to generate structs
+
+* UUID collision checking
+  * Currently too easy to accidentally duplicate
+
+* Type checking for expressions
+  * Binary op validity is already encoded via panics in ty(),
+    modeled after lowest-common output denominator (i.e. naga arithmetic rules).
+    * Need to write a version that returns a boolean instead of a panic
+
+* Setup type specification for backends
   * Backends are currently fixed to f32 due to the need to inject literals
-  * Consuming code is currently forced to annotate types for all literals
   * Backends should have control over the final type
-    * Need to be able to guarantee output type rather than relying on literals,
-      while still allowing arbitrary storage for the sake of nice API
     * ex. naga backend should be able to downcast f64 to f32,
           enable the FLOAT64 capability and upcast everything to f64,
           or enable the FLOAT64 capability but otherwise leave types as-is
           to allow mix-matching in cases where it makes sense(??)
+    * Need to be able to guarantee output type rather than relying on literals,
+      while still allowing arbitrary storage for the sake of nice API
     * May be wiser to simply store as highest-common-denominator types
-      * Given that Matrix, Vector and Number are necessary,
-        how much extra boilerplate and complexity is introduced by
-        UInt, SInt and Float versus u64 / i64 / f64?
-      * Already spending the full 64 bits in memory via enums
     * Specifying format per-property in SpecializationData is probably the way to go
       * Switch back from identifiers to properties to preserve type information
       * Augment with a new numeric type enum so backends can cast appropriately

@@ -1,5 +1,5 @@
 use image::RgbImage;
-use rust_gpu_bridge::glam::Vec3;
+use rust_gpu_bridge::glam::Vec4;
 use tracing::instrument;
 
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
@@ -7,7 +7,7 @@ use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIter
 use elysian_core::{
     ast::modify::CONTEXT_STRUCT,
     ir::{
-        ast::{Struct, Value, DISTANCE, NORMAL, POSITION_2D, VECTOR2_STRUCT, X, Y},
+        ast::{Struct, Value, COLOR, POSITION_2D, VECTOR2_STRUCT, X, Y},
         module::{AsModule, SpecializationData},
     },
 };
@@ -54,24 +54,12 @@ where
 
                     let ctx = shape(ctx);
 
-                    let d: f32 = ctx.get(&DISTANCE).into();
-                    let n: Vec3 = ctx.get(&NORMAL).into();
-
-                    if d >= 0.0 && d <= 4.0 / width as f32 {
-                        [255, 255, 255]
-                    } else if d <= 0.0 {
-                        [
-                            ((n.x * 0.5 + 0.5) * 255.0).round() as u8,
-                            ((n.y * 0.5 + 0.5) * 255.0).round() as u8,
-                            ((n.z * 0.5 + 0.5) * 255.0).round() as u8,
-                        ]
-                    } else {
-                        [
-                            ((n.x * 0.5 + 0.5) * 127.0).round() as u8,
-                            ((n.y * 0.5 + 0.5) * 127.0).round() as u8,
-                            0,
-                        ]
-                    }
+                    let c: Vec4 = ctx.get(&COLOR).into();
+                    [
+                        (c.x * 255.0).round() as u8,
+                        (c.y * 255.0).round() as u8,
+                        (c.z * 255.0).round() as u8,
+                    ]
                 })
                 .collect::<Vec<_>>()
         })

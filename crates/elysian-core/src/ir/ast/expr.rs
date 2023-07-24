@@ -1,19 +1,19 @@
-use std::{collections::BTreeMap, fmt::Debug};
+use std::fmt::Debug;
 
 use crate::{
     ast::expr::Expr as ElysianExpr,
     ir::{
         ast::{Property, Value},
-        module::StructDefinition,
+        module::{NumericType, StructDefinition, Type},
     },
 };
 
-use super::{stmt::Stmt, Identifier};
+use super::{stmt::Stmt, Identifier, CONTEXT};
 
 /// Expression resulting in a value
 pub enum Expr {
     Literal(Value),
-    Struct(&'static StructDefinition, BTreeMap<Property, Expr>),
+    Struct(&'static StructDefinition, IndexMap<Property, Expr>),
     Read(Vec<Property>),
     Call {
         function: Identifier,
@@ -146,13 +146,14 @@ impl PartialEq for Expr {
     }
 }
 
+use indexmap::IndexMap;
 use Expr::*;
 
 impl From<ElysianExpr> for Expr {
     fn from(value: ElysianExpr) -> Self {
         match value {
             ElysianExpr::Literal(v) => Expr::Literal(v.into()),
-            ElysianExpr::Read(p) => Expr::Read(vec![p.into()]),
+            ElysianExpr::Read(p) => Expr::Read(vec![CONTEXT, p.into()]),
             ElysianExpr::Add(lhs, rhs) => Expr::Add(lhs.into(), rhs.into()),
             ElysianExpr::Sub(lhs, rhs) => Expr::Sub(lhs.into(), rhs.into()),
             ElysianExpr::Mul(lhs, rhs) => Expr::Mul(lhs.into(), rhs.into()),
@@ -221,6 +222,108 @@ impl core::ops::Neg for Expr {
 }
 
 impl Expr {
+    pub fn ty(&self) -> Type {
+        match self {
+            Literal(v) => match v {
+                Value::Boolean(_) => Type::Boolean,
+                Value::Number(n) => Type::Number(match n {
+                    super::Number::UInt(_) => NumericType::UInt,
+                    super::Number::SInt(_) => NumericType::SInt,
+                    super::Number::Float(_) => NumericType::Float,
+                }),
+                Value::Struct(s) => Type::Struct(s.def),
+            },
+            Struct(def, _) => Type::Struct(def),
+            Read(path) => *path.last().expect("Empty Path").ty(),
+            Call { function, args } => panic!("Can't infer the type of a function call"),
+            Neg(t) => t.ty(),
+            Abs(t) => t.ty(),
+            Sign(t) => t.ty(),
+            Length(t) => match t.ty() {
+                Type::Boolean => panic!("Invalid Length"),
+                Type::Number(n) => Type::Number(n),
+                Type::Struct(s) => match s.name() {
+                    "Vector2" => Type::Number(NumericType::Float),
+                    "Vector3" => Type::Number(NumericType::Float),
+                    "Vector4" => Type::Number(NumericType::Float),
+                    _ => panic!("Invalid Length"),
+                },
+            },
+            Normalize(t) => t.ty(),
+            Add(lhs, rhs)
+            | Sub(lhs, rhs)
+            | Mul(lhs, rhs)
+            | Div(lhs, rhs)
+            | Min(lhs, rhs)
+            | Max(lhs, rhs)
+            | Lt(lhs, rhs)
+            | Gt(lhs, rhs)
+            | Dot(lhs, rhs)
+            | Mix(lhs, rhs, ..) => match (lhs.ty(), rhs.ty()) {
+                (Type::Boolean, Type::Boolean) => Type::Boolean,
+                (Type::Number(a), Type::Number(b)) => {
+                    if a.name() != b.name() {
+                        panic!("Invalid Binary Op")
+                    }
+
+                    Type::Number(a)
+                }
+                (Type::Number(..), Type::Struct(s)) => Type::Struct(s),
+                (Type::Struct(s), Type::Number(..)) => Type::Struct(s),
+                (Type::Struct(a), Type::Struct(b)) => match self {
+                    Add(_, _) => match (a.name(), b.name()) {
+                        ("Vector2", "Vector2") => Type::Struct(a),
+                        ("Vector3", "Vector3") => Type::Struct(a),
+                        ("Vector4", "Vector4") => Type::Struct(a),
+                        ("Matrix2", "Matrix2") => Type::Struct(a),
+                        ("Matrix3", "Matrix3") => Type::Struct(a),
+                        ("Matrix4", "Matrix4") => Type::Struct(a),
+                        _ => panic!("Invalid Binary Op"),
+                    },
+                    Sub(_, _) => match (a.name(), b.name()) {
+                        ("Vector2", "Vector2") => Type::Struct(a),
+                        ("Vector3", "Vector3") => Type::Struct(a),
+                        ("Vector4", "Vector4") => Type::Struct(a),
+                        ("Matrix2", "Matrix2") => Type::Struct(a),
+                        ("Matrix3", "Matrix3") => Type::Struct(a),
+                        ("Matrix4", "Matrix4") => Type::Struct(a),
+                        _ => panic!("Invalid Binary Op"),
+                    },
+                    Mul(_, _) => match (a.name(), b.name()) {
+                        ("Vector2", "Vector2") => Type::Struct(a),
+                        ("Vector3", "Vector3") => Type::Struct(a),
+                        ("Vector4", "Vector4") => Type::Struct(a),
+                        ("Matrix2", "Matrix2") => Type::Struct(a),
+                        ("Matrix3", "Matrix3") => Type::Struct(a),
+                        ("Matrix4", "Matrix4") => Type::Struct(a),
+                        ("Vector2", "Matrix2") => Type::Struct(a),
+                        ("Matrix2", "Vector2") => Type::Struct(b),
+                        ("Vector3", "Matrix3") => Type::Struct(a),
+                        ("Matrix3", "Vector3") => Type::Struct(b),
+                        ("Vector4", "Matrix4") => Type::Struct(a),
+                        ("Matrix4", "Vector4") => Type::Struct(b),
+                        _ => panic!("Invalid Binary Op"),
+                    },
+                    Div(_, _) => match (a.name(), b.name()) {
+                        ("Vector2", "Vector2") => Type::Struct(a),
+                        ("Vector3", "Vector3") => Type::Struct(a),
+                        ("Vector4", "Vector4") => Type::Struct(a),
+                        _ => panic!("Invalid Binary Op"),
+                    },
+                    Min(_, _) | Max(_, _) | Lt(_, _) | Gt(_, _) | Dot(_, _) | Mix(_, _, _) => {
+                        if a.name_unique() != b.name_unique() {
+                            panic!("Invalid Binary Op")
+                        }
+
+                        Type::Struct(a)
+                    }
+                    _ => unreachable!(),
+                },
+                _ => panic!("Invalid BinaryOp"),
+            },
+        }
+    }
+
     pub fn lt(self, rhs: Expr) -> Expr {
         Lt(Box::new(self), Box::new(rhs))
     }

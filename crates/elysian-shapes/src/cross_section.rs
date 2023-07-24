@@ -62,7 +62,7 @@ impl AsModule for CrossSection {
                     prop: CONTEXT,
                     mutable: true,
                 }],
-                output: CONTEXT_STRUCT,
+                output: CONTEXT_STRUCT.clone(),
                 block: [
                     [CONTEXT, POSITION_3D].write(
                         Expr::from(self.x_axis.clone()) * [CONTEXT, POSITION_2D, X].read()

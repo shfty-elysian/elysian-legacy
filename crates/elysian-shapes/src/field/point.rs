@@ -67,7 +67,7 @@ impl AsIR for Point {
                 prop: CONTEXT,
                 mutable: true,
             }],
-            output: &CONTEXT_STRUCT,
+            output: CONTEXT_STRUCT.clone(),
             block: block.block(),
         }]
     }

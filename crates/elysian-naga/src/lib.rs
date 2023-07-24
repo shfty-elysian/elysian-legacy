@@ -1,566 +1,672 @@
-use std::collections::BTreeMap;
-
 use elysian_core::ir::{
-    ast::{Expr, Number, Property, Stmt, Value},
-    module::{AsModule, FunctionDefinition, SpecializationData, StructDefinition},
+    ast::{Expr, Number, Property, Stmt, Struct, Value},
+    module::{Module as ElysianModule, NumericType, Type as ElysianType},
 };
+use indexmap::IndexMap;
 use naga::{
-    Arena, BinaryOperator, Block as NagaBlock, Expression, Function, FunctionArgument,
-    FunctionResult, Handle, Literal, LocalVariable, MathFunction, Range, ScalarKind, Span,
-    Statement, StructMember, Type, TypeInner, UniqueArena, VectorSize,
+    Arena, BinaryOperator, Block as NagaBlock, EntryPoint, Expression, Function, FunctionArgument,
+    FunctionResult, Handle, Literal, LocalVariable, MathFunction, Module as NagaModule, Range,
+    ScalarKind, ShaderStage, Span, Statement, StructMember, SwizzleComponent, Type as NagaType,
+    TypeInner, UniqueArena, VectorSize,
 };
 
-pub fn module_to_naga<T>(input: &T, spec: &SpecializationData, name: &str) -> naga::Module
-where
-    T: AsModule,
-{
-    let module = input.module(spec);
-
-    let types = structs_to_naga(&module.struct_definitions);
-    let functions = functions_to_naga(&module.function_definitions, &types);
-
-    let out = naga::Module {
-        types,
-        special_types: Default::default(),
-        constants: Default::default(),
-        global_variables: Default::default(),
-        const_expressions: Default::default(),
-        functions,
-        entry_points: Default::default(),
-    };
-
-    out
+#[derive(Debug, Default)]
+pub struct ExpressionQueue {
+    expressions: Arena<Expression>,
+    queue: Vec<Handle<Expression>>,
 }
 
-fn structs_to_naga(defs: &Vec<StructDefinition>) -> UniqueArena<Type> {
-    let mut types = UniqueArena::default();
+#[derive(Debug, Default)]
+pub struct LocalVariableStore {
+    locals: Arena<LocalVariable>,
+    pointers: IndexMap<Handle<LocalVariable>, Handle<Expression>>,
+}
 
-    let bool = types.insert(
-        Type {
+pub struct NagaWriter<'a> {
+    input: &'a ElysianModule,
+    types: UniqueArena<NagaType>,
+    functions: Arena<Function>,
+    block_stack: Vec<NagaBlock>,
+    expressions: Option<ExpressionQueue>,
+    local_variables: Option<LocalVariableStore>,
+}
+
+impl<'a> NagaWriter<'a> {
+    pub fn new(module: &'a ElysianModule) -> Self {
+        NagaWriter {
+            input: module,
+            types: Default::default(),
+            functions: Default::default(),
+            block_stack: Default::default(),
+            expressions: Default::default(),
+            local_variables: Default::default(),
+        }
+    }
+
+    pub fn module_to_naga(mut self) -> NagaModule {
+        self.types_to_naga();
+        self.functions_to_naga();
+        let entry_point = self.shadertoy_entry_point();
+
+        NagaModule {
+            types: self.types,
+            special_types: Default::default(),
+            constants: Default::default(),
+            global_variables: Default::default(),
+            const_expressions: Default::default(),
+            functions: self.functions,
+            entry_points: vec![entry_point],
+        }
+    }
+
+    fn get_type(&self, name: &str) -> (Handle<NagaType>, &NagaType) {
+        self.types
+            .iter()
+            .find(|(_, v)| v.name.as_ref().map(String::as_str) == Some(name))
+            .expect("No type")
+    }
+
+    fn get_function(&self, name: &str) -> (Handle<Function>, &Function) {
+        self.functions
+            .iter()
+            .find(|(_, v)| v.name.as_ref().map(String::as_str) == Some(name))
+            .unwrap_or_else(|| panic!("No function for {name:}"))
+    }
+
+    fn get_local_variable(&self, name: &str) -> Option<(Handle<LocalVariable>, &LocalVariable)> {
+        self.local_variables
+            .as_ref()?
+            .locals
+            .iter()
+            .find(|(_, v)| v.name.as_ref().map(String::as_str) == Some(name))
+    }
+
+    fn get_pointer(&self, name: &str) -> Option<&Handle<Expression>> {
+        let (k, _) = self.get_local_variable(name)?;
+        self.local_variables
+            .as_ref()
+            .expect("Not in a block")
+            .pointers
+            .get(&k)
+    }
+
+    fn types_to_naga(&mut self) {
+        let bool = self.push_type(NagaType {
             name: Some("Bool".to_string()),
             inner: TypeInner::Scalar {
                 kind: ScalarKind::Bool,
                 width: 1,
             },
-        },
-        Span::UNDEFINED,
-    );
+        });
 
-    let float = types.insert(
-        Type {
+        let uint = self.push_type(NagaType {
+            name: Some("u32".to_string()),
+            inner: TypeInner::Scalar {
+                kind: ScalarKind::Uint,
+                width: 4,
+            },
+        });
+
+        let sint = self.push_type(NagaType {
+            name: Some("i32".to_string()),
+            inner: TypeInner::Scalar {
+                kind: ScalarKind::Sint,
+                width: 4,
+            },
+        });
+
+        let float = self.push_type(NagaType {
             name: Some("f32".to_string()),
             inner: TypeInner::Scalar {
                 kind: ScalarKind::Float,
                 width: 4,
             },
-        },
-        Span::UNDEFINED,
-    );
+        });
 
-    let vec2 = types.insert(
-        Type {
+        self.push_type(NagaType {
             name: Some("Vector2".to_string()),
             inner: TypeInner::Vector {
                 size: VectorSize::Bi,
                 kind: ScalarKind::Float,
                 width: 4,
             },
-        },
-        Span::UNDEFINED,
-    );
+        });
 
-    let vec3 = types.insert(
-        Type {
+        self.push_type(NagaType {
             name: Some("Vector3".to_string()),
             inner: TypeInner::Vector {
                 size: VectorSize::Tri,
                 kind: ScalarKind::Float,
                 width: 4,
             },
-        },
-        Span::UNDEFINED,
-    );
+        });
 
-    let vec4 = types.insert(
-        Type {
+        self.push_type(NagaType {
             name: Some("Vector4".to_string()),
             inner: TypeInner::Vector {
                 size: VectorSize::Quad,
                 kind: ScalarKind::Float,
                 width: 4,
             },
-        },
-        Span::UNDEFINED,
-    );
+        });
 
-    let mat2 = types.insert(
-        Type {
+        self.push_type(NagaType {
             name: Some("Matrix2".to_string()),
             inner: TypeInner::Matrix {
                 columns: VectorSize::Bi,
                 rows: VectorSize::Bi,
                 width: 4,
             },
-        },
-        Span::UNDEFINED,
-    );
+        });
 
-    let mat3 = types.insert(
-        Type {
+        self.push_type(NagaType {
             name: Some("Matrix3".to_string()),
             inner: TypeInner::Matrix {
                 columns: VectorSize::Tri,
                 rows: VectorSize::Tri,
                 width: 4,
             },
-        },
-        Span::UNDEFINED,
-    );
+        });
 
-    let mat4 = types.insert(
-        Type {
+        self.push_type(NagaType {
             name: Some("Matrix4".to_string()),
             inner: TypeInner::Matrix {
                 columns: VectorSize::Quad,
                 rows: VectorSize::Quad,
                 width: 4,
             },
-        },
-        Span::UNDEFINED,
-    );
+        });
 
-    for def in defs {
-        let (members, span) =
-            def.fields
-                .iter()
-                .fold((vec![], 0), |(mut members, total_span), next| {
-                    let (member, span) = match next.prop.ty() {
-                        elysian_core::ir::module::Type::Boolean => (bool, 1),
-                        elysian_core::ir::module::Type::Number => (float, 4),
-                        elysian_core::ir::module::Type::Vector2 => (vec2, 8),
-                        elysian_core::ir::module::Type::Vector3 => (vec3, 12),
-                        elysian_core::ir::module::Type::Vector4 => (vec4, 16),
-                        elysian_core::ir::module::Type::Matrix2 => (mat2, 24),
-                        elysian_core::ir::module::Type::Matrix3 => (mat3, 36),
-                        elysian_core::ir::module::Type::Matrix4 => (mat4, 48),
-                        elysian_core::ir::module::Type::Struct(s) => {
-                            let (handle, ty) = types
-                                .iter()
-                                .find(|(_, v)| v.name == Some(s.id.name().to_string()))
-                                .unwrap();
-                            let TypeInner::Struct {
-                                span,
-                                ..
-                            } = ty.inner else {
-                                panic!("Type is not a Struct");
-                            };
-                            (handle, span)
-                        }
-                    };
-                    members.push(StructMember {
-                        name: Some(next.prop.name().to_string()),
-                        ty: member,
-                        binding: None,
-                        offset: total_span,
+        for def in &self.input.struct_definitions {
+            let (members, span) =
+                def.fields
+                    .iter()
+                    .fold((vec![], 0), |(mut members, total_span), next| {
+                        let (member, span) = match next.prop.ty() {
+                            ElysianType::Boolean => (bool, 1),
+                            ElysianType::Number(n) => match n {
+                                NumericType::UInt => (uint, 4),
+                                NumericType::SInt => (sint, 4),
+                                NumericType::Float => (float, 4),
+                            },
+                            ElysianType::Struct(s) => {
+                                let (handle, ty) = self.get_type(s.id.name());
+
+                                let span = match ty.inner {
+                                    TypeInner::Scalar { width, .. } => width as u32,
+                                    TypeInner::Vector { width, size, .. } => {
+                                        width as u32
+                                            * match size {
+                                                VectorSize::Bi => 2,
+                                                VectorSize::Tri => 3,
+                                                VectorSize::Quad => 4,
+                                            }
+                                    }
+                                    TypeInner::Matrix {
+                                        columns,
+                                        rows,
+                                        width,
+                                    } => {
+                                        width as u32
+                                            * match columns {
+                                                VectorSize::Bi => 2,
+                                                VectorSize::Tri => 3,
+                                                VectorSize::Quad => 4,
+                                            }
+                                            * match rows {
+                                                VectorSize::Bi => 2,
+                                                VectorSize::Tri => 3,
+                                                VectorSize::Quad => 4,
+                                            }
+                                    }
+                                    TypeInner::Struct { span, .. } => span,
+                                    _ => panic!("Invalid Type"),
+                                };
+
+                                (handle, span)
+                            }
+                        };
+                        members.push(StructMember {
+                            name: Some(next.prop.name().to_string()),
+                            ty: member,
+                            binding: None,
+                            offset: total_span,
+                        });
+                        (members, total_span + span)
                     });
-                    (members, total_span + span)
-                });
 
-        let ty = Type {
-            name: Some(def.name().to_string()),
-            inner: TypeInner::Struct { members, span },
+            let ty = NagaType {
+                name: Some(def.name().to_string()),
+                inner: TypeInner::Struct { members, span },
+            };
+
+            self.types.insert(ty, Span::UNDEFINED);
+        }
+    }
+
+    fn body_mut(&mut self) -> &mut NagaBlock {
+        self.block_stack
+            .last_mut()
+            .expect("Not inside a function body")
+    }
+
+    fn queue_mut(&mut self) -> &mut Vec<Handle<Expression>> {
+        &mut self
+            .expressions
+            .as_mut()
+            .expect("Not inside a function body")
+            .queue
+    }
+
+    fn expressions_mut(&mut self) -> &mut Arena<Expression> {
+        &mut self
+            .expressions
+            .as_mut()
+            .expect("Not inside a function body")
+            .expressions
+    }
+
+    fn local_variables_mut(&mut self) -> &mut Arena<LocalVariable> {
+        &mut self
+            .local_variables
+            .as_mut()
+            .expect("Not inside a function body")
+            .locals
+    }
+
+    fn pointers_mut(&mut self) -> &mut IndexMap<Handle<LocalVariable>, Handle<Expression>> {
+        &mut self
+            .local_variables
+            .as_mut()
+            .expect("Not inside a function body")
+            .pointers
+    }
+
+    fn push_statement(&mut self, stmt: Statement) {
+        self.flush_expressions();
+        self.body_mut().push(stmt, Span::UNDEFINED);
+    }
+
+    fn push_expression(&mut self, expr: Expression) -> Handle<Expression> {
+        let push = match &expr {
+            Expression::LocalVariable { .. } => false,
+            Expression::FunctionArgument { .. } => false,
+            Expression::CallResult { .. } => false,
+            Expression::Literal { .. } => false,
+            _ => true,
         };
 
-        types.insert(ty, Span::UNDEFINED);
-    }
+        let handle = self.expressions_mut().append(expr, Span::UNDEFINED);
 
-    types
-}
-
-fn functions_to_naga(defs: &Vec<FunctionDefinition>, tys: &UniqueArena<Type>) -> Arena<Function> {
-    let mut functions = Arena::default();
-
-    let handles = defs
-        .iter()
-        .map(|def| {
-            (
-                functions.append(
-                    Function {
-                        name: Some(def.name().to_string()),
-                        arguments: def
-                            .inputs
-                            .iter()
-                            .map(|input| FunctionArgument {
-                                name: Some(input.prop.name().to_string()),
-                                ty: tys
-                                    .iter()
-                                    .find(|(_, v)| v.name == Some(def.output.name().to_string()))
-                                    .expect("No type")
-                                    .0,
-                                binding: None,
-                            })
-                            .collect(),
-                        result: Some(FunctionResult {
-                            ty: tys
-                                .iter()
-                                .find(|(_, v)| v.name == Some(def.output.name().to_string()))
-                                .expect("No type")
-                                .0,
-                            binding: None,
-                        }),
-                        local_variables: Default::default(),
-                        expressions: Default::default(),
-                        named_expressions: Default::default(),
-                        body: Default::default(),
-                    },
-                    Span::UNDEFINED,
-                ),
-                def,
-            )
-        })
-        .collect::<BTreeMap<_, _>>();
-
-    for (handle, def) in handles {
-        let mut body = NagaBlock::new();
-        let mut expressions = Arena::default();
-        let mut local_variables = Arena::default();
-
-        for stmt in def.block.0.iter() {
-            stmt_to_naga(
-                stmt,
-                tys,
-                &functions,
-                &mut body,
-                &mut expressions,
-                &mut local_variables,
-            );
+        if push {
+            self.queue_mut().push(handle);
+        } else {
+            self.flush_expressions();
         }
 
-        let f = functions.get_mut(handle);
-        f.expressions = expressions;
-        f.local_variables = local_variables;
-        f.body = body;
+        handle
     }
 
-    functions
-}
-
-fn access_index(base: Handle<Expression>, prev: &Property, next: &Property) -> Expression {
-    Expression::AccessIndex {
-        base,
-        index: match prev.ty() {
-            elysian_core::ir::module::Type::Vector2 => match next.name() {
-                "x" => 0,
-                "y" => 1,
-                _ => panic!("Invalid Vector2 access"),
-            },
-            elysian_core::ir::module::Type::Vector3 => match next.name() {
-                "x" => 0,
-                "y" => 1,
-                "z" => 2,
-                t => panic!("Invalid Vector3 access {t:#?}"),
-            },
-            elysian_core::ir::module::Type::Vector4 => match next.name() {
-                "x" => 0,
-                "y" => 1,
-                "z" => 2,
-                "w" => 3,
-                _ => panic!("Invalid Vector4 access"),
-            },
-            elysian_core::ir::module::Type::Matrix2 => match next.name() {
-                "x" => 0,
-                "y" => 1,
-                _ => panic!("Invalid Matrix2 access"),
-            },
-            elysian_core::ir::module::Type::Matrix3 => match next.name() {
-                "x" => 0,
-                "y" => 1,
-                "z" => 2,
-                _ => panic!("Invalid Matrix3 access"),
-            },
-            elysian_core::ir::module::Type::Matrix4 => match next.name() {
-                "x" => 0,
-                "y" => 1,
-                "z" => 2,
-                "w" => 3,
-                _ => panic!("Invalid Matrix4 access"),
-            },
-            elysian_core::ir::module::Type::Struct(s) => s
-                .fields
-                .iter()
-                .position(|field| field.prop == *next)
-                .unwrap_or_else(|| panic!("No field {next:#?} for struct {s:#?}"))
-                as u32,
-            t => panic!("Not a struct: {t:#?}"),
-        },
+    fn push_type(&mut self, ty: NagaType) -> Handle<NagaType> {
+        self.types.insert(ty, Span::UNDEFINED)
     }
-}
 
-fn stmt_to_naga(
-    stmt: &Stmt,
-    tys: &UniqueArena<Type>,
-    functions: &Arena<Function>,
-    body: &mut NagaBlock,
-    expressions: &mut Arena<Expression>,
-    local_variables: &mut Arena<LocalVariable>,
-) {
-    match stmt {
-        Stmt::Block(block) => block
-            .0
+    fn flush_expressions(&mut self) {
+        let mut iter = self.queue_mut().drain(..);
+        if let Some(first) = iter.next() {
+            let last = iter.last().unwrap_or_else(|| first);
+            self.push_statement(Statement::Emit(Range::new_from_bounds(first, last)));
+        }
+    }
+
+    fn push_local_variable(
+        &mut self,
+        local: LocalVariable,
+    ) -> (Handle<LocalVariable>, Handle<Expression>) {
+        let local = self.local_variables_mut().append(local, Span::UNDEFINED);
+        let pointer = self.push_expression(Expression::LocalVariable(local));
+        self.pointers_mut().insert(local, pointer);
+        (local, pointer)
+    }
+
+    fn functions_to_naga(&mut self) {
+        let handles = self
+            .input
+            .function_definitions
             .iter()
-            .map(|t| stmt_to_naga(t, tys, functions, body, expressions, local_variables))
-            .collect(),
-        Stmt::Bind { prop, expr } => {
-            let pointer = expressions.append(
-                naga::Expression::LocalVariable(
-                    local_variables.append(
-                        naga::LocalVariable {
-                            name: Some(prop.name().to_string()),
-                            ty: tys
+            .map(|def| {
+                (
+                    self.functions.append(
+                        Function {
+                            name: Some(def.name_unique()),
+                            arguments: def
+                                .inputs
                                 .iter()
-                                .find(|(_, v)| v.name == Some(prop.ty().name().to_string()))
-                                .unwrap_or_else(|| {
-                                    panic!("No Type for {}", prop.ty().name())
+                                .map(|input| FunctionArgument {
+                                    name: Some(input.prop.name().to_string()),
+                                    ty: self.get_type(input.prop.ty().name()).0,
+                                    binding: None,
                                 })
-                                .0,
-                            init: None,
+                                .collect(),
+                            result: Some(FunctionResult {
+                                ty: self.get_type(def.output.name()).0,
+                                binding: None,
+                            }),
+                            local_variables: Default::default(),
+                            expressions: Default::default(),
+                            named_expressions: Default::default(),
+                            body: Default::default(),
                         },
                         Span::UNDEFINED,
                     ),
-                ),
-                Span::UNDEFINED,
-            );
-
-            let value = expr_to_naga(expr, tys, functions, body, local_variables, expressions);
-            body.push(
-                Statement::Emit(Range::new_from_bounds(value, value)),
-                Span::UNDEFINED,
-            );
-
-            body.push(Statement::Store { pointer, value }, Span::UNDEFINED)
-        }
-        Stmt::Write { path, expr } => {
-            let mut iter = path.iter();
-
-            let base = iter.next().unwrap();
-
-            let base_expr = if let Some(k) = local_variables
-                .iter()
-                .find(|(_, v)| v.name == Some(base.name().to_string()))
-                .map(|(k, _)| k)
-            {
-                let base_expr = expressions.append(Expression::LocalVariable(k), Span::UNDEFINED);
-                body.push(
-                    Statement::Emit(Range::new_from_bounds(base_expr, base_expr)),
-                    Span::UNDEFINED,
-                );
-                base_expr
-            } else {
-                let base_expr =
-                    expressions.append(Expression::FunctionArgument(0), Span::UNDEFINED);
-                base_expr
-            };
-
-            let (_, pointer) = iter.fold((base.clone(), base_expr), |(prev, expr), next| {
-                (
-                    next.clone(),
-                    expressions.append(access_index(expr, &prev, next), Span::UNDEFINED),
+                    def,
                 )
-            });
+            })
+            .collect::<IndexMap<_, _>>();
 
-            let value = expr_to_naga(expr, tys, functions, body, local_variables, expressions);
+        for (handle, def) in handles {
+            self.block_stack.push(NagaBlock::new());
 
-            body.push(
-                Statement::Emit(Range::new_from_bounds(value, value)),
-                Span::UNDEFINED,
-            );
+            self.expressions = Some(ExpressionQueue::default());
+            self.local_variables = Some(LocalVariableStore::default());
 
-            body.push(Statement::Store { pointer, value }, Span::UNDEFINED)
+            for (i, input_def) in def.inputs.iter().enumerate() {
+                let (_, local_ptr) = self.push_local_variable(LocalVariable {
+                    name: Some(input_def.prop.name().to_string()),
+                    ty: self.get_type(input_def.prop.ty().name()).0,
+                    init: None,
+                });
+
+                let value = self.push_expression(Expression::FunctionArgument(i as u32));
+
+                self.push_statement(Statement::Store {
+                    pointer: local_ptr,
+                    value,
+                });
+            }
+
+            for stmt in def.block.0.iter() {
+                self.stmt_to_naga(stmt);
+            }
+
+            let f = self.functions.get_mut(handle);
+            f.expressions = self.expressions.take().unwrap().expressions;
+            f.local_variables = self.local_variables.take().unwrap().locals;
+            f.body = self.block_stack.pop().unwrap();
         }
-        Stmt::If {
-            cond,
-            then,
-            otherwise,
-        } => {
-            let condition = expr_to_naga(cond, tys, functions, body, local_variables, expressions);
+    }
 
-            let mut accept = NagaBlock::default();
-            stmt_to_naga(
+    fn access_index(base: Handle<Expression>, prev: &Property, next: &Property) -> Expression {
+        Expression::AccessIndex {
+            base,
+            index: match prev.ty() {
+                ElysianType::Struct(s) => s
+                    .fields
+                    .iter()
+                    .position(|field| field.prop == *next)
+                    .unwrap_or_else(|| panic!("No field {next:#?} for struct {s:#?}"))
+                    as u32,
+                t => panic!("Not a struct: {t:#?}"),
+            },
+        }
+    }
+
+    fn stmt_to_naga(&mut self, stmt: &Stmt) {
+        match stmt {
+            Stmt::Block(block) => block.0.iter().for_each(|t| self.stmt_to_naga(t)),
+            Stmt::Bind { prop, expr } => {
+                let local_ptr = if let Some(k) = self.get_pointer(prop.name()) {
+                    k.clone()
+                } else {
+                    let (_, local_ptr) = self.push_local_variable(naga::LocalVariable {
+                        name: Some(prop.name().to_string()),
+                        ty: self.get_type(prop.ty().name()).0,
+                        init: None,
+                    });
+                    local_ptr
+                };
+
+                let value = self.expr_to_naga(expr);
+
+                self.push_statement(Statement::Store {
+                    pointer: local_ptr,
+                    value,
+                })
+            }
+            Stmt::Write { path, expr } => {
+                let mut iter = path.iter();
+
+                let base = iter.next().unwrap();
+
+                let base_expr = if let Some(base_expr) = self.get_pointer(base.name()) {
+                    base_expr.clone()
+                } else {
+                    panic!("Invalid write")
+                };
+
+                let (_, pointer) = iter.fold((base.clone(), base_expr), |(prev, expr), next| {
+                    let expr = self.push_expression(Self::access_index(expr, &prev, next));
+
+                    (next.clone(), expr)
+                });
+
+                let value = self.expr_to_naga(expr);
+
+                self.push_statement(Statement::Store { pointer, value })
+            }
+            Stmt::If {
+                cond,
                 then,
-                tys,
-                functions,
-                &mut accept,
-                expressions,
-                local_variables,
-            );
+                otherwise,
+            } => {
+                let condition = self.expr_to_naga(cond);
+                self.flush_expressions();
 
-            let mut reject = NagaBlock::default();
+                self.block_stack.push(NagaBlock::default());
+                self.stmt_to_naga(then);
+                let accept = self.block_stack.pop().unwrap();
 
-            if let Some(otherwise) = otherwise {
-                stmt_to_naga(
-                    otherwise,
-                    tys,
-                    functions,
-                    &mut reject,
-                    expressions,
-                    local_variables,
-                )
-            };
+                self.block_stack.push(NagaBlock::default());
+                if let Some(otherwise) = otherwise {
+                    self.stmt_to_naga(otherwise)
+                };
+                let reject = self.block_stack.pop().unwrap();
 
-            body.push(
-                Statement::Emit(Range::new_from_bounds(condition, condition)),
-                Span::UNDEFINED,
-            );
-
-            body.push(
-                Statement::If {
+                self.push_statement(Statement::If {
                     condition,
                     accept,
                     reject,
-                },
-                Span::UNDEFINED,
-            )
-        }
-        Stmt::Loop { stmt } => {
-            let mut loop_body = NagaBlock::default();
-            stmt_to_naga(
-                stmt,
-                tys,
-                functions,
-                &mut loop_body,
-                expressions,
-                local_variables,
-            );
+                })
+            }
+            Stmt::Loop { stmt } => {
+                self.block_stack.push(NagaBlock::default());
+                self.stmt_to_naga(stmt);
+                let loop_body = self.block_stack.pop().unwrap();
 
-            body.push(
-                Statement::Loop {
+                self.push_statement(Statement::Loop {
                     body: loop_body,
                     continuing: Default::default(),
                     break_if: None,
-                },
-                Span::UNDEFINED,
-            )
-        }
-        Stmt::Break => body.push(Statement::Break, Span::UNDEFINED),
-        Stmt::Output(expr) => {
-            let value = expr_to_naga(expr, tys, functions, body, local_variables, expressions);
-            body.push(
-                Statement::Emit(Range::new_from_bounds(value, value)),
-                Span::UNDEFINED,
-            );
-            body.push(Statement::Return { value: Some(value) }, Span::UNDEFINED);
+                })
+            }
+            Stmt::Break => self.push_statement(Statement::Break),
+            Stmt::Output(expr) => {
+                let value = self.expr_to_naga(expr);
+                self.push_statement(Statement::Return { value: Some(value) });
+            }
         }
     }
-}
 
-fn expr_to_naga(
-    expr: &Expr,
-    tys: &UniqueArena<Type>,
-    functions: &Arena<Function>,
-    body: &mut NagaBlock,
-    local_variables: &Arena<LocalVariable>,
-    expressions: &mut Arena<Expression>,
-) -> Handle<Expression> {
-    match expr {
-        Expr::Literal(v) => {
-            let value = value_to_naga(v, tys, expressions);
-            expressions.append(value, Span::UNDEFINED)
+    fn naga_default(ty: &ElysianType) -> Value {
+        match ty {
+            ElysianType::Boolean => Value::Boolean(false),
+            ElysianType::Number(n) => match n {
+                NumericType::UInt => Value::Number(Number::UInt(0)),
+                NumericType::SInt => Value::Number(Number::SInt(0)),
+                NumericType::Float => Value::Number(Number::Float(0.0)),
+            },
+            ElysianType::Struct(s) => {
+                let mut out = Struct::new(s);
+                for field in s.fields {
+                    out.set_mut(field.prop.clone(), Self::naga_default(field.prop.ty()));
+                }
+                Value::Struct(out)
+            }
         }
-        Expr::Struct(def, members) => {
-            let components = members
-                .into_iter()
-                .map(|(_, member)| {
-                    expr_to_naga(member, tys, functions, body, local_variables, expressions)
-                })
-                .collect();
-            expressions.append(
-                Expression::Compose {
-                    ty: tys
-                        .iter()
-                        .find(|(_, v)| v.name == Some(def.name().to_string()))
-                        .unwrap()
-                        .0,
+    }
+
+    fn expr_to_naga(&mut self, expr: &Expr) -> Handle<Expression> {
+        match expr {
+            Expr::Literal(v) => self.value_to_naga(v),
+            Expr::Struct(def, members) => {
+                let components = def
+                    .fields
+                    .iter()
+                    .map(|field| -> Expr {
+                        if let Some(member) = members.get(&field.prop) {
+                            member.clone()
+                        } else {
+                            Expr::Literal(Self::naga_default(field.prop.ty()))
+                        }
+                    })
+                    .map(|member| self.expr_to_naga(&member))
+                    .collect();
+
+                let expr = self.push_expression(Expression::Compose {
+                    ty: self.get_type(def.name()).0,
                     components,
-                },
-                Span::UNDEFINED,
-            )
-        }
-        Expr::Read(path) => {
-            let mut iter = path.iter();
+                });
 
-            let base = iter.next().unwrap();
+                expr
+            }
+            Expr::Read(path) => {
+                let mut iter = path.iter();
 
-            let base_expr = if let Some(k) = local_variables
-                .iter()
-                .find(|(_, v)| v.name == Some(base.name().to_string()))
-                .map(|(k, _)| k)
-            {
-                let base_expr = expressions.append(Expression::LocalVariable(k), Span::UNDEFINED);
-                body.push(
-                    Statement::Emit(Range::new_from_bounds(base_expr, base_expr)),
-                    Span::UNDEFINED,
-                );
-                base_expr
-            } else {
-                let base_expr =
-                    expressions.append(Expression::FunctionArgument(0), Span::UNDEFINED);
-                base_expr
-            };
+                let base = iter.next().unwrap();
 
-            let (_, exprs) = iter.fold((base.clone(), base_expr), |(prev, expr), next| {
-                (
-                    next.clone(),
-                    expressions.append(access_index(expr, &prev, next), Span::UNDEFINED),
-                )
-            });
+                let base_expr = if let Some(pointer) = self.get_pointer(base.name()) {
+                    self.push_expression(Expression::Load {
+                        pointer: pointer.clone(),
+                    })
+                } else {
+                    panic!("Invalid Read")
+                };
 
-            exprs
-        }
-        Expr::Call { function, args } => {
-            let function = functions
-                .iter()
-                .find(|(_, v)| v.name == Some(function.name().to_string()))
-                .unwrap()
-                .0;
+                let (_, expr) = iter.fold((base.clone(), base_expr), |(prev, expr), next| {
+                    let access = self.push_expression(Self::access_index(expr, &prev, next));
+                    (next.clone(), access)
+                });
 
-            let arguments = args
-                .into_iter()
-                .map(|arg| expr_to_naga(arg, tys, functions, body, local_variables, expressions))
-                .collect();
+                expr
+            }
+            Expr::Call {
+                function: func,
+                args,
+            } => {
+                let f = self.get_function(&func.name_unique()).0;
 
-            let expr = expressions.append(Expression::CallResult(function), Span::UNDEFINED);
+                let arguments = args.into_iter().map(|arg| self.expr_to_naga(arg)).collect();
 
-            body.push(
-                Statement::Call {
-                    function,
+                let expr = self.push_expression(Expression::CallResult(f));
+
+                self.push_statement(Statement::Call {
+                    function: f,
                     arguments,
-                    result: Some(expr.clone()),
-                },
-                Span::UNDEFINED,
-            );
+                    result: Some(expr),
+                });
 
-            expr
-        }
-        Expr::Neg(t) => {
-            let expr = expr_to_naga(t, tys, functions, body, local_variables, expressions);
-            expressions.append(
-                Expression::Unary {
+                expr
+            }
+            Expr::Neg(t) => {
+                let expr = self.expr_to_naga(t);
+
+                let expr = self.push_expression(Expression::Unary {
                     op: naga::UnaryOperator::Negate,
                     expr,
-                },
-                Span::UNDEFINED,
-            )
-        }
-        Expr::Add(lhs, rhs)
-        | Expr::Sub(lhs, rhs)
-        | Expr::Mul(lhs, rhs)
-        | Expr::Div(lhs, rhs)
-        | Expr::Lt(lhs, rhs)
-        | Expr::Gt(lhs, rhs) => {
-            let left = expr_to_naga(lhs, tys, functions, body, local_variables, expressions);
-            let right = expr_to_naga(rhs, tys, functions, body, local_variables, expressions);
-            expressions.append(
-                Expression::Binary {
+                });
+
+                expr
+            }
+            Expr::Add(lhs, rhs)
+            | Expr::Sub(lhs, rhs)
+            | Expr::Mul(lhs, rhs)
+            | Expr::Div(lhs, rhs)
+            | Expr::Lt(lhs, rhs)
+            | Expr::Gt(lhs, rhs) => {
+                let type_l = lhs.ty();
+                let type_r = rhs.ty();
+
+                let invalid = |a, b| format!("Invalid Binary Op {}, {}", a, b);
+
+                let (lhs, rhs) = match (type_l, type_r) {
+                    (ElysianType::Boolean, ElysianType::Boolean) => (lhs, rhs),
+                    (ElysianType::Number(a), ElysianType::Number(b)) => {
+                        if a == b {
+                            (lhs, rhs)
+                        } else {
+                            panic!("{}", invalid(a.name(), b.name()))
+                        }
+                    }
+                    (ElysianType::Number(..), ElysianType::Struct(s))
+                    | (ElysianType::Struct(s), ElysianType::Number(..)) => match expr {
+                        Expr::Mul(_, _) => match s.name() {
+                            "Vector2" | "Vector3" | "Vector4" | "Matrix2" | "Matrix3"
+                            | "Matrix4" => (lhs, rhs),
+                            _ => panic!("Invalid Binary Op"),
+                        },
+                        _ => panic!("Invalid Binary Op"),
+                    },
+                    (ElysianType::Struct(a), ElysianType::Struct(b)) => match expr {
+                        Expr::Add(_, _) => match (a.name(), b.name()) {
+                            ("Vector2", "Vector2")
+                            | ("Vector3", "Vector3")
+                            | ("Vector4", "Vector4")
+                            | ("Matrix2", "Matrix2")
+                            | ("Matrix3", "Matrix3")
+                            | ("Matrix4", "Matrix4") => (lhs, rhs),
+                            _ => panic!("{}", invalid(a.name(), b.name())),
+                        },
+                        Expr::Sub(_, _) => match (a.name(), b.name()) {
+                            ("Vector2", "Vector2")
+                            | ("Vector3", "Vector3")
+                            | ("Vector4", "Vector4")
+                            | ("Matrix2", "Matrix2")
+                            | ("Matrix3", "Matrix3")
+                            | ("Matrix4", "Matrix4") => (lhs, rhs),
+                            _ => panic!("{}", invalid(a.name(), b.name())),
+                        },
+                        Expr::Mul(_, _) => match (a.name(), b.name()) {
+                            ("Vector2", "Vector2")
+                            | ("Vector3", "Vector3")
+                            | ("Vector4", "Vector4")
+                            | ("Matrix2", "Matrix2")
+                            | ("Matrix3", "Matrix3")
+                            | ("Matrix4", "Matrix4")
+                            | ("Vector2", "Matrix2")
+                            | ("Vector3", "Matrix3")
+                            | ("Vector4", "Matrix4")
+                            | ("Matrix2", "Vector2")
+                            | ("Matrix3", "Vector3")
+                            | ("Matrix4", "Vector4") => (lhs, rhs),
+                            _ => panic!("{}", invalid(a.name(), b.name())),
+                        },
+                        Expr::Div(_, _) => match (a.name(), b.name()) {
+                            ("Vector2", "Vector2")
+                            | ("Vector3", "Vector3")
+                            | ("Vector4", "Vector4") => (lhs, rhs),
+                            _ => panic!("{}", invalid(a.name(), b.name())),
+                        },
+                        Expr::Lt(_, _) => todo!(),
+                        Expr::Gt(_, _) => todo!(),
+                        _ => unreachable!(),
+                    },
+                    _ => panic!("Invalid Binary Op"),
+                };
+
+                let left = self.expr_to_naga(lhs);
+                let right = self.expr_to_naga(rhs);
+
+                self.push_expression(Expression::Binary {
                     op: match expr {
                         Expr::Add(..) => BinaryOperator::Add,
                         Expr::Sub(..) => BinaryOperator::Subtract,
@@ -572,15 +678,12 @@ fn expr_to_naga(
                     },
                     left,
                     right,
-                },
-                Span::UNDEFINED,
-            )
-        }
-        Expr::Min(lhs, rhs) | Expr::Max(lhs, rhs) | Expr::Dot(lhs, rhs) => {
-            let arg = expr_to_naga(lhs, tys, functions, body, local_variables, expressions);
-            let arg1 = expr_to_naga(rhs, tys, functions, body, local_variables, expressions);
-            expressions.append(
-                Expression::Math {
+                })
+            }
+            Expr::Min(lhs, rhs) | Expr::Max(lhs, rhs) | Expr::Dot(lhs, rhs) => {
+                let arg = self.expr_to_naga(lhs);
+                let arg1 = self.expr_to_naga(rhs);
+                let expr = self.push_expression(Expression::Math {
                     fun: match expr {
                         Expr::Min(..) => MathFunction::Min,
                         Expr::Max(..) => MathFunction::Max,
@@ -591,14 +694,14 @@ fn expr_to_naga(
                     arg1: Some(arg1),
                     arg2: None,
                     arg3: None,
-                },
-                Span::UNDEFINED,
-            )
-        }
-        Expr::Abs(t) | Expr::Sign(t) | Expr::Length(t) | Expr::Normalize(t) => {
-            let arg = expr_to_naga(t, tys, functions, body, local_variables, expressions);
-            expressions.append(
-                Expression::Math {
+                });
+
+                expr
+            }
+            Expr::Abs(t) | Expr::Sign(t) | Expr::Length(t) | Expr::Normalize(t) => {
+                let arg = self.expr_to_naga(t);
+
+                let expr = self.push_expression(Expression::Math {
                     fun: match expr {
                         Expr::Abs(..) => MathFunction::Abs,
                         Expr::Sign(..) => MathFunction::Sign,
@@ -610,61 +713,206 @@ fn expr_to_naga(
                     arg1: None,
                     arg2: None,
                     arg3: None,
-                },
-                Span::UNDEFINED,
-            )
-        }
-        Expr::Mix(lhs, rhs, t) => {
-            let arg = expr_to_naga(lhs, tys, functions, body, local_variables, expressions);
-            let arg1 = expr_to_naga(rhs, tys, functions, body, local_variables, expressions);
-            let arg2 = expr_to_naga(t, tys, functions, body, local_variables, expressions);
-            expressions.append(
-                Expression::Math {
+                });
+
+                expr
+            }
+            Expr::Mix(lhs, rhs, t) => {
+                let arg = self.expr_to_naga(lhs);
+                let arg1 = self.expr_to_naga(rhs);
+                let arg2 = self.expr_to_naga(t);
+
+                let expr = self.push_expression(Expression::Math {
                     fun: MathFunction::Mix,
                     arg,
                     arg1: Some(arg1),
                     arg2: Some(arg2),
                     arg3: None,
-                },
-                Span::UNDEFINED,
-            )
+                });
+
+                expr
+            }
         }
     }
-}
 
-fn number_to_naga(number: &Number) -> Expression {
-    match number {
-        Number::UInt(u) => Expression::Literal(Literal::U32(*u as u32)),
-        Number::SInt(i) => Expression::Literal(Literal::I32(*i as i32)),
-        Number::Float(f) => Expression::Literal(Literal::F32(*f as f32)),
+    fn number_to_naga(number: &Number) -> Expression {
+        match number {
+            Number::UInt(u) => Expression::Literal(Literal::U32(*u as u32)),
+            Number::SInt(i) => Expression::Literal(Literal::I32(*i as i32)),
+            Number::Float(f) => Expression::Literal(Literal::F32(*f as f32)),
+        }
     }
-}
 
-fn value_to_naga(
-    value: &Value,
-    tys: &UniqueArena<Type>,
-    expressions: &mut Arena<Expression>,
-) -> Expression {
-    match value {
-        Value::Boolean(b) => Expression::Literal(Literal::Bool(*b)),
-        Value::Number(n) => number_to_naga(n),
-        Value::Struct(s) => {
-            let ty = tys
-                .iter()
-                .find(|(_, v)| v.name == Some(s.def.name().to_string()))
-                .unwrap()
-                .0;
+    fn value_to_naga(&mut self, value: &Value) -> Handle<Expression> {
+        match value {
+            Value::Boolean(b) => self.push_expression(Expression::Literal(Literal::Bool(*b))),
+            Value::Number(n) => self.push_expression(Self::number_to_naga(n)),
+            Value::Struct(s) => {
+                let ty = self.get_type(s.def.name()).0;
 
-            let mut components = vec![];
+                let mut components = vec![];
 
-            for field in s.def.fields {
-                let v = s.get(&field.prop);
-                let v = value_to_naga(&v, tys, expressions);
-                let v = expressions.append(v, Span::UNDEFINED);
-                components.push(v);
+                for field in s.def.fields {
+                    let v = s.get(&field.prop);
+                    let v = self.value_to_naga(&v);
+                    components.push(v);
+                }
+
+                let expr = self.push_expression(Expression::Compose { ty, components });
+
+                expr
             }
+        }
+    }
 
-            Expression::Compose { ty, components }
+    fn shadertoy_entry_point(&mut self) -> EntryPoint {
+        self.block_stack.push(NagaBlock::new());
+        self.expressions = Some(ExpressionQueue::default());
+        self.local_variables = Some(LocalVariableStore::default());
+
+        let (_, frag_color_ptr) = self.push_local_variable(LocalVariable {
+            name: Some("fragColor".to_string()),
+            ty: self.get_type("Vector4").0,
+            init: None,
+        });
+
+        let (_, context_ptr) = self.push_local_variable(LocalVariable {
+            name: Some("context".to_string()),
+            ty: self.get_type("Context").0,
+            init: None,
+        });
+
+        let frag_coord_arg = self.push_expression(Expression::FunctionArgument(0));
+        let resolution_arg = self.push_expression(Expression::FunctionArgument(2));
+
+        let resolution_xy = self.push_expression(Expression::Swizzle {
+            size: VectorSize::Bi,
+            vector: resolution_arg,
+            pattern: SwizzleComponent::XYZW,
+        });
+
+        let uv_expr = self.push_expression(Expression::Binary {
+            op: BinaryOperator::Divide,
+            left: frag_coord_arg,
+            right: resolution_xy,
+        });
+
+        let two = self.push_expression(Expression::Literal(Literal::F32(2.0)));
+
+        let uv_expr = self.push_expression(Expression::Binary {
+            op: BinaryOperator::Multiply,
+            left: uv_expr,
+            right: two,
+        });
+
+        let one = self.push_expression(Expression::Literal(Literal::F32(1.0)));
+
+        let one_v2 = self.push_expression(Expression::Compose {
+            ty: self.get_type("Vector2").0,
+            components: vec![one, one],
+        });
+
+        let uv_expr = self.push_expression(Expression::Binary {
+            op: BinaryOperator::Subtract,
+            left: uv_expr,
+            right: one_v2,
+        });
+
+        let uv_expr = self.push_expression(Expression::Binary {
+            op: BinaryOperator::Multiply,
+            left: uv_expr,
+            right: two,
+        });
+
+        let entry_point = self.get_function(&self.input.entry_point.name_unique()).0;
+
+        let position_2d = self.push_expression(Expression::AccessIndex {
+            base: context_ptr,
+            index: 0,
+        });
+
+        self.push_statement(Statement::Store {
+            pointer: position_2d,
+            value: uv_expr,
+        });
+
+        let context = self.push_expression(Expression::Load {
+            pointer: context_ptr,
+        });
+
+        let call_result = self.push_expression(Expression::CallResult(entry_point));
+
+        self.push_statement(Statement::Call {
+            function: entry_point,
+            arguments: vec![context],
+            result: Some(call_result),
+        });
+
+        self.push_statement(Statement::Store {
+            pointer: context_ptr,
+            value: call_result,
+        });
+
+        let color_ptr = self.push_expression(Expression::AccessIndex {
+            base: context_ptr,
+            index: 10,
+        });
+
+        let color = self.push_expression(Expression::Load {
+            pointer: color_ptr,
+        });
+
+        self.push_statement(Statement::Store {
+            pointer: frag_color_ptr,
+            value: color,
+        });
+
+        let expressions = self.expressions.take().unwrap().expressions;
+        let local_variables = self.local_variables.take().unwrap().locals;
+        let body = self.block_stack.pop().unwrap();
+
+        EntryPoint {
+            name: "mainImage".to_string(),
+            stage: ShaderStage::Fragment,
+            early_depth_test: None,
+            workgroup_size: [0; 3],
+            function: Function {
+                name: Some("mainImage".to_string()),
+                arguments: vec![
+                    FunctionArgument {
+                        name: Some("fragCoord".to_string()),
+                        ty: self.get_type("Vector2").0,
+                        binding: Some(naga::Binding::Location {
+                            location: 0,
+                            interpolation: Some(naga::Interpolation::Perspective),
+                            sampling: None,
+                        }),
+                    },
+                    FunctionArgument {
+                        name: Some("fragColor".to_string()),
+                        ty: self.get_type("Vector4").0,
+                        binding: Some(naga::Binding::Location {
+                            location: 2,
+                            interpolation: Some(naga::Interpolation::Perspective),
+                            sampling: None,
+                        }),
+                    },
+                    FunctionArgument {
+                        name: Some("iResolution".to_string()),
+                        ty: self.get_type("Vector3").0,
+                        binding: Some(naga::Binding::Location {
+                            location: 1,
+                            interpolation: Some(naga::Interpolation::Perspective),
+                            sampling: None,
+                        }),
+                    },
+                ],
+                result: None,
+                local_variables,
+                expressions,
+                named_expressions: Default::default(),
+                body,
+            },
         }
     }
 }

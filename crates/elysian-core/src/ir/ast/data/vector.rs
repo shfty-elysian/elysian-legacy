@@ -1,17 +1,17 @@
 use crate::ir::{
     ast::{Identifier, Property},
-    module::{FieldDefinition, StructDefinition, Type},
+    module::{FieldDefinition, NumericType, StructDefinition, Type},
 };
 
 // New Struct-based impl
 
-pub const X: Property = Property::new_primitive("x", Type::Number);
-pub const Y: Property = Property::new_primitive("y", Type::Number);
-pub const Z: Property = Property::new_primitive("z", Type::Number);
-pub const W: Property = Property::new_primitive("w", Type::Number);
+pub const X: Property = Property::new_primitive("x", Type::Number(NumericType::Float));
+pub const Y: Property = Property::new_primitive("y", Type::Number(NumericType::Float));
+pub const Z: Property = Property::new_primitive("z", Type::Number(NumericType::Float));
+pub const W: Property = Property::new_primitive("w", Type::Number(NumericType::Float));
 
 pub const VECTOR2_STRUCT: &'static StructDefinition = &StructDefinition {
-    id: Identifier::new("Vector2", 8915589261187194730),
+    id: Identifier::new("Vector2", 0),
     public: false,
     fields: &[
         FieldDefinition {
@@ -26,7 +26,7 @@ pub const VECTOR2_STRUCT: &'static StructDefinition = &StructDefinition {
 };
 
 pub const VECTOR3_STRUCT: &'static StructDefinition = &StructDefinition {
-    id: Identifier::new("Vector3", 8915589261187194730),
+    id: Identifier::new("Vector3", 0),
     public: false,
     fields: &[
         FieldDefinition {
@@ -45,7 +45,7 @@ pub const VECTOR3_STRUCT: &'static StructDefinition = &StructDefinition {
 };
 
 pub const VECTOR4_STRUCT: &'static StructDefinition = &StructDefinition {
-    id: Identifier::new("Vector4", 8915589261187194730),
+    id: Identifier::new("Vector4", 0),
     public: false,
     fields: &[
         FieldDefinition {

@@ -6,4 +6,6 @@ edition = "2021"
 [dependencies]
 elysian = { path = "../.." }
 test-shapes = { path = "../test-shapes" }
-naga = { version = "0.13.0", features = ["wgsl-out"] }
+naga = { version = "0.13.0", features = ["wgsl-out", "glsl-out", "glsl-in", "validate"] }
+log = "0.4.19"
+env_logger = "0.10.0"

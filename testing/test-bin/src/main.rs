@@ -6,7 +6,7 @@ use viuer::Config;
 include_static_shapes!();
 
 fn main() {
-    let shape = test_shapes::kettle_bell();
+    let shape = test_shapes::test_shape();
 
     let start = Instant::now();
     let image = rasterize(&shape, &SpecializationData::new_2d(), 48, 48, 0.5);

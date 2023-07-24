@@ -72,7 +72,7 @@ impl AsModule for CentralDiffGradient {
                         prop: CONTEXT,
                         mutable: true,
                     }],
-                    output: CONTEXT_STRUCT,
+                    output: CONTEXT_STRUCT.clone(),
                     block: [CONTEXT.read().output()].block(),
                 }])
                 .collect();
@@ -116,7 +116,7 @@ impl AsModule for CentralDiffGradient {
                     prop: CONTEXT,
                     mutable: true,
                 }],
-                output: CONTEXT_STRUCT,
+                output: CONTEXT_STRUCT.clone(),
                 block: [
                     CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
                     LEFT.bind(expr_lx),

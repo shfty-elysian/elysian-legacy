@@ -1,10 +1,16 @@
 use std::collections::BTreeSet;
 
-use crate::ir::ast::{Identifier, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D};
+use crate::ir::ast::{
+    Identifier, Property, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
+};
+
+use super::StructDefinition;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SpecializationData {
     domains: BTreeSet<Identifier>,
+    context_struct: Option<StructDefinition>,
+    context: Option<Property>,
 }
 
 impl SpecializationData {
@@ -14,6 +20,7 @@ impl SpecializationData {
                 .into_iter()
                 .cloned()
                 .collect(),
+            ..Default::default()
         }
     }
 
@@ -23,6 +30,7 @@ impl SpecializationData {
                 .into_iter()
                 .cloned()
                 .collect(),
+            ..Default::default()
         }
     }
 
@@ -39,21 +47,20 @@ impl SpecializationData {
                 .cloned()
                 .filter(|t| props.contains(t))
                 .collect(),
-        }
-    }
-
-    pub fn union(&self, other: &Self) -> Self {
-        SpecializationData {
-            domains: self
-                .domains
-                .clone()
-                .into_iter()
-                .chain(other.domains.clone())
-                .collect(),
+            context_struct: self.context_struct.clone(),
+            context: self.context.clone(),
         }
     }
 
     pub fn specialize_id(&self, id: Identifier) -> Identifier {
         self.domains.iter().fold(id, |acc, next| acc.concat(next))
+    }
+
+    pub fn context_struct(&self) -> &StructDefinition {
+        self.context_struct.as_ref().expect("No Context Struct")
+    }
+
+    pub fn context(&self) -> &Property {
+        self.context.as_ref().expect("No Context Struct")
     }
 }

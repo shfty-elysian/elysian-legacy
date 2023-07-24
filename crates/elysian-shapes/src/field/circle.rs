@@ -8,7 +8,7 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, IntoBlock, Property, CONTEXT},
-        module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
+        module::{FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type},
     },
 };
 
@@ -17,7 +17,11 @@ use crate::modify::{Isosurface, ISOSURFACE};
 use super::{Point, POINT};
 
 pub const CIRCLE: Identifier = Identifier::new("circle", 15738477621793375359);
-pub const RADIUS: Property = Property::new("radius", Type::Number, 213754678517975478);
+pub const RADIUS: Property = Property::new(
+    "radius",
+    Type::Number(NumericType::Float),
+    213754678517975478,
+);
 
 pub struct Circle {
     pub radius: Expr,
@@ -84,7 +88,7 @@ impl AsIR for Circle {
                         mutable: false,
                     },
                 ],
-                output: &CONTEXT_STRUCT,
+                output: CONTEXT_STRUCT.clone(),
                 block: ISOSURFACE
                     .specialize(&isosurface_spec)
                     .call([

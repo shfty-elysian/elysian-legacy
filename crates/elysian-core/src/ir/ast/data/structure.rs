@@ -1,5 +1,5 @@
 use rust_gpu_bridge::{
-    glam::{Vec2, Vec3, Vec4},
+    glam::{Mat2, Mat3, Mat4, Vec2, Vec3, Vec4},
     Abs, Dot, Length, Max, Min, Mix, Normalize, Sign,
 };
 use tracing::instrument;
@@ -15,7 +15,11 @@ use std::{
     ops::{Add, Div, Mul, Neg, Sub},
 };
 
-use super::{Number, VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT, W, X, Y, Z};
+use super::{
+    Number, MATRIX2_STRUCT, MATRIX3_STRUCT, MATRIX4_STRUCT, VECTOR2_STRUCT, VECTOR3_STRUCT,
+    VECTOR4_STRUCT, W, W_AXIS_4, X, X_AXIS_2, X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4,
+    Z, Z_AXIS_3, Z_AXIS_4,
+};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
 pub struct Struct {
@@ -178,11 +182,16 @@ impl Mul<Struct> for Struct {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        assert!(self.def == rhs.def);
-        match self.def.name() {
-            "Vector2" => (Vec2::from(self) * Vec2::from(rhs)).into(),
-            "Vector3" => (Vec3::from(self) * Vec3::from(rhs)).into(),
-            "Vector4" => (Vec4::from(self) * Vec4::from(rhs)).into(),
+        match (self.def.name(), rhs.def.name()) {
+            ("Vector2", "Vector2") => (Vec2::from(self) * Vec2::from(rhs)).into(),
+            ("Vector3", "Vector3") => (Vec3::from(self) * Vec3::from(rhs)).into(),
+            ("Vector4", "Vector4") => (Vec4::from(self) * Vec4::from(rhs)).into(),
+            ("Matrix2", "Matrix2") => (Mat2::from(self) * Mat2::from(rhs)).into(),
+            ("Matrix3", "Matrix3") => (Mat3::from(self) * Mat3::from(rhs)).into(),
+            ("Matrix4", "Matrix4") => (Mat4::from(self) * Mat4::from(rhs)).into(),
+            ("Matrix2", "Vector2") => (Mat2::from(self) * Vec2::from(rhs)).into(),
+            ("Matrix3", "Vector3") => (Mat3::from(self) * Vec3::from(rhs)).into(),
+            ("Matrix4", "Vector4") => (Mat4::from(self) * Vec4::from(rhs)).into(),
             _ => panic!("Can't Mul an arbitrary struct"),
         }
     }
@@ -349,6 +358,42 @@ impl From<Struct> for Vec4 {
     }
 }
 
+impl From<Struct> for Mat2 {
+    fn from(value: Struct) -> Self {
+        match value.def.name() {
+            "Matrix2" => Mat2::from_cols(value.get(&X_AXIS_2).into(), value.get(&Y_AXIS_2).into()),
+            _ => panic!("Struct is not a Mat2"),
+        }
+    }
+}
+
+impl From<Struct> for Mat3 {
+    fn from(value: Struct) -> Self {
+        match value.def.name() {
+            "Matrix3" => Mat3::from_cols(
+                value.get(&X_AXIS_3).into(),
+                value.get(&Y_AXIS_3).into(),
+                value.get(&Z_AXIS_3).into(),
+            ),
+            _ => panic!("Struct is not a Mat3"),
+        }
+    }
+}
+
+impl From<Struct> for Mat4 {
+    fn from(value: Struct) -> Self {
+        match value.def.name() {
+            "Matrix4" => Mat4::from_cols(
+                value.get(&X_AXIS_4).into(),
+                value.get(&Y_AXIS_4).into(),
+                value.get(&Z_AXIS_4).into(),
+                value.get(&W_AXIS_4).into(),
+            ),
+            _ => panic!("Struct is not a Mat4"),
+        }
+    }
+}
+
 impl From<Vec2> for Struct {
     fn from(value: Vec2) -> Self {
         Struct::new(VECTOR2_STRUCT)
@@ -373,5 +418,32 @@ impl From<Vec4> for Struct {
             .set(Y, value.y.into())
             .set(Z, value.z.into())
             .set(W, value.w.into())
+    }
+}
+
+impl From<Mat2> for Struct {
+    fn from(value: Mat2) -> Self {
+        Struct::new(MATRIX2_STRUCT)
+            .set(X_AXIS_2, value.x_axis.into())
+            .set(Y_AXIS_2, value.y_axis.into())
+    }
+}
+
+impl From<Mat3> for Struct {
+    fn from(value: Mat3) -> Self {
+        Struct::new(MATRIX3_STRUCT)
+            .set(X_AXIS_3, value.x_axis.into())
+            .set(Y_AXIS_3, value.y_axis.into())
+            .set(Z_AXIS_3, value.z_axis.into())
+    }
+}
+
+impl From<Mat4> for Struct {
+    fn from(value: Mat4) -> Self {
+        Struct::new(MATRIX4_STRUCT)
+            .set(X_AXIS_4, value.x_axis.into())
+            .set(Y_AXIS_4, value.y_axis.into())
+            .set(Z_AXIS_4, value.z_axis.into())
+            .set(W_AXIS_4, value.w_axis.into())
     }
 }

@@ -117,7 +117,7 @@ impl AsModule for Combine {
                     prop: CONTEXT,
                     mutable: false,
                 }],
-                output: CONTEXT_STRUCT,
+                output: CONTEXT_STRUCT.clone(),
                 block,
             }])
             .collect()

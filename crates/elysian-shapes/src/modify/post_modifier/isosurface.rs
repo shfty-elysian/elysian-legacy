@@ -8,14 +8,15 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, DISTANCE},
-        module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
+        module::{FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type},
     },
 };
 
 use elysian_core::ast::expr::Expr;
 
 pub const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
-pub const DIST: Property = Property::new("property", Type::Number, 463524741302033362);
+pub const DIST: Property =
+    Property::new("dist", Type::Number(NumericType::Float), 463524741302033362);
 
 pub struct Isosurface {
     pub dist: Expr,
@@ -74,7 +75,7 @@ impl AsIR for Isosurface {
                     mutable: true,
                 },
             ],
-            output: &CONTEXT_STRUCT,
+            output: CONTEXT_STRUCT.clone(),
             block,
         }]
     }

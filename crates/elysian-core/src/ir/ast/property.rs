@@ -1,38 +1,81 @@
 use std::fmt::Display;
 
 use crate::{
-    ast::{attribute::Attribute, combine::COMBINE_CONTEXT_STRUCT, modify::CONTEXT_STRUCT},
+    ast::{combine::COMBINE_CONTEXT_STRUCT, modify::CONTEXT_STRUCT},
     ir::{
         ast::{
             Expr::{self, *},
             Stmt::{self, *},
         },
-        module::Type,
+        module::{NumericType, Type},
     },
 };
 
-use super::Identifier;
+use super::{Identifier, VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT};
 
-pub const POSITION_2D: Property = Property::new("position_2d", Type::Vector2, 19300293251480055481);
-pub const POSITION_3D: Property = Property::new("position_3d", Type::Vector3, 2063026210185456313);
-pub const TIME: Property = Property::new("time", Type::Number, 391570251245214947);
-pub const DISTANCE: Property = Property::new("distance", Type::Number, 20699600731090380932);
-pub const GRADIENT_2D: Property = Property::new("gradient_2d", Type::Vector2, 16702807221222221695);
-pub const GRADIENT_3D: Property = Property::new("gradient_3d", Type::Vector3, 1183200891820394544);
-pub const NORMAL: Property = Property::new("normal", Type::Vector3, 1183200891820394544);
-pub const UV: Property = Property::new("uv", Type::Vector2, 1527481748115194786);
-pub const TANGENT_2D: Property = Property::new("tangent_2d", Type::Vector2, 12976793731289731131);
-pub const TANGENT_3D: Property = Property::new("tangent_3d", Type::Vector3, 17286461381478601027);
-pub const COLOR: Property = Property::new("color", Type::Vector4, 84604795624457789);
-pub const LIGHT: Property = Property::new("light", Type::Number, 1330409404139204842);
-pub const SUPPORT_2D: Property = Property::new("support_2d", Type::Vector2, 85970193295239647);
+pub const POSITION_2D: Property = Property::new(
+    "position_2d",
+    Type::Struct(VECTOR2_STRUCT),
+    19300293251480055481,
+);
+pub const POSITION_3D: Property = Property::new(
+    "position_3d",
+    Type::Struct(VECTOR3_STRUCT),
+    2063026210185456313,
+);
+pub const TIME: Property =
+    Property::new("time", Type::Number(NumericType::Float), 391570251245214947);
+pub const DISTANCE: Property = Property::new(
+    "distance",
+    Type::Number(NumericType::Float),
+    20699600731090380932,
+);
+pub const GRADIENT_2D: Property = Property::new(
+    "gradient_2d",
+    Type::Struct(VECTOR2_STRUCT),
+    16702807221222221695,
+);
+pub const GRADIENT_3D: Property = Property::new(
+    "gradient_3d",
+    Type::Struct(VECTOR3_STRUCT),
+    1183200891820394544,
+);
+pub const NORMAL: Property =
+    Property::new("normal", Type::Struct(VECTOR3_STRUCT), 1183200891820394544);
+pub const UV: Property = Property::new("uv", Type::Struct(VECTOR2_STRUCT), 1527481748115194786);
+pub const TANGENT_2D: Property = Property::new(
+    "tangent_2d",
+    Type::Struct(VECTOR2_STRUCT),
+    12976793731289731131,
+);
+pub const TANGENT_3D: Property = Property::new(
+    "tangent_3d",
+    Type::Struct(VECTOR3_STRUCT),
+    17286461381478601027,
+);
+pub const COLOR: Property = Property::new("color", Type::Struct(VECTOR4_STRUCT), 84604795624457789);
+pub const LIGHT: Property = Property::new(
+    "light",
+    Type::Number(NumericType::Float),
+    1330409404139204842,
+);
+pub const SUPPORT_2D: Property = Property::new(
+    "support_2d",
+    Type::Struct(VECTOR2_STRUCT),
+    85970193295239647,
+);
 pub const SUPPORT_3D: Property = Property::new(
     "support_3d",
-    Type::Vector3,
+    Type::Struct(VECTOR3_STRUCT),
     5120220911040556255970193295239647,
 );
-pub const ERROR: Property = Property::new("error", Type::Number, 209621851525461471);
-pub const NUM: Property = Property::new("num", Type::Number, 1349662877516236181);
+pub const ERROR: Property = Property::new(
+    "error",
+    Type::Number(NumericType::Float),
+    209621851525461471,
+);
+pub const NUM: Property =
+    Property::new("num", Type::Number(NumericType::Float), 1349662877516236181);
 
 pub const CONTEXT: Property =
     Property::new("context", Type::Struct(&CONTEXT_STRUCT), 595454262490629935);
@@ -113,21 +156,6 @@ impl Property {
         Write {
             path: vec![self],
             expr,
-        }
-    }
-}
-
-impl From<Attribute> for Property {
-    fn from(value: Attribute) -> Self {
-        match value {
-            Attribute::Position => POSITION_2D,
-            Attribute::Time => TIME,
-            Attribute::Distance => DISTANCE,
-            Attribute::Gradient => GRADIENT_2D,
-            Attribute::Uv => UV,
-            Attribute::Tangent => TANGENT_2D,
-            Attribute::Color => COLOR,
-            Attribute::Light => LIGHT,
         }
     }
 }

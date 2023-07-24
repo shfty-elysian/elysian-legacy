@@ -7,7 +7,7 @@ use elysian_core::{
             W, W_AXIS_4, X, X_AXIS_2, X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z,
             Z_AXIS_3, Z_AXIS_4,
         },
-        module::SpecializationData,
+        module::{NumericType, SpecializationData},
     },
 };
 pub use prettyplease;
@@ -30,27 +30,27 @@ use elysian_core::ir::{
 pub fn type_to_syn(ty: &elysian_core::ir::module::Type) -> TokenStream {
     match ty {
         elysian_core::ir::module::Type::Boolean => quote!(Type::Boolean),
-        elysian_core::ir::module::Type::Number => quote!(Type::Number),
-        elysian_core::ir::module::Type::Vector2 => quote!(Type::Vector2),
-        elysian_core::ir::module::Type::Vector3 => quote!(Type::Vector3),
-        elysian_core::ir::module::Type::Vector4 => quote!(Type::Vector4),
-        elysian_core::ir::module::Type::Matrix2 => quote!(Type::Matrix2),
-        elysian_core::ir::module::Type::Matrix3 => quote!(Type::Matrix3),
-        elysian_core::ir::module::Type::Matrix4 => quote!(Type::Matrix4),
-        elysian_core::ir::module::Type::Struct(_) => unimplemented!(),
+        elysian_core::ir::module::Type::Number(n) => match n {
+            NumericType::UInt => quote!(Type::Number(NumericType::UInt)),
+            NumericType::SInt => quote!(Type::Number(NumericType::SInt)),
+            NumericType::Float => quote!(Type::Number(NumericType::Float)),
+        },
+        elysian_core::ir::module::Type::Struct(s) => match s.name() {
+            "Vector2" => quote!(Type::Struct(VECTOR2_STRUCT)),
+            "Vector3" => quote!(Type::Struct(VECTOR3_STRUCT)),
+            "Vector4" => quote!(Type::Struct(VECTOR4_STRUCT)),
+            "Matrix2" => quote!(Type::Struct(MATRIX2_STRUCT)),
+            "Matrix3" => quote!(Type::Struct(MATRIX3_STRUCT)),
+            "Matrix4" => quote!(Type::Struct(MATRIX4_STRUCT)),
+            _ => unimplemented!(),
+        },
     }
 }
 
 pub fn type_to_value(ty: &elysian_core::ir::module::Type) -> TokenStream {
     match ty {
         elysian_core::ir::module::Type::Boolean => quote!(Value::Boolean),
-        elysian_core::ir::module::Type::Number => quote!(Value::Number),
-        elysian_core::ir::module::Type::Vector2 => quote!(Value::Vector2),
-        elysian_core::ir::module::Type::Vector3 => quote!(Value::Vector3),
-        elysian_core::ir::module::Type::Vector4 => quote!(Value::Vector4),
-        elysian_core::ir::module::Type::Matrix2 => quote!(Value::Matrix2),
-        elysian_core::ir::module::Type::Matrix3 => quote!(Value::Matrix3),
-        elysian_core::ir::module::Type::Matrix4 => quote!(Value::Matrix4),
+        elysian_core::ir::module::Type::Number(_) => quote!(Value::Number),
         elysian_core::ir::module::Type::Struct(_) => unimplemented!(),
     }
 }
@@ -89,8 +89,14 @@ where
                     ast::{
                         Struct,
                         Property,
+                        VECTOR2_STRUCT,
+                        VECTOR3_STRUCT,
+                        VECTOR4_STRUCT,
+                        MATRIX2_STRUCT,
+                        MATRIX3_STRUCT,
+                        MATRIX4_STRUCT,
                     },
-                    module::Type,
+                    module::{Type, NumericType},
                 },
                 ast::modify::CONTEXT_STRUCT,
             },

@@ -11,7 +11,7 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION_2D, POSITION_3D,
+            Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION_2D, POSITION_3D, VECTOR3_STRUCT, VECTOR2_STRUCT,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -21,8 +21,8 @@ use elysian_core::ast::expr::Expr;
 
 pub const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324);
 pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1799909959882308009);
-pub const DIR_2D: Property = Property::new("dir_2d", Type::Vector2, 10994004961423687819);
-pub const DIR_3D: Property = Property::new("dir_3d", Type::Vector3, 66909101541205811);
+pub const DIR_2D: Property = Property::new("dir_2d", Type::Struct(VECTOR2_STRUCT), 10994004961423687819);
+pub const DIR_3D: Property = Property::new("dir_3d", Type::Struct(VECTOR3_STRUCT), 66909101541205811);
 
 pub struct Elongate {
     pub dir: Expr,
@@ -87,7 +87,7 @@ impl AsIR for Elongate {
                     mutable: true,
                 },
             ],
-            output: &CONTEXT_STRUCT,
+            output: CONTEXT_STRUCT.clone(),
             block: {
                 let expr = [CONTEXT, position.clone()]
                     .read()

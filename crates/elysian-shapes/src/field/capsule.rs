@@ -101,7 +101,7 @@ impl AsIR for Capsule {
                     mutable: false,
                 },
             ],
-            output: CONTEXT_STRUCT,
+            output: CONTEXT_STRUCT.clone(),
             block: ISOSURFACE
                 .specialize(&isosurface_spec)
                 .call([

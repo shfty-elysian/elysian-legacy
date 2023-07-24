@@ -12,15 +12,15 @@ pub const Y_AXIS_2: Property = Property::new_primitive("y_axis", Type::Struct(&V
 
 pub const X_AXIS_3: Property = Property::new_primitive("x_axis", Type::Struct(&VECTOR3_STRUCT));
 pub const Y_AXIS_3: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR3_STRUCT));
-pub const Z_AXIS_3: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR3_STRUCT));
+pub const Z_AXIS_3: Property = Property::new_primitive("z_axis", Type::Struct(&VECTOR3_STRUCT));
 
 pub const X_AXIS_4: Property = Property::new_primitive("x_axis", Type::Struct(&VECTOR4_STRUCT));
 pub const Y_AXIS_4: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR4_STRUCT));
-pub const Z_AXIS_4: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR4_STRUCT));
-pub const W_AXIS_4: Property = Property::new_primitive("y_axis", Type::Struct(&VECTOR4_STRUCT));
+pub const Z_AXIS_4: Property = Property::new_primitive("z_axis", Type::Struct(&VECTOR4_STRUCT));
+pub const W_AXIS_4: Property = Property::new_primitive("w_axis", Type::Struct(&VECTOR4_STRUCT));
 
 pub const MATRIX2_STRUCT: &'static StructDefinition = &StructDefinition {
-    id: Identifier::new("Matrix2", 20261747501874881448),
+    id: Identifier::new("Matrix2", 0),
     public: false,
     fields: &[
         FieldDefinition {
@@ -35,7 +35,7 @@ pub const MATRIX2_STRUCT: &'static StructDefinition = &StructDefinition {
 };
 
 pub const MATRIX3_STRUCT: &'static StructDefinition = &StructDefinition {
-    id: Identifier::new("Matrix3", 7315148181882206775),
+    id: Identifier::new("Matrix3", 0),
     public: false,
     fields: &[
         FieldDefinition {
@@ -54,7 +54,7 @@ pub const MATRIX3_STRUCT: &'static StructDefinition = &StructDefinition {
 };
 
 pub const MATRIX4_STRUCT: &'static StructDefinition = &StructDefinition {
-    id: Identifier::new("Matrix4", 202137800871303460),
+    id: Identifier::new("Matrix4", 0),
     public: false,
     fields: &[
         FieldDefinition {

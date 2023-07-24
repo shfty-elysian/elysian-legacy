@@ -40,7 +40,7 @@ impl AsIR for Manifold {
                     prop: CONTEXT,
                     mutable: true,
                 }],
-                output: &CONTEXT_STRUCT,
+                output: CONTEXT_STRUCT.clone(),
                 block: [CONTEXT.read().output()].block(),
             }];
         };
@@ -52,7 +52,7 @@ impl AsIR for Manifold {
                 prop: CONTEXT,
                 mutable: true,
             }],
-            output: &CONTEXT_STRUCT,
+            output: CONTEXT_STRUCT.clone(),
             block: [
                 NUM.bind([CONTEXT, DISTANCE].read()),
                 [CONTEXT, DISTANCE].write(NUM.read().abs()),

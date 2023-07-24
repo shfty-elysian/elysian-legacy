@@ -44,6 +44,8 @@
 
 ============================================================================================
 
+* Move static_shapes functionality into its own crate
+
 * Stronger typing for emitted code
   * Currently able to bind properties with implicit types,
     which is a violation of strong typing semantics
@@ -56,13 +58,6 @@
 
 * Fix mutability warnings
   * Need to include mutability info, or infer it somehow
-
-* Generate Context / CombineContext structs conditionally
-  * Currently outputting a hardcoded set of members
-  * Both structs are always emitted
-    * No need for CombineContext if no combining occurs
-  * Need to walk the elysian tree and aggregate properties,
-    use to generate structs
 
 * Avoid duplicating functions across shape modules
   * May be a better idea to put everything inside one module,

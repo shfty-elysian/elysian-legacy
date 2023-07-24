@@ -1,11 +1,13 @@
 use std::fmt::Debug;
 
-use super::{attribute::Attribute, value::Value};
+use crate::ir::ast::Property;
+
+use super::value::Value;
 
 pub type BoxExpr = Box<Expr>;
 pub enum Expr {
     Literal(Value),
-    Read(Attribute),
+    Read(Property),
     Add(BoxExpr, BoxExpr),
     Sub(BoxExpr, BoxExpr),
     Mul(BoxExpr, BoxExpr),

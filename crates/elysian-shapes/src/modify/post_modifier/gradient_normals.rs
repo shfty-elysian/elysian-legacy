@@ -61,7 +61,7 @@ impl AsIR for GradientNormals {
                 prop: CONTEXT,
                 mutable: true,
             }],
-            output: &CONTEXT_STRUCT,
+            output: CONTEXT_STRUCT.clone(),
             block,
         }]
     }

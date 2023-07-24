@@ -8,7 +8,8 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION_2D, POSITION_3D,
+            Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION_2D,
+            POSITION_3D, VECTOR2_STRUCT, VECTOR3_STRUCT,
         },
         module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
@@ -17,8 +18,16 @@ use elysian_core::{
 use elysian_core::ast::expr::Expr;
 
 pub const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
-pub const DELTA_2D: Property = Property::new("delta_2d", Type::Vector2, 1292788437813720044);
-pub const DELTA_3D: Property = Property::new("delta_3d", Type::Vector3, 8306277011223488934);
+pub const DELTA_2D: Property = Property::new(
+    "delta_2d",
+    Type::Struct(VECTOR2_STRUCT),
+    1292788437813720044,
+);
+pub const DELTA_3D: Property = Property::new(
+    "delta_3d",
+    Type::Struct(VECTOR3_STRUCT),
+    8306277011223488934,
+);
 
 pub struct Translate {
     pub delta: Expr,
@@ -75,7 +84,7 @@ impl AsIR for Translate {
                     mutable: true,
                 },
             ],
-            output: &CONTEXT_STRUCT,
+            output: CONTEXT_STRUCT.clone(),
             block: [
                 [CONTEXT, position.clone()].write([CONTEXT, position].read() - delta.read()),
                 CONTEXT.read().output(),

@@ -137,7 +137,7 @@ impl AsModule for Modify {
                     prop: CONTEXT,
                     mutable: false,
                 }],
-                output: CONTEXT_STRUCT,
+                output: CONTEXT_STRUCT.clone(),
                 block: self
                     .post_modifiers
                     .iter()

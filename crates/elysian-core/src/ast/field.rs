@@ -47,7 +47,7 @@ impl AsModule for Field {
                     prop: CONTEXT,
                     mutable: false,
                 }],
-                output: CONTEXT_STRUCT,
+                output: CONTEXT_STRUCT.clone(),
                 block: self.field.expression(spec, CONTEXT.read()).output().block(),
             })
             .collect()

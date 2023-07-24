@@ -38,7 +38,7 @@ impl AsIR for Boolean {
                 prop: COMBINE_CONTEXT,
                 mutable: true,
             }],
-            output: &COMBINE_CONTEXT_STRUCT,
+            output: COMBINE_CONTEXT_STRUCT.clone(),
             block: match self {
                 Boolean::Union | Boolean::Intersection => {
                     [

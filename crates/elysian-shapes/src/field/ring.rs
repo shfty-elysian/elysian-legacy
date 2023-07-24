@@ -8,7 +8,7 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, IntoBlock, Property, CONTEXT},
-        module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, Type, NumericType},
     },
 };
 
@@ -17,7 +17,7 @@ use crate::modify::{Isosurface, Manifold, ISOSURFACE, MANIFOLD};
 use super::{Circle, CIRCLE, RADIUS};
 
 pub const RING: Identifier = Identifier::new("ring", 18972348581943461950);
-pub const WIDTH: Property = Property::new("width", Type::Number, 2742125101201765597);
+pub const WIDTH: Property = Property::new("width", Type::Number(NumericType::Float), 2742125101201765597);
 
 pub struct Ring {
     pub radius: Expr,
@@ -97,7 +97,7 @@ impl AsIR for Ring {
                     mutable: false,
                 },
             ],
-            output: CONTEXT_STRUCT,
+            output: CONTEXT_STRUCT.clone(),
             block: ISOSURFACE
                 .specialize(&isosurface_spec)
                 .call([
