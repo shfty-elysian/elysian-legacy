@@ -1,10 +1,12 @@
+use std::borrow::Cow;
+
 use super::StructDefinition;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Type {
     Boolean,
     Number(NumericType),
-    Struct(&'static StructDefinition),
+    Struct(Cow<'static, StructDefinition>),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -24,8 +26,8 @@ impl NumericType {
     }
 }
 
-impl Type {
-    pub fn name(&self) -> &'static str {
+impl<'a> Type {
+    pub fn name(&'a self) -> &'a str {
         match self {
             Type::Boolean => "bool",
             Type::Number(n) => n.name(),

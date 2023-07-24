@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::{hash_map::RandomState, HashSet},
     fmt::Debug,
 };
@@ -8,6 +9,7 @@ use indexmap::IndexSet;
 use crate::ir::{
     as_ir::HashIR,
     ast::{Block, Expr, Identifier, Property, Stmt, CONTEXT},
+    module::FieldDefinition,
 };
 
 use super::{FunctionDefinition, Module, SpecializationData, StructDefinition};
@@ -57,7 +59,7 @@ fn stmt_props(stmt: &Stmt) -> Vec<Property> {
             let mut iter = path.iter();
             let path_props = if let Some(first) = iter.next() {
                 if *first == CONTEXT {
-                    iter.cloned().collect()
+                    iter.cloned().take(1).collect()
                 } else {
                     vec![]
                 }
@@ -105,13 +107,17 @@ pub trait AsModule: 'static + Debug + HashIR {
         for function in functions.iter() {
             props.extend(block_props(&function.block));
         }
-        println!(
-            "{:#?}",
-            props
-                .into_iter()
-                .map(|prop| prop.name().to_string())
-                .collect::<Vec<_>>()
-        );
+
+        let context_struct = StructDefinition {
+            id: CONTEXT.id().clone(),
+            public: true,
+            fields: Cow::Owned(
+                props
+                    .into_iter()
+                    .map(|prop| FieldDefinition { prop, public: true })
+                    .collect(),
+            ),
+        };
 
         Module {
             entry_point,

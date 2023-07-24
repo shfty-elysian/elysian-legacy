@@ -1,6 +1,6 @@
 use std::{
     fmt::Debug,
-    hash::{Hash, Hasher},
+    hash::{Hash, Hasher}, borrow::Cow,
 };
 
 use elysian_core::{
@@ -70,7 +70,7 @@ impl AsModule for CrossSection {
                     ),
                     CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
                     [CONTEXT, GRADIENT_2D].write(Expr::Struct(
-                        VECTOR2_STRUCT,
+                        Cow::Borrowed(VECTOR2_STRUCT),
                         [
                             (X, [CONTEXT, GRADIENT_3D, X].read()),
                             (Y, [CONTEXT, GRADIENT_3D, Y].read()),

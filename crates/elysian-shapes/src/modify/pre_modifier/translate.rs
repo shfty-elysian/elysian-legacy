@@ -1,4 +1,4 @@
-use std::{fmt::Debug, hash::Hash};
+use std::{fmt::Debug, hash::Hash, borrow::Cow};
 
 use elysian_core::{
     ast::{
@@ -20,12 +20,12 @@ use elysian_core::ast::expr::Expr;
 pub const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
 pub const DELTA_2D: Property = Property::new(
     "delta_2d",
-    Type::Struct(VECTOR2_STRUCT),
+    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
     1292788437813720044,
 );
 pub const DELTA_3D: Property = Property::new(
     "delta_3d",
-    Type::Struct(VECTOR3_STRUCT),
+    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
     8306277011223488934,
 );
 

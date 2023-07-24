@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use image::RgbImage;
 use rust_gpu_bridge::glam::Vec4;
 use tracing::instrument;
@@ -40,10 +42,10 @@ where
             indices
                 .into_iter()
                 .flat_map(|(x, y)| {
-                    let ctx = Struct::new(CONTEXT_STRUCT).set(
+                    let ctx = Struct::new(Cow::Borrowed(CONTEXT_STRUCT)).set(
                         POSITION_2D,
                         Value::Struct(
-                            Struct::new(VECTOR2_STRUCT)
+                            Struct::new(Cow::Borrowed(VECTOR2_STRUCT))
                                 .set(X, (((x as f32 / width as f32) - 0.5) * 2.0 / scale).into())
                                 .set(
                                     Y,

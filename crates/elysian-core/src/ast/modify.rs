@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     fmt::Debug,
     hash::{Hash, Hasher},
 };
@@ -15,71 +16,73 @@ use crate::ir::{
     },
 };
 
+pub const CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
+    FieldDefinition {
+        prop: POSITION_2D,
+        public: true,
+    },
+    FieldDefinition {
+        prop: POSITION_3D,
+        public: true,
+    },
+    FieldDefinition {
+        prop: TIME,
+        public: true,
+    },
+    FieldDefinition {
+        prop: DISTANCE,
+        public: true,
+    },
+    FieldDefinition {
+        prop: GRADIENT_2D,
+        public: true,
+    },
+    FieldDefinition {
+        prop: GRADIENT_3D,
+        public: true,
+    },
+    FieldDefinition {
+        prop: NORMAL,
+        public: true,
+    },
+    FieldDefinition {
+        prop: UV,
+        public: true,
+    },
+    FieldDefinition {
+        prop: TANGENT_2D,
+        public: true,
+    },
+    FieldDefinition {
+        prop: TANGENT_3D,
+        public: true,
+    },
+    FieldDefinition {
+        prop: COLOR,
+        public: true,
+    },
+    FieldDefinition {
+        prop: LIGHT,
+        public: true,
+    },
+    FieldDefinition {
+        prop: SUPPORT_2D,
+        public: true,
+    },
+    FieldDefinition {
+        prop: SUPPORT_3D,
+        public: true,
+    },
+    FieldDefinition {
+        prop: ERROR,
+        public: true,
+    },
+];
+
 pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
     id: Identifier::new("Context", 1198218077110787867),
     public: true,
-    fields: &[
-        FieldDefinition {
-            prop: POSITION_2D,
-            public: true,
-        },
-        FieldDefinition {
-            prop: POSITION_3D,
-            public: true,
-        },
-        FieldDefinition {
-            prop: TIME,
-            public: true,
-        },
-        FieldDefinition {
-            prop: DISTANCE,
-            public: true,
-        },
-        FieldDefinition {
-            prop: GRADIENT_2D,
-            public: true,
-        },
-        FieldDefinition {
-            prop: GRADIENT_3D,
-            public: true,
-        },
-        FieldDefinition {
-            prop: NORMAL,
-            public: true,
-        },
-        FieldDefinition {
-            prop: UV,
-            public: true,
-        },
-        FieldDefinition {
-            prop: TANGENT_2D,
-            public: true,
-        },
-        FieldDefinition {
-            prop: TANGENT_3D,
-            public: true,
-        },
-        FieldDefinition {
-            prop: COLOR,
-            public: true,
-        },
-        FieldDefinition {
-            prop: LIGHT,
-            public: true,
-        },
-        FieldDefinition {
-            prop: SUPPORT_2D,
-            public: true,
-        },
-        FieldDefinition {
-            prop: SUPPORT_3D,
-            public: true,
-        },
-        FieldDefinition {
-            prop: ERROR,
-            public: true,
-        },
-    ],
+    fields: Cow::Borrowed(CONTEXT_STRUCT_FIELDS),
 };
 
 pub struct Modify {

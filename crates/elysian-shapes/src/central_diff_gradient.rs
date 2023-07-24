@@ -1,6 +1,6 @@
 use std::{
     fmt::Debug,
-    hash::{Hash, Hasher},
+    hash::{Hash, Hasher}, borrow::Cow,
 };
 
 use elysian_core::{
@@ -126,7 +126,7 @@ impl AsModule for CentralDiffGradient {
                     RIGHT.bind(expr_ry),
                     Y.bind([LEFT, DISTANCE].read() - [RIGHT, DISTANCE].read()),
                     [CONTEXT, gradient].write(Expr::Struct(
-                        VECTOR2_STRUCT,
+                        Cow::Borrowed(VECTOR2_STRUCT),
                         [(X, X.read()), (Y, Y.read())].into_iter().collect(),
                     )),
                     CONTEXT.read().output(),

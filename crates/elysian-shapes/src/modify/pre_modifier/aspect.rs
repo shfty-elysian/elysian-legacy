@@ -1,4 +1,4 @@
-use std::{fmt::Debug, hash::Hash};
+use std::{fmt::Debug, hash::Hash, borrow::Cow};
 
 use elysian_core::{
     ast::{
@@ -44,7 +44,7 @@ impl Domains for Aspect {
 impl AsIR for Aspect {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let aspect = elysian_core::ir::ast::Expr::Struct(
-            VECTOR2_STRUCT,
+            Cow::Borrowed(VECTOR2_STRUCT),
             [(X, ASPECT.read()), (Y, 1.0.literal())].into(),
         );
 

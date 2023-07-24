@@ -506,8 +506,8 @@ impl<'a> NagaWriter<'a> {
                 NumericType::Float => Value::Number(Number::Float(0.0)),
             },
             ElysianType::Struct(s) => {
-                let mut out = Struct::new(s);
-                for field in s.fields {
+                let mut out = Struct::new(s.clone());
+                for field in s.fields.iter() {
                     out.set_mut(field.prop.clone(), Self::naga_default(field.prop.ty()));
                 }
                 Value::Struct(out)
@@ -752,7 +752,7 @@ impl<'a> NagaWriter<'a> {
 
                 let mut components = vec![];
 
-                for field in s.def.fields {
+                for field in s.def.fields.iter() {
                     let v = s.get(&field.prop);
                     let v = self.value_to_naga(&v);
                     components.push(v);
@@ -858,9 +858,7 @@ impl<'a> NagaWriter<'a> {
             index: 10,
         });
 
-        let color = self.push_expression(Expression::Load {
-            pointer: color_ptr,
-        });
+        let color = self.push_expression(Expression::Load { pointer: color_ptr });
 
         self.push_statement(Statement::Store {
             pointer: frag_color_ptr,

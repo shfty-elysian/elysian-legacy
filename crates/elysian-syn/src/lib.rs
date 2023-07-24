@@ -36,12 +36,12 @@ pub fn type_to_syn(ty: &elysian_core::ir::module::Type) -> TokenStream {
             NumericType::Float => quote!(Type::Number(NumericType::Float)),
         },
         elysian_core::ir::module::Type::Struct(s) => match s.name() {
-            "Vector2" => quote!(Type::Struct(VECTOR2_STRUCT)),
-            "Vector3" => quote!(Type::Struct(VECTOR3_STRUCT)),
-            "Vector4" => quote!(Type::Struct(VECTOR4_STRUCT)),
-            "Matrix2" => quote!(Type::Struct(MATRIX2_STRUCT)),
-            "Matrix3" => quote!(Type::Struct(MATRIX3_STRUCT)),
-            "Matrix4" => quote!(Type::Struct(MATRIX4_STRUCT)),
+            "Vector2" => quote!(Type::Struct(Cow::Borrowed(VECTOR2_STRUCT))),
+            "Vector3" => quote!(Type::Struct(Cow::Borrowed(VECTOR3_STRUCT))),
+            "Vector4" => quote!(Type::Struct(Cow::Borrowed(VECTOR4_STRUCT))),
+            "Matrix2" => quote!(Type::Struct(Cow::Borrowed(MATRIX2_STRUCT))),
+            "Matrix3" => quote!(Type::Struct(Cow::Borrowed(MATRIX3_STRUCT))),
+            "Matrix4" => quote!(Type::Struct(Cow::Borrowed(MATRIX4_STRUCT))),
             _ => unimplemented!(),
         },
     }
@@ -80,6 +80,10 @@ where
 
     items.push(parse_quote! {
         use rust_gpu_bridge::{glam::*, *};
+    });
+
+    items.push(parse_quote! {
+        use std::borrow::Cow;
     });
 
     items.push(parse_quote! {
@@ -185,7 +189,7 @@ where
     items.push(syn::parse_quote! {
         impl From<#struct_name> for Struct {
             fn from(s: #struct_name) -> Self {
-                let mut out = Self::new(CONTEXT_STRUCT);
+                let mut out = Self::new(Cow::Borrowed(CONTEXT_STRUCT));
 
                 #(
                     out.set_mut(#members, s.#names.into());
@@ -445,7 +449,7 @@ fn expr_to_syn(expr: &IrExpr) -> Expr {
                 },
             }),
             elysian_core::ir::ast::Value::Struct(s) => expr_to_syn(&IrExpr::Struct(
-                s.def,
+                s.def.clone(),
                 s.members
                     .iter()
                     .map(|(k, v)| (k.clone(), IrExpr::Literal(v.clone())))

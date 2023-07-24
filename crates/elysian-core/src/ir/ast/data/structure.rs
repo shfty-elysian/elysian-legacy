@@ -9,6 +9,7 @@ use crate::ir::{
     module::StructDefinition,
 };
 use std::{
+    borrow::Cow,
     collections::BTreeMap,
     fmt::{Debug, Display},
     hash::Hash,
@@ -23,7 +24,7 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
 pub struct Struct {
-    pub def: &'static StructDefinition,
+    pub def: Cow<'static, StructDefinition>,
     pub members: BTreeMap<Property, Value>,
 }
 
@@ -39,7 +40,7 @@ impl Display for Struct {
 }
 
 impl Struct {
-    pub fn new(def: &'static StructDefinition) -> Self {
+    pub fn new(def: Cow<'static, StructDefinition>) -> Self {
         Struct {
             def,
             members: Default::default(),
@@ -396,7 +397,7 @@ impl From<Struct> for Mat4 {
 
 impl From<Vec2> for Struct {
     fn from(value: Vec2) -> Self {
-        Struct::new(VECTOR2_STRUCT)
+        Struct::new(Cow::Borrowed(VECTOR2_STRUCT))
             .set(X, value.x.into())
             .set(Y, value.y.into())
     }
@@ -404,7 +405,7 @@ impl From<Vec2> for Struct {
 
 impl From<Vec3> for Struct {
     fn from(value: Vec3) -> Self {
-        Struct::new(VECTOR3_STRUCT)
+        Struct::new(Cow::Borrowed(VECTOR3_STRUCT))
             .set(X, value.x.into())
             .set(Y, value.y.into())
             .set(Z, value.z.into())
@@ -413,7 +414,7 @@ impl From<Vec3> for Struct {
 
 impl From<Vec4> for Struct {
     fn from(value: Vec4) -> Self {
-        Struct::new(VECTOR4_STRUCT)
+        Struct::new(Cow::Borrowed(VECTOR4_STRUCT))
             .set(X, value.x.into())
             .set(Y, value.y.into())
             .set(Z, value.z.into())
@@ -423,7 +424,7 @@ impl From<Vec4> for Struct {
 
 impl From<Mat2> for Struct {
     fn from(value: Mat2) -> Self {
-        Struct::new(MATRIX2_STRUCT)
+        Struct::new(Cow::Borrowed(MATRIX2_STRUCT))
             .set(X_AXIS_2, value.x_axis.into())
             .set(Y_AXIS_2, value.y_axis.into())
     }
@@ -431,7 +432,7 @@ impl From<Mat2> for Struct {
 
 impl From<Mat3> for Struct {
     fn from(value: Mat3) -> Self {
-        Struct::new(MATRIX3_STRUCT)
+        Struct::new(Cow::Borrowed(MATRIX3_STRUCT))
             .set(X_AXIS_3, value.x_axis.into())
             .set(Y_AXIS_3, value.y_axis.into())
             .set(Z_AXIS_3, value.z_axis.into())
@@ -440,7 +441,7 @@ impl From<Mat3> for Struct {
 
 impl From<Mat4> for Struct {
     fn from(value: Mat4) -> Self {
-        Struct::new(MATRIX4_STRUCT)
+        Struct::new(Cow::Borrowed(MATRIX4_STRUCT))
             .set(X_AXIS_4, value.x_axis.into())
             .set(Y_AXIS_4, value.y_axis.into())
             .set(Z_AXIS_4, value.z_axis.into())

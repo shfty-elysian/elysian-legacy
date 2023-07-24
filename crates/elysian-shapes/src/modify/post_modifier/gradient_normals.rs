@@ -1,4 +1,4 @@
-use std::{fmt::Debug, hash::Hash};
+use std::{fmt::Debug, hash::Hash, borrow::Cow};
 
 use elysian_core::{
     ast::modify::{Modify, CONTEXT_STRUCT},
@@ -30,7 +30,7 @@ impl AsIR for GradientNormals {
                 GRADIENT_2D.bind([CONTEXT, GRADIENT_2D].read().normalize()),
                 [CONTEXT, NORMAL].write(
                     Expr::Struct(
-                        VECTOR3_STRUCT,
+                        Cow::Borrowed(VECTOR3_STRUCT),
                         [
                             (X, [GRADIENT_2D, X].read()),
                             (Y, [GRADIENT_2D, Y].read()),

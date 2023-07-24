@@ -1,10 +1,12 @@
+use std::borrow::Cow;
+
 use crate::ir::ast::{Expr, Identifier, Property};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StructDefinition {
     pub id: Identifier,
     pub public: bool,
-    pub fields: &'static [FieldDefinition],
+    pub fields: Cow<'static, [FieldDefinition]>,
 }
 
 impl StructDefinition {
@@ -17,7 +19,7 @@ impl StructDefinition {
     }
 
     pub fn construct<I: IntoIterator<Item = (Property, Expr)>>(&'static self, props: I) -> Expr {
-        Expr::Struct(self, props.into_iter().collect())
+        Expr::Struct(Cow::Borrowed(self), props.into_iter().collect())
     }
 }
 

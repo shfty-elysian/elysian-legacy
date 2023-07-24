@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
+use std::{borrow::Cow, collections::BTreeMap, fmt::Debug, hash::Hasher};
 
 use elysian_core::{
     ast::modify::CONTEXT_STRUCT,
@@ -30,7 +30,7 @@ impl Debug for Interpreter {
 impl Default for Interpreter {
     fn default() -> Self {
         Self {
-            context: Struct::new(CONTEXT_STRUCT),
+            context: Struct::new(Cow::Borrowed(CONTEXT_STRUCT)),
             functions: Default::default(),
             should_break: Default::default(),
             output: Default::default(),
@@ -57,18 +57,20 @@ impl std::hash::Hash for Interpreter {
     }
 }
 
+pub const INTERPRETER_CONTEXT_FIELDS: &'static [FieldDefinition] = &[FieldDefinition {
+    prop: CONTEXT,
+    public: false,
+}];
+
 pub const INTERPRETER_CONTEXT: &'static StructDefinition = &StructDefinition {
     id: Identifier::new("InterpreterContext", 1198218077110787867),
     public: false,
-    fields: &[FieldDefinition {
-        prop: CONTEXT,
-        public: false,
-    }],
+    fields: Cow::Borrowed(INTERPRETER_CONTEXT_FIELDS),
 };
 
 pub fn evaluate_module(mut interpreter: Interpreter, module: &Module) -> Struct {
     interpreter.context =
-        Struct::new(INTERPRETER_CONTEXT).set(CONTEXT, Value::Struct(interpreter.context));
+        Struct::new(Cow::Borrowed(INTERPRETER_CONTEXT)).set(CONTEXT, Value::Struct(interpreter.context));
     interpreter.functions = module
         .function_definitions
         .iter()
@@ -197,7 +199,7 @@ pub fn evaluate_block(
 const STRUCT_NULL: &'static StructDefinition = &StructDefinition {
     id: Identifier::new("null", 0),
     public: false,
-    fields: &[],
+    fields: Cow::Borrowed(&[]),
 };
 
 pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Expr) -> Value {
@@ -226,7 +228,7 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
         Expr::Struct(def, exprs) => {
             #[cfg(feature = "print")]
             println!("Struct {:}", def.name());
-            let mut s = Struct::new(def);
+            let mut s = Struct::new(def.clone());
             for (prop, expr) in exprs {
                 s.set_mut(prop.clone(), evaluate_expr(interpreter, expr));
             }
@@ -242,7 +244,7 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
                 .unwrap_or_else(|| panic!("Invalid function {:#?}", function));
 
             let context = Struct {
-                def: STRUCT_NULL,
+                def: Cow::Borrowed(STRUCT_NULL),
                 members: f
                     .inputs
                     .iter()

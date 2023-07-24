@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{borrow::Cow, fmt::Display};
 
 use crate::{
     ast::{combine::COMBINE_CONTEXT_STRUCT, modify::CONTEXT_STRUCT},
@@ -15,12 +15,12 @@ use super::{Identifier, VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT};
 
 pub const POSITION_2D: Property = Property::new(
     "position_2d",
-    Type::Struct(VECTOR2_STRUCT),
+    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
     19300293251480055481,
 );
 pub const POSITION_3D: Property = Property::new(
     "position_3d",
-    Type::Struct(VECTOR3_STRUCT),
+    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
     2063026210185456313,
 );
 pub const TIME: Property =
@@ -32,28 +32,39 @@ pub const DISTANCE: Property = Property::new(
 );
 pub const GRADIENT_2D: Property = Property::new(
     "gradient_2d",
-    Type::Struct(VECTOR2_STRUCT),
+    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
     16702807221222221695,
 );
 pub const GRADIENT_3D: Property = Property::new(
     "gradient_3d",
-    Type::Struct(VECTOR3_STRUCT),
+    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
     1183200891820394544,
 );
-pub const NORMAL: Property =
-    Property::new("normal", Type::Struct(VECTOR3_STRUCT), 1183200891820394544);
-pub const UV: Property = Property::new("uv", Type::Struct(VECTOR2_STRUCT), 1527481748115194786);
+pub const NORMAL: Property = Property::new(
+    "normal",
+    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
+    1183200891820394544,
+);
+pub const UV: Property = Property::new(
+    "uv",
+    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
+    1527481748115194786,
+);
 pub const TANGENT_2D: Property = Property::new(
     "tangent_2d",
-    Type::Struct(VECTOR2_STRUCT),
+    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
     12976793731289731131,
 );
 pub const TANGENT_3D: Property = Property::new(
     "tangent_3d",
-    Type::Struct(VECTOR3_STRUCT),
+    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
     17286461381478601027,
 );
-pub const COLOR: Property = Property::new("color", Type::Struct(VECTOR4_STRUCT), 84604795624457789);
+pub const COLOR: Property = Property::new(
+    "color",
+    Type::Struct(Cow::Borrowed(VECTOR4_STRUCT)),
+    84604795624457789,
+);
 pub const LIGHT: Property = Property::new(
     "light",
     Type::Number(NumericType::Float),
@@ -61,12 +72,12 @@ pub const LIGHT: Property = Property::new(
 );
 pub const SUPPORT_2D: Property = Property::new(
     "support_2d",
-    Type::Struct(VECTOR2_STRUCT),
+    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
     85970193295239647,
 );
 pub const SUPPORT_3D: Property = Property::new(
     "support_3d",
-    Type::Struct(VECTOR3_STRUCT),
+    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
     5120220911040556255970193295239647,
 );
 pub const ERROR: Property = Property::new(
@@ -77,18 +88,32 @@ pub const ERROR: Property = Property::new(
 pub const NUM: Property =
     Property::new("num", Type::Number(NumericType::Float), 1349662877516236181);
 
-pub const CONTEXT: Property =
-    Property::new("context", Type::Struct(&CONTEXT_STRUCT), 595454262490629935);
+pub const CONTEXT: Property = Property::new(
+    "context",
+    Type::Struct(Cow::Borrowed(CONTEXT_STRUCT)),
+    595454262490629935,
+);
 pub const COMBINE_CONTEXT: Property = Property::new(
     "combine_context",
-    Type::Struct(&COMBINE_CONTEXT_STRUCT),
+    Type::Struct(Cow::Borrowed(COMBINE_CONTEXT_STRUCT)),
     671133652169921634,
 );
 
-pub const LEFT: Property = Property::new("left", Type::Struct(&CONTEXT_STRUCT), 635254731934742132);
-pub const RIGHT: Property =
-    Property::new("right", Type::Struct(&CONTEXT_STRUCT), 5251097991491214179);
-pub const OUT: Property = Property::new("out", Type::Struct(&CONTEXT_STRUCT), 1470763158891875334);
+pub const LEFT: Property = Property::new(
+    "left",
+    Type::Struct(Cow::Borrowed(CONTEXT_STRUCT)),
+    635254731934742132,
+);
+pub const RIGHT: Property = Property::new(
+    "right",
+    Type::Struct(Cow::Borrowed(CONTEXT_STRUCT)),
+    5251097991491214179,
+);
+pub const OUT: Property = Property::new(
+    "out",
+    Type::Struct(Cow::Borrowed(CONTEXT_STRUCT)),
+    1470763158891875334,
+);
 
 /// Named, typed unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

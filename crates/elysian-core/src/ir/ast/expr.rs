@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{borrow::Cow, fmt::Debug};
 
 use crate::{
     ast::expr::Expr as ElysianExpr,
@@ -16,7 +16,7 @@ use super::{
 /// Expression resulting in a value
 pub enum Expr {
     Literal(Value),
-    Struct(&'static StructDefinition, IndexMap<Property, Expr>),
+    Struct(Cow<'static, StructDefinition>, IndexMap<Property, Expr>),
     Read(Vec<Property>),
     Call {
         function: Identifier,
@@ -157,17 +157,17 @@ impl From<ElysianExpr> for Expr {
         match value {
             ElysianExpr::Literal(v) => Expr::Literal(v.into()),
             ElysianExpr::Vector2(x, y) => Expr::Struct(
-                VECTOR2_STRUCT,
+                Cow::Borrowed(VECTOR2_STRUCT),
                 [(X, (*x).into()), (Y, (*y).into())].into_iter().collect(),
             ),
             ElysianExpr::Vector3(x, y, z) => Expr::Struct(
-                VECTOR3_STRUCT,
+                Cow::Borrowed(VECTOR3_STRUCT),
                 [(X, (*x).into()), (Y, (*y).into()), (Z, (*z).into())]
                     .into_iter()
                     .collect(),
             ),
             ElysianExpr::Vector4(x, y, z, w) => Expr::Struct(
-                VECTOR4_STRUCT,
+                Cow::Borrowed(VECTOR4_STRUCT),
                 [
                     (X, (*x).into()),
                     (Y, (*y).into()),
@@ -178,17 +178,17 @@ impl From<ElysianExpr> for Expr {
                 .collect(),
             ),
             ElysianExpr::Matrix2(x, y) => Expr::Struct(
-                MATRIX2_STRUCT,
+                Cow::Borrowed(MATRIX2_STRUCT),
                 [(X, (*x).into()), (Y, (*y).into())].into_iter().collect(),
             ),
             ElysianExpr::Matrix3(x, y, z) => Expr::Struct(
-                MATRIX3_STRUCT,
+                Cow::Borrowed(MATRIX3_STRUCT),
                 [(X, (*x).into()), (Y, (*y).into()), (Z, (*z).into())]
                     .into_iter()
                     .collect(),
             ),
             ElysianExpr::Matrix4(x, y, z, w) => Expr::Struct(
-                MATRIX4_STRUCT,
+                Cow::Borrowed(MATRIX4_STRUCT),
                 [
                     (X, (*x).into()),
                     (Y, (*y).into()),
@@ -276,10 +276,10 @@ impl Expr {
                     super::Number::SInt(_) => NumericType::SInt,
                     super::Number::Float(_) => NumericType::Float,
                 }),
-                Value::Struct(s) => Type::Struct(s.def),
+                Value::Struct(s) => Type::Struct(s.def.clone()),
             },
-            Struct(def, _) => Type::Struct(def),
-            Read(path) => *path.last().expect("Empty Path").ty(),
+            Struct(def, _) => Type::Struct(def.clone()),
+            Read(path) => path.last().expect("Empty Path").ty().clone(),
             Call { function, args } => panic!("Can't infer the type of a function call"),
             Neg(t) => t.ty(),
             Abs(t) => t.ty(),

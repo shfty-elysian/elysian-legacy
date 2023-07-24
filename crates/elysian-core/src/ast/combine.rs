@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
@@ -14,23 +15,25 @@ use crate::{
     },
 };
 
+pub const COMBINE_CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
+    FieldDefinition {
+        prop: LEFT,
+        public: false,
+    },
+    FieldDefinition {
+        prop: RIGHT,
+        public: false,
+    },
+    FieldDefinition {
+        prop: OUT,
+        public: false,
+    },
+];
+
 pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
     id: Identifier::new("CombineContext", 416045102551943616),
     public: false,
-    fields: &[
-        FieldDefinition {
-            prop: LEFT,
-            public: false,
-        },
-        FieldDefinition {
-            prop: RIGHT,
-            public: false,
-        },
-        FieldDefinition {
-            prop: OUT,
-            public: false,
-        },
-    ],
+    fields: Cow::Borrowed(COMBINE_CONTEXT_STRUCT_FIELDS),
 };
 
 pub struct Combine {

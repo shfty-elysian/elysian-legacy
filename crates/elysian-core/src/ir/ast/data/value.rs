@@ -1,7 +1,7 @@
 use std::{
     fmt::{Debug, Display},
     hash::{Hash, Hasher},
-    ops::{Add, Div, Mul, Neg, Sub},
+    ops::{Add, Div, Mul, Neg, Sub}, borrow::Cow,
 };
 
 use rust_gpu_bridge::{
@@ -285,7 +285,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(&VECTOR2_STRUCT)
+        Struct::new(Cow::Borrowed(VECTOR2_STRUCT))
             .set(X, t[0].clone().into())
             .set(Y, t[1].clone().into()),
     )
@@ -297,7 +297,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(&VECTOR3_STRUCT)
+        Struct::new(Cow::Borrowed(VECTOR3_STRUCT))
             .set(X, t[0].clone().into())
             .set(Y, t[1].clone().into())
             .set(Z, t[2].clone().into()),
@@ -310,7 +310,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(&VECTOR4_STRUCT)
+        Struct::new(Cow::Borrowed(VECTOR4_STRUCT))
             .set(X, t[0].clone().into())
             .set(Y, t[1].clone().into())
             .set(Z, t[2].clone().into())
@@ -324,7 +324,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(&MATRIX2_STRUCT)
+        Struct::new(Cow::Borrowed(MATRIX2_STRUCT))
             .set(X_AXIS_2, vector2(t[0].clone()))
             .set(Y_AXIS_2, vector2(t[1].clone())),
     )
@@ -336,7 +336,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(&MATRIX3_STRUCT)
+        Struct::new(Cow::Borrowed(MATRIX3_STRUCT))
             .set(X_AXIS_3, vector3(t[0].clone()))
             .set(Y_AXIS_3, vector3(t[1].clone()))
             .set(Z_AXIS_3, vector3(t[2].clone())),
@@ -349,7 +349,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(&MATRIX4_STRUCT)
+        Struct::new(Cow::Borrowed(MATRIX4_STRUCT))
             .set(X_AXIS_4, vector4(t[0].clone()))
             .set(Y_AXIS_4, vector4(t[1].clone()))
             .set(Z_AXIS_4, vector4(t[2].clone()))
@@ -360,7 +360,7 @@ where
 impl From<Vec2> for Value {
     fn from(value: Vec2) -> Self {
         Value::Struct(
-            Struct::new(&VECTOR2_STRUCT)
+            Struct::new(Cow::Borrowed(VECTOR2_STRUCT))
                 .set(X, value.x.into())
                 .set(Y, value.y.into()),
         )
@@ -370,7 +370,7 @@ impl From<Vec2> for Value {
 impl From<Vec3> for Value {
     fn from(value: Vec3) -> Self {
         Value::Struct(
-            Struct::new(&VECTOR3_STRUCT)
+            Struct::new(Cow::Borrowed(VECTOR3_STRUCT))
                 .set(X, value.x.into())
                 .set(Y, value.y.into())
                 .set(Z, value.z.into()),
@@ -381,7 +381,7 @@ impl From<Vec3> for Value {
 impl From<Vec4> for Value {
     fn from(value: Vec4) -> Self {
         Value::Struct(
-            Struct::new(&VECTOR4_STRUCT)
+            Struct::new(Cow::Borrowed(VECTOR4_STRUCT))
                 .set(X, value.x.into())
                 .set(Y, value.y.into())
                 .set(Z, value.z.into())
