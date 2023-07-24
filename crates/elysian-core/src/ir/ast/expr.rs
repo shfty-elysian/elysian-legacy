@@ -8,7 +8,10 @@ use crate::{
     },
 };
 
-use super::{stmt::Stmt, Identifier, CONTEXT};
+use super::{
+    stmt::Stmt, Identifier, CONTEXT, MATRIX2_STRUCT, MATRIX3_STRUCT, MATRIX4_STRUCT,
+    VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT, W, X, Y, Z,
+};
 
 /// Expression resulting in a value
 pub enum Expr {
@@ -153,6 +156,48 @@ impl From<ElysianExpr> for Expr {
     fn from(value: ElysianExpr) -> Self {
         match value {
             ElysianExpr::Literal(v) => Expr::Literal(v.into()),
+            ElysianExpr::Vector2(x, y) => Expr::Struct(
+                VECTOR2_STRUCT,
+                [(X, (*x).into()), (Y, (*y).into())].into_iter().collect(),
+            ),
+            ElysianExpr::Vector3(x, y, z) => Expr::Struct(
+                VECTOR3_STRUCT,
+                [(X, (*x).into()), (Y, (*y).into()), (Z, (*z).into())]
+                    .into_iter()
+                    .collect(),
+            ),
+            ElysianExpr::Vector4(x, y, z, w) => Expr::Struct(
+                VECTOR4_STRUCT,
+                [
+                    (X, (*x).into()),
+                    (Y, (*y).into()),
+                    (Z, (*z).into()),
+                    (W, (*w).into()),
+                ]
+                .into_iter()
+                .collect(),
+            ),
+            ElysianExpr::Matrix2(x, y) => Expr::Struct(
+                MATRIX2_STRUCT,
+                [(X, (*x).into()), (Y, (*y).into())].into_iter().collect(),
+            ),
+            ElysianExpr::Matrix3(x, y, z) => Expr::Struct(
+                MATRIX3_STRUCT,
+                [(X, (*x).into()), (Y, (*y).into()), (Z, (*z).into())]
+                    .into_iter()
+                    .collect(),
+            ),
+            ElysianExpr::Matrix4(x, y, z, w) => Expr::Struct(
+                MATRIX4_STRUCT,
+                [
+                    (X, (*x).into()),
+                    (Y, (*y).into()),
+                    (Z, (*z).into()),
+                    (W, (*w).into()),
+                ]
+                .into_iter()
+                .collect(),
+            ),
             ElysianExpr::Read(p) => Expr::Read(vec![CONTEXT, p.into()]),
             ElysianExpr::Add(lhs, rhs) => Expr::Add(lhs.into(), rhs.into()),
             ElysianExpr::Sub(lhs, rhs) => Expr::Sub(lhs.into(), rhs.into()),

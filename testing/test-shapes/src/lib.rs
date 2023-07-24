@@ -4,10 +4,11 @@ use elysian_core::{
         expr::{Expr, IntoLiteral},
         field::IntoField,
         modify::IntoModify,
+        value::Value,
     },
     ir::{
         as_ir::{AsIR, DynAsIR},
-        ast::{DISTANCE, GRADIENT_2D},
+        ast::{Number, COLOR, DISTANCE, GRADIENT_2D},
         module::{AsModule, DynAsModule},
     },
 };
@@ -16,8 +17,7 @@ use elysian_shapes::{
     combine::{Blend, Boolean},
     field::{Capsule, Circle, Line, Point, Ring},
     modify::{
-        IntoAspect, IntoDistanceColor, IntoElongate, IntoIsosurface, IntoManifold, IntoTranslate,
-        ASPECT,
+        IntoAspect, IntoElongate, IntoIsosurface, IntoManifold, IntoSet, IntoTranslate, ASPECT,
     },
     raymarch::{March, Raymarch},
 };
@@ -145,9 +145,27 @@ pub fn kettle_bell() -> DynAsModule {
         epsilon: 0.01.into(),
     };
 
-    let shape_e = shape_d.modify().distance_color();
+    let shape_e = shape_d.modify().set(COLOR, distance_color());
 
     Box::new(shape_e)
+}
+
+pub fn distance_color() -> Expr {
+    Expr::Vector4(
+        Box::new(Expr::Sub(
+            Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
+            Box::new(Expr::Read(DISTANCE)),
+        )),
+        Box::new(Expr::Sub(
+            Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
+            Box::new(Expr::Read(DISTANCE)),
+        )),
+        Box::new(Expr::Sub(
+            Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
+            Box::new(Expr::Read(DISTANCE)),
+        )),
+        Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
+    )
 }
 
 pub fn raymarched() -> DynAsModule {
@@ -156,7 +174,7 @@ pub fn raymarched() -> DynAsModule {
     Box::new(
         Raymarch {
             march: March::Sphere {
-                epsilon: 0.0001f32.literal(),
+                epsilon: 0.0001.literal(),
             },
             max_steps: 100u32.literal(),
             inv_projection: projection.inverse().literal(),
@@ -165,33 +183,33 @@ pub fn raymarched() -> DynAsModule {
                     Box::new(
                         Point
                             .field()
-                            .translate([0.5f32, 0.5f32, -2.0f32].literal())
-                            .elongate([0.5f32, 0.0f32, 0.0f32].literal(), false)
-                            .isosurface(1.0f32.literal())
+                            .translate([0.5, 0.5, -2.0].literal())
+                            .elongate([0.5, 0.0, 0.0].literal(), false)
+                            .isosurface(1.0.literal())
                             .manifold()
-                            .isosurface(0.2f32.literal()),
+                            .isosurface(0.2.literal()),
                     ) as Box<dyn AsModule>,
                     Box::new(
                         Point
                             .field()
-                            .translate([-0.5f32, -0.5f32, -2.5f32].literal())
-                            .elongate([0.5f32, 0.0f32, 0.0f32].literal(), false)
-                            .isosurface(1.0f32.literal())
+                            .translate([-0.5, -0.5, -2.5].literal())
+                            .elongate([0.5, 0.0, 0.0].literal(), false)
+                            .isosurface(1.0.literal())
                             .manifold()
-                            .isosurface(0.2f32.literal()),
+                            .isosurface(0.2.literal()),
                     ),
                     Box::new(
                         Point
                             .field()
-                            .translate([1.0f32, -1.5f32, -3.0f32].literal())
-                            .elongate([0.5f32, 0.0f32, 0.0f32].literal(), false)
-                            .isosurface(1.0f32.literal())
+                            .translate([1.0, -1.5, -3.0].literal())
+                            .elongate([0.5, 0.0, 0.0].literal(), false)
+                            .isosurface(1.0.literal())
                             .manifold()
-                            .isosurface(0.2f32.literal()),
+                            .isosurface(0.2.literal()),
                     ),
                 ]
                 .combine([Box::new(Boolean::Union) as Box<dyn AsIR>])
-                .distance_color(),
+                .set(COLOR, distance_color()),
             ),
         }, //.modify().aspect(Expr::Read(ASPECT)),
     )

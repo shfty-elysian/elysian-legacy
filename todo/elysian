@@ -266,16 +266,14 @@
 
   DONE: Implemented DistanceColor, refactored consuming code to use color directly
 
-=========================================================================================================
-
-* Extend base AST Expr with Vector / Matrix structuring and destructuring
+* Extend base AST Expr with Vector / Matrix structuring
   * Should be able to encode ex. Distance -> Color via expression
   * How to represent structure types?
     * Explicit VectorN / MatrixN members composing arrays of BoxExpr?
 
-* Consider moving unary / binary / ternary ops into shareable enums
-  * Would likely need to make generic for compatibility across
-    base AST and IR AST, but should be workable with a concrete type in consuming structs
+  DONE: Added Vector* and Matrix* variants for constructing via Expr
+
+=========================================================================================================
 
 * Move struct and function definitions from const-level to value-level,
   * Use const-friendly identifiers to support existing use cases / extensibility
@@ -288,6 +286,16 @@
 
 * UUID collision checking
   * Currently too easy to accidentally duplicate
+
+* Consider extending base AST Read expr with path functionality
+  * Currently no way to access member fields, ex vector / matrix components
+  * Feels like it may cause the base AST to creep toward being too powerful
+    * Should be able to avoid this by imposing restrictions,
+      perhaps limiting field access to Vector / Matrix
+
+* Consider moving unary / binary / ternary ops into shareable enums
+  * Would likely need to make generic for compatibility across
+    base AST and IR AST, but should be workable with a concrete type in consuming structs
 
 * Type checking for expressions
   * Binary op validity is already encoded via panics in ty(),
