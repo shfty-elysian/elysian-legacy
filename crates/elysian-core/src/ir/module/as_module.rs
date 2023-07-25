@@ -11,22 +11,23 @@ use uuid::Uuid;
 use crate::ir::{
     as_ir::HashIR,
     ast::{
-        Block, Expr, Identifier, Property, Stmt, MATRIX2, MATRIX2_STRUCT, MATRIX3, MATRIX3_STRUCT,
-        MATRIX4, MATRIX4_STRUCT, VECTOR2, VECTOR2_STRUCT, VECTOR3, VECTOR3_STRUCT, VECTOR4,
-        VECTOR4_STRUCT,
+        Block, Expr, Identifier, Property, Stmt, MATRIX2_STRUCT, MATRIX3_STRUCT, MATRIX4_STRUCT,
+        VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT,
     },
     module::FieldDefinition,
 };
 
-use super::{FunctionDefinition, Module, SpecializationData, StructDefinition, Type};
+use super::{
+    FunctionDefinition, Module, PropertyIdentifier, SpecializationData, StructDefinition, Type,
+};
 
-fn expr_props(expr: &Expr) -> Vec<Identifier> {
+fn expr_props(expr: &Expr) -> Vec<PropertyIdentifier> {
     match expr {
         Expr::Struct(_, members) => members.values().flat_map(expr_props).collect(),
         Expr::Read(path) => {
             let mut iter = path.iter();
             if let Some(first) = iter.next() {
-                if *first == CONTEXT {
+                if **first == CONTEXT {
                     return iter.cloned().take(1).collect();
                 }
             }
@@ -57,14 +58,14 @@ fn expr_props(expr: &Expr) -> Vec<Identifier> {
     }
 }
 
-fn stmt_props(stmt: &Stmt) -> Vec<Identifier> {
+fn stmt_props(stmt: &Stmt) -> Vec<PropertyIdentifier> {
     match stmt {
         Stmt::Block(block) => block.0.iter().flat_map(stmt_props).collect(),
         Stmt::Bind { expr, .. } => expr_props(expr),
         Stmt::Write { path, expr } => {
             let mut iter = path.iter();
             let path_props = if let Some(first) = iter.next() {
-                if *first == CONTEXT {
+                if **first == CONTEXT {
                     iter.cloned().take(1).collect()
                 } else {
                     vec![]
@@ -93,8 +94,8 @@ fn stmt_props(stmt: &Stmt) -> Vec<Identifier> {
     }
 }
 
-fn block_props(block: &Block) -> Vec<Identifier> {
-    let mut props = IndexSet::<Identifier, RandomState>::default();
+fn block_props(block: &Block) -> Vec<PropertyIdentifier> {
+    let mut props = IndexSet::<PropertyIdentifier, RandomState>::default();
     for stmt in block.0.iter() {
         props.extend(stmt_props(stmt));
     }
@@ -111,22 +112,16 @@ macro_rules! property {
 }
 
 pub const CONTEXT: Identifier = Identifier::new("Context", 595454262490629935);
-property!(CONTEXT, CONTEXT_PROP, Type::Struct(CONTEXT));
-
-property!(VECTOR2, VECTOR2_PROP, Type::Struct(VECTOR2));
-property!(VECTOR3, VECTOR3_PROP, Type::Struct(VECTOR3));
-property!(VECTOR4, VECTOR4_PROP, Type::Struct(VECTOR4));
-property!(MATRIX2, MATRIX2_PROP, Type::Struct(MATRIX2));
-property!(MATRIX3, MATRIX3_PROP, Type::Struct(MATRIX3));
-property!(MATRIX4, MATRIX4_PROP, Type::Struct(MATRIX4));
+pub const CONTEXT_PROP: PropertyIdentifier = PropertyIdentifier(CONTEXT);
+property!(CONTEXT_PROP, CONTEXT_PROP_DEF, Type::Struct(CONTEXT));
 
 /// Distributed slice of Identifier -> Type pairs
 #[linkme::distributed_slice]
 pub static PROPERTIES: [Property] = [..];
 
-pub static PROPERTIES_MAP: OnceLock<IndexMap<Identifier, Type>> = OnceLock::new();
+pub static PROPERTIES_MAP: OnceLock<IndexMap<PropertyIdentifier, Type>> = OnceLock::new();
 
-pub fn properties() -> &'static IndexMap<Identifier, Type> {
+pub fn properties() -> &'static IndexMap<PropertyIdentifier, Type> {
     PROPERTIES_MAP.get_or_init(|| {
         let props: IndexMap<_, _> = PROPERTIES
             .into_iter()
@@ -172,7 +167,7 @@ pub trait AsModule: 'static + Debug + HashIR {
         let mut set = HashSet::new();
         functions.retain(|x| set.insert(x.id.clone()));
 
-        let mut props = IndexSet::<Identifier, RandomState>::default();
+        let mut props = IndexSet::<PropertyIdentifier, RandomState>::default();
         for function in functions.iter() {
             props.extend(block_props(&function.block));
         }
@@ -202,7 +197,7 @@ pub trait AsModule: 'static + Debug + HashIR {
         .collect();
 
         Module {
-            types,
+            props: types,
             entry_point,
             struct_definitions,
             function_definitions: functions,
@@ -214,7 +209,7 @@ pub trait AsModule: 'static + Debug + HashIR {
     fn functions(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<Identifier, Type>,
+        tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<FunctionDefinition>;
 
@@ -237,7 +232,7 @@ impl AsModule for DynAsModule {
     fn functions(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<Identifier, Type>,
+        tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<FunctionDefinition> {
         (**self).functions(spec, tys, entry_point)

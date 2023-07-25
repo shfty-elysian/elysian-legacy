@@ -4,26 +4,26 @@ use std::hash::{Hash, Hasher};
 
 use indexmap::IndexMap;
 
-use crate::ir::ast::{IntoRead, COMBINE_CONTEXT};
-use crate::ir::module::Type;
+use crate::ir::ast::{COMBINE_CONTEXT, COMBINE_CONTEXT_PROP};
+use crate::ir::module::{IntoRead, PropertyIdentifier, Type, CONTEXT_PROP};
 use crate::ir::{
     as_ir::{AsIR, DynAsIR, HashIR},
     ast::{Block, Expr, Identifier},
     module::{
         AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
-        SpecializationData, StructDefinition, CONTEXT
+        SpecializationData, StructDefinition, CONTEXT,
     },
 };
 use crate::property;
 
-pub const LEFT: Identifier = Identifier::new("left", 635254731934742132);
-property!(LEFT, LEFT_PROP, Type::Struct(CONTEXT));
+pub const LEFT: PropertyIdentifier = PropertyIdentifier::new("left", 635254731934742132);
+property!(LEFT, LEFT_PROP_DEF, Type::Struct(CONTEXT));
 
-pub const RIGHT: Identifier = Identifier::new("right", 5251097991491214179);
-property!(RIGHT, RIGHT_PROP, Type::Struct(CONTEXT));
+pub const RIGHT: PropertyIdentifier = PropertyIdentifier::new("right", 5251097991491214179);
+property!(RIGHT, RIGHT_PROP_DEF, Type::Struct(CONTEXT));
 
-pub const OUT: Identifier = Identifier::new("out", 1470763158891875334);
-property!(OUT, OUT_PROP, Type::Struct(CONTEXT));
+pub const OUT: PropertyIdentifier = PropertyIdentifier::new("out", 1470763158891875334);
+property!(OUT, OUT_PROP_DEF, Type::Struct(CONTEXT));
 
 pub const COMBINE_CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
     FieldDefinition {
@@ -79,7 +79,7 @@ impl AsModule for Combine {
     fn functions(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<Identifier, Type>,
+        tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<FunctionDefinition> {
         let (shape_entry_points, shape_functions): (Vec<_>, Vec<_>) = self
@@ -101,12 +101,12 @@ impl AsModule for Combine {
 
         let mut block = vec![];
 
-        iter.fold(base.call(CONTEXT.read()), |acc, next| {
-            block.push(COMBINE_CONTEXT.bind(
-                COMBINE_CONTEXT_STRUCT.construct([(LEFT, acc), (RIGHT, next.call(CONTEXT.read()))]),
+        iter.fold(base.call(CONTEXT_PROP.read()), |acc, next| {
+            block.push(COMBINE_CONTEXT_PROP.bind(
+                COMBINE_CONTEXT.construct([(LEFT, acc), (RIGHT, next.call(CONTEXT_PROP.read()))]),
             ));
-            block.push(COMBINE_CONTEXT.bind(self.combinator.iter().fold(
-                COMBINE_CONTEXT.read(),
+            block.push(COMBINE_CONTEXT_PROP.bind(self.combinator.iter().fold(
+                COMBINE_CONTEXT_PROP.read(),
                 |acc: Expr, next| {
                     let Expr::Call{ function, args } = next.expression(spec, acc) else  {
                             panic!("Combinator expression is not a Call")
@@ -115,7 +115,7 @@ impl AsModule for Combine {
                     Expr::Call { function, args }
                 },
             )));
-            block.push(OUT.bind([COMBINE_CONTEXT, OUT].read()));
+            block.push(OUT.bind([COMBINE_CONTEXT_PROP, OUT].read()));
             OUT.read()
         });
 
@@ -131,10 +131,10 @@ impl AsModule for Combine {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: false,
                 }],
-                output: CONTEXT,
+                output: CONTEXT_PROP,
                 block,
             }])
             .collect()

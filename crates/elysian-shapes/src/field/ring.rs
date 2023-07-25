@@ -7,9 +7,10 @@ use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, IntoRead},
+        ast::{Identifier, IntoBlock},
         module::{
-            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, CONTEXT,
+            FunctionDefinition, InputDefinition, IntoRead, NumericType, SpecializationData, Type,
+            PropertyIdentifier, CONTEXT_PROP,
         },
     },
     property,
@@ -21,7 +22,7 @@ use super::{Circle, CIRCLE, RADIUS};
 
 pub const RING: Identifier = Identifier::new("ring", 18972348581943461950);
 
-pub const WIDTH: Identifier = Identifier::new("width", 2742125101201765597);
+pub const WIDTH: PropertyIdentifier = PropertyIdentifier::new("width", 2742125101201765597);
 property!(WIDTH, WIDTH_PROP, Type::Number(NumericType::Float));
 
 pub struct Ring {
@@ -55,7 +56,7 @@ impl Hash for Ring {
 }
 
 impl Domains for Ring {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         Circle::domains()
             .into_iter()
             .chain(Manifold::domains())
@@ -98,11 +99,11 @@ impl AsIR for Ring {
                     mutable: false,
                 },
                 InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: false,
                 },
             ],
-            output: CONTEXT,
+            output: CONTEXT_PROP,
             block: ISOSURFACE
                 .specialize(&isosurface_spec)
                 .call([
@@ -110,7 +111,7 @@ impl AsIR for Ring {
                     MANIFOLD.specialize(&manifold_spec).call(
                         CIRCLE
                             .specialize(&circle_spec)
-                            .call([RADIUS.read(), CONTEXT.read()]),
+                            .call([RADIUS.read(), CONTEXT_PROP.read()]),
                     ),
                 ])
                 .output()

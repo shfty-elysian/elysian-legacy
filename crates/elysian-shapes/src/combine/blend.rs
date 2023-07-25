@@ -7,13 +7,13 @@ use elysian_core::{
     },
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{
-            Identifier, IntoLiteral, IntoRead, IntoWrite, COMBINE_CONTEXT, DISTANCE, NUM,
-        },
+        ast::{Identifier, IntoLiteral, COMBINE_CONTEXT_PROP, DISTANCE, NUM},
         module::{
-            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, 
+            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, NumericType,
+            PropertyIdentifier, SpecializationData, Type,
         },
-    }, property,
+    },
+    property,
 };
 
 pub const SMOOTH_UNION: Identifier = Identifier::new("smooth_union", 1894363406191409858);
@@ -22,14 +22,14 @@ pub const SMOOTH_INTERSECTION: Identifier =
 pub const SMOOTH_SUBTRACTION: Identifier =
     Identifier::new("smooth_subtraction", 1414822549598552032);
 
-pub const K: Identifier = Identifier::new("k", 12632115441234896764);
+pub const K: PropertyIdentifier = PropertyIdentifier::new("k", 12632115441234896764);
 property!(K, K_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
 pub enum Blend {
-    SmoothUnion { prop: Identifier, k: Expr },
-    SmoothIntersection { prop: Identifier, k: Expr },
-    SmoothSubtraction { prop: Identifier, k: Expr },
+    SmoothUnion { prop: PropertyIdentifier, k: Expr },
+    SmoothIntersection { prop: PropertyIdentifier, k: Expr },
+    SmoothSubtraction { prop: PropertyIdentifier, k: Expr },
 }
 
 impl std::hash::Hash for Blend {
@@ -72,43 +72,44 @@ impl AsIR for Blend {
                     mutable: false,
                 },
                 InputDefinition {
-                    id: COMBINE_CONTEXT,
+                    id: COMBINE_CONTEXT_PROP,
                     mutable: true,
                 },
             ],
-            output: COMBINE_CONTEXT,
+            output: COMBINE_CONTEXT_PROP,
             block: match self {
                 Blend::SmoothUnion { prop, .. } => {
                     let mut block = vec![
                         NUM.bind(
                             (0.5.literal()
                                 + 0.5.literal()
-                                    * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
-                                        - [COMBINE_CONTEXT, LEFT, DISTANCE].read())
+                                    * ([COMBINE_CONTEXT_PROP, RIGHT, DISTANCE].read()
+                                        - [COMBINE_CONTEXT_PROP, LEFT, DISTANCE].read())
                                     / K.read())
                             .max(0.0.literal())
                             .min(1.0.literal()),
                         ),
-                        [COMBINE_CONTEXT, OUT, prop.clone()].write(
-                            [COMBINE_CONTEXT, RIGHT, prop.clone()]
-                                .read()
-                                .mix([COMBINE_CONTEXT, LEFT, prop.clone()].read(), NUM.read()),
+                        [COMBINE_CONTEXT_PROP, OUT, prop.clone()].write(
+                            [COMBINE_CONTEXT_PROP, RIGHT, prop.clone()].read().mix(
+                                [COMBINE_CONTEXT_PROP, LEFT, prop.clone()].read(),
+                                NUM.read(),
+                            ),
                         ),
                     ];
 
                     if *prop == DISTANCE {
-                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
-                            [COMBINE_CONTEXT, OUT, DISTANCE].read()
+                        block.push([COMBINE_CONTEXT_PROP, OUT, DISTANCE].write(
+                            [COMBINE_CONTEXT_PROP, OUT, DISTANCE].read()
                                 - K.read() * NUM.read() * (1.0.literal() - NUM.read()),
                         ))
                     }
 
-                    block.push(COMBINE_CONTEXT.read().output());
+                    block.push(COMBINE_CONTEXT_PROP.read().output());
 
                     block.into_iter().collect()
                 }
                 Blend::SmoothIntersection { prop, .. } => {
-                    let property: Identifier = prop.clone().into();
+                    let property = prop.clone();
 
                     let mut block = vec![
                         NUM.bind(
@@ -137,34 +138,34 @@ impl AsIR for Blend {
                     block.into_iter().collect()
                 }
                 Blend::SmoothSubtraction { prop, .. } => {
-                    let property: Identifier = prop.clone().into();
+                    let property = prop.clone();
 
                     let mut block = vec![
                         NUM.bind(
                             (0.5.literal()
                                 - 0.5.literal()
-                                    * ([COMBINE_CONTEXT, RIGHT, DISTANCE].read()
-                                        + [COMBINE_CONTEXT, LEFT, DISTANCE].read())
+                                    * ([COMBINE_CONTEXT_PROP, RIGHT, DISTANCE].read()
+                                        + [COMBINE_CONTEXT_PROP, LEFT, DISTANCE].read())
                                     / K.read())
                             .max(0.0.literal())
                             .min(1.0.literal()),
                         ),
-                        [COMBINE_CONTEXT, OUT, property.clone()].write(
-                            [COMBINE_CONTEXT, LEFT, property.clone()].read().mix(
-                                -[COMBINE_CONTEXT, RIGHT, property.clone()].read(),
+                        [COMBINE_CONTEXT_PROP, OUT, property.clone()].write(
+                            [COMBINE_CONTEXT_PROP, LEFT, property.clone()].read().mix(
+                                -[COMBINE_CONTEXT_PROP, RIGHT, property.clone()].read(),
                                 NUM.read(),
                             ),
                         ),
                     ];
 
                     if property == DISTANCE {
-                        block.push([COMBINE_CONTEXT, OUT, DISTANCE].write(
-                            [COMBINE_CONTEXT, OUT, DISTANCE].read()
+                        block.push([COMBINE_CONTEXT_PROP, OUT, DISTANCE].write(
+                            [COMBINE_CONTEXT_PROP, OUT, DISTANCE].read()
                                 + K.read() * NUM.read() * (1.0.literal() - NUM.read()),
                         ))
                     }
 
-                    block.push(COMBINE_CONTEXT.read().output());
+                    block.push(COMBINE_CONTEXT_PROP.read().output());
 
                     block.into_iter().collect()
                 }

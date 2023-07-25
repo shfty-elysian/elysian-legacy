@@ -8,11 +8,12 @@ use elysian_core::{
     ir::{
         as_ir::Domains,
         ast::{
-            vector2, vector3, Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite,
-            Number, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, X, Y,
+            vector2, vector3, Expr, Identifier, IntoBlock, IntoLiteral, Number, DISTANCE,
+            GRADIENT_2D, GRADIENT_3D, VECTOR2, X, Y,
         },
         module::{
-            AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type, CONTEXT,
+            AsModule, FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
+            SpecializationData, Type, CONTEXT_PROP,
         },
     },
 };
@@ -47,7 +48,7 @@ impl AsModule for CentralDiffGradient {
     fn functions(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<Identifier, Type>,
+        tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let field_entry_point = self.field.entry_point();
@@ -73,11 +74,11 @@ impl AsModule for CentralDiffGradient {
                     id: entry_point.clone(),
                     public: true,
                     inputs: vec![InputDefinition {
-                        id: CONTEXT,
+                        id: CONTEXT_PROP,
                         mutable: true,
                     }],
-                    output: CONTEXT,
-                    block: [CONTEXT.read().output()].block(),
+                    output: CONTEXT_PROP,
+                    block: [CONTEXT_PROP.read().output()].block(),
                 }])
                 .collect();
         };
@@ -89,25 +90,25 @@ impl AsModule for CentralDiffGradient {
         let expr_lx = field_entry_point.call(
             TRANSLATE
                 .specialize(&translate_spec)
-                .call([vec_x.clone() * -epsilon.clone(), CONTEXT.read()]),
+                .call([vec_x.clone() * -epsilon.clone(), CONTEXT_PROP.read()]),
         );
 
         let expr_rx = field_entry_point.call(
             TRANSLATE
                 .specialize(&translate_spec)
-                .call([vec_x * epsilon.clone(), CONTEXT.read()]),
+                .call([vec_x * epsilon.clone(), CONTEXT_PROP.read()]),
         );
 
         let expr_ly = field_entry_point.call(
             TRANSLATE
                 .specialize(&translate_spec)
-                .call([vec_y.clone() * -epsilon.clone(), CONTEXT.read()]),
+                .call([vec_y.clone() * -epsilon.clone(), CONTEXT_PROP.read()]),
         );
 
         let expr_ry = field_entry_point.call(
             TRANSLATE
                 .specialize(&translate_spec)
-                .call([vec_y * epsilon.clone(), CONTEXT.read()]),
+                .call([vec_y * epsilon.clone(), CONTEXT_PROP.read()]),
         );
 
         self.field
@@ -117,23 +118,23 @@ impl AsModule for CentralDiffGradient {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: true,
                 }],
-                output: CONTEXT.clone(),
+                output: CONTEXT_PROP.clone(),
                 block: [
-                    CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
+                    CONTEXT_PROP.bind(field_entry_point.call(CONTEXT_PROP.read())),
                     LEFT.bind(expr_lx),
                     RIGHT.bind(expr_rx),
                     X.bind([LEFT, DISTANCE].read() - [RIGHT, DISTANCE].read()),
                     LEFT.bind(expr_ly),
                     RIGHT.bind(expr_ry),
                     Y.bind([LEFT, DISTANCE].read() - [RIGHT, DISTANCE].read()),
-                    [CONTEXT, gradient].write(Expr::Struct(
+                    [CONTEXT_PROP, gradient].write(Expr::Struct(
                         VECTOR2,
                         [(X, X.read()), (Y, Y.read())].into_iter().collect(),
                     )),
-                    CONTEXT.read().output(),
+                    CONTEXT_PROP.read().output(),
                 ]
                 .block(),
             }])

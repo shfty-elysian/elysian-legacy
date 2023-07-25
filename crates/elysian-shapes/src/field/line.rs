@@ -7,8 +7,10 @@ use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, IntoRead, POSITION_2D, POSITION_3D},
-        module::{FunctionDefinition, InputDefinition, SpecializationData, CONTEXT},
+        ast::{Identifier, IntoBlock, POSITION_2D, POSITION_3D},
+        module::{
+            IntoRead,
+            FunctionDefinition, InputDefinition, SpecializationData, PropertyIdentifier, CONTEXT_PROP},
     },
 };
 
@@ -43,7 +45,7 @@ impl Hash for Line {
 }
 
 impl Domains for Line {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         Point::domains()
             .into_iter()
             .chain(Elongate::domains())
@@ -86,16 +88,16 @@ impl AsIR for Line {
                         mutable: false,
                     },
                     InputDefinition {
-                        id: CONTEXT,
+                        id: CONTEXT_PROP,
                         mutable: false,
                     },
                 ],
-                output: CONTEXT,
+                output: CONTEXT_PROP,
                 block: POINT
                     .specialize(&point_spec)
                     .call([ELONGATE
                         .specialize(&elongate_spec)
-                        .call([dir.read(), CONTEXT.read()])])
+                        .call([dir.read(), CONTEXT_PROP.read()])])
                     .output()
                     .block(),
             })

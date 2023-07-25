@@ -3,10 +3,12 @@ use std::hash::Hash;
 use elysian_core::ir::{
     as_ir::{AsIR, Domains},
     ast::{
-        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, DISTANCE, GRADIENT_2D, GRADIENT_3D,
-        POSITION_2D, POSITION_3D,
+        Expr, Identifier, IntoBlock, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
     },
-    module::{FunctionDefinition, InputDefinition, SpecializationData, CONTEXT},
+    module::{
+        FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
+        SpecializationData, CONTEXT_PROP,
+    },
 };
 
 pub const POINT: Identifier = Identifier::new("point", 2023836058494613125);
@@ -15,7 +17,7 @@ pub const POINT: Identifier = Identifier::new("point", 2023836058494613125);
 pub struct Point;
 
 impl Domains for Point {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         vec![POSITION_2D, POSITION_3D, DISTANCE, GRADIENT_2D, GRADIENT_3D]
     }
 }
@@ -42,23 +44,25 @@ impl AsIR for Point {
 
         let mut block = vec![];
         if distance {
-            block.push([CONTEXT, DISTANCE].write([CONTEXT, position.clone()].read().length()))
+            block.push(
+                [CONTEXT_PROP, DISTANCE].write([CONTEXT_PROP, position.clone()].read().length()),
+            )
         };
 
         if let Some(gradient) = gradient {
-            block.push([CONTEXT, gradient].write([CONTEXT, position].read().normalize()));
+            block.push([CONTEXT_PROP, gradient].write([CONTEXT_PROP, position].read().normalize()));
         }
 
-        block.push(CONTEXT.read().output());
+        block.push(CONTEXT_PROP.read().output());
 
         vec![FunctionDefinition {
             id: POINT.specialize(&spec),
             public: false,
             inputs: vec![InputDefinition {
-                id: CONTEXT,
+                id: CONTEXT_PROP,
                 mutable: true,
             }],
-            output: CONTEXT,
+            output: CONTEXT_PROP,
             block: block.block(),
         }]
     }

@@ -4,10 +4,11 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM,
+        ast::{Identifier, IntoBlock, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM},
+        module::{
+            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
+            SpecializationData, CONTEXT_PROP,
         },
-        module::{FunctionDefinition, InputDefinition, SpecializationData, CONTEXT},
     },
 };
 
@@ -17,7 +18,7 @@ pub const MANIFOLD: Identifier = Identifier::new("manifold", 7861274791729269697
 pub struct Manifold;
 
 impl Domains for Manifold {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         vec![GRADIENT_2D, GRADIENT_3D]
     }
 }
@@ -33,11 +34,11 @@ impl AsIR for Manifold {
                 id: MANIFOLD.specialize(spec),
                 public: false,
                 inputs: vec![InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: true,
                 }],
-                output: CONTEXT,
-                block: [CONTEXT.read().output()].block(),
+                output: CONTEXT_PROP,
+                block: [CONTEXT_PROP.read().output()].block(),
             }];
         };
 
@@ -45,15 +46,16 @@ impl AsIR for Manifold {
             id: MANIFOLD.specialize(spec),
             public: false,
             inputs: vec![InputDefinition {
-                id: CONTEXT,
+                id: CONTEXT_PROP,
                 mutable: true,
             }],
-            output: CONTEXT,
+            output: CONTEXT_PROP,
             block: [
-                NUM.bind([CONTEXT, DISTANCE].read()),
-                [CONTEXT, DISTANCE].write(NUM.read().abs()),
-                [CONTEXT, gradient.clone()].write([CONTEXT, gradient].read() * NUM.read().sign()),
-                CONTEXT.read().output(),
+                NUM.bind([CONTEXT_PROP, DISTANCE].read()),
+                [CONTEXT_PROP, DISTANCE].write(NUM.read().abs()),
+                [CONTEXT_PROP, gradient.clone()]
+                    .write([CONTEXT_PROP, gradient].read() * NUM.read().sign()),
+                CONTEXT_PROP.read().output(),
             ]
             .block(),
         }]

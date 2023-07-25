@@ -4,10 +4,11 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3,
+        ast::{Identifier, IntoBlock, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
+        module::{
+            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
+            SpecializationData, Type, CONTEXT_PROP,
         },
-        module::{FunctionDefinition, InputDefinition, SpecializationData, Type, CONTEXT},
     },
     property,
 };
@@ -16,10 +17,10 @@ use elysian_core::ast::expr::Expr;
 
 pub const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
 
-pub const DELTA_2D: Identifier = Identifier::new("delta_2d", 1292788437813720044);
+pub const DELTA_2D: PropertyIdentifier = PropertyIdentifier::new("delta_2d", 1292788437813720044);
 property!(DELTA_2D, DELTA_2D_PROP, Type::Struct(VECTOR2));
 
-pub const DELTA_3D: Identifier = Identifier::new("delta_3d", 8306277011223488934);
+pub const DELTA_3D: PropertyIdentifier = PropertyIdentifier::new("delta_3d", 8306277011223488934);
 property!(DELTA_3D, DELTA_3D_PROP, Type::Struct(VECTOR3));
 
 pub struct Translate {
@@ -49,7 +50,7 @@ impl Hash for Translate {
 }
 
 impl Domains for Translate {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         vec![POSITION_2D, POSITION_3D]
     }
 }
@@ -73,14 +74,15 @@ impl AsIR for Translate {
                     mutable: false,
                 },
                 InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: true,
                 },
             ],
-            output: CONTEXT,
+            output: CONTEXT_PROP,
             block: [
-                [CONTEXT, position.clone()].write([CONTEXT, position].read() - delta.read()),
-                CONTEXT.read().output(),
+                [CONTEXT_PROP, position.clone()]
+                    .write([CONTEXT_PROP, position].read() - delta.read()),
+                CONTEXT_PROP.read().output(),
             ]
             .block(),
         }]

@@ -8,12 +8,12 @@ use indexmap::IndexMap;
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
     ast::{
-        Identifier, IntoBlock, IntoRead, COLOR, DISTANCE, ERROR, GRADIENT_2D, GRADIENT_3D, LIGHT, NORMAL,
+        Identifier, IntoBlock, COLOR, DISTANCE, ERROR, GRADIENT_2D, GRADIENT_3D, LIGHT, NORMAL,
         POSITION_2D, POSITION_3D, SUPPORT_2D, SUPPORT_3D, TANGENT_2D, TANGENT_3D, TIME, UV,
     },
     module::{
-        AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
-        SpecializationData, StructDefinition, Type, CONTEXT,
+        AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition, IntoRead,
+        PropertyIdentifier, SpecializationData, StructDefinition, Type, CONTEXT_PROP,
     },
 };
 
@@ -116,7 +116,7 @@ impl AsModule for Modify {
     fn functions(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<Identifier, Type>,
+        tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<FunctionDefinition> {
         let field_entry_point = self.field.entry_point();
@@ -133,10 +133,10 @@ impl AsModule for Modify {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: false,
                 }],
-                output: CONTEXT,
+                output: CONTEXT_PROP,
                 block: self
                     .post_modifiers
                     .iter()
@@ -144,7 +144,7 @@ impl AsModule for Modify {
                         field_entry_point.call([self
                             .pre_modifiers
                             .iter()
-                            .fold(CONTEXT.read(), |acc, next| next.expression(spec, acc))]),
+                            .fold(CONTEXT_PROP.read(), |acc, next| next.expression(spec, acc))]),
                         |acc, next| next.expression(spec, acc),
                     )
                     .output()

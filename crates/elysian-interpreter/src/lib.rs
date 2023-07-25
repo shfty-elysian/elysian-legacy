@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 use elysian_core::ir::{
     ast::Stmt::{self, *},
     ast::{Expr, Identifier, Struct, Value},
-    module::{FunctionDefinition, Module, CONTEXT},
+    module::{FunctionDefinition, Module, CONTEXT, CONTEXT_PROP},
 };
 use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
 
@@ -61,7 +61,7 @@ const CALL_CONTEXT: Identifier = Identifier::new("CallContext", 0);
 
 pub fn evaluate_module(mut interpreter: Interpreter, module: &Module) -> Struct {
     interpreter.context =
-        Struct::new(INTERPRETER_CONTEXT).set(CONTEXT, Value::Struct(interpreter.context));
+        Struct::new(INTERPRETER_CONTEXT).set(CONTEXT_PROP, Value::Struct(interpreter.context));
     interpreter.functions = module
         .function_definitions
         .iter()

@@ -3,7 +3,7 @@ use elysian_core::ir::{
         Identifier, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
         X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
     },
-    module::{Module, NumericType, SpecializationData, CONTEXT},
+    module::{Module, NumericType, SpecializationData, CONTEXT, PropertyIdentifier},
 };
 pub use prettyplease;
 
@@ -54,7 +54,7 @@ pub fn property_to_syn(id: &Identifier) -> TokenStream {
     let name = id.name();
     let uuid = id.uuid().as_u128();
     quote! {
-        Identifier::new(#name, #uuid)
+        PropertyIdentifier::new(#name, #uuid)
     }
 }
 
@@ -89,9 +89,8 @@ where
                 ir::{
                     ast::{
                         Struct,
-                        Identifier,
                     },
-                    module::CONTEXT,
+                    module::{CONTEXT, PropertyIdentifier},
                 },
             },
             r#static::StaticShape,
@@ -144,7 +143,7 @@ where
                                     path: Ident::new(
                                         &builtin_types(
                                             &module
-                                                .types
+                                                .props
                                                 .get(&field.id)
                                                 .unwrap_or_else(|| {
                                                     panic!("No type for {}", field.id.name())
@@ -231,7 +230,7 @@ where
                 let ty = Ident::new(
                     &builtin_types(
                         &module
-                            .types
+                            .props
                             .get(&input.id)
                             .unwrap_or_else(|| panic!("No type for {}", input.id.name()))
                             .name_unique(),
@@ -778,7 +777,7 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
     }
 }
 
-fn path_to_syn(path: &Vec<Identifier>) -> Expr {
+fn path_to_syn(path: &Vec<PropertyIdentifier>) -> Expr {
     let mut iter = path.iter();
 
     let base = Expr::Path(ExprPath {

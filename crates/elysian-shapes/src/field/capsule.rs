@@ -1,13 +1,13 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use elysian_core::ir::ast::{IntoBlock, IntoRead};
+use elysian_core::ir::module::{PropertyIdentifier, CONTEXT_PROP};
 use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, POSITION_2D, POSITION_3D},
-        module::{CONTEXT, FunctionDefinition, InputDefinition, SpecializationData},
+        ast::{Identifier, IntoBlock, POSITION_2D, POSITION_3D},
+        module::{FunctionDefinition, InputDefinition, IntoRead, SpecializationData},
     },
 };
 
@@ -48,7 +48,7 @@ impl Hash for Capsule {
 }
 
 impl Domains for Capsule {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         Line::domains()
             .into_iter()
             .chain(Isosurface::domains())
@@ -96,17 +96,17 @@ impl AsIR for Capsule {
                     mutable: false,
                 },
                 InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: false,
                 },
             ],
-            output: CONTEXT,
+            output: CONTEXT_PROP,
             block: ISOSURFACE
                 .specialize(&isosurface_spec)
                 .call([
                     RADIUS.read(),
                     LINE.specialize(&line_spec)
-                        .call([dir.read(), CONTEXT.read()]),
+                        .call([dir.read(), CONTEXT_PROP.read()]),
                 ])
                 .output()
                 .block(),

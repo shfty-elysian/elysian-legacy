@@ -4,7 +4,10 @@ use rust_gpu_bridge::{
 };
 use tracing::instrument;
 
-use crate::ir::ast::{Identifier, Value};
+use crate::ir::{
+    ast::{Identifier, Value},
+    module::PropertyIdentifier,
+};
 use std::{
     collections::BTreeMap,
     fmt::{Debug, Display},
@@ -20,7 +23,7 @@ use super::{
 #[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
 pub struct Struct {
     pub id: Identifier,
-    pub members: BTreeMap<Identifier, Value>,
+    pub members: BTreeMap<PropertyIdentifier, Value>,
 }
 
 impl Display for Struct {
@@ -41,37 +44,37 @@ impl Struct {
             members: Default::default(),
         }
     }
-    pub fn try_get_ref(&self, key: &Identifier) -> Option<&Value> {
+    pub fn try_get_ref(&self, key: &PropertyIdentifier) -> Option<&Value> {
         self.members.get(key)
     }
 
-    pub fn try_get_mut(&mut self, key: &Identifier) -> Option<&mut Value> {
+    pub fn try_get_mut(&mut self, key: &PropertyIdentifier) -> Option<&mut Value> {
         self.members.get_mut(key)
     }
 
-    pub fn set_mut(&mut self, key: Identifier, t: Value) {
+    pub fn set_mut(&mut self, key: PropertyIdentifier, t: Value) {
         self.members.insert(key, t);
     }
 
-    pub fn get(&self, key: &Identifier) -> Value {
+    pub fn get(&self, key: &PropertyIdentifier) -> Value {
         self.get_ref(key).clone()
     }
 
-    fn get_ref(&self, key: &Identifier) -> &Value {
+    fn get_ref(&self, key: &PropertyIdentifier) -> &Value {
         self.try_get_ref(key)
             .unwrap_or_else(|| panic!("Invalid key {key:#?}"))
     }
 
-    pub fn get_mut(&mut self, key: &Identifier) -> &mut Value {
+    pub fn get_mut(&mut self, key: &PropertyIdentifier) -> &mut Value {
         self.try_get_mut(key)
             .unwrap_or_else(|| panic!("Invalid key {key:#?}"))
     }
 
-    pub fn try_get(&self, key: &Identifier) -> Option<Value> {
+    pub fn try_get(&self, key: &PropertyIdentifier) -> Option<Value> {
         self.try_get_ref(key).cloned()
     }
 
-    pub fn set(mut self, key: Identifier, t: Value) -> Self
+    pub fn set(mut self, key: PropertyIdentifier, t: Value) -> Self
     where
         Self: Sized,
     {
@@ -80,14 +83,14 @@ impl Struct {
     }
 
     #[instrument]
-    pub fn remove(&mut self, key: &Identifier) -> Value {
+    pub fn remove(&mut self, key: &PropertyIdentifier) -> Value {
         self.members
             .remove(key)
             .unwrap_or_else(|| panic!("Invalid key {key:?}"))
     }
 
     #[instrument]
-    pub fn get_context(&self, key: &Identifier) -> Struct {
+    pub fn get_context(&self, key: &PropertyIdentifier) -> Struct {
         let Value::Struct(c) = self.get_ref(key) else {
         panic!("Value is not a context")
     };
@@ -96,7 +99,7 @@ impl Struct {
     }
 
     #[instrument]
-    pub fn set_number(mut self, key: Identifier, n: Number) -> Self {
+    pub fn set_number(mut self, key: PropertyIdentifier, n: Number) -> Self {
         self.members.insert(key, Value::Number(n));
         self
     }

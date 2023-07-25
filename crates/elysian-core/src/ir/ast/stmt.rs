@@ -3,19 +3,17 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::ir::ast::{Block, Expr};
-
-use super::Identifier;
+use crate::ir::{ast::{Block, Expr}, module::PropertyIdentifier};
 
 /// Statement consuming the result of an expression
 pub enum Stmt {
     Block(Block),
     Bind {
-        prop: Identifier,
+        prop: PropertyIdentifier,
         expr: Expr,
     },
     Write {
-        path: Vec<Identifier>,
+        path: Vec<PropertyIdentifier>,
         expr: Expr,
     },
     If {
@@ -115,18 +113,3 @@ impl Stmt {
     }
 }
 
-pub trait IntoWrite {
-    fn write(self, expr: Expr) -> Stmt;
-}
-
-impl<T> IntoWrite for T
-where
-    T: IntoIterator<Item = Identifier>,
-{
-    fn write(self, expr: Expr) -> Stmt {
-        Stmt::Write {
-            path: self.into_iter().collect(),
-            expr,
-        }
-    }
-}

@@ -7,12 +7,13 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, POSITION_2D,
-            POSITION_3D, VECTOR2, VECTOR3,
+        ast::{Identifier, IntoBlock, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
+        module::{
+            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
+            SpecializationData, Type, CONTEXT_PROP,
         },
-        module::{FunctionDefinition, InputDefinition, SpecializationData, Type, CONTEXT},
-    }, property,
+    },
+    property,
 };
 
 use elysian_core::ast::expr::Expr;
@@ -20,10 +21,10 @@ use elysian_core::ast::expr::Expr;
 pub const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324);
 pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1799909959882308009);
 
-pub const DIR_2D: Identifier = Identifier::new("dir_2d", 10994004961423687819);
+pub const DIR_2D: PropertyIdentifier = PropertyIdentifier::new("dir_2d", 10994004961423687819);
 property!(DIR_2D, DIR_2D_PROP, Type::Struct(VECTOR2));
 
-pub const DIR_3D: Identifier = Identifier::new("dir_3d", 66909101541205811);
+pub const DIR_3D: PropertyIdentifier = PropertyIdentifier::new("dir_3d", 66909101541205811);
 property!(DIR_3D, DIR_3D_PROP, Type::Struct(VECTOR3));
 
 pub struct Elongate {
@@ -57,7 +58,7 @@ impl Hash for Elongate {
 }
 
 impl Domains for Elongate {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         vec![POSITION_2D, POSITION_3D]
     }
 }
@@ -85,19 +86,19 @@ impl AsIR for Elongate {
                     mutable: false,
                 },
                 InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: true,
                 },
             ],
-            output: CONTEXT,
+            output: CONTEXT_PROP,
             block: {
-                let expr = [CONTEXT, position.clone()]
+                let expr = [CONTEXT_PROP, position.clone()]
                     .read()
                     .dot(dir.clone().read().normalize());
 
                 [
-                    [CONTEXT, position.clone()].write(
-                        [CONTEXT, position].read()
+                    [CONTEXT_PROP, position.clone()].write(
+                        [CONTEXT_PROP, position].read()
                             - dir.clone().read().normalize()
                                 * if self.infinite {
                                     expr
@@ -106,7 +107,7 @@ impl AsIR for Elongate {
                                         .min(dir.clone().read().length())
                                 },
                     ),
-                    CONTEXT.read().output(),
+                    CONTEXT_PROP.read().output(),
                 ]
                 .block()
             },

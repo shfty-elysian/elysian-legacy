@@ -15,7 +15,7 @@ use super::ast::Identifier;
 
 #[derive(Debug)]
 pub struct Module {
-    pub types: IndexMap<Identifier, Type>,
+    pub props: IndexMap<PropertyIdentifier, Type>,
     pub function_definitions: Vec<FunctionDefinition>,
     pub struct_definitions: Vec<StructDefinition>,
     pub entry_point: Identifier,

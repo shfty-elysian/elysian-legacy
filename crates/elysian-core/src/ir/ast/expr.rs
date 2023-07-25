@@ -4,7 +4,7 @@ use crate::{
     ast::expr::Expr as ElysianExpr,
     ir::{
         ast::Value,
-        module::{FunctionDefinition, NumericType, Type, CONTEXT},
+        module::{FunctionDefinition, NumericType, PropertyIdentifier, Type, CONTEXT},
     },
 };
 
@@ -15,8 +15,8 @@ use super::{
 /// Expression resulting in a value
 pub enum Expr {
     Literal(Value),
-    Struct(Identifier, IndexMap<Identifier, Expr>),
-    Read(Vec<Identifier>),
+    Struct(Identifier, IndexMap<PropertyIdentifier, Expr>),
+    Read(Vec<PropertyIdentifier>),
     Call {
         function: Identifier,
         args: Vec<Expr>,
@@ -197,7 +197,9 @@ impl From<ElysianExpr> for Expr {
                 .into_iter()
                 .collect(),
             ),
-            ElysianExpr::Read(p) => Expr::Read([CONTEXT].into_iter().chain(p).collect()),
+            ElysianExpr::Read(p) => {
+                Expr::Read([PropertyIdentifier(CONTEXT)].into_iter().chain(p).collect())
+            }
             ElysianExpr::Add(lhs, rhs) => Expr::Add(lhs.into(), rhs.into()),
             ElysianExpr::Sub(lhs, rhs) => Expr::Sub(lhs.into(), rhs.into()),
             ElysianExpr::Mul(lhs, rhs) => Expr::Mul(lhs.into(), rhs.into()),
@@ -269,7 +271,7 @@ impl Expr {
     pub fn ty(
         &self,
         function_defs: &Vec<FunctionDefinition>,
-        types: &IndexMap<Identifier, Type>,
+        types: &IndexMap<PropertyIdentifier, Type>,
     ) -> Type {
         match self {
             Literal(v) => match v {
@@ -445,17 +447,3 @@ where
         Expr::Literal(self.into())
     }
 }
-
-pub trait IntoRead {
-    fn read(self) -> Expr;
-}
-
-impl<T> IntoRead for T
-where
-    T: IntoIterator<Item = Identifier>,
-{
-    fn read(self) -> Expr {
-        Read(self.into_iter().collect())
-    }
-}
-

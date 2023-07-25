@@ -1,9 +1,11 @@
 use elysian_core::ir::{
     ast::{
-        Expr, Identifier, Number, Stmt, Struct, Value, COLOR, MATRIX2, MATRIX3, MATRIX4,
-        POSITION_2D, VECTOR2, VECTOR3, VECTOR4,
+        Expr, Number, Stmt, Struct, Value, COLOR, MATRIX2, MATRIX3, MATRIX4, POSITION_2D, VECTOR2,
+        VECTOR3, VECTOR4,
     },
-    module::{Module as ElysianModule, NumericType, Type as ElysianType, CONTEXT},
+    module::{
+        Module as ElysianModule, NumericType, PropertyIdentifier, Type as ElysianType, CONTEXT,
+    },
 };
 use elysian_shapes::modify::ASPECT;
 use indexmap::IndexMap;
@@ -372,12 +374,12 @@ impl<'a> NagaBuilder<'a> {
         (local, pointer)
     }
 
-    fn get_input_type(&self, id: &Identifier) -> &elysian_core::ir::module::Type {
+    fn get_input_type(&self, id: &PropertyIdentifier) -> &elysian_core::ir::module::Type {
         #[cfg(feature = "print")]
         println!("get_input_type");
 
         self.input
-            .types
+            .props
             .get(id)
             .unwrap_or_else(|| panic!("No input type for {}", id.name()))
     }
@@ -455,8 +457,8 @@ impl<'a> NagaBuilder<'a> {
     fn access_index(
         &self,
         base: Handle<Expression>,
-        prev: &Identifier,
-        next: &Identifier,
+        prev: &PropertyIdentifier,
+        next: &PropertyIdentifier,
     ) -> Expression {
         #[cfg(feature = "print")]
         println!("access_index");
@@ -689,8 +691,8 @@ impl<'a> NagaBuilder<'a> {
             | Expr::Div(lhs, rhs)
             | Expr::Lt(lhs, rhs)
             | Expr::Gt(lhs, rhs) => {
-                let type_l = lhs.ty(&self.input.function_definitions, &self.input.types);
-                let type_r = rhs.ty(&self.input.function_definitions, &self.input.types);
+                let type_l = lhs.ty(&self.input.function_definitions, &self.input.props);
+                let type_r = rhs.ty(&self.input.function_definitions, &self.input.props);
 
                 let invalid = |a, b| format!("Invalid Binary Op {}, {}", a, b);
 

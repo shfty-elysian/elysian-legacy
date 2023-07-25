@@ -2,9 +2,9 @@ use std::borrow::Cow;
 
 use uuid::Uuid;
 
-use crate::ir::module::SpecializationData;
+use crate::ir::module::{PropertyIdentifier, SpecializationData};
 
-use super::{Expr, Stmt};
+use super::Expr;
 
 /// Named unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -81,18 +81,11 @@ impl Identifier {
         }
     }
 
-    pub fn specialize(self, spec: &SpecializationData) -> Self {
+    pub fn specialize(&self, spec: &SpecializationData) -> Self {
         spec.specialize_id(self)
     }
 
-    pub fn bind(self, expr: Expr) -> Stmt {
-        Stmt::Bind { prop: self, expr }
-    }
-
-    pub fn write(self, expr: Expr) -> Stmt {
-        Stmt::Write {
-            path: vec![self],
-            expr,
-        }
+    pub fn construct<I: IntoIterator<Item = (PropertyIdentifier, Expr)>>(&self, props: I) -> Expr {
+        Expr::Struct(self.clone(), props.into_iter().collect())
     }
 }

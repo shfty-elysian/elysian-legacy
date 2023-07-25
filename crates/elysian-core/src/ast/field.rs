@@ -7,8 +7,11 @@ use indexmap::IndexMap;
 
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
-    ast::{Identifier, IntoBlock, IntoRead},
-    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type, CONTEXT},
+    ast::{Identifier, IntoBlock},
+    module::{
+        AsModule, FunctionDefinition, InputDefinition, IntoRead, PropertyIdentifier,
+        SpecializationData, Type, CONTEXT_PROP,
+    },
 };
 
 pub struct Field {
@@ -35,7 +38,7 @@ impl AsModule for Field {
     fn functions(
         &self,
         spec: &SpecializationData,
-        _: &IndexMap<Identifier, Type>,
+        _: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<FunctionDefinition> {
         self.field
@@ -45,11 +48,15 @@ impl AsModule for Field {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: false,
                 }],
-                output: CONTEXT,
-                block: self.field.expression(spec, CONTEXT.read()).output().block(),
+                output: CONTEXT_PROP,
+                block: self
+                    .field
+                    .expression(spec, CONTEXT_PROP.read())
+                    .output()
+                    .block(),
             })
             .collect()
     }

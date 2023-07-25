@@ -5,10 +5,13 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
-            Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, GRADIENT_2D,
-            GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z,
+            Expr, Identifier, IntoBlock, IntoLiteral, GRADIENT_2D, GRADIENT_3D, NORMAL, VECTOR3, X,
+            Y, Z,
         },
-        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, CONTEXT},
+        module::{
+            AsModule, FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
+            SpecializationData, CONTEXT_PROP,
+        },
     },
 };
 
@@ -18,7 +21,7 @@ pub const GRADIENT_NORMALS: Identifier = Identifier::new("gradient_normals", 185
 pub struct GradientNormals;
 
 impl Domains for GradientNormals {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         vec![GRADIENT_2D, GRADIENT_3D]
     }
 }
@@ -27,8 +30,8 @@ impl AsIR for GradientNormals {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let block = if spec.contains(&GRADIENT_2D) {
             [
-                GRADIENT_2D.bind([CONTEXT, GRADIENT_2D].read().normalize()),
-                [CONTEXT, NORMAL].write(
+                GRADIENT_2D.bind([CONTEXT_PROP, GRADIENT_2D].read().normalize()),
+                [CONTEXT_PROP, NORMAL].write(
                     Expr::Struct(
                         VECTOR3,
                         [
@@ -41,27 +44,27 @@ impl AsIR for GradientNormals {
                     )
                     .normalize(),
                 ),
-                CONTEXT.read().output(),
+                CONTEXT_PROP.read().output(),
             ]
             .block()
         } else if spec.contains(&GRADIENT_3D) {
             [
-                [CONTEXT, NORMAL].write([CONTEXT, GRADIENT_3D].read().normalize()),
-                CONTEXT.read().output(),
+                [CONTEXT_PROP, NORMAL].write([CONTEXT_PROP, GRADIENT_3D].read().normalize()),
+                CONTEXT_PROP.read().output(),
             ]
             .block()
         } else {
-            [CONTEXT.read().output()].block()
+            [CONTEXT_PROP.read().output()].block()
         };
 
         vec![FunctionDefinition {
             id: GRADIENT_NORMALS.specialize(spec),
             public: false,
             inputs: vec![InputDefinition {
-                id: CONTEXT,
+                id: CONTEXT_PROP,
                 mutable: true,
             }],
-            output: CONTEXT,
+            output: CONTEXT_PROP,
             block,
         }]
     }

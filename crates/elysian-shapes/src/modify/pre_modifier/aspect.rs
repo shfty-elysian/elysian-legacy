@@ -4,12 +4,10 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{
-            Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, POSITION_2D, POSITION_3D,
-            VECTOR2, X, Y,
-        },
+        ast::{IntoBlock, IntoLiteral, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
         module::{
-            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, CONTEXT,
+            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, NumericType,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
         },
     },
     property,
@@ -17,7 +15,7 @@ use elysian_core::{
 
 use elysian_core::ast::expr::Expr;
 
-pub const ASPECT: Identifier = Identifier::new("aspect", 346035631277210970);
+pub const ASPECT: PropertyIdentifier = PropertyIdentifier::new("aspect", 346035631277210970);
 property!(ASPECT, ASPECT_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
@@ -32,7 +30,7 @@ impl Hash for Aspect {
 }
 
 impl Domains for Aspect {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         vec![POSITION_2D, POSITION_3D]
     }
 }
@@ -53,14 +51,14 @@ impl AsIR for Aspect {
                     mutable: false,
                 },
                 InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: true,
                 },
             ],
-            output: CONTEXT,
+            output: CONTEXT_PROP,
             block: [
-                [CONTEXT, POSITION_2D].write([CONTEXT, POSITION_2D].read() * aspect),
-                CONTEXT.read().output(),
+                [CONTEXT_PROP, POSITION_2D].write([CONTEXT_PROP, POSITION_2D].read() * aspect),
+                CONTEXT_PROP.read().output(),
             ]
             .block(),
         }]

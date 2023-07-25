@@ -4,31 +4,31 @@ use std::{
 };
 
 use super::{
-    ast::{Expr, Identifier},
-    module::{FunctionDefinition, SpecializationData},
+    ast::Expr,
+    module::{FunctionDefinition, PropertyIdentifier, SpecializationData},
 };
 
 pub trait Domains {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         Default::default()
     }
 }
 
 pub trait FilterSpecDyn {
-    fn filter_spec_internal(&self) -> Vec<Identifier>;
+    fn filter_spec_internal(&self) -> Vec<PropertyIdentifier>;
 }
 
 impl<T> FilterSpecDyn for T
 where
     T: Domains,
 {
-    fn filter_spec_internal(&self) -> Vec<Identifier> {
+    fn filter_spec_internal(&self) -> Vec<PropertyIdentifier> {
         T::domains()
     }
 }
 
 impl FilterSpecDyn for Box<dyn AsIR> {
-    fn filter_spec_internal(&self) -> Vec<Identifier> {
+    fn filter_spec_internal(&self) -> Vec<PropertyIdentifier> {
         (**self).filter_spec_internal()
     }
 }

@@ -2,9 +2,11 @@ use std::collections::BTreeSet;
 
 use crate::ir::ast::{Identifier, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D};
 
+use super::PropertyIdentifier;
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SpecializationData {
-    domains: BTreeSet<Identifier>,
+    domains: BTreeSet<PropertyIdentifier>,
 }
 
 impl SpecializationData {
@@ -22,11 +24,11 @@ impl SpecializationData {
         }
     }
 
-    pub fn contains(&self, prop: &Identifier) -> bool {
+    pub fn contains(&self, prop: &PropertyIdentifier) -> bool {
         self.domains.contains(prop)
     }
 
-    pub fn filter<I: IntoIterator<Item = Identifier>>(&self, props: I) -> Self {
+    pub fn filter<I: IntoIterator<Item = PropertyIdentifier>>(&self, props: I) -> Self {
         let props: BTreeSet<_> = props.into_iter().collect();
         SpecializationData {
             domains: self
@@ -38,7 +40,9 @@ impl SpecializationData {
         }
     }
 
-    pub fn specialize_id(&self, id: Identifier) -> Identifier {
-        self.domains.iter().fold(id, |acc, next| acc.concat(next))
+    pub fn specialize_id(&self, id: &Identifier) -> Identifier {
+        self.domains
+            .iter()
+            .fold(id.clone(), |acc, next| acc.concat(next))
     }
 }

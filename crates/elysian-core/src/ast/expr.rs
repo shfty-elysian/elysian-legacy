@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Div, Mul, Neg, Sub},
 };
 
-use crate::ir::ast::Identifier;
+use crate::ir::module::PropertyIdentifier;
 
 use super::value::Value;
 
@@ -18,7 +18,7 @@ pub enum Expr {
     Matrix2(BoxExpr, BoxExpr),
     Matrix3(BoxExpr, BoxExpr, BoxExpr),
     Matrix4(BoxExpr, BoxExpr, BoxExpr, BoxExpr),
-    Read(Vec<Identifier>),
+    Read(Vec<PropertyIdentifier>),
     Neg(BoxExpr),
     Abs(BoxExpr),
     Sign(BoxExpr),
@@ -154,7 +154,7 @@ pub trait IntoRead {
 
 impl<T> IntoRead for T
 where
-    T: IntoIterator<Item = Identifier>,
+    T: IntoIterator<Item = PropertyIdentifier>,
 {
     fn read(self) -> Expr {
         Expr::Read(self.into_iter().collect())

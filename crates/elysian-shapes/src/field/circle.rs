@@ -7,9 +7,10 @@ use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, IntoRead},
+        ast::{Identifier, IntoBlock},
         module::{
-            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, CONTEXT,
+            FunctionDefinition, InputDefinition, IntoRead, NumericType, PropertyIdentifier,
+            SpecializationData, Type, CONTEXT_PROP,
         },
     },
     property,
@@ -21,7 +22,7 @@ use super::{Point, POINT};
 
 pub const CIRCLE: Identifier = Identifier::new("circle", 15738477621793375359);
 
-pub const RADIUS: Identifier = Identifier::new("radius", 213754678517975478);
+pub const RADIUS: PropertyIdentifier = PropertyIdentifier::new("radius", 213754678517975478);
 property!(RADIUS, RADIUS_PROP, Type::Number(NumericType::Float));
 
 pub struct Circle {
@@ -51,7 +52,7 @@ impl Hash for Circle {
 }
 
 impl Domains for Circle {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         Point::domains()
             .into_iter()
             .chain(Isosurface::domains())
@@ -85,16 +86,16 @@ impl AsIR for Circle {
                         mutable: false,
                     },
                     InputDefinition {
-                        id: CONTEXT,
+                        id: CONTEXT_PROP,
                         mutable: false,
                     },
                 ],
-                output: CONTEXT,
+                output: CONTEXT_PROP,
                 block: ISOSURFACE
                     .specialize(&isosurface_spec)
                     .call([
                         RADIUS.read(),
-                        POINT.specialize(&point_spec).call(CONTEXT.read()),
+                        POINT.specialize(&point_spec).call(CONTEXT_PROP.read()),
                     ])
                     .output()
                     .block(),

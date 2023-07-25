@@ -1,10 +1,11 @@
-use elysian_core::{ir::{
-    as_ir::{AsIR, Domains},
-    ast::{
-        Identifier, IntoBlock, IntoRead, IntoWrite, COMBINE_CONTEXT, DISTANCE, 
+use elysian_core::{
+    ast::combine::{LEFT, OUT, RIGHT},
+    ir::{
+        as_ir::{AsIR, Domains},
+        ast::{Identifier, IntoBlock, COMBINE_CONTEXT_PROP, DISTANCE},
+        module::{FunctionDefinition, InputDefinition, IntoRead, IntoWrite, SpecializationData},
     },
-    module::{FunctionDefinition, InputDefinition, SpecializationData},
-}, ast::combine::{OUT, LEFT, RIGHT}};
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Boolean {
@@ -32,47 +33,48 @@ impl AsIR for Boolean {
             },
             public: false,
             inputs: vec![InputDefinition {
-                id: COMBINE_CONTEXT,
+                id: COMBINE_CONTEXT_PROP,
                 mutable: true,
             }],
-            output: COMBINE_CONTEXT,
+            output: COMBINE_CONTEXT_PROP,
             block: match self {
-                Boolean::Union | Boolean::Intersection => {
-                    [
-                        [COMBINE_CONTEXT, OUT]
-                            .write([COMBINE_CONTEXT, LEFT].read())
-                            .if_else(
-                                match self {
-                                    Boolean::Union => [COMBINE_CONTEXT, LEFT, DISTANCE]
-                                        .read()
-                                        .lt([COMBINE_CONTEXT, RIGHT, DISTANCE].read()),
-                                    Boolean::Intersection => [COMBINE_CONTEXT, LEFT, DISTANCE]
-                                        .read()
-                                        .gt([COMBINE_CONTEXT, RIGHT, DISTANCE].read()),
-                                    _ => unreachable!(),
-                                },
-                                Some([COMBINE_CONTEXT, OUT].write([COMBINE_CONTEXT, RIGHT].read())),
-                            ),
-                        COMBINE_CONTEXT.read().output(),
-                    ]
-                    .block()
-                }
-                Boolean::Subtraction => [
-                    [COMBINE_CONTEXT, OUT].write([COMBINE_CONTEXT, RIGHT].read()),
-                    [COMBINE_CONTEXT, OUT, DISTANCE]
-                        .write(-[COMBINE_CONTEXT, OUT, DISTANCE].read()),
-                    [COMBINE_CONTEXT, OUT]
-                        .write([COMBINE_CONTEXT, LEFT].read())
+                Boolean::Union | Boolean::Intersection => [
+                    [COMBINE_CONTEXT_PROP, OUT]
+                        .write([COMBINE_CONTEXT_PROP, LEFT].read())
                         .if_else(
-                            [COMBINE_CONTEXT, LEFT, DISTANCE].read().gt([
-                                COMBINE_CONTEXT,
+                            match self {
+                                Boolean::Union => [COMBINE_CONTEXT_PROP, LEFT, DISTANCE]
+                                    .read()
+                                    .lt([COMBINE_CONTEXT_PROP, RIGHT, DISTANCE].read()),
+                                Boolean::Intersection => [COMBINE_CONTEXT_PROP, LEFT, DISTANCE]
+                                    .read()
+                                    .gt([COMBINE_CONTEXT_PROP, RIGHT, DISTANCE].read()),
+                                _ => unreachable!(),
+                            },
+                            Some(
+                                [COMBINE_CONTEXT_PROP, OUT]
+                                    .write([COMBINE_CONTEXT_PROP, RIGHT].read()),
+                            ),
+                        ),
+                    COMBINE_CONTEXT_PROP.read().output(),
+                ]
+                .block(),
+                Boolean::Subtraction => [
+                    [COMBINE_CONTEXT_PROP, OUT].write([COMBINE_CONTEXT_PROP, RIGHT].read()),
+                    [COMBINE_CONTEXT_PROP, OUT, DISTANCE]
+                        .write(-[COMBINE_CONTEXT_PROP, OUT, DISTANCE].read()),
+                    [COMBINE_CONTEXT_PROP, OUT]
+                        .write([COMBINE_CONTEXT_PROP, LEFT].read())
+                        .if_else(
+                            [COMBINE_CONTEXT_PROP, LEFT, DISTANCE].read().gt([
+                                COMBINE_CONTEXT_PROP,
                                 OUT,
                                 DISTANCE,
                             ]
                             .read()),
                             None,
                         ),
-                    COMBINE_CONTEXT.read().output(),
+                    COMBINE_CONTEXT_PROP.read().output(),
                 ]
                 .block(),
             },

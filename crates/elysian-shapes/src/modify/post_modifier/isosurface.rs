@@ -4,9 +4,10 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, IntoRead, IntoWrite, DISTANCE},
+        ast::{Identifier, IntoBlock, DISTANCE},
         module::{
-            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, CONTEXT,
+            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, NumericType,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
         },
     },
     property,
@@ -16,7 +17,7 @@ use elysian_core::ast::expr::Expr;
 
 pub const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
 
-pub const DIST: Identifier = Identifier::new("dist", 463524741302033362);
+pub const DIST: PropertyIdentifier = PropertyIdentifier::new("dist", 463524741302033362);
 property!(DIST, DIST_PROP, Type::Number(NumericType::Float));
 
 pub struct Isosurface {
@@ -46,7 +47,7 @@ impl Hash for Isosurface {
 }
 
 impl Domains for Isosurface {
-    fn domains() -> Vec<Identifier> {
+    fn domains() -> Vec<PropertyIdentifier> {
         vec![DISTANCE]
     }
 }
@@ -55,12 +56,12 @@ impl AsIR for Isosurface {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let block = if spec.contains(&DISTANCE) {
             [
-                [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - DIST.read()),
-                CONTEXT.read().output(),
+                [CONTEXT_PROP, DISTANCE].write([CONTEXT_PROP, DISTANCE].read() - DIST.read()),
+                CONTEXT_PROP.read().output(),
             ]
             .block()
         } else {
-            [CONTEXT.read().output()].block()
+            [CONTEXT_PROP.read().output()].block()
         };
 
         vec![FunctionDefinition {
@@ -72,11 +73,11 @@ impl AsIR for Isosurface {
                     mutable: false,
                 },
                 InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: true,
                 },
             ],
-            output: CONTEXT,
+            output: CONTEXT_PROP,
             block,
         }]
     }

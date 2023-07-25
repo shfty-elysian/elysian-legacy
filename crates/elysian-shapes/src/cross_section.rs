@@ -5,10 +5,13 @@ use std::{
 
 use elysian_core::ir::{
     ast::{
-        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, GRADIENT_2D, GRADIENT_3D, POSITION_2D,
-        POSITION_3D, VECTOR2, X, Y,
+        Expr, Identifier, IntoBlock, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2,
+        X, Y,
     },
-    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type, CONTEXT},
+    module::{
+        AsModule, FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
+        SpecializationData, Type, CONTEXT_PROP,
+    },
 };
 use indexmap::IndexMap;
 
@@ -42,7 +45,7 @@ impl AsModule for CrossSection {
     fn functions(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<Identifier, Type>,
+        tys: &IndexMap<PropertyIdentifier, Type>,
         _: &Identifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         if !spec.contains(&POSITION_2D) {
@@ -58,26 +61,27 @@ impl AsModule for CrossSection {
                 id: CROSS_SECTION,
                 public: false,
                 inputs: vec![InputDefinition {
-                    id: CONTEXT,
+                    id: CONTEXT_PROP,
                     mutable: true,
                 }],
-                output: CONTEXT,
+                output: CONTEXT_PROP,
                 block: [
-                    [CONTEXT, POSITION_3D].write(
-                        Expr::from(self.x_axis.clone()) * [CONTEXT, POSITION_2D, X].read()
-                            + Expr::from(self.y_axis.clone()) * [CONTEXT, POSITION_2D, Y].read(),
+                    [CONTEXT_PROP, POSITION_3D].write(
+                        Expr::from(self.x_axis.clone()) * [CONTEXT_PROP, POSITION_2D, X].read()
+                            + Expr::from(self.y_axis.clone())
+                                * [CONTEXT_PROP, POSITION_2D, Y].read(),
                     ),
-                    CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
-                    [CONTEXT, GRADIENT_2D].write(Expr::Struct(
+                    CONTEXT_PROP.bind(field_entry_point.call(CONTEXT_PROP.read())),
+                    [CONTEXT_PROP, GRADIENT_2D].write(Expr::Struct(
                         VECTOR2,
                         [
-                            (X, [CONTEXT, GRADIENT_3D, X].read()),
-                            (Y, [CONTEXT, GRADIENT_3D, Y].read()),
+                            (X, [CONTEXT_PROP, GRADIENT_3D, X].read()),
+                            (Y, [CONTEXT_PROP, GRADIENT_3D, Y].read()),
                         ]
                         .into_iter()
                         .collect(),
                     )),
-                    CONTEXT.read().output(),
+                    CONTEXT_PROP.read().output(),
                 ]
                 .block(),
             }])
