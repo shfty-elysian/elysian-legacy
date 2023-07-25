@@ -9,6 +9,8 @@ use rust_gpu_bridge::{
     Abs, Dot, Length, Max, Min, Mix, Normalize, Sign,
 };
 
+use crate::ir::module::StructIdentifier;
+
 use super::{
     Number, Struct, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
     X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
@@ -284,7 +286,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(VECTOR2)
+        Struct::new(StructIdentifier(VECTOR2))
             .set(X, t[0].clone().into())
             .set(Y, t[1].clone().into()),
     )
@@ -296,7 +298,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(VECTOR3)
+        Struct::new(StructIdentifier(VECTOR3))
             .set(X, t[0].clone().into())
             .set(Y, t[1].clone().into())
             .set(Z, t[2].clone().into()),
@@ -309,7 +311,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(VECTOR4)
+        Struct::new(StructIdentifier(VECTOR4))
             .set(X, t[0].clone().into())
             .set(Y, t[1].clone().into())
             .set(Z, t[2].clone().into())
@@ -323,7 +325,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(MATRIX2)
+        Struct::new(StructIdentifier(MATRIX2))
             .set(X_AXIS_2, vector2(t[0].clone()))
             .set(Y_AXIS_2, vector2(t[1].clone())),
     )
@@ -335,7 +337,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(MATRIX3)
+        Struct::new(StructIdentifier(MATRIX3))
             .set(X_AXIS_3, vector3(t[0].clone()))
             .set(Y_AXIS_3, vector3(t[1].clone()))
             .set(Z_AXIS_3, vector3(t[2].clone())),
@@ -348,7 +350,7 @@ where
     Value: From<T>,
 {
     Value::Struct(
-        Struct::new(MATRIX4)
+        Struct::new(StructIdentifier(MATRIX4))
             .set(X_AXIS_4, vector4(t[0].clone()))
             .set(Y_AXIS_4, vector4(t[1].clone()))
             .set(Z_AXIS_4, vector4(t[2].clone()))
@@ -359,7 +361,7 @@ where
 impl From<Vec2> for Value {
     fn from(value: Vec2) -> Self {
         Value::Struct(
-            Struct::new(VECTOR2)
+            Struct::new(StructIdentifier(VECTOR2))
                 .set(X, value.x.into())
                 .set(Y, value.y.into()),
         )
@@ -369,7 +371,7 @@ impl From<Vec2> for Value {
 impl From<Vec3> for Value {
     fn from(value: Vec3) -> Self {
         Value::Struct(
-            Struct::new(VECTOR3)
+            Struct::new(StructIdentifier(VECTOR3))
                 .set(X, value.x.into())
                 .set(Y, value.y.into())
                 .set(Z, value.z.into()),
@@ -380,7 +382,7 @@ impl From<Vec3> for Value {
 impl From<Vec4> for Value {
     fn from(value: Vec4) -> Self {
         Value::Struct(
-            Struct::new(VECTOR4)
+            Struct::new(StructIdentifier(VECTOR4))
                 .set(X, value.x.into())
                 .set(Y, value.y.into())
                 .set(Z, value.z.into())

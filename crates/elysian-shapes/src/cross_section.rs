@@ -4,18 +4,16 @@ use std::{
 };
 
 use elysian_core::ir::{
-    ast::{
-        Expr, Identifier, IntoBlock, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2,
-        X, Y,
-    },
+    ast::{Expr, IntoBlock, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
     module::{
-        AsModule, FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
-        SpecializationData, Type, CONTEXT_PROP,
+        AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
+        PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT_PROP,
     },
 };
 use indexmap::IndexMap;
 
-pub const CROSS_SECTION: Identifier = Identifier::new("cross_section", 11670715461129592823);
+pub const CROSS_SECTION: FunctionIdentifier =
+    FunctionIdentifier::new("cross_section", 11670715461129592823);
 
 pub struct CrossSection {
     pub field: Box<dyn AsModule>,
@@ -38,7 +36,7 @@ impl Hash for CrossSection {
 }
 
 impl AsModule for CrossSection {
-    fn entry_point(&self) -> Identifier {
+    fn entry_point(&self) -> FunctionIdentifier {
         CROSS_SECTION
     }
 
@@ -46,7 +44,7 @@ impl AsModule for CrossSection {
         &self,
         spec: &SpecializationData,
         tys: &IndexMap<PropertyIdentifier, Type>,
-        _: &Identifier,
+        _: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         if !spec.contains(&POSITION_2D) {
             panic!("CrossSection is only compatible with the 2D position domain");
@@ -73,7 +71,7 @@ impl AsModule for CrossSection {
                     ),
                     CONTEXT_PROP.bind(field_entry_point.call(CONTEXT_PROP.read())),
                     [CONTEXT_PROP, GRADIENT_2D].write(Expr::Struct(
-                        VECTOR2,
+                        StructIdentifier(VECTOR2),
                         [
                             (X, [CONTEXT_PROP, GRADIENT_3D, X].read()),
                             (Y, [CONTEXT_PROP, GRADIENT_3D, Y].read()),

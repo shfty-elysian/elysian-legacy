@@ -7,7 +7,7 @@ use elysian_core::ir::{
         Module as ElysianModule, NumericType, PropertyIdentifier, Type as ElysianType, CONTEXT,
     },
 };
-use elysian_shapes::modify::ASPECT;
+use elysian_shapes::modify::ASPECT_PROP;
 use indexmap::IndexMap;
 use naga::{
     valid::{Capabilities, ModuleInfo, ValidationError, ValidationFlags, Validator},
@@ -159,32 +159,32 @@ impl<'a> NagaBuilder<'a> {
 
         for def in &self.input.struct_definitions {
             let ty = match &def.id {
-                v if *v == VECTOR2 || *v == VECTOR3 || *v == VECTOR4 => NagaType {
+                v if **v == VECTOR2 || **v == VECTOR3 || **v == VECTOR4 => NagaType {
                     name: Some(def.id.name().to_string()),
                     inner: TypeInner::Vector {
                         size: match &def.id {
-                            d if *d == VECTOR2 => VectorSize::Bi,
-                            d if *d == VECTOR3 => VectorSize::Tri,
-                            d if *d == VECTOR4 => VectorSize::Quad,
+                            d if **d == VECTOR2 => VectorSize::Bi,
+                            d if **d == VECTOR3 => VectorSize::Tri,
+                            d if **d == VECTOR4 => VectorSize::Quad,
                             _ => unreachable!(),
                         },
                         kind: ScalarKind::Float,
                         width: 4,
                     },
                 },
-                m if *m == MATRIX2 || *m == MATRIX3 || *m == MATRIX4 => NagaType {
+                m if **m == MATRIX2 || **m == MATRIX3 || **m == MATRIX4 => NagaType {
                     name: Some(def.id.name().to_string()),
                     inner: TypeInner::Matrix {
                         columns: match &def.id {
-                            d if *d == MATRIX2 => VectorSize::Bi,
-                            d if *d == MATRIX3 => VectorSize::Tri,
-                            d if *d == MATRIX4 => VectorSize::Quad,
+                            d if **d == MATRIX2 => VectorSize::Bi,
+                            d if **d == MATRIX3 => VectorSize::Tri,
+                            d if **d == MATRIX4 => VectorSize::Quad,
                             _ => unreachable!(),
                         },
                         rows: match &def.id {
-                            d if *d == MATRIX2 => VectorSize::Bi,
-                            d if *d == MATRIX3 => VectorSize::Tri,
-                            d if *d == MATRIX4 => VectorSize::Quad,
+                            d if **d == MATRIX2 => VectorSize::Bi,
+                            d if **d == MATRIX3 => VectorSize::Tri,
+                            d if **d == MATRIX4 => VectorSize::Quad,
                             _ => unreachable!(),
                         },
                         width: 4,
@@ -885,7 +885,7 @@ impl<'a> NagaBuilder<'a> {
             .input
             .struct_definitions
             .iter()
-            .find(|cand| cand.id == CONTEXT)
+            .find(|cand| *cand.id == CONTEXT)
             .unwrap();
 
         self.block_stack.push(NagaBlock::new());
@@ -967,7 +967,7 @@ impl<'a> NagaBuilder<'a> {
             index: context_struct
                 .fields
                 .iter()
-                .position(|field| field.id == ASPECT)
+                .position(|field| field.id == ASPECT_PROP)
                 .expect("No aspect field") as u32,
         });
 

@@ -7,10 +7,10 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
+        ast::{IntoBlock, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
-            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
-            SpecializationData, Type, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
+            PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT_PROP,
         },
     },
     property,
@@ -18,14 +18,15 @@ use elysian_core::{
 
 use elysian_core::ast::expr::Expr;
 
-pub const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324);
-pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1799909959882308009);
+pub const ELONGATE: FunctionIdentifier = FunctionIdentifier::new("elongate", 1022510703206415324);
+pub const ELONGATE_INFINITE: FunctionIdentifier =
+    FunctionIdentifier::new("elongate_infinite", 1799909959882308009);
 
 pub const DIR_2D: PropertyIdentifier = PropertyIdentifier::new("dir_2d", 10994004961423687819);
-property!(DIR_2D, DIR_2D_PROP, Type::Struct(VECTOR2));
+property!(DIR_2D, DIR_2D_PROP, Type::Struct(StructIdentifier(VECTOR2)));
 
 pub const DIR_3D: PropertyIdentifier = PropertyIdentifier::new("dir_3d", 66909101541205811);
-property!(DIR_3D, DIR_3D_PROP, Type::Struct(VECTOR3));
+property!(DIR_3D, DIR_3D_PROP, Type::Struct(StructIdentifier(VECTOR3)));
 
 pub struct Elongate {
     pub dir: Expr,

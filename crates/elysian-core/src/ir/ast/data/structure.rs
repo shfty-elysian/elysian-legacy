@@ -5,8 +5,8 @@ use rust_gpu_bridge::{
 use tracing::instrument;
 
 use crate::ir::{
-    ast::{Identifier, Value},
-    module::PropertyIdentifier,
+    ast::Value,
+    module::{PropertyIdentifier, StructIdentifier},
 };
 use std::{
     collections::BTreeMap,
@@ -22,7 +22,7 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
 pub struct Struct {
-    pub id: Identifier,
+    pub id: StructIdentifier,
     pub members: BTreeMap<PropertyIdentifier, Value>,
 }
 
@@ -38,7 +38,7 @@ impl Display for Struct {
 }
 
 impl Struct {
-    pub fn new(id: Identifier) -> Self {
+    pub fn new(id: StructIdentifier) -> Self {
         Struct {
             id,
             members: Default::default(),
@@ -395,7 +395,7 @@ impl From<Struct> for Mat4 {
 
 impl From<Vec2> for Struct {
     fn from(value: Vec2) -> Self {
-        Struct::new(VECTOR2)
+        Struct::new(StructIdentifier(VECTOR2))
             .set(X, value.x.into())
             .set(Y, value.y.into())
     }
@@ -403,7 +403,7 @@ impl From<Vec2> for Struct {
 
 impl From<Vec3> for Struct {
     fn from(value: Vec3) -> Self {
-        Struct::new(VECTOR3)
+        Struct::new(StructIdentifier(VECTOR3))
             .set(X, value.x.into())
             .set(Y, value.y.into())
             .set(Z, value.z.into())
@@ -412,7 +412,7 @@ impl From<Vec3> for Struct {
 
 impl From<Vec4> for Struct {
     fn from(value: Vec4) -> Self {
-        Struct::new(VECTOR4)
+        Struct::new(StructIdentifier(VECTOR4))
             .set(X, value.x.into())
             .set(Y, value.y.into())
             .set(Z, value.z.into())
@@ -422,7 +422,7 @@ impl From<Vec4> for Struct {
 
 impl From<Mat2> for Struct {
     fn from(value: Mat2) -> Self {
-        Struct::new(MATRIX2)
+        Struct::new(StructIdentifier(MATRIX2))
             .set(X_AXIS_2, value.x_axis.into())
             .set(Y_AXIS_2, value.y_axis.into())
     }
@@ -430,7 +430,7 @@ impl From<Mat2> for Struct {
 
 impl From<Mat3> for Struct {
     fn from(value: Mat3) -> Self {
-        Struct::new(MATRIX3)
+        Struct::new(StructIdentifier(MATRIX3))
             .set(X_AXIS_3, value.x_axis.into())
             .set(Y_AXIS_3, value.y_axis.into())
             .set(Z_AXIS_3, value.z_axis.into())
@@ -439,7 +439,7 @@ impl From<Mat3> for Struct {
 
 impl From<Mat4> for Struct {
     fn from(value: Mat4) -> Self {
-        Struct::new(MATRIX4)
+        Struct::new(StructIdentifier(MATRIX4))
             .set(X_AXIS_4, value.x_axis.into())
             .set(Y_AXIS_4, value.y_axis.into())
             .set(Z_AXIS_4, value.z_axis.into())

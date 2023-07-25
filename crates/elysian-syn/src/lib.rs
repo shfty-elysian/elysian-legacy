@@ -3,7 +3,9 @@ use elysian_core::ir::{
         Identifier, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
         X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
     },
-    module::{Module, NumericType, SpecializationData, CONTEXT, PropertyIdentifier},
+    module::{
+        Module, NumericType, PropertyIdentifier, SpecializationData, StructIdentifier, CONTEXT,
+    },
 };
 pub use prettyplease;
 
@@ -90,7 +92,7 @@ where
                     ast::{
                         Struct,
                     },
-                    module::{CONTEXT, PropertyIdentifier},
+                    module::{CONTEXT, PropertyIdentifier, StructIdentifier},
                 },
             },
             r#static::StaticShape,
@@ -101,12 +103,12 @@ where
 
     for def in &module.struct_definitions {
         match &def.id {
-            v if *v == VECTOR2
-                || *v == VECTOR3
-                || *v == VECTOR4
-                || *v == MATRIX2
-                || *v == MATRIX3
-                || *v == MATRIX4 => {}
+            v if *v == StructIdentifier(VECTOR2)
+                || *v == StructIdentifier(VECTOR3)
+                || *v == StructIdentifier(VECTOR4)
+                || *v == StructIdentifier(MATRIX2)
+                || *v == StructIdentifier(MATRIX3)
+                || *v == StructIdentifier(MATRIX4) => {}
             _ => {
                 items.push(Item::Struct(ItemStruct {
                     attrs: vec![parse_quote!(#[derive(Debug, Default, Copy, Clone)])],
@@ -166,7 +168,7 @@ where
     let def = module
         .struct_definitions
         .iter()
-        .find(|cand| cand.id == CONTEXT)
+        .find(|cand| cand.id == StructIdentifier(CONTEXT))
         .unwrap();
 
     let struct_name = Ident::new(&def.id.name_unique(), Span::call_site());
@@ -202,7 +204,7 @@ where
     items.push(syn::parse_quote! {
         impl From<#struct_name> for Struct {
             fn from(s: #struct_name) -> Self {
-                let mut out = Self::new(CONTEXT);
+                let mut out = Self::new(StructIdentifier(CONTEXT));
 
                 #(
                     out.set_mut(#members, s.#names.into());
@@ -665,7 +667,7 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
                     let structure = module
                         .struct_definitions
                         .iter()
-                        .find(|cand| cand.id == *structure)
+                        .find(|cand| &cand.id == structure)
                         .unwrap();
                     if fields.len() == structure.fields.len() {
                         None

@@ -4,15 +4,15 @@ use elysian_core::{
     ast::modify::Modify,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, GRADIENT_2D, GRADIENT_3D},
+        ast::{IntoBlock, GRADIENT_2D, GRADIENT_3D},
         module::{
-            AsModule, FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
-            SpecializationData, CONTEXT_PROP,
+            AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
+            PropertyIdentifier, SpecializationData, CONTEXT_PROP,
         },
     },
 };
 
-pub const SET: Identifier = Identifier::new("set", 1768232690987692666);
+pub const SET: FunctionIdentifier = FunctionIdentifier::new("set", 1768232690987692666);
 
 #[derive(Debug, Clone, Hash)]
 pub struct Set {

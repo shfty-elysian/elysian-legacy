@@ -16,7 +16,7 @@ use elysian_shapes::{
     field::{Capsule, Circle, Line, Point, Ring},
     modify::{
         IntoAspect, IntoElongate, IntoGradientNormals, IntoIsosurface, IntoManifold, IntoSet,
-        IntoTranslate, ASPECT,
+        IntoTranslate, ASPECT_PROP,
     },
     raymarch::{March, Raymarch},
 };
@@ -143,7 +143,7 @@ pub fn kettle_bell() -> DynAsModule {
         .modify()
         .gradient_normals()
         .set(COLOR, distance_color())
-        .aspect(Expr::Read(vec![ASPECT]));
+        .aspect(Expr::Read(vec![ASPECT_PROP]));
 
     Box::new(shape_d)
 }
@@ -203,7 +203,7 @@ pub fn raymarched() -> DynAsModule {
             ),
         }
         .modify()
-        .aspect(Expr::Read(vec![ASPECT])),
+        .aspect(Expr::Read(vec![ASPECT_PROP])),
     )
 }
 

@@ -320,11 +320,15 @@
 
   DONE: Implemented equivalent traits and methods for constructing pre-boxed AST
 
+* Strongly-typed Property Identifier
+
+  DONE: Implemented via PropertyIdentifier wrapper
+
 =========================================================================================================
 
-* Strongly-typed Identifier
-  * Need a way to strengthen differentiation between property, function and struct identifiers
-  * Add a generic param to denote specific use?
+* Strongly-typed Function Identifier
+
+* Strongly-typed Struct Identifier
 
 * Consider moving unary / binary / ternary ops into shareable enums
   * Would likely need to make generic for compatibility across
@@ -334,6 +338,9 @@
   * Binary op validity is already encoded via panics in ty(),
     modeled after lowest-common output denominator (i.e. naga arithmetic rules).
     * Need to write a version that returns a boolean instead of a panic
+
+* Expansion functionality for unsupported arithmetic expressions
+  * ex. Translating Vector3 / Float into Vector3(Number / Float, ..)
 
 * Setup type specification for backends
   * Backends are currently fixed to f32 due to the need to inject literals

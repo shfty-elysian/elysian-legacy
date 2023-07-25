@@ -5,10 +5,12 @@ use std::hash::{Hash, Hasher};
 use indexmap::IndexMap;
 
 use crate::ir::ast::{COMBINE_CONTEXT, COMBINE_CONTEXT_PROP};
-use crate::ir::module::{IntoRead, PropertyIdentifier, Type, CONTEXT_PROP};
+use crate::ir::module::{
+    FunctionIdentifier, IntoRead, PropertyIdentifier, StructIdentifier, Type, CONTEXT_PROP,
+};
 use crate::ir::{
     as_ir::{AsIR, DynAsIR, HashIR},
-    ast::{Block, Expr, Identifier},
+    ast::{Block, Expr},
     module::{
         AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
         SpecializationData, StructDefinition, CONTEXT,
@@ -17,13 +19,17 @@ use crate::ir::{
 use crate::property;
 
 pub const LEFT: PropertyIdentifier = PropertyIdentifier::new("left", 635254731934742132);
-property!(LEFT, LEFT_PROP_DEF, Type::Struct(CONTEXT));
+property!(LEFT, LEFT_PROP_DEF, Type::Struct(StructIdentifier(CONTEXT)));
 
 pub const RIGHT: PropertyIdentifier = PropertyIdentifier::new("right", 5251097991491214179);
-property!(RIGHT, RIGHT_PROP_DEF, Type::Struct(CONTEXT));
+property!(
+    RIGHT,
+    RIGHT_PROP_DEF,
+    Type::Struct(StructIdentifier(CONTEXT))
+);
 
 pub const OUT: PropertyIdentifier = PropertyIdentifier::new("out", 1470763158891875334);
-property!(OUT, OUT_PROP_DEF, Type::Struct(CONTEXT));
+property!(OUT, OUT_PROP_DEF, Type::Struct(StructIdentifier(CONTEXT)));
 
 pub const COMBINE_CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
     FieldDefinition {
@@ -41,7 +47,7 @@ pub const COMBINE_CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
 ];
 
 pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
-    id: COMBINE_CONTEXT,
+    id: StructIdentifier(COMBINE_CONTEXT),
     public: false,
     fields: Cow::Borrowed(COMBINE_CONTEXT_STRUCT_FIELDS),
 };
@@ -72,15 +78,15 @@ impl Hash for Combine {
 }
 
 impl AsModule for Combine {
-    fn entry_point(&self) -> Identifier {
-        Identifier::new_dynamic("combine")
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("combine")
     }
 
     fn functions(
         &self,
         spec: &SpecializationData,
         tys: &IndexMap<PropertyIdentifier, Type>,
-        entry_point: &Identifier,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
         let (shape_entry_points, shape_functions): (Vec<_>, Vec<_>) = self
             .shapes
@@ -102,9 +108,12 @@ impl AsModule for Combine {
         let mut block = vec![];
 
         iter.fold(base.call(CONTEXT_PROP.read()), |acc, next| {
-            block.push(COMBINE_CONTEXT_PROP.bind(
-                COMBINE_CONTEXT.construct([(LEFT, acc), (RIGHT, next.call(CONTEXT_PROP.read()))]),
-            ));
+            block.push(
+                COMBINE_CONTEXT_PROP.bind(
+                    StructIdentifier(COMBINE_CONTEXT)
+                        .construct([(LEFT, acc), (RIGHT, next.call(CONTEXT_PROP.read()))]),
+                ),
+            );
             block.push(COMBINE_CONTEXT_PROP.bind(self.combinator.iter().fold(
                 COMBINE_CONTEXT_PROP.read(),
                 |acc: Expr, next| {

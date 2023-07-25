@@ -7,10 +7,10 @@ use indexmap::IndexMap;
 
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
-    ast::{Identifier, IntoBlock},
+    ast::IntoBlock,
     module::{
-        AsModule, FunctionDefinition, InputDefinition, IntoRead, PropertyIdentifier,
-        SpecializationData, Type, CONTEXT_PROP,
+        AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead,
+        PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
     },
 };
 
@@ -31,15 +31,15 @@ impl Hash for Field {
 }
 
 impl AsModule for Field {
-    fn entry_point(&self) -> Identifier {
-        Identifier::new_dynamic("field")
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("field")
     }
 
     fn functions(
         &self,
         spec: &SpecializationData,
         _: &IndexMap<PropertyIdentifier, Type>,
-        entry_point: &Identifier,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
         self.field
             .functions(spec)

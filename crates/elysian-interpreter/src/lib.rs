@@ -3,13 +3,15 @@ use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 use elysian_core::ir::{
     ast::Stmt::{self, *},
     ast::{Expr, Identifier, Struct, Value},
-    module::{FunctionDefinition, Module, CONTEXT, CONTEXT_PROP},
+    module::{
+        FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT, CONTEXT_PROP,
+    },
 };
 use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
 
 pub struct Interpreter {
     pub context: Struct,
-    pub functions: BTreeMap<Identifier, FunctionDefinition>,
+    pub functions: BTreeMap<FunctionIdentifier, FunctionDefinition>,
     pub should_break: bool,
     pub output: Option<Value>,
 }
@@ -27,7 +29,7 @@ impl Debug for Interpreter {
 impl Default for Interpreter {
     fn default() -> Self {
         Self {
-            context: Struct::new(CONTEXT),
+            context: Struct::new(StructIdentifier(CONTEXT)),
             functions: Default::default(),
             should_break: Default::default(),
             output: Default::default(),
@@ -60,8 +62,8 @@ pub const INTERPRETER_CONTEXT: Identifier =
 const CALL_CONTEXT: Identifier = Identifier::new("CallContext", 0);
 
 pub fn evaluate_module(mut interpreter: Interpreter, module: &Module) -> Struct {
-    interpreter.context =
-        Struct::new(INTERPRETER_CONTEXT).set(CONTEXT_PROP, Value::Struct(interpreter.context));
+    interpreter.context = Struct::new(StructIdentifier(INTERPRETER_CONTEXT))
+        .set(CONTEXT_PROP, Value::Struct(interpreter.context));
     interpreter.functions = module
         .function_definitions
         .iter()
@@ -229,7 +231,7 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
                 .unwrap_or_else(|| panic!("Invalid function {:#?}", function));
 
             let context = Struct {
-                id: CALL_CONTEXT,
+                id: StructIdentifier(CALL_CONTEXT),
                 members: f
                     .inputs
                     .iter()

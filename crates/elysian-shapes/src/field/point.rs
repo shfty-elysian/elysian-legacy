@@ -2,16 +2,14 @@ use std::hash::Hash;
 
 use elysian_core::ir::{
     as_ir::{AsIR, Domains},
-    ast::{
-        Expr, Identifier, IntoBlock, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
-    },
+    ast::{Expr, IntoBlock, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D},
     module::{
-        FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
-        SpecializationData, CONTEXT_PROP,
+        FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
+        PropertyIdentifier, SpecializationData, CONTEXT_PROP,
     },
 };
 
-pub const POINT: Identifier = Identifier::new("point", 2023836058494613125);
+pub const POINT: FunctionIdentifier = FunctionIdentifier::new("point", 2023836058494613125);
 
 #[derive(Debug, Copy, Clone, Hash)]
 pub struct Point;

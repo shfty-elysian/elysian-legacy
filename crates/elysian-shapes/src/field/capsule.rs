@@ -1,12 +1,13 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use elysian_core::ir::module::{PropertyIdentifier, CONTEXT_PROP};
+use elysian_core::ir::ast::IntoBlock;
+use elysian_core::ir::module::{FunctionIdentifier, PropertyIdentifier, CONTEXT_PROP};
 use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, POSITION_2D, POSITION_3D},
+        ast::{POSITION_2D, POSITION_3D},
         module::{FunctionDefinition, InputDefinition, IntoRead, SpecializationData},
     },
 };
@@ -15,7 +16,7 @@ use crate::modify::{Isosurface, DIR_2D, DIR_3D, ISOSURFACE};
 
 use super::{Line, LINE, RADIUS};
 
-pub const CAPSULE: Identifier = Identifier::new("capsule", 14339483921749952476);
+pub const CAPSULE: FunctionIdentifier = FunctionIdentifier::new("capsule", 14339483921749952476);
 
 pub struct Capsule {
     pub dir: Expr,

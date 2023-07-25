@@ -4,10 +4,10 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
+        ast::{IntoBlock, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
-            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
-            SpecializationData, Type, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
+            PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT_PROP,
         },
     },
     property,
@@ -15,13 +15,21 @@ use elysian_core::{
 
 use elysian_core::ast::expr::Expr;
 
-pub const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
+pub const TRANSLATE: FunctionIdentifier = FunctionIdentifier::new("translate", 419357041369711478);
 
 pub const DELTA_2D: PropertyIdentifier = PropertyIdentifier::new("delta_2d", 1292788437813720044);
-property!(DELTA_2D, DELTA_2D_PROP, Type::Struct(VECTOR2));
+property!(
+    DELTA_2D,
+    DELTA_2D_PROP,
+    Type::Struct(StructIdentifier(VECTOR2))
+);
 
 pub const DELTA_3D: PropertyIdentifier = PropertyIdentifier::new("delta_3d", 8306277011223488934);
-property!(DELTA_3D, DELTA_3D_PROP, Type::Struct(VECTOR3));
+property!(
+    DELTA_3D,
+    DELTA_3D_PROP,
+    Type::Struct(StructIdentifier(VECTOR3))
+);
 
 pub struct Translate {
     pub delta: Expr,

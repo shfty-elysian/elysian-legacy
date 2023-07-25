@@ -2,8 +2,8 @@ use elysian_core::{
     ast::combine::{LEFT, OUT, RIGHT},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, COMBINE_CONTEXT_PROP, DISTANCE},
-        module::{FunctionDefinition, InputDefinition, IntoRead, IntoWrite, SpecializationData},
+        ast::{IntoBlock, COMBINE_CONTEXT_PROP, DISTANCE},
+        module::{FunctionDefinition, InputDefinition, IntoRead, IntoWrite, SpecializationData, FunctionIdentifier},
     },
 };
 
@@ -14,9 +14,9 @@ pub enum Boolean {
     Subtraction,
 }
 
-pub const UNION: Identifier = Identifier::new("union", 1894363406191409858);
-pub const INTERSECTION: Identifier = Identifier::new("intersection", 18033822391797795038);
-pub const SUBTRACTION: Identifier = Identifier::new("subtraction", 1414822549598552032);
+pub const UNION: FunctionIdentifier = FunctionIdentifier::new("union", 1894363406191409858);
+pub const INTERSECTION: FunctionIdentifier = FunctionIdentifier::new("intersection", 18033822391797795038);
+pub const SUBTRACTION: FunctionIdentifier = FunctionIdentifier::new("subtraction", 1414822549598552032);
 
 impl Domains for Boolean {}
 

@@ -7,10 +7,10 @@ use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock},
+        ast::IntoBlock,
         module::{
-            FunctionDefinition, InputDefinition, IntoRead, NumericType, PropertyIdentifier,
-            SpecializationData, Type, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, NumericType,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
         },
     },
     property,
@@ -20,7 +20,7 @@ use crate::modify::{Isosurface, ISOSURFACE};
 
 use super::{Point, POINT};
 
-pub const CIRCLE: Identifier = Identifier::new("circle", 15738477621793375359);
+pub const CIRCLE: FunctionIdentifier = FunctionIdentifier::new("circle", 15738477621793375359);
 
 pub const RADIUS: PropertyIdentifier = PropertyIdentifier::new("radius", 213754678517975478);
 property!(RADIUS, RADIUS_PROP, Type::Number(NumericType::Float));

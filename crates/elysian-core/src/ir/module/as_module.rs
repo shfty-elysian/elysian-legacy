@@ -18,7 +18,8 @@ use crate::ir::{
 };
 
 use super::{
-    FunctionDefinition, Module, PropertyIdentifier, SpecializationData, StructDefinition, Type,
+    FunctionDefinition, FunctionIdentifier, Module, PropertyIdentifier, SpecializationData,
+    StructDefinition, StructIdentifier, Type,
 };
 
 fn expr_props(expr: &Expr) -> Vec<PropertyIdentifier> {
@@ -113,7 +114,11 @@ macro_rules! property {
 
 pub const CONTEXT: Identifier = Identifier::new("Context", 595454262490629935);
 pub const CONTEXT_PROP: PropertyIdentifier = PropertyIdentifier(CONTEXT);
-property!(CONTEXT_PROP, CONTEXT_PROP_DEF, Type::Struct(CONTEXT));
+property!(
+    CONTEXT_PROP,
+    CONTEXT_PROP_DEF,
+    Type::Struct(StructIdentifier(CONTEXT))
+);
 
 /// Distributed slice of Identifier -> Type pairs
 #[linkme::distributed_slice]
@@ -173,7 +178,7 @@ pub trait AsModule: 'static + Debug + HashIR {
         }
 
         let context_struct = StructDefinition {
-            id: CONTEXT,
+            id: StructIdentifier(CONTEXT),
             public: true,
             fields: Cow::Owned(
                 props
@@ -204,13 +209,13 @@ pub trait AsModule: 'static + Debug + HashIR {
         }
     }
 
-    fn entry_point(&self) -> Identifier;
+    fn entry_point(&self) -> FunctionIdentifier;
 
     fn functions(
         &self,
         spec: &SpecializationData,
         tys: &IndexMap<PropertyIdentifier, Type>,
-        entry_point: &Identifier,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition>;
 
     fn structs(&self) -> Vec<StructDefinition> {
@@ -225,7 +230,7 @@ impl AsModule for DynAsModule {
         (**self).module(spec)
     }
 
-    fn entry_point(&self) -> Identifier {
+    fn entry_point(&self) -> FunctionIdentifier {
         (**self).entry_point()
     }
 
@@ -233,7 +238,7 @@ impl AsModule for DynAsModule {
         &self,
         spec: &SpecializationData,
         tys: &IndexMap<PropertyIdentifier, Type>,
-        entry_point: &Identifier,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
         (**self).functions(spec, tys, entry_point)
     }

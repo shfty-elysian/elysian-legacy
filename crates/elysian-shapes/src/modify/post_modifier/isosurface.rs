@@ -4,10 +4,10 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, DISTANCE},
+        ast::{IntoBlock, DISTANCE},
         module::{
-            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
+            NumericType, PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
         },
     },
     property,
@@ -15,7 +15,8 @@ use elysian_core::{
 
 use elysian_core::ast::expr::Expr;
 
-pub const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
+pub const ISOSURFACE: FunctionIdentifier =
+    FunctionIdentifier::new("isosurface", 1163045471729794054);
 
 pub const DIST: PropertyIdentifier = PropertyIdentifier::new("dist", 463524741302033362);
 property!(DIST, DIST_PROP, Type::Number(NumericType::Float));

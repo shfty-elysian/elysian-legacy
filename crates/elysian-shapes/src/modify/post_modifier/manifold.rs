@@ -4,15 +4,15 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM},
+        ast::{IntoBlock, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM},
         module::{
-            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
-            SpecializationData, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
+            PropertyIdentifier, SpecializationData, CONTEXT_PROP,
         },
     },
 };
 
-pub const MANIFOLD: Identifier = Identifier::new("manifold", 7861274791729269697);
+pub const MANIFOLD: FunctionIdentifier = FunctionIdentifier::new("manifold", 7861274791729269697);
 
 #[derive(Debug, Clone, Hash)]
 pub struct Manifold;

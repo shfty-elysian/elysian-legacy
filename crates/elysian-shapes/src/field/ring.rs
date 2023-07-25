@@ -7,10 +7,10 @@ use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock},
+        ast::IntoBlock,
         module::{
-            FunctionDefinition, InputDefinition, IntoRead, NumericType, SpecializationData, Type,
-            PropertyIdentifier, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, NumericType,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
         },
     },
     property,
@@ -20,7 +20,7 @@ use crate::modify::{Isosurface, Manifold, ISOSURFACE, MANIFOLD};
 
 use super::{Circle, CIRCLE, RADIUS};
 
-pub const RING: Identifier = Identifier::new("ring", 18972348581943461950);
+pub const RING: FunctionIdentifier = FunctionIdentifier::new("ring", 18972348581943461950);
 
 pub const WIDTH: PropertyIdentifier = PropertyIdentifier::new("width", 2742125101201765597);
 property!(WIDTH, WIDTH_PROP, Type::Number(NumericType::Float));

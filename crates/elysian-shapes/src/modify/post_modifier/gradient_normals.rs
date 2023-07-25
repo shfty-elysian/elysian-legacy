@@ -4,18 +4,16 @@ use elysian_core::{
     ast::modify::Modify,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{
-            Expr, Identifier, IntoBlock, IntoLiteral, GRADIENT_2D, GRADIENT_3D, NORMAL, VECTOR3, X,
-            Y, Z,
-        },
+        ast::{Expr, IntoBlock, IntoLiteral, GRADIENT_2D, GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z},
         module::{
-            AsModule, FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
-            SpecializationData, CONTEXT_PROP,
+            AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
+            PropertyIdentifier, SpecializationData, StructIdentifier, CONTEXT_PROP,
         },
     },
 };
 
-pub const GRADIENT_NORMALS: Identifier = Identifier::new("gradient_normals", 18573716892008865657);
+pub const GRADIENT_NORMALS: FunctionIdentifier =
+    FunctionIdentifier::new("gradient_normals", 18573716892008865657);
 
 #[derive(Debug, Clone, Hash)]
 pub struct GradientNormals;
@@ -33,7 +31,7 @@ impl AsIR for GradientNormals {
                 GRADIENT_2D.bind([CONTEXT_PROP, GRADIENT_2D].read().normalize()),
                 [CONTEXT_PROP, NORMAL].write(
                     Expr::Struct(
-                        VECTOR3,
+                        StructIdentifier(VECTOR3),
                         [
                             (X, [GRADIENT_2D, X].read()),
                             (Y, [GRADIENT_2D, Y].read()),

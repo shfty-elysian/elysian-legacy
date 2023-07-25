@@ -8,12 +8,13 @@ use indexmap::IndexMap;
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
     ast::{
-        Identifier, IntoBlock, COLOR, DISTANCE, ERROR, GRADIENT_2D, GRADIENT_3D, LIGHT, NORMAL,
-        POSITION_2D, POSITION_3D, SUPPORT_2D, SUPPORT_3D, TANGENT_2D, TANGENT_3D, TIME, UV,
+        IntoBlock, COLOR, DISTANCE, ERROR, GRADIENT_2D, GRADIENT_3D, LIGHT, NORMAL, POSITION_2D,
+        POSITION_3D, SUPPORT_2D, SUPPORT_3D, TANGENT_2D, TANGENT_3D, TIME, UV,
     },
     module::{
-        AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition, IntoRead,
-        PropertyIdentifier, SpecializationData, StructDefinition, Type, CONTEXT_PROP,
+        AsModule, DynAsModule, FieldDefinition, FunctionDefinition, FunctionIdentifier,
+        InputDefinition, IntoRead, PropertyIdentifier, SpecializationData, StructDefinition, Type,
+        CONTEXT_PROP,
     },
 };
 
@@ -109,15 +110,15 @@ impl Hash for Modify {
 }
 
 impl AsModule for Modify {
-    fn entry_point(&self) -> Identifier {
-        Identifier::new_dynamic("modify")
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("modify")
     }
 
     fn functions(
         &self,
         spec: &SpecializationData,
         tys: &IndexMap<PropertyIdentifier, Type>,
-        entry_point: &Identifier,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
         let field_entry_point = self.field.entry_point();
         self.pre_modifiers

@@ -7,10 +7,11 @@ use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, POSITION_2D, POSITION_3D},
+        ast::{IntoBlock, POSITION_2D, POSITION_3D},
         module::{
-            IntoRead,
-            FunctionDefinition, InputDefinition, SpecializationData, PropertyIdentifier, CONTEXT_PROP},
+            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, PropertyIdentifier,
+            SpecializationData, CONTEXT_PROP,
+        },
     },
 };
 
@@ -18,7 +19,7 @@ use crate::modify::{Elongate, DIR_2D, DIR_3D, ELONGATE};
 
 use super::{Point, POINT};
 
-pub const LINE: Identifier = Identifier::new("line", 14339483921749952476);
+pub const LINE: FunctionIdentifier = FunctionIdentifier::new("line", 14339483921749952476);
 
 pub struct Line {
     pub dir: Expr,

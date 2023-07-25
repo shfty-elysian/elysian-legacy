@@ -8,12 +8,12 @@ use elysian_core::{
     ir::{
         as_ir::Domains,
         ast::{
-            vector2, vector3, Expr, Identifier, IntoBlock, IntoLiteral, Number, DISTANCE,
-            GRADIENT_2D, GRADIENT_3D, VECTOR2, X, Y,
+            vector2, vector3, Expr, IntoBlock, IntoLiteral, Number, DISTANCE, GRADIENT_2D,
+            GRADIENT_3D, VECTOR2, X, Y,
         },
         module::{
-            AsModule, FunctionDefinition, InputDefinition, IntoRead, IntoWrite, PropertyIdentifier,
-            SpecializationData, Type, CONTEXT_PROP,
+            AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
+            PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT_PROP,
         },
     },
 };
@@ -41,15 +41,15 @@ impl Hash for CentralDiffGradient {
 }
 
 impl AsModule for CentralDiffGradient {
-    fn entry_point(&self) -> Identifier {
-        Identifier::new_dynamic("central_diff_gradient")
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("central_diff_gradient")
     }
 
     fn functions(
         &self,
         spec: &SpecializationData,
         tys: &IndexMap<PropertyIdentifier, Type>,
-        entry_point: &Identifier,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let field_entry_point = self.field.entry_point();
 
@@ -131,7 +131,7 @@ impl AsModule for CentralDiffGradient {
                     RIGHT.bind(expr_ry),
                     Y.bind([LEFT, DISTANCE].read() - [RIGHT, DISTANCE].read()),
                     [CONTEXT_PROP, gradient].write(Expr::Struct(
-                        VECTOR2,
+                        StructIdentifier(VECTOR2),
                         [(X, X.read()), (Y, Y.read())].into_iter().collect(),
                     )),
                     CONTEXT_PROP.read().output(),

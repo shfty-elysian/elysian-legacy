@@ -4,10 +4,11 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{IntoBlock, IntoLiteral, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
+        ast::{Identifier, IntoBlock, IntoLiteral, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
         module::{
-            FunctionDefinition, InputDefinition, IntoRead, IntoWrite, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
+            NumericType, PropertyIdentifier, SpecializationData, StructIdentifier, Type,
+            CONTEXT_PROP,
         },
     },
     property,
@@ -15,8 +16,14 @@ use elysian_core::{
 
 use elysian_core::ast::expr::Expr;
 
-pub const ASPECT: PropertyIdentifier = PropertyIdentifier::new("aspect", 346035631277210970);
-property!(ASPECT, ASPECT_PROP, Type::Number(NumericType::Float));
+pub const ASPECT: Identifier = Identifier::new("aspect", 346035631277210970);
+pub const ASPECT_PROP: PropertyIdentifier = PropertyIdentifier(ASPECT);
+pub const ASPECT_FUNC: FunctionIdentifier = FunctionIdentifier(ASPECT);
+property!(
+    ASPECT_PROP,
+    ASPECT_PROP_DEF,
+    Type::Number(NumericType::Float)
+);
 
 #[derive(Debug, Clone)]
 pub struct Aspect {
@@ -38,16 +45,16 @@ impl Domains for Aspect {
 impl AsIR for Aspect {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let aspect = elysian_core::ir::ast::Expr::Struct(
-            VECTOR2,
-            [(X, ASPECT.read()), (Y, 1.0.literal())].into(),
+            StructIdentifier(VECTOR2),
+            [(X, ASPECT_PROP.read()), (Y, 1.0.literal())].into(),
         );
 
         vec![FunctionDefinition {
-            id: ASPECT.specialize(spec),
+            id: ASPECT_FUNC.specialize(spec),
             public: false,
             inputs: vec![
                 InputDefinition {
-                    id: ASPECT.clone(),
+                    id: ASPECT_PROP,
                     mutable: false,
                 },
                 InputDefinition {
@@ -69,7 +76,7 @@ impl AsIR for Aspect {
         spec: &SpecializationData,
         input: elysian_core::ir::ast::Expr,
     ) -> elysian_core::ir::ast::Expr {
-        ASPECT
+        ASPECT_FUNC
             .specialize(spec)
             .call([self.aspect.clone().into(), input])
     }

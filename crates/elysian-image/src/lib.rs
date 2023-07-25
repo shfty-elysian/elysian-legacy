@@ -1,4 +1,4 @@
-use elysian_shapes::modify::ASPECT;
+use elysian_shapes::modify::ASPECT_PROP;
 use image::RgbImage;
 use rust_gpu_bridge::glam::Vec4;
 use tracing::instrument;
@@ -7,7 +7,7 @@ use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIter
 
 use elysian_core::ir::{
     ast::{Number, Struct, Value, COLOR, POSITION_2D, VECTOR2, X, Y},
-    module::{AsModule, SpecializationData, CONTEXT},
+    module::{AsModule, SpecializationData, StructIdentifier, CONTEXT},
 };
 use elysian_static::dispatch_shape;
 
@@ -38,11 +38,11 @@ where
             indices
                 .into_iter()
                 .flat_map(|(x, y)| {
-                    let ctx = Struct::new(CONTEXT)
+                    let ctx = Struct::new(StructIdentifier(CONTEXT))
                         .set(
                             POSITION_2D,
                             Value::Struct(
-                                Struct::new(VECTOR2)
+                                Struct::new(StructIdentifier(VECTOR2))
                                     .set(
                                         X,
                                         (((x as f32 / width as f32) - 0.5) * 2.0 / scale).into(),
@@ -54,7 +54,7 @@ where
                             ),
                         )
                         .set(
-                            ASPECT,
+                            ASPECT_PROP,
                             Value::Number(Number::Float(width as f64 / height as f64)),
                         );
 

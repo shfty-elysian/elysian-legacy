@@ -11,12 +11,10 @@ pub use specialization_data::*;
 pub use struct_definition::*;
 pub use ty::*;
 
-use super::ast::Identifier;
-
 #[derive(Debug)]
 pub struct Module {
     pub props: IndexMap<PropertyIdentifier, Type>,
     pub function_definitions: Vec<FunctionDefinition>,
     pub struct_definitions: Vec<StructDefinition>,
-    pub entry_point: Identifier,
+    pub entry_point: FunctionIdentifier,
 }

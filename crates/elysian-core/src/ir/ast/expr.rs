@@ -4,21 +4,25 @@ use crate::{
     ast::expr::Expr as ElysianExpr,
     ir::{
         ast::Value,
-        module::{FunctionDefinition, NumericType, PropertyIdentifier, Type, CONTEXT},
+        module::{
+            FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
+            StructIdentifier, Type, CONTEXT,
+        },
     },
 };
 
 use super::{
-    stmt::Stmt, Identifier, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, X, Y, Z,
+    stmt::Stmt, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, X, Y, Z,
 };
 
 /// Expression resulting in a value
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Literal(Value),
-    Struct(Identifier, IndexMap<PropertyIdentifier, Expr>),
+    Struct(StructIdentifier, IndexMap<PropertyIdentifier, Expr>),
     Read(Vec<PropertyIdentifier>),
     Call {
-        function: Identifier,
+        function: FunctionIdentifier,
         args: Vec<Expr>,
     },
     Add(BoxExpr, BoxExpr),
@@ -48,106 +52,6 @@ impl IntoIterator for Expr {
     }
 }
 
-impl Debug for Expr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Literal(arg0) => f.debug_tuple("Literal").field(arg0).finish(),
-            Self::Struct(arg0, arg1) => f.debug_tuple("Struct").field(arg0).field(arg1).finish(),
-            Self::Read(arg0) => f.debug_tuple("Read").field(arg0).finish(),
-            Self::Call { function, args } => f
-                .debug_struct("Call")
-                .field("function", function)
-                .field("args", args)
-                .finish(),
-            Self::Add(arg0, arg1) => f.debug_tuple("Add").field(arg0).field(arg1).finish(),
-            Self::Sub(arg0, arg1) => f.debug_tuple("Sub").field(arg0).field(arg1).finish(),
-            Self::Mul(arg0, arg1) => f.debug_tuple("Mul").field(arg0).field(arg1).finish(),
-            Self::Div(arg0, arg1) => f.debug_tuple("Div").field(arg0).field(arg1).finish(),
-            Self::Min(arg0, arg1) => f.debug_tuple("Min").field(arg0).field(arg1).finish(),
-            Self::Max(arg0, arg1) => f.debug_tuple("Max").field(arg0).field(arg1).finish(),
-            Self::Mix(arg0, arg1, arg2) => f
-                .debug_tuple("Mix")
-                .field(arg0)
-                .field(arg1)
-                .field(arg2)
-                .finish(),
-            Self::Lt(arg0, arg1) => f.debug_tuple("Lt").field(arg0).field(arg1).finish(),
-            Self::Gt(arg0, arg1) => f.debug_tuple("Gt").field(arg0).field(arg1).finish(),
-            Self::Neg(arg0) => f.debug_tuple("Neg").field(arg0).finish(),
-            Self::Abs(arg0) => f.debug_tuple("Abs").field(arg0).finish(),
-            Self::Sign(arg0) => f.debug_tuple("Sign").field(arg0).finish(),
-            Self::Length(arg0) => f.debug_tuple("Length").field(arg0).finish(),
-            Self::Normalize(arg0) => f.debug_tuple("Normalize").field(arg0).finish(),
-            Self::Dot(arg0, arg1) => f.debug_tuple("Dot").field(arg0).field(arg1).finish(),
-        }
-    }
-}
-
-impl Clone for Expr {
-    fn clone(&self) -> Self {
-        match self {
-            Self::Literal(arg0) => Self::Literal(arg0.clone()),
-            Self::Struct(arg0, arg1) => Self::Struct(arg0.clone(), arg1.clone()),
-            Self::Read(arg0) => Self::Read(arg0.clone()),
-            Self::Call { function, args } => Self::Call {
-                function: function.clone(),
-                args: args.clone(),
-            },
-            Self::Add(arg0, arg1) => Self::Add(arg0.clone(), arg1.clone()),
-            Self::Sub(arg0, arg1) => Self::Sub(arg0.clone(), arg1.clone()),
-            Self::Mul(arg0, arg1) => Self::Mul(arg0.clone(), arg1.clone()),
-            Self::Div(arg0, arg1) => Self::Div(arg0.clone(), arg1.clone()),
-            Self::Min(arg0, arg1) => Self::Min(arg0.clone(), arg1.clone()),
-            Self::Max(arg0, arg1) => Self::Max(arg0.clone(), arg1.clone()),
-            Self::Mix(arg0, arg1, arg2) => Self::Mix(arg0.clone(), arg1.clone(), arg2.clone()),
-            Self::Lt(arg0, arg1) => Self::Lt(arg0.clone(), arg1.clone()),
-            Self::Gt(arg0, arg1) => Self::Gt(arg0.clone(), arg1.clone()),
-            Self::Neg(arg0) => Self::Neg(arg0.clone()),
-            Self::Abs(arg0) => Self::Abs(arg0.clone()),
-            Self::Sign(arg0) => Self::Sign(arg0.clone()),
-            Self::Length(arg0) => Self::Length(arg0.clone()),
-            Self::Normalize(arg0) => Self::Normalize(arg0.clone()),
-            Self::Dot(arg0, arg1) => Self::Dot(arg0.clone(), arg1.clone()),
-        }
-    }
-}
-
-impl PartialEq for Expr {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Literal(l0), Self::Literal(r0)) => l0 == r0,
-            (Self::Struct(l0, l1), Self::Struct(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Read(l0), Self::Read(r0)) => l0 == r0,
-            (
-                Self::Call {
-                    function: l_function,
-                    args: l_args,
-                },
-                Self::Call {
-                    function: r_function,
-                    args: r_args,
-                },
-            ) => l_function == r_function && l_args == r_args,
-            (Self::Add(l0, l1), Self::Add(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Sub(l0, l1), Self::Sub(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Mul(l0, l1), Self::Mul(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Div(l0, l1), Self::Div(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Min(l0, l1), Self::Min(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Max(l0, l1), Self::Max(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Mix(l0, l1, l2), Self::Mix(r0, r1, r2)) => l0 == r0 && l1 == r1 && l2 == r2,
-            (Self::Lt(l0, l1), Self::Lt(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Gt(l0, l1), Self::Gt(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Neg(l0), Self::Neg(r0)) => l0 == r0,
-            (Self::Abs(l0), Self::Abs(r0)) => l0 == r0,
-            (Self::Sign(l0), Self::Sign(r0)) => l0 == r0,
-            (Self::Length(l0), Self::Length(r0)) => l0 == r0,
-            (Self::Normalize(l0), Self::Normalize(r0)) => l0 == r0,
-            (Self::Dot(l0, l1), Self::Dot(r0, r1)) => l0 == r0 && l1 == r1,
-            _ => false,
-        }
-    }
-}
-
 use indexmap::IndexMap;
 use Expr::*;
 
@@ -156,17 +60,17 @@ impl From<ElysianExpr> for Expr {
         match value {
             ElysianExpr::Literal(v) => Expr::Literal(v.into()),
             ElysianExpr::Vector2(x, y) => Expr::Struct(
-                VECTOR2,
+                StructIdentifier(VECTOR2),
                 [(X, (*x).into()), (Y, (*y).into())].into_iter().collect(),
             ),
             ElysianExpr::Vector3(x, y, z) => Expr::Struct(
-                VECTOR3,
+                StructIdentifier(VECTOR3),
                 [(X, (*x).into()), (Y, (*y).into()), (Z, (*z).into())]
                     .into_iter()
                     .collect(),
             ),
             ElysianExpr::Vector4(x, y, z, w) => Expr::Struct(
-                VECTOR4,
+                StructIdentifier(VECTOR4),
                 [
                     (X, (*x).into()),
                     (Y, (*y).into()),
@@ -177,17 +81,17 @@ impl From<ElysianExpr> for Expr {
                 .collect(),
             ),
             ElysianExpr::Matrix2(x, y) => Expr::Struct(
-                MATRIX2,
+                StructIdentifier(MATRIX2),
                 [(X, (*x).into()), (Y, (*y).into())].into_iter().collect(),
             ),
             ElysianExpr::Matrix3(x, y, z) => Expr::Struct(
-                MATRIX3,
+                StructIdentifier(MATRIX3),
                 [(X, (*x).into()), (Y, (*y).into()), (Z, (*z).into())]
                     .into_iter()
                     .collect(),
             ),
             ElysianExpr::Matrix4(x, y, z, w) => Expr::Struct(
-                MATRIX4,
+                StructIdentifier(MATRIX4),
                 [
                     (X, (*x).into()),
                     (Y, (*y).into()),

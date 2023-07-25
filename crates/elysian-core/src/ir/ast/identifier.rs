@@ -2,15 +2,11 @@ use std::borrow::Cow;
 
 use uuid::Uuid;
 
-use crate::ir::module::{PropertyIdentifier, SpecializationData};
-
-use super::Expr;
-
 /// Named unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Identifier {
-    name: Cow<'static, str>,
-    uuid: Uuid,
+    pub name: Cow<'static, str>,
+    pub uuid: Uuid,
 }
 
 impl std::fmt::Display for Identifier {
@@ -72,20 +68,5 @@ impl Identifier {
             name: (self.name.to_string() + "_" + &rhs.name).into(),
             uuid: Uuid::from_u128(self.uuid.as_u128().wrapping_add(rhs.uuid.as_u128())),
         }
-    }
-
-    pub fn call<I: IntoIterator<Item = Expr>>(&self, args: I) -> Expr {
-        Expr::Call {
-            function: self.clone(),
-            args: args.into_iter().collect(),
-        }
-    }
-
-    pub fn specialize(&self, spec: &SpecializationData) -> Self {
-        spec.specialize_id(self)
-    }
-
-    pub fn construct<I: IntoIterator<Item = (PropertyIdentifier, Expr)>>(&self, props: I) -> Expr {
-        Expr::Struct(self.clone(), props.into_iter().collect())
     }
 }
