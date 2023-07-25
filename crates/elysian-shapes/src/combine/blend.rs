@@ -8,12 +8,12 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
-            Identifier, IntoLiteral, IntoRead, IntoWrite, Property, COMBINE_CONTEXT, DISTANCE, NUM,
+            Identifier, IntoLiteral, IntoRead, IntoWrite, COMBINE_CONTEXT, DISTANCE, NUM,
         },
         module::{
-            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, PROPERTIES,
+            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, 
         },
-    },
+    }, property,
 };
 
 pub const SMOOTH_UNION: Identifier = Identifier::new("smooth_union", 1894363406191409858);
@@ -23,11 +23,7 @@ pub const SMOOTH_SUBTRACTION: Identifier =
     Identifier::new("smooth_subtraction", 1414822549598552032);
 
 pub const K: Identifier = Identifier::new("k", 12632115441234896764);
-#[linkme::distributed_slice(PROPERTIES)]
-static K_PROP: Property = Property {
-    id: K,
-    ty: Type::Number(NumericType::Float),
-};
+property!(K, K_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
 pub enum Blend {

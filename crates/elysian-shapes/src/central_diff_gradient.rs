@@ -9,9 +9,11 @@ use elysian_core::{
         as_ir::Domains,
         ast::{
             vector2, vector3, Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite,
-            Number, CONTEXT, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, X, Y,
+            Number, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, X, Y,
         },
-        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
+        module::{
+            AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type, CONTEXT,
+        },
     },
 };
 use indexmap::IndexMap;

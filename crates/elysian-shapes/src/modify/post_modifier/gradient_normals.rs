@@ -5,10 +5,10 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
-            Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D,
+            Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, GRADIENT_2D,
             GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z,
         },
-        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
+        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, CONTEXT},
     },
 };
 

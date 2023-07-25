@@ -7,8 +7,8 @@ use indexmap::IndexMap;
 
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
-    ast::{Identifier, IntoBlock, CONTEXT},
-    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
+    ast::{Identifier, IntoBlock, IntoRead},
+    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type, CONTEXT},
 };
 
 pub struct Field {

@@ -1,8 +1,11 @@
 use std::borrow::Cow;
 
-use crate::ir::{
-    ast::{Identifier, Property},
-    module::{FieldDefinition, StructDefinition, Type, PROPERTIES},
+use crate::{
+    ir::{
+        ast::Identifier,
+        module::{FieldDefinition, StructDefinition, Type},
+    },
+    property,
 };
 
 use super::{VECTOR2, VECTOR3, VECTOR4};
@@ -10,67 +13,31 @@ use super::{VECTOR2, VECTOR3, VECTOR4};
 // New struct-based representation
 
 pub const X_AXIS_2: Identifier = Identifier::new("x_axis", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static X_AXIS_2_PROP: Property = Property {
-    id: X_AXIS_2,
-    ty: Type::Struct(VECTOR2),
-};
+property!(X_AXIS_2, X_AXIS_2_PROP, Type::Struct(VECTOR2));
 
 pub const Y_AXIS_2: Identifier = Identifier::new("y_axis", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static Y_AXIS_2_PROP: Property = Property {
-    id: Y_AXIS_2,
-    ty: Type::Struct(VECTOR2),
-};
+property!(Y_AXIS_2, Y_AXIS_2_PROP, Type::Struct(VECTOR2));
 
 pub const X_AXIS_3: Identifier = Identifier::new("x_axis", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static X_AXIS_3_PROP: Property = Property {
-    id: X_AXIS_3,
-    ty: Type::Struct(VECTOR3),
-};
+property!(X_AXIS_3, X_AXIS_3_PROP, Type::Struct(VECTOR3));
 
 pub const Y_AXIS_3: Identifier = Identifier::new("y_axis", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static Y_AXIS_3_PROP: Property = Property {
-    id: Y_AXIS_3,
-    ty: Type::Struct(VECTOR3),
-};
+property!(Y_AXIS_3, Y_AXIS_3_PROP, Type::Struct(VECTOR3));
 
 pub const Z_AXIS_3: Identifier = Identifier::new("z_axis", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static Z_AXIS_3_PROP: Property = Property {
-    id: Z_AXIS_3,
-    ty: Type::Struct(VECTOR3),
-};
+property!(Z_AXIS_3, Z_AXIS_3_PROP, Type::Struct(VECTOR3));
 
 pub const X_AXIS_4: Identifier = Identifier::new("x_axis", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static X_AXIS_4_PROP: Property = Property {
-    id: X_AXIS_4,
-    ty: Type::Struct(VECTOR4),
-};
+property!(X_AXIS_4, X_AXIS_4_PROP, Type::Struct(VECTOR4));
 
 pub const Y_AXIS_4: Identifier = Identifier::new("y_axis", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static Y_AXIS_4_PROP: Property = Property {
-    id: Y_AXIS_4,
-    ty: Type::Struct(VECTOR4),
-};
+property!(Y_AXIS_4, Y_AXIS_4_PROP, Type::Struct(VECTOR4));
 
 pub const Z_AXIS_4: Identifier = Identifier::new("z_axis", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static Z_AXIS_4_PROP: Property = Property {
-    id: Z_AXIS_4,
-    ty: Type::Struct(VECTOR4),
-};
+property!(Z_AXIS_4, Z_AXIS_4_PROP, Type::Struct(VECTOR4));
 
 pub const W_AXIS_4: Identifier = Identifier::new("w_axis", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static W_AXIS_4_PROP: Property = Property {
-    id: W_AXIS_4,
-    ty: Type::Struct(VECTOR4),
-};
+property!(W_AXIS_4, W_AXIS_4_PROP, Type::Struct(VECTOR4));
 
 pub const MATRIX2: Identifier = Identifier::new("Matrix2", 0);
 

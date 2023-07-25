@@ -4,13 +4,12 @@ use crate::{
     ast::expr::Expr as ElysianExpr,
     ir::{
         ast::Value,
-        module::{FunctionDefinition, NumericType, Type},
+        module::{FunctionDefinition, NumericType, Type, CONTEXT},
     },
 };
 
 use super::{
-    stmt::Stmt, Identifier, CONTEXT, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, X, Y,
-    Z,
+    stmt::Stmt, Identifier, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, X, Y, Z,
 };
 
 /// Expression resulting in a value
@@ -446,3 +445,17 @@ where
         Expr::Literal(self.into())
     }
 }
+
+pub trait IntoRead {
+    fn read(self) -> Expr;
+}
+
+impl<T> IntoRead for T
+where
+    T: IntoIterator<Item = Identifier>,
+{
+    fn read(self) -> Expr {
+        Read(self.into_iter().collect())
+    }
+}
+

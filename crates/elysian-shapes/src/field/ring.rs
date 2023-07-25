@@ -7,11 +7,12 @@ use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, Property, CONTEXT},
+        ast::{Identifier, IntoBlock, IntoRead},
         module::{
-            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, PROPERTIES,
+            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, CONTEXT,
         },
     },
+    property,
 };
 
 use crate::modify::{Isosurface, Manifold, ISOSURFACE, MANIFOLD};
@@ -21,11 +22,7 @@ use super::{Circle, CIRCLE, RADIUS};
 pub const RING: Identifier = Identifier::new("ring", 18972348581943461950);
 
 pub const WIDTH: Identifier = Identifier::new("width", 2742125101201765597);
-#[linkme::distributed_slice(PROPERTIES)]
-static WIDTH_PROP: Property = Property {
-    id: WIDTH,
-    ty: Type::Number(NumericType::Float),
-};
+property!(WIDTH, WIDTH_PROP, Type::Number(NumericType::Float));
 
 pub struct Ring {
     pub radius: Expr,

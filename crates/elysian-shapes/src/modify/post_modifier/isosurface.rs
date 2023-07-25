@@ -4,11 +4,12 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, DISTANCE},
+        ast::{Identifier, IntoBlock, IntoRead, IntoWrite, DISTANCE},
         module::{
-            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, PROPERTIES,
+            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, CONTEXT,
         },
     },
+    property,
 };
 
 use elysian_core::ast::expr::Expr;
@@ -16,11 +17,7 @@ use elysian_core::ast::expr::Expr;
 pub const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
 
 pub const DIST: Identifier = Identifier::new("dist", 463524741302033362);
-#[linkme::distributed_slice(PROPERTIES)]
-static DIST_PROP: Property = Property {
-    id: DIST,
-    ty: Type::Number(NumericType::Float),
-};
+property!(DIST, DIST_PROP, Type::Number(NumericType::Float));
 
 pub struct Isosurface {
     pub dist: Expr,

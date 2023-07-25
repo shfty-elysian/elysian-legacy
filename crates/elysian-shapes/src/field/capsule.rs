@@ -1,13 +1,13 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use elysian_core::ir::ast::IntoBlock;
+use elysian_core::ir::ast::{IntoBlock, IntoRead};
 use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, CONTEXT, POSITION_2D, POSITION_3D},
-        module::{FunctionDefinition, InputDefinition, SpecializationData},
+        ast::{Identifier, POSITION_2D, POSITION_3D},
+        module::{CONTEXT, FunctionDefinition, InputDefinition, SpecializationData},
     },
 };
 

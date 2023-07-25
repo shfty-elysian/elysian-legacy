@@ -114,3 +114,19 @@ impl Stmt {
         }
     }
 }
+
+pub trait IntoWrite {
+    fn write(self, expr: Expr) -> Stmt;
+}
+
+impl<T> IntoWrite for T
+where
+    T: IntoIterator<Item = Identifier>,
+{
+    fn write(self, expr: Expr) -> Stmt {
+        Stmt::Write {
+            path: self.into_iter().collect(),
+            expr,
+        }
+    }
+}

@@ -6,8 +6,8 @@ use tracing::instrument;
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use elysian_core::ir::{
-    ast::{Number, Struct, Value, COLOR, CONTEXT, POSITION_2D, VECTOR2, X, Y},
-    module::{AsModule, SpecializationData},
+    ast::{Number, Struct, Value, COLOR, POSITION_2D, VECTOR2, X, Y},
+    module::{AsModule, SpecializationData, CONTEXT},
 };
 use elysian_static::dispatch_shape;
 

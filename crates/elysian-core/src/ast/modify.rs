@@ -8,12 +8,12 @@ use indexmap::IndexMap;
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
     ast::{
-        Identifier, IntoBlock, COLOR, CONTEXT, DISTANCE, ERROR, GRADIENT_2D, GRADIENT_3D, LIGHT,
-        NORMAL, POSITION_2D, POSITION_3D, SUPPORT_2D, SUPPORT_3D, TANGENT_2D, TANGENT_3D, TIME, UV,
+        Identifier, IntoBlock, IntoRead, COLOR, DISTANCE, ERROR, GRADIENT_2D, GRADIENT_3D, LIGHT, NORMAL,
+        POSITION_2D, POSITION_3D, SUPPORT_2D, SUPPORT_3D, TANGENT_2D, TANGENT_3D, TIME, UV,
     },
     module::{
         AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
-        SpecializationData, StructDefinition, Type,
+        SpecializationData, StructDefinition, Type, CONTEXT,
     },
 };
 

@@ -300,17 +300,31 @@
   DONE: Context is now generated based on a tree walk enumerating reads and writes,
         CombineContext remains static via Cow usage, and is injected by Combine as needed
 
-=========================================================================================================
+* API pass for Property definition
+  * Currently very verbose
+  * Start by implementing a macro_rules, proc macros may come later
 
-* Strongly-typed Identifier
-  * Need a way to strengthen differentiation between property, function and struct identifiers
-  * Add a generic param to denote specific use?
+  DONE: Implemented as property! macro
 
 * Consider extending base AST Read expr with path functionality
   * Currently no way to access member fields, ex vector / matrix components
   * Feels like it may cause the base AST to creep toward being too powerful
     * Should be able to avoid this by imposing restrictions,
       perhaps limiting field access to Vector / Matrix
+
+  DONE: Now using Vec<Identifier> inside Read
+
+* API pass for base AST composition
+  * Extended statements in test-shapes are currently quite messy
+  * Should be at parity with IR trait composition
+
+  DONE: Implemented equivalent traits and methods for constructing pre-boxed AST
+
+=========================================================================================================
+
+* Strongly-typed Identifier
+  * Need a way to strengthen differentiation between property, function and struct identifiers
+  * Add a generic param to denote specific use?
 
 * Consider moving unary / binary / ternary ops into shareable enums
   * Would likely need to make generic for compatibility across

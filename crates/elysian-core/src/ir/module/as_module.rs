@@ -11,9 +11,9 @@ use uuid::Uuid;
 use crate::ir::{
     as_ir::HashIR,
     ast::{
-        Block, Expr, Identifier, Property, Stmt, CONTEXT, MATRIX2, MATRIX2_STRUCT, MATRIX3,
-        MATRIX3_STRUCT, MATRIX4, MATRIX4_STRUCT, VECTOR2, VECTOR2_STRUCT, VECTOR3, VECTOR3_STRUCT,
-        VECTOR4, VECTOR4_STRUCT,
+        Block, Expr, Identifier, Property, Stmt, MATRIX2, MATRIX2_STRUCT, MATRIX3, MATRIX3_STRUCT,
+        MATRIX4, MATRIX4_STRUCT, VECTOR2, VECTOR2_STRUCT, VECTOR3, VECTOR3_STRUCT, VECTOR4,
+        VECTOR4_STRUCT,
     },
     module::FieldDefinition,
 };
@@ -101,6 +101,25 @@ fn block_props(block: &Block) -> Vec<Identifier> {
     props.into_iter().collect()
 }
 
+#[macro_export]
+macro_rules! property {
+    ($id:ident, $prop:ident, $ty:expr) => {
+        #[linkme::distributed_slice(elysian_core::ir::module::PROPERTIES)]
+        static $prop: elysian_core::ir::ast::Property =
+            elysian_core::ir::ast::Property { id: $id, ty: $ty };
+    };
+}
+
+pub const CONTEXT: Identifier = Identifier::new("Context", 595454262490629935);
+property!(CONTEXT, CONTEXT_PROP, Type::Struct(CONTEXT));
+
+property!(VECTOR2, VECTOR2_PROP, Type::Struct(VECTOR2));
+property!(VECTOR3, VECTOR3_PROP, Type::Struct(VECTOR3));
+property!(VECTOR4, VECTOR4_PROP, Type::Struct(VECTOR4));
+property!(MATRIX2, MATRIX2_PROP, Type::Struct(MATRIX2));
+property!(MATRIX3, MATRIX3_PROP, Type::Struct(MATRIX3));
+property!(MATRIX4, MATRIX4_PROP, Type::Struct(MATRIX4));
+
 /// Distributed slice of Identifier -> Type pairs
 #[linkme::distributed_slice]
 pub static PROPERTIES: [Property] = [..];
@@ -142,42 +161,6 @@ pub fn properties() -> &'static IndexMap<Identifier, Type> {
         props
     })
 }
-
-#[linkme::distributed_slice(PROPERTIES)]
-static VECTOR2_PROP: Property = Property {
-    id: VECTOR2,
-    ty: Type::Struct(VECTOR2),
-};
-
-#[linkme::distributed_slice(PROPERTIES)]
-static VECTOR3_PROP: Property = Property {
-    id: VECTOR3,
-    ty: Type::Struct(VECTOR3),
-};
-
-#[linkme::distributed_slice(PROPERTIES)]
-static VECTOR4_PROP: Property = Property {
-    id: VECTOR4,
-    ty: Type::Struct(VECTOR4),
-};
-
-#[linkme::distributed_slice(PROPERTIES)]
-static MATRIX2_PROP: Property = Property {
-    id: MATRIX2,
-    ty: Type::Struct(MATRIX2),
-};
-
-#[linkme::distributed_slice(PROPERTIES)]
-static MATRIX3_PROP: Property = Property {
-    id: MATRIX3,
-    ty: Type::Struct(MATRIX3),
-};
-
-#[linkme::distributed_slice(PROPERTIES)]
-static MATRIX4_PROP: Property = Property {
-    id: MATRIX4,
-    ty: Type::Struct(MATRIX4),
-};
 
 pub trait AsModule: 'static + Debug + HashIR {
     fn module(&self, spec: &SpecializationData) -> Module {

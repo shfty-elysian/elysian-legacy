@@ -1,37 +1,24 @@
 use std::borrow::Cow;
 
-use crate::ir::{
-    ast::{Identifier, Property},
-    module::{FieldDefinition, NumericType, StructDefinition, Type, PROPERTIES},
+use crate::{
+    ir::{
+        ast::Identifier,
+        module::{FieldDefinition, NumericType, StructDefinition, Type},
+    },
+    property,
 };
 
 pub const X: Identifier = Identifier::new("x", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static X_PROP: Property = Property {
-    id: X,
-    ty: Type::Number(NumericType::Float),
-};
+property!(X, X_PROP, Type::Number(NumericType::Float));
 
 pub const Y: Identifier = Identifier::new("y", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static Y_PROP: Property = Property {
-    id: Y,
-    ty: Type::Number(NumericType::Float),
-};
+property!(Y, Y_PROP, Type::Number(NumericType::Float));
 
 pub const Z: Identifier = Identifier::new("z", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static Z_PROP: Property = Property {
-    id: Z,
-    ty: Type::Number(NumericType::Float),
-};
+property!(Z, Z_PROP, Type::Number(NumericType::Float));
 
 pub const W: Identifier = Identifier::new("w", 0);
-#[linkme::distributed_slice(PROPERTIES)]
-static W_PROP: Property = Property {
-    id: W,
-    ty: Type::Number(NumericType::Float),
-};
+property!(W, W_PROP, Type::Number(NumericType::Float));
 
 pub const VECTOR2: Identifier = Identifier::new("Vector2", 0);
 

@@ -2,8 +2,8 @@ use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 
 use elysian_core::ir::{
     ast::Stmt::{self, *},
-    ast::{Expr, Identifier, Struct, Value, CONTEXT},
-    module::{FunctionDefinition, Module},
+    ast::{Expr, Identifier, Struct, Value},
+    module::{FunctionDefinition, Module, CONTEXT},
 };
 use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
 

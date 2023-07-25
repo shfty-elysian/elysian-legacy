@@ -3,10 +3,10 @@ use std::hash::Hash;
 use elysian_core::ir::{
     as_ir::{AsIR, Domains},
     ast::{
-        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT_2D,
-        GRADIENT_3D, POSITION_2D, POSITION_3D,
+        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, DISTANCE, GRADIENT_2D, GRADIENT_3D,
+        POSITION_2D, POSITION_3D,
     },
-    module::{FunctionDefinition, InputDefinition, SpecializationData},
+    module::{FunctionDefinition, InputDefinition, SpecializationData, CONTEXT},
 };
 
 pub const POINT: Identifier = Identifier::new("point", 2023836058494613125);

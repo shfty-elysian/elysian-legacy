@@ -8,11 +8,11 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION_2D,
+            Identifier, IntoBlock, IntoRead, IntoWrite, POSITION_2D,
             POSITION_3D, VECTOR2, VECTOR3,
         },
-        module::{FunctionDefinition, InputDefinition, SpecializationData, Type, PROPERTIES},
-    },
+        module::{FunctionDefinition, InputDefinition, SpecializationData, Type, CONTEXT},
+    }, property,
 };
 
 use elysian_core::ast::expr::Expr;
@@ -21,18 +21,10 @@ pub const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324
 pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1799909959882308009);
 
 pub const DIR_2D: Identifier = Identifier::new("dir_2d", 10994004961423687819);
-#[linkme::distributed_slice(PROPERTIES)]
-static DIR_2D_PROP: Property = Property {
-    id: DIR_2D,
-    ty: Type::Struct(VECTOR2),
-};
+property!(DIR_2D, DIR_2D_PROP, Type::Struct(VECTOR2));
 
 pub const DIR_3D: Identifier = Identifier::new("dir_3d", 66909101541205811);
-#[linkme::distributed_slice(PROPERTIES)]
-static DIR_3D_PROP: Property = Property {
-    id: DIR_3D,
-    ty: Type::Struct(VECTOR3),
-};
+property!(DIR_3D, DIR_3D_PROP, Type::Struct(VECTOR3));
 
 pub struct Elongate {
     pub dir: Expr,

@@ -7,11 +7,12 @@ use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, Property, CONTEXT},
+        ast::{Identifier, IntoBlock, IntoRead},
         module::{
-            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, PROPERTIES,
+            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, CONTEXT,
         },
     },
+    property,
 };
 
 use crate::modify::{Isosurface, ISOSURFACE};
@@ -21,11 +22,7 @@ use super::{Point, POINT};
 pub const CIRCLE: Identifier = Identifier::new("circle", 15738477621793375359);
 
 pub const RADIUS: Identifier = Identifier::new("radius", 213754678517975478);
-#[linkme::distributed_slice(PROPERTIES)]
-static RADIUS_PROP: Property = Property {
-    id: RADIUS,
-    ty: Type::Number(NumericType::Float),
-};
+property!(RADIUS, RADIUS_PROP, Type::Number(NumericType::Float));
 
 pub struct Circle {
     pub radius: Expr,

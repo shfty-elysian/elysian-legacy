@@ -1,9 +1,9 @@
 use elysian_core::ir::{
     ast::{
-        Identifier, CONTEXT, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X,
-        X_AXIS_2, X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
+        Identifier, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
+        X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
     },
-    module::{Module, NumericType, SpecializationData},
+    module::{Module, NumericType, SpecializationData, CONTEXT},
 };
 pub use prettyplease;
 
@@ -90,8 +90,8 @@ where
                     ast::{
                         Struct,
                         Identifier,
-                        CONTEXT,
                     },
+                    module::CONTEXT,
                 },
             },
             r#static::StaticShape,

@@ -4,37 +4,26 @@ use std::hash::{Hash, Hasher};
 
 use indexmap::IndexMap;
 
-use crate::ir::ast::{IntoRead, Property, COMBINE_CONTEXT};
-use crate::ir::module::{Type, PROPERTIES};
+use crate::ir::ast::{IntoRead, COMBINE_CONTEXT};
+use crate::ir::module::Type;
 use crate::ir::{
     as_ir::{AsIR, DynAsIR, HashIR},
-    ast::{Block, Expr, Identifier, CONTEXT},
+    ast::{Block, Expr, Identifier},
     module::{
         AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
-        SpecializationData, StructDefinition,
+        SpecializationData, StructDefinition, CONTEXT
     },
 };
+use crate::property;
 
 pub const LEFT: Identifier = Identifier::new("left", 635254731934742132);
-#[linkme::distributed_slice(PROPERTIES)]
-static LEFT_PROP: Property = Property {
-    id: LEFT,
-    ty: Type::Struct(CONTEXT),
-};
+property!(LEFT, LEFT_PROP, Type::Struct(CONTEXT));
 
 pub const RIGHT: Identifier = Identifier::new("right", 5251097991491214179);
-#[linkme::distributed_slice(PROPERTIES)]
-static RIGHT_PROP: Property = Property {
-    id: RIGHT,
-    ty: Type::Struct(CONTEXT),
-};
+property!(RIGHT, RIGHT_PROP, Type::Struct(CONTEXT));
 
 pub const OUT: Identifier = Identifier::new("out", 1470763158891875334);
-#[linkme::distributed_slice(PROPERTIES)]
-static OUT_PROP: Property = Property {
-    id: OUT,
-    ty: Type::Struct(CONTEXT),
-};
+property!(OUT, OUT_PROP, Type::Struct(CONTEXT));
 
 pub const COMBINE_CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
     FieldDefinition {

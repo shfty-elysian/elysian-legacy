@@ -19,6 +19,16 @@ impl std::fmt::Display for Identifier {
     }
 }
 
+impl IntoIterator for Identifier {
+    type Item = Self;
+
+    type IntoIter = std::iter::Once<Self>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        std::iter::once(self)
+    }
+}
+
 impl Identifier {
     /// Construct a const identifier
     pub const fn new(name: &'static str, uuid: u128) -> Self {
@@ -73,10 +83,6 @@ impl Identifier {
 
     pub fn specialize(self, spec: &SpecializationData) -> Self {
         spec.specialize_id(self)
-    }
-
-    pub fn read(self) -> Expr {
-        Expr::Read(vec![self])
     }
 
     pub fn bind(self, expr: Expr) -> Stmt {

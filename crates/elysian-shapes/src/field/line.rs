@@ -7,8 +7,8 @@ use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, CONTEXT, POSITION_2D, POSITION_3D},
-        module::{FunctionDefinition, InputDefinition, SpecializationData},
+        ast::{Identifier, IntoBlock, IntoRead, POSITION_2D, POSITION_3D},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, CONTEXT},
     },
 };
 

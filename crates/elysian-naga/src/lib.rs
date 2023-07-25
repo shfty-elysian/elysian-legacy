@@ -1,9 +1,9 @@
 use elysian_core::ir::{
     ast::{
-        Expr, Identifier, Number, Stmt, Struct, Value, COLOR, CONTEXT, MATRIX2, MATRIX3, MATRIX4,
+        Expr, Identifier, Number, Stmt, Struct, Value, COLOR, MATRIX2, MATRIX3, MATRIX4,
         POSITION_2D, VECTOR2, VECTOR3, VECTOR4,
     },
-    module::{Module as ElysianModule, NumericType, Type as ElysianType},
+    module::{Module as ElysianModule, NumericType, Type as ElysianType, CONTEXT},
 };
 use elysian_shapes::modify::ASPECT;
 use indexmap::IndexMap;
@@ -966,7 +966,7 @@ impl<'a> NagaBuilder<'a> {
                 .fields
                 .iter()
                 .position(|field| field.id == ASPECT)
-                .unwrap() as u32,
+                .expect("No aspect field") as u32,
         });
 
         let resolution_x = self.push_expression(Expression::AccessIndex {

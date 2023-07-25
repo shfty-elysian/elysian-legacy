@@ -1,19 +1,17 @@
 use elysian_core::{
     ast::{
         combine::IntoCombine,
-        expr::{Expr, IntoLiteral},
+        expr::{Expr, IntoLiteral, IntoRead},
         field::IntoField,
         modify::IntoModify,
-        value::Value,
     },
     ir::{
         as_ir::{AsIR, DynAsIR},
-        ast::{Number, COLOR, DISTANCE, GRADIENT_2D, NORMAL, X, Y, Z},
+        ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, X, Y, Z},
         module::{AsModule, DynAsModule},
     },
 };
 use elysian_shapes::{
-    central_diff_gradient::CentralDiffGradient,
     combine::{Blend, Boolean},
     field::{Capsule, Circle, Line, Point, Ring},
     modify::{
@@ -141,58 +139,21 @@ pub fn kettle_bell() -> DynAsModule {
 
     let shape_c = shape_b.combine(smooth_subtraction);
 
-    let shape_d = CentralDiffGradient {
-        field: Box::new(shape_c),
-        epsilon: 0.01.into(),
-    };
+    let shape_d = shape_c
+        .modify()
+        .gradient_normals()
+        .set(COLOR, distance_color())
+        .aspect(Expr::Read(vec![ASPECT]));
 
-    let shape_e = shape_d.modify().set(COLOR, distance_color());
-
-    Box::new(shape_e)
+    Box::new(shape_d)
 }
 
 pub fn distance_color() -> Expr {
-    Expr::Vector4(
-        Box::new(Expr::Mul(
-            Box::new(Expr::Sub(
-                Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
-                Box::new(Expr::Read(vec![DISTANCE])),
-            )),
-            Box::new(Expr::Add(
-                Box::new(Expr::Mul(
-                    Box::new(Expr::Read(vec![NORMAL, X])),
-                    Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
-                )),
-                Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
-            )),
-        )),
-        Box::new(Expr::Mul(
-            Box::new(Expr::Sub(
-                Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
-                Box::new(Expr::Read(vec![DISTANCE])),
-            )),
-            Box::new(Expr::Add(
-                Box::new(Expr::Mul(
-                    Box::new(Expr::Read(vec![NORMAL, Y])),
-                    Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
-                )),
-                Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
-            )),
-        )),
-        Box::new(Expr::Mul(
-            Box::new(Expr::Sub(
-                Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
-                Box::new(Expr::Read(vec![DISTANCE])),
-            )),
-            Box::new(Expr::Add(
-                Box::new(Expr::Mul(
-                    Box::new(Expr::Read(vec![NORMAL, Z])),
-                    Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
-                )),
-                Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
-            )),
-        )),
-        Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
+    Expr::vector4(
+        (1.0.literal() - DISTANCE.read()) * ([NORMAL, X].read() * 0.5.literal() + 0.5.literal()),
+        (1.0.literal() - DISTANCE.read()) * ([NORMAL, Y].read() * 0.5.literal() + 0.5.literal()),
+        (1.0.literal() - DISTANCE.read()) * ([NORMAL, Z].read() * 0.5.literal() + 0.5.literal()),
+        1.0.literal(),
     )
 }
 

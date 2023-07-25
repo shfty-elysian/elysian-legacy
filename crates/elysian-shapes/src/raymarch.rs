@@ -3,116 +3,63 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::ir::{
-    ast::{
-        Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, Property, Stmt,
-        CONTEXT, DISTANCE, MATRIX4, POSITION_2D, POSITION_3D, VECTOR3, VECTOR4, W, X, Y, Z,
+use elysian_core::{
+    ir::{
+        ast::{
+            Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, Stmt, DISTANCE,
+            MATRIX4, POSITION_2D, POSITION_3D, VECTOR3, VECTOR4, W, X, Y, Z,
+        },
+        module::{
+            AsModule, FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type,
+            CONTEXT,
+        },
     },
-    module::{
-        AsModule, FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type,
-        PROPERTIES,
-    },
+    property,
 };
 
 pub const RAYMARCH: Identifier = Identifier::new("raymarch", 2862797821569013866);
 
 pub const RAY_FROM_4: Identifier = Identifier::new("ray_from_4", 1327263451507152945);
-#[linkme::distributed_slice(PROPERTIES)]
-static RAY_FROM_4_PROP: Property = Property {
-    id: RAY_FROM_4,
-    ty: Type::Struct(VECTOR4),
-};
+property!(RAY_FROM_4, RAY_FROM_4_PROP, Type::Struct(VECTOR4));
 
 pub const RAY_TO_4: Identifier = Identifier::new("ray_to_4", 1818903141506024705);
-#[linkme::distributed_slice(PROPERTIES)]
-static RAY_TO_4_PROP: Property = Property {
-    id: RAY_TO_4,
-    ty: Type::Struct(VECTOR4),
-};
+property!(RAY_TO_4, RAY_TO_4_PROP, Type::Struct(VECTOR4));
 
 pub const RAY_FROM_3: Identifier = Identifier::new("ray_from_3", 7265576981511357785);
-#[linkme::distributed_slice(PROPERTIES)]
-static RAY_FROM_3_PROP: Property = Property {
-    id: RAY_FROM_3,
-    ty: Type::Struct(VECTOR3),
-};
+property!(RAY_FROM_3, RAY_FROM_3_PROP, Type::Struct(VECTOR3));
 
 pub const RAY_TO_3: Identifier = Identifier::new("ray_to_3", 5483986142139922358);
-#[linkme::distributed_slice(PROPERTIES)]
-static RAY_TO_3_PROP: Property = Property {
-    id: RAY_TO_3,
-    ty: Type::Struct(VECTOR3),
-};
+property!(RAY_TO_3, RAY_TO_3_PROP, Type::Struct(VECTOR3));
 
 pub const RAY_POS: Identifier = Identifier::new("ray_pos", 203470946369255426);
-#[linkme::distributed_slice(PROPERTIES)]
-static RAY_POS_PROP: Property = Property {
-    id: RAY_POS,
-    ty: Type::Struct(VECTOR3),
-};
+property!(RAY_POS, RAY_POS_PROP, Type::Struct(VECTOR3));
 
 pub const RAY_DIR: Identifier = Identifier::new("ray_dir", 11883607992066663879);
-#[linkme::distributed_slice(PROPERTIES)]
-static RAY_DIR_PROP: Property = Property {
-    id: RAY_DIR,
-    ty: Type::Struct(VECTOR3),
-};
+property!(RAY_DIR, RAY_DIR_PROP, Type::Struct(VECTOR3));
 
 pub const T: Identifier = Identifier::new("t", 93144116760520780);
-#[linkme::distributed_slice(PROPERTIES)]
-static T_PROP: Property = Property {
-    id: T,
-    ty: Type::Number(NumericType::Float),
-};
+property!(T, T_PROP, Type::Number(NumericType::Float));
 
 pub const INV_PROJECTION: Identifier = Identifier::new("inv_proj", 1835117139336577900);
-#[linkme::distributed_slice(PROPERTIES)]
-static INV_PROJECTION_PROP: Property = Property {
-    id: INV_PROJECTION,
-    ty: Type::Struct(MATRIX4),
-};
+property!(INV_PROJECTION, INV_PROJECTION_PROP, Type::Struct(MATRIX4));
 
 pub const STEP_SIZE: Identifier = Identifier::new("step_size", 7777887281564637643);
-#[linkme::distributed_slice(PROPERTIES)]
-static STEP_SIZE_PROP: Property = Property {
-    id: STEP_SIZE,
-    ty: Type::Number(NumericType::UInt),
-};
+property!(STEP_SIZE, STEP_SIZE_PROP, Type::Number(NumericType::UInt));
 
 pub const EPSILON: Identifier = Identifier::new("epsilon", 32338215630771851);
-#[linkme::distributed_slice(PROPERTIES)]
-static EPSILON_PROP: Property = Property {
-    id: EPSILON,
-    ty: Type::Number(NumericType::Float),
-};
+property!(EPSILON, EPSILON_PROP, Type::Number(NumericType::Float));
 
 pub const FRAC_1_K: Identifier = Identifier::new("frac_1_k", 5512322721559903899);
-#[linkme::distributed_slice(PROPERTIES)]
-static FRAC_1_K_PROP: Property = Property {
-    id: FRAC_1_K,
-    ty: Type::Number(NumericType::Float),
-};
+property!(FRAC_1_K, FRAC_1_K_PROP, Type::Number(NumericType::Float));
 
 pub const CANDIDATE: Identifier = Identifier::new("candidate", 1956157168917067266);
-#[linkme::distributed_slice(PROPERTIES)]
-static CANDIDATE_PROP: Property = Property {
-    id: CANDIDATE,
-    ty: Type::Struct(CONTEXT),
-};
+property!(CANDIDATE, CANDIDATE_PROP, Type::Struct(CONTEXT));
 
 pub const STEPS: Identifier = Identifier::new("steps", 1682585060223888912);
-#[linkme::distributed_slice(PROPERTIES)]
-static STEPS_PROP: Property = Property {
-    id: STEPS,
-    ty: Type::Number(NumericType::UInt),
-};
+property!(STEPS, STEPS_PROP, Type::Number(NumericType::UInt));
 
 pub const MAX_STEPS: Identifier = Identifier::new("max_steps", 1146747975614382616);
-#[linkme::distributed_slice(PROPERTIES)]
-static MAX_STEPS_PROP: Property = Property {
-    id: MAX_STEPS,
-    ty: Type::Number(NumericType::UInt),
-};
+property!(MAX_STEPS, MAX_STEPS_PROP, Type::Number(NumericType::UInt));
 
 pub enum March {
     Fixed {

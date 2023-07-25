@@ -5,23 +5,20 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
-            Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Property, CONTEXT,
-            POSITION_2D, POSITION_3D, VECTOR2, X, Y,
+            Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, POSITION_2D, POSITION_3D,
+            VECTOR2, X, Y,
         },
         module::{
-            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, PROPERTIES,
+            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, CONTEXT,
         },
     },
+    property,
 };
 
 use elysian_core::ast::expr::Expr;
 
 pub const ASPECT: Identifier = Identifier::new("aspect", 346035631277210970);
-#[linkme::distributed_slice(PROPERTIES)]
-static ASPECT_PROP: Property = Property {
-    id: ASPECT,
-    ty: Type::Number(NumericType::Float),
-};
+property!(ASPECT, ASPECT_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
 pub struct Aspect {

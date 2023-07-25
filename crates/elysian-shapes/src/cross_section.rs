@@ -5,10 +5,10 @@ use std::{
 
 use elysian_core::ir::{
     ast::{
-        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D, GRADIENT_3D,
-        POSITION_2D, POSITION_3D, VECTOR2, X, Y,
+        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, GRADIENT_2D, GRADIENT_3D, POSITION_2D,
+        POSITION_3D, VECTOR2, X, Y,
     },
-    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
+    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type, CONTEXT},
 };
 use indexmap::IndexMap;
 

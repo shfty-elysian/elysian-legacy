@@ -4,8 +4,8 @@ use elysian_core::{
     ast::modify::Modify,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, IntoWrite, CONTEXT, GRADIENT_2D, GRADIENT_3D},
-        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
+        ast::{Identifier, IntoBlock, IntoRead, IntoWrite, GRADIENT_2D, GRADIENT_3D},
+        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, CONTEXT},
     },
 };
 

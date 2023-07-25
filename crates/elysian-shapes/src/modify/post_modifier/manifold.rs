@@ -5,10 +5,9 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, DISTANCE, GRADIENT_2D,
-            GRADIENT_3D, NUM,
+            Identifier, IntoBlock, IntoRead, IntoWrite, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM,
         },
-        module::{FunctionDefinition, InputDefinition, SpecializationData},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, CONTEXT},
     },
 };
 

@@ -5,11 +5,11 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION_2D,
-            POSITION_3D, VECTOR2, VECTOR3,
+            Identifier, IntoBlock, IntoRead, IntoWrite, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3,
         },
-        module::{FunctionDefinition, InputDefinition, SpecializationData, Type, PROPERTIES},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, Type, CONTEXT},
     },
+    property,
 };
 
 use elysian_core::ast::expr::Expr;
@@ -17,18 +17,10 @@ use elysian_core::ast::expr::Expr;
 pub const TRANSLATE: Identifier = Identifier::new("translate", 419357041369711478);
 
 pub const DELTA_2D: Identifier = Identifier::new("delta_2d", 1292788437813720044);
-#[linkme::distributed_slice(PROPERTIES)]
-static DELTA_2D_PROP: Property = Property {
-    id: DELTA_2D,
-    ty: Type::Struct(VECTOR2),
-};
+property!(DELTA_2D, DELTA_2D_PROP, Type::Struct(VECTOR2));
 
 pub const DELTA_3D: Identifier = Identifier::new("delta_3d", 8306277011223488934);
-#[linkme::distributed_slice(PROPERTIES)]
-static DELTA_3D_PROP: Property = Property {
-    id: DELTA_3D,
-    ty: Type::Struct(VECTOR3),
-};
+property!(DELTA_3D, DELTA_3D_PROP, Type::Struct(VECTOR3));
 
 pub struct Translate {
     pub delta: Expr,
