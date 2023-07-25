@@ -1,21 +1,17 @@
 use std::{
-    borrow::Cow,
     fmt::Debug,
     hash::{Hash, Hasher},
 };
 
 use elysian_core::{
-    ast::{
-        field::Field,
-        modify::{Modify, CONTEXT_STRUCT},
-    },
+    ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
             Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, POSITION_2D,
-            POSITION_3D, VECTOR2_STRUCT, VECTOR3_STRUCT,
+            POSITION_3D, VECTOR2, VECTOR3,
         },
-        module::{FunctionDefinition, InputDefinition, SpecializationData, Type},
+        module::{FunctionDefinition, InputDefinition, SpecializationData, Type, PROPERTIES},
     },
 };
 
@@ -23,16 +19,20 @@ use elysian_core::ast::expr::Expr;
 
 pub const ELONGATE: Identifier = Identifier::new("elongate", 1022510703206415324);
 pub const ELONGATE_INFINITE: Identifier = Identifier::new("elongate_infinite", 1799909959882308009);
-pub const DIR_2D: Property = Property::new(
-    "dir_2d",
-    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
-    10994004961423687819,
-);
-pub const DIR_3D: Property = Property::new(
-    "dir_3d",
-    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
-    66909101541205811,
-);
+
+pub const DIR_2D: Identifier = Identifier::new("dir_2d", 10994004961423687819);
+#[linkme::distributed_slice(PROPERTIES)]
+static DIR_2D_PROP: Property = Property {
+    id: DIR_2D,
+    ty: Type::Struct(VECTOR2),
+};
+
+pub const DIR_3D: Identifier = Identifier::new("dir_3d", 66909101541205811);
+#[linkme::distributed_slice(PROPERTIES)]
+static DIR_3D_PROP: Property = Property {
+    id: DIR_3D,
+    ty: Type::Struct(VECTOR3),
+};
 
 pub struct Elongate {
     pub dir: Expr,
@@ -66,15 +66,15 @@ impl Hash for Elongate {
 
 impl Domains for Elongate {
     fn domains() -> Vec<Identifier> {
-        vec![POSITION_2D.id().clone(), POSITION_3D.id().clone()]
+        vec![POSITION_2D, POSITION_3D]
     }
 }
 
 impl AsIR for Elongate {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let (position, dir) = if spec.contains(POSITION_2D.id()) {
+        let (position, dir) = if spec.contains(&POSITION_2D) {
             (POSITION_2D, DIR_2D)
-        } else if spec.contains(POSITION_3D.id()) {
+        } else if spec.contains(&POSITION_3D) {
             (POSITION_3D, DIR_3D)
         } else {
             panic!("No position domain");
@@ -89,15 +89,15 @@ impl AsIR for Elongate {
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: dir.clone(),
+                    id: dir.clone(),
                     mutable: false,
                 },
                 InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: true,
                 },
             ],
-            output: CONTEXT_STRUCT.clone(),
+            output: CONTEXT,
             block: {
                 let expr = [CONTEXT, position.clone()]
                     .read()

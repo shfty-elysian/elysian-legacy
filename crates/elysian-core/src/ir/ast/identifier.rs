@@ -4,13 +4,19 @@ use uuid::Uuid;
 
 use crate::ir::module::SpecializationData;
 
-use super::Expr;
+use super::{Expr, Stmt};
 
 /// Named unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Identifier {
     name: Cow<'static, str>,
     uuid: Uuid,
+}
+
+impl std::fmt::Display for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.name, self.uuid)
+    }
 }
 
 impl Identifier {
@@ -67,5 +73,20 @@ impl Identifier {
 
     pub fn specialize(self, spec: &SpecializationData) -> Self {
         spec.specialize_id(self)
+    }
+
+    pub fn read(self) -> Expr {
+        Expr::Read(vec![self])
+    }
+
+    pub fn bind(self, expr: Expr) -> Stmt {
+        Stmt::Bind { prop: self, expr }
+    }
+
+    pub fn write(self, expr: Expr) -> Stmt {
+        Stmt::Write {
+            path: vec![self],
+            expr,
+        }
     }
 }

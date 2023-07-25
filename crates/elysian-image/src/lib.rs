@@ -1,19 +1,15 @@
-use std::borrow::Cow;
-
+use elysian_shapes::modify::ASPECT;
 use image::RgbImage;
 use rust_gpu_bridge::glam::Vec4;
 use tracing::instrument;
 
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
-use elysian_core::{
-    ast::modify::CONTEXT_STRUCT,
-    ir::{
-        ast::{Struct, Value, COLOR, POSITION_2D, VECTOR2_STRUCT, X, Y},
-        module::{AsModule, SpecializationData},
-    },
+use elysian_core::ir::{
+    ast::{Number, Struct, Value, COLOR, CONTEXT, POSITION_2D, VECTOR2, X, Y},
+    module::{AsModule, SpecializationData},
 };
-use elysian_syn::static_shapes::dispatch_shape;
+use elysian_static::dispatch_shape;
 
 #[instrument]
 pub fn rasterize<T>(
@@ -42,17 +38,25 @@ where
             indices
                 .into_iter()
                 .flat_map(|(x, y)| {
-                    let ctx = Struct::new(Cow::Borrowed(CONTEXT_STRUCT)).set(
-                        POSITION_2D,
-                        Value::Struct(
-                            Struct::new(Cow::Borrowed(VECTOR2_STRUCT))
-                                .set(X, (((x as f32 / width as f32) - 0.5) * 2.0 / scale).into())
-                                .set(
-                                    Y,
-                                    (((y as f32 / height as f32) - 0.5) * -2.0 / scale).into(),
-                                ),
-                        ),
-                    );
+                    let ctx = Struct::new(CONTEXT)
+                        .set(
+                            POSITION_2D,
+                            Value::Struct(
+                                Struct::new(VECTOR2)
+                                    .set(
+                                        X,
+                                        (((x as f32 / width as f32) - 0.5) * 2.0 / scale).into(),
+                                    )
+                                    .set(
+                                        Y,
+                                        (((y as f32 / height as f32) - 0.5) * -2.0 / scale).into(),
+                                    ),
+                            ),
+                        )
+                        .set(
+                            ASPECT,
+                            Value::Number(Number::Float(width as f64 / height as f64)),
+                        );
 
                     let ctx = shape(ctx);
 

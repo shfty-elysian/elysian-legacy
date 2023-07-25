@@ -1,18 +1,16 @@
 use std::{
     fmt::Debug,
-    hash::{Hash, Hasher}, borrow::Cow,
+    hash::{Hash, Hasher},
 };
 
-use elysian_core::{
-    ast::modify::CONTEXT_STRUCT,
-    ir::{
-        ast::{
-            Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D, GRADIENT_3D,
-            POSITION_2D, POSITION_3D, X, Y, VECTOR2_STRUCT,
-        },
-        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
+use elysian_core::ir::{
+    ast::{
+        Expr, Identifier, IntoBlock, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D, GRADIENT_3D,
+        POSITION_2D, POSITION_3D, VECTOR2, X, Y,
     },
+    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
 };
+use indexmap::IndexMap;
 
 pub const CROSS_SECTION: Identifier = Identifier::new("cross_section", 11670715461129592823);
 
@@ -44,25 +42,26 @@ impl AsModule for CrossSection {
     fn functions(
         &self,
         spec: &SpecializationData,
+        tys: &IndexMap<Identifier, Type>,
         _: &Identifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        if !spec.contains(POSITION_2D.id()) {
+        if !spec.contains(&POSITION_2D) {
             panic!("CrossSection is only compatible with the 2D position domain");
         }
 
         let spec_3d = SpecializationData::new_3d();
         let field_entry_point = self.field.entry_point();
         self.field
-            .functions(&spec_3d, &field_entry_point)
+            .functions(&spec_3d, tys, &field_entry_point)
             .into_iter()
             .chain([FunctionDefinition {
                 id: CROSS_SECTION,
                 public: false,
                 inputs: vec![InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: true,
                 }],
-                output: CONTEXT_STRUCT.clone(),
+                output: CONTEXT,
                 block: [
                     [CONTEXT, POSITION_3D].write(
                         Expr::from(self.x_axis.clone()) * [CONTEXT, POSITION_2D, X].read()
@@ -70,7 +69,7 @@ impl AsModule for CrossSection {
                     ),
                     CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
                     [CONTEXT, GRADIENT_2D].write(Expr::Struct(
-                        Cow::Borrowed(VECTOR2_STRUCT),
+                        VECTOR2,
                         [
                             (X, [CONTEXT, GRADIENT_3D, X].read()),
                             (Y, [CONTEXT, GRADIENT_3D, Y].read()),

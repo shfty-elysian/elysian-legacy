@@ -4,11 +4,13 @@ use std::{
 };
 
 use elysian_core::{
-    ast::{expr::Expr, modify::CONTEXT_STRUCT},
+    ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, IntoBlock, Property, CONTEXT},
-        module::{FunctionDefinition, InputDefinition, SpecializationData, Type, NumericType},
+        module::{
+            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, PROPERTIES,
+        },
     },
 };
 
@@ -17,7 +19,13 @@ use crate::modify::{Isosurface, Manifold, ISOSURFACE, MANIFOLD};
 use super::{Circle, CIRCLE, RADIUS};
 
 pub const RING: Identifier = Identifier::new("ring", 18972348581943461950);
-pub const WIDTH: Property = Property::new("width", Type::Number(NumericType::Float), 2742125101201765597);
+
+pub const WIDTH: Identifier = Identifier::new("width", 2742125101201765597);
+#[linkme::distributed_slice(PROPERTIES)]
+static WIDTH_PROP: Property = Property {
+    id: WIDTH,
+    ty: Type::Number(NumericType::Float),
+};
 
 pub struct Ring {
     pub radius: Expr,
@@ -85,19 +93,19 @@ impl AsIR for Ring {
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: RADIUS,
+                    id: RADIUS,
                     mutable: false,
                 },
                 InputDefinition {
-                    prop: WIDTH,
+                    id: WIDTH,
                     mutable: false,
                 },
                 InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: false,
                 },
             ],
-            output: CONTEXT_STRUCT.clone(),
+            output: CONTEXT,
             block: ISOSURFACE
                 .specialize(&isosurface_spec)
                 .call([

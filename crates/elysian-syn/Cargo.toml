@@ -12,4 +12,3 @@ syn = { version = "2.0.25", features = ["full"]}
 proc-macro2 = "1.0.64"
 quote = "1.0.29"
 prettyplease = "0.2.10"
-linkme = "0.3.12"

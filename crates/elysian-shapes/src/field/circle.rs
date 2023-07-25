@@ -4,11 +4,13 @@ use std::{
 };
 
 use elysian_core::{
-    ast::{expr::Expr, modify::CONTEXT_STRUCT},
+    ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, IntoBlock, Property, CONTEXT},
-        module::{FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type},
+        module::{
+            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, PROPERTIES,
+        },
     },
 };
 
@@ -17,11 +19,13 @@ use crate::modify::{Isosurface, ISOSURFACE};
 use super::{Point, POINT};
 
 pub const CIRCLE: Identifier = Identifier::new("circle", 15738477621793375359);
-pub const RADIUS: Property = Property::new(
-    "radius",
-    Type::Number(NumericType::Float),
-    213754678517975478,
-);
+
+pub const RADIUS: Identifier = Identifier::new("radius", 213754678517975478);
+#[linkme::distributed_slice(PROPERTIES)]
+static RADIUS_PROP: Property = Property {
+    id: RADIUS,
+    ty: Type::Number(NumericType::Float),
+};
 
 pub struct Circle {
     pub radius: Expr,
@@ -80,15 +84,15 @@ impl AsIR for Circle {
                 public: false,
                 inputs: vec![
                     InputDefinition {
-                        prop: RADIUS,
+                        id: RADIUS,
                         mutable: false,
                     },
                     InputDefinition {
-                        prop: CONTEXT,
+                        id: CONTEXT,
                         mutable: false,
                     },
                 ],
-                output: CONTEXT_STRUCT.clone(),
+                output: CONTEXT,
                 block: ISOSURFACE
                     .specialize(&isosurface_spec)
                     .call([

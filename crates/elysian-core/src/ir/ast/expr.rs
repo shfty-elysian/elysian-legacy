@@ -1,23 +1,23 @@
-use std::{borrow::Cow, fmt::Debug};
+use std::fmt::Debug;
 
 use crate::{
     ast::expr::Expr as ElysianExpr,
     ir::{
-        ast::{Property, Value},
-        module::{NumericType, StructDefinition, Type},
+        ast::Value,
+        module::{FunctionDefinition, NumericType, Type},
     },
 };
 
 use super::{
-    stmt::Stmt, Identifier, CONTEXT, MATRIX2_STRUCT, MATRIX3_STRUCT, MATRIX4_STRUCT,
-    VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT, W, X, Y, Z,
+    stmt::Stmt, Identifier, CONTEXT, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, X, Y,
+    Z,
 };
 
 /// Expression resulting in a value
 pub enum Expr {
     Literal(Value),
-    Struct(Cow<'static, StructDefinition>, IndexMap<Property, Expr>),
-    Read(Vec<Property>),
+    Struct(Identifier, IndexMap<Identifier, Expr>),
+    Read(Vec<Identifier>),
     Call {
         function: Identifier,
         args: Vec<Expr>,
@@ -157,17 +157,17 @@ impl From<ElysianExpr> for Expr {
         match value {
             ElysianExpr::Literal(v) => Expr::Literal(v.into()),
             ElysianExpr::Vector2(x, y) => Expr::Struct(
-                Cow::Borrowed(VECTOR2_STRUCT),
+                VECTOR2,
                 [(X, (*x).into()), (Y, (*y).into())].into_iter().collect(),
             ),
             ElysianExpr::Vector3(x, y, z) => Expr::Struct(
-                Cow::Borrowed(VECTOR3_STRUCT),
+                VECTOR3,
                 [(X, (*x).into()), (Y, (*y).into()), (Z, (*z).into())]
                     .into_iter()
                     .collect(),
             ),
             ElysianExpr::Vector4(x, y, z, w) => Expr::Struct(
-                Cow::Borrowed(VECTOR4_STRUCT),
+                VECTOR4,
                 [
                     (X, (*x).into()),
                     (Y, (*y).into()),
@@ -178,17 +178,17 @@ impl From<ElysianExpr> for Expr {
                 .collect(),
             ),
             ElysianExpr::Matrix2(x, y) => Expr::Struct(
-                Cow::Borrowed(MATRIX2_STRUCT),
+                MATRIX2,
                 [(X, (*x).into()), (Y, (*y).into())].into_iter().collect(),
             ),
             ElysianExpr::Matrix3(x, y, z) => Expr::Struct(
-                Cow::Borrowed(MATRIX3_STRUCT),
+                MATRIX3,
                 [(X, (*x).into()), (Y, (*y).into()), (Z, (*z).into())]
                     .into_iter()
                     .collect(),
             ),
             ElysianExpr::Matrix4(x, y, z, w) => Expr::Struct(
-                Cow::Borrowed(MATRIX4_STRUCT),
+                MATRIX4,
                 [
                     (X, (*x).into()),
                     (Y, (*y).into()),
@@ -198,7 +198,7 @@ impl From<ElysianExpr> for Expr {
                 .into_iter()
                 .collect(),
             ),
-            ElysianExpr::Read(p) => Expr::Read(vec![CONTEXT, p.into()]),
+            ElysianExpr::Read(p) => Expr::Read([CONTEXT].into_iter().chain(p).collect()),
             ElysianExpr::Add(lhs, rhs) => Expr::Add(lhs.into(), rhs.into()),
             ElysianExpr::Sub(lhs, rhs) => Expr::Sub(lhs.into(), rhs.into()),
             ElysianExpr::Mul(lhs, rhs) => Expr::Mul(lhs.into(), rhs.into()),
@@ -267,7 +267,11 @@ impl core::ops::Neg for Expr {
 }
 
 impl Expr {
-    pub fn ty(&self) -> Type {
+    pub fn ty(
+        &self,
+        function_defs: &Vec<FunctionDefinition>,
+        types: &IndexMap<Identifier, Type>,
+    ) -> Type {
         match self {
             Literal(v) => match v {
                 Value::Boolean(_) => Type::Boolean,
@@ -276,15 +280,29 @@ impl Expr {
                     super::Number::SInt(_) => NumericType::SInt,
                     super::Number::Float(_) => NumericType::Float,
                 }),
-                Value::Struct(s) => Type::Struct(s.def.clone()),
+                Value::Struct(s) => Type::Struct(s.id.clone()),
             },
             Struct(def, _) => Type::Struct(def.clone()),
-            Read(path) => path.last().expect("Empty Path").ty().clone(),
-            Call { function, args } => panic!("Can't infer the type of a function call"),
-            Neg(t) => t.ty(),
-            Abs(t) => t.ty(),
-            Sign(t) => t.ty(),
-            Length(t) => match t.ty() {
+            Read(path) => path
+                .last()
+                .map(|id| types.get(id))
+                .flatten()
+                .unwrap()
+                .clone(),
+            Call { function, .. } => types
+                .get(
+                    &function_defs
+                        .iter()
+                        .find(|cand| cand.id == *function)
+                        .unwrap()
+                        .output,
+                )
+                .unwrap()
+                .clone(),
+            Neg(t) => t.ty(function_defs, types),
+            Abs(t) => t.ty(function_defs, types),
+            Sign(t) => t.ty(function_defs, types),
+            Length(t) => match t.ty(function_defs, types) {
                 Type::Boolean => panic!("Invalid Length"),
                 Type::Number(n) => Type::Number(n),
                 Type::Struct(s) => match s.name() {
@@ -294,7 +312,7 @@ impl Expr {
                     _ => panic!("Invalid Length"),
                 },
             },
-            Normalize(t) => t.ty(),
+            Normalize(t) => t.ty(function_defs, types),
             Add(lhs, rhs)
             | Sub(lhs, rhs)
             | Mul(lhs, rhs)
@@ -304,68 +322,70 @@ impl Expr {
             | Lt(lhs, rhs)
             | Gt(lhs, rhs)
             | Dot(lhs, rhs)
-            | Mix(lhs, rhs, ..) => match (lhs.ty(), rhs.ty()) {
-                (Type::Boolean, Type::Boolean) => Type::Boolean,
-                (Type::Number(a), Type::Number(b)) => {
-                    if a.name() != b.name() {
-                        panic!("Invalid Binary Op")
-                    }
-
-                    Type::Number(a)
-                }
-                (Type::Number(..), Type::Struct(s)) => Type::Struct(s),
-                (Type::Struct(s), Type::Number(..)) => Type::Struct(s),
-                (Type::Struct(a), Type::Struct(b)) => match self {
-                    Add(_, _) => match (a.name(), b.name()) {
-                        ("Vector2", "Vector2") => Type::Struct(a),
-                        ("Vector3", "Vector3") => Type::Struct(a),
-                        ("Vector4", "Vector4") => Type::Struct(a),
-                        ("Matrix2", "Matrix2") => Type::Struct(a),
-                        ("Matrix3", "Matrix3") => Type::Struct(a),
-                        ("Matrix4", "Matrix4") => Type::Struct(a),
-                        _ => panic!("Invalid Binary Op"),
-                    },
-                    Sub(_, _) => match (a.name(), b.name()) {
-                        ("Vector2", "Vector2") => Type::Struct(a),
-                        ("Vector3", "Vector3") => Type::Struct(a),
-                        ("Vector4", "Vector4") => Type::Struct(a),
-                        ("Matrix2", "Matrix2") => Type::Struct(a),
-                        ("Matrix3", "Matrix3") => Type::Struct(a),
-                        ("Matrix4", "Matrix4") => Type::Struct(a),
-                        _ => panic!("Invalid Binary Op"),
-                    },
-                    Mul(_, _) => match (a.name(), b.name()) {
-                        ("Vector2", "Vector2") => Type::Struct(a),
-                        ("Vector3", "Vector3") => Type::Struct(a),
-                        ("Vector4", "Vector4") => Type::Struct(a),
-                        ("Matrix2", "Matrix2") => Type::Struct(a),
-                        ("Matrix3", "Matrix3") => Type::Struct(a),
-                        ("Matrix4", "Matrix4") => Type::Struct(a),
-                        ("Vector2", "Matrix2") => Type::Struct(a),
-                        ("Matrix2", "Vector2") => Type::Struct(b),
-                        ("Vector3", "Matrix3") => Type::Struct(a),
-                        ("Matrix3", "Vector3") => Type::Struct(b),
-                        ("Vector4", "Matrix4") => Type::Struct(a),
-                        ("Matrix4", "Vector4") => Type::Struct(b),
-                        _ => panic!("Invalid Binary Op"),
-                    },
-                    Div(_, _) => match (a.name(), b.name()) {
-                        ("Vector2", "Vector2") => Type::Struct(a),
-                        ("Vector3", "Vector3") => Type::Struct(a),
-                        ("Vector4", "Vector4") => Type::Struct(a),
-                        _ => panic!("Invalid Binary Op"),
-                    },
-                    Min(_, _) | Max(_, _) | Lt(_, _) | Gt(_, _) | Dot(_, _) | Mix(_, _, _) => {
-                        if a.name_unique() != b.name_unique() {
+            | Mix(lhs, rhs, ..) => {
+                match (lhs.ty(function_defs, types), rhs.ty(function_defs, types)) {
+                    (Type::Boolean, Type::Boolean) => Type::Boolean,
+                    (Type::Number(a), Type::Number(b)) => {
+                        if a.name() != b.name() {
                             panic!("Invalid Binary Op")
                         }
 
-                        Type::Struct(a)
+                        Type::Number(a)
                     }
-                    _ => unreachable!(),
-                },
-                _ => panic!("Invalid BinaryOp"),
-            },
+                    (Type::Number(..), Type::Struct(s)) => Type::Struct(s),
+                    (Type::Struct(s), Type::Number(..)) => Type::Struct(s),
+                    (Type::Struct(a), Type::Struct(b)) => match self {
+                        Add(_, _) => match (a.name(), b.name()) {
+                            ("Vector2", "Vector2") => Type::Struct(a),
+                            ("Vector3", "Vector3") => Type::Struct(a),
+                            ("Vector4", "Vector4") => Type::Struct(a),
+                            ("Matrix2", "Matrix2") => Type::Struct(a),
+                            ("Matrix3", "Matrix3") => Type::Struct(a),
+                            ("Matrix4", "Matrix4") => Type::Struct(a),
+                            _ => panic!("Invalid Binary Op"),
+                        },
+                        Sub(_, _) => match (a.name(), b.name()) {
+                            ("Vector2", "Vector2") => Type::Struct(a),
+                            ("Vector3", "Vector3") => Type::Struct(a),
+                            ("Vector4", "Vector4") => Type::Struct(a),
+                            ("Matrix2", "Matrix2") => Type::Struct(a),
+                            ("Matrix3", "Matrix3") => Type::Struct(a),
+                            ("Matrix4", "Matrix4") => Type::Struct(a),
+                            _ => panic!("Invalid Binary Op"),
+                        },
+                        Mul(_, _) => match (a.name(), b.name()) {
+                            ("Vector2", "Vector2") => Type::Struct(a),
+                            ("Vector3", "Vector3") => Type::Struct(a),
+                            ("Vector4", "Vector4") => Type::Struct(a),
+                            ("Matrix2", "Matrix2") => Type::Struct(a),
+                            ("Matrix3", "Matrix3") => Type::Struct(a),
+                            ("Matrix4", "Matrix4") => Type::Struct(a),
+                            ("Vector2", "Matrix2") => Type::Struct(a),
+                            ("Matrix2", "Vector2") => Type::Struct(b),
+                            ("Vector3", "Matrix3") => Type::Struct(a),
+                            ("Matrix3", "Vector3") => Type::Struct(b),
+                            ("Vector4", "Matrix4") => Type::Struct(a),
+                            ("Matrix4", "Vector4") => Type::Struct(b),
+                            _ => panic!("Invalid Binary Op"),
+                        },
+                        Div(_, _) => match (a.name(), b.name()) {
+                            ("Vector2", "Vector2") => Type::Struct(a),
+                            ("Vector3", "Vector3") => Type::Struct(a),
+                            ("Vector4", "Vector4") => Type::Struct(a),
+                            _ => panic!("Invalid Binary Op"),
+                        },
+                        Min(_, _) | Max(_, _) | Lt(_, _) | Gt(_, _) | Dot(_, _) | Mix(_, _, _) => {
+                            if a.name_unique() != b.name_unique() {
+                                panic!("Invalid Binary Op")
+                            }
+
+                            Type::Struct(a)
+                        }
+                        _ => unreachable!(),
+                    },
+                    _ => panic!("Invalid BinaryOp"),
+                }
+            }
         }
     }
 

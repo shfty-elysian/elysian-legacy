@@ -2,36 +2,57 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use crate::ir::ast::{IntoRead, COMBINE_CONTEXT};
-use crate::{
-    ast::modify::CONTEXT_STRUCT,
-    ir::{
-        as_ir::{AsIR, DynAsIR, HashIR},
-        ast::{Block, Expr, Identifier, CONTEXT, LEFT, OUT, RIGHT},
-        module::{
-            AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
-            SpecializationData, StructDefinition,
-        },
+use indexmap::IndexMap;
+
+use crate::ir::ast::{IntoRead, Property, COMBINE_CONTEXT};
+use crate::ir::module::{Type, PROPERTIES};
+use crate::ir::{
+    as_ir::{AsIR, DynAsIR, HashIR},
+    ast::{Block, Expr, Identifier, CONTEXT},
+    module::{
+        AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
+        SpecializationData, StructDefinition,
     },
+};
+
+pub const LEFT: Identifier = Identifier::new("left", 635254731934742132);
+#[linkme::distributed_slice(PROPERTIES)]
+static LEFT_PROP: Property = Property {
+    id: LEFT,
+    ty: Type::Struct(CONTEXT),
+};
+
+pub const RIGHT: Identifier = Identifier::new("right", 5251097991491214179);
+#[linkme::distributed_slice(PROPERTIES)]
+static RIGHT_PROP: Property = Property {
+    id: RIGHT,
+    ty: Type::Struct(CONTEXT),
+};
+
+pub const OUT: Identifier = Identifier::new("out", 1470763158891875334);
+#[linkme::distributed_slice(PROPERTIES)]
+static OUT_PROP: Property = Property {
+    id: OUT,
+    ty: Type::Struct(CONTEXT),
 };
 
 pub const COMBINE_CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
     FieldDefinition {
-        prop: LEFT,
+        id: LEFT,
         public: false,
     },
     FieldDefinition {
-        prop: RIGHT,
+        id: RIGHT,
         public: false,
     },
     FieldDefinition {
-        prop: OUT,
+        id: OUT,
         public: false,
     },
 ];
 
 pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
-    id: Identifier::new("CombineContext", 416045102551943616),
+    id: COMBINE_CONTEXT,
     public: false,
     fields: Cow::Borrowed(COMBINE_CONTEXT_STRUCT_FIELDS),
 };
@@ -69,6 +90,7 @@ impl AsModule for Combine {
     fn functions(
         &self,
         spec: &SpecializationData,
+        tys: &IndexMap<Identifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<FunctionDefinition> {
         let (shape_entry_points, shape_functions): (Vec<_>, Vec<_>) = self
@@ -76,7 +98,10 @@ impl AsModule for Combine {
             .iter()
             .map(|shape| {
                 let entry_point = shape.entry_point();
-                (entry_point.clone(), shape.functions(spec, &entry_point))
+                (
+                    entry_point.clone(),
+                    shape.functions(spec, tys, &entry_point),
+                )
             })
             .unzip();
 
@@ -117,17 +142,17 @@ impl AsModule for Combine {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: false,
                 }],
-                output: CONTEXT_STRUCT.clone(),
+                output: CONTEXT,
                 block,
             }])
             .collect()
     }
 
     fn structs(&self) -> Vec<StructDefinition> {
-        vec![CONTEXT_STRUCT.clone(), COMBINE_CONTEXT_STRUCT.clone()]
+        vec![COMBINE_CONTEXT_STRUCT.clone()]
     }
 }
 

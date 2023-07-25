@@ -215,6 +215,8 @@ dependencies = [
  "elysian-core",
  "elysian-image",
  "elysian-naga",
+ "elysian-shadertoy",
+ "elysian-static",
  "elysian-syn",
  "rust-gpu-bridge",
 ]
@@ -224,6 +226,7 @@ name = "elysian-core"
 version = "0.1.0"
 dependencies = [
  "indexmap 2.0.0",
+ "linkme",
  "rust-gpu-bridge",
  "tracing",
  "uuid",
@@ -234,7 +237,8 @@ name = "elysian-image"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
- "elysian-syn",
+ "elysian-shapes",
+ "elysian-static",
  "image",
  "num_cpus",
  "rayon",
@@ -256,7 +260,17 @@ name = "elysian-naga"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-shapes",
  "indexmap 2.0.0",
+ "naga",
+]
+
+[[package]]
+name = "elysian-shadertoy"
+version = "0.1.0"
+dependencies = [
+ "elysian-core",
+ "elysian-naga",
  "naga",
 ]
 
@@ -265,6 +279,18 @@ name = "elysian-shapes"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "indexmap 2.0.0",
+ "linkme",
+]
+
+[[package]]
+name = "elysian-static"
+version = "0.1.0"
+dependencies = [
+ "elysian-core",
+ "elysian-interpreter",
+ "elysian-syn",
+ "linkme",
 ]
 
 [[package]]
@@ -273,7 +299,6 @@ version = "0.1.0"
 dependencies = [
  "elysian-core",
  "elysian-interpreter",
- "linkme",
  "prettyplease",
  "proc-macro2",
  "quote",
@@ -566,18 +591,18 @@ checksum = "b4668fb0ea861c1df094127ac5f1da3409a82116a4ba74fca2e58ef927159bb3"
 
 [[package]]
 name = "linkme"
-version = "0.3.12"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa50a73d1344e0c073370f7989293abd47dd000f35d7a36cb011873dc333ecff"
+checksum = "1d97273abcfbfc6ac4d0f997c17083674e2d2da37369b035a034292d34ab9479"
 dependencies = [
  "linkme-impl",
 ]
 
 [[package]]
 name = "linkme-impl"
-version = "0.3.12"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90bfc158b48a4b1b943dd736b42e902a96b567fe6bbbdd20144f85eb56fc66db"
+checksum = "76819b320710742b7fc329e6fb3530550792a70c9f39b4efc29d71773f37cc03"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1045,7 +1070,7 @@ version = "0.1.0"
 dependencies = [
  "elysian",
  "elysian-core",
- "elysian-syn",
+ "elysian-static",
  "linkme",
  "rust-gpu-bridge",
  "test-shapes",

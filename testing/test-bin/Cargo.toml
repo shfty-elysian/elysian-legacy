@@ -5,7 +5,7 @@ edition = "2021"
 
 [build-dependencies]
 elysian-core = { path = "../../crates/elysian-core" }
-elysian-syn = { path = "../../crates/elysian-syn" }
+elysian-static = { path = "../../crates/elysian-static" }
 test-shapes = { path = "../test-shapes" }
 
 [dependencies]

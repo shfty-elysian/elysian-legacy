@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::ir::ast::Property;
+use crate::ir::ast::Identifier;
 
 use super::value::Value;
 
@@ -15,7 +15,7 @@ pub enum Expr {
     Matrix2(BoxExpr, BoxExpr),
     Matrix3(BoxExpr, BoxExpr, BoxExpr),
     Matrix4(BoxExpr, BoxExpr, BoxExpr, BoxExpr),
-    Read(Property),
+    Read(Vec<Identifier>),
     Add(BoxExpr, BoxExpr),
     Sub(BoxExpr, BoxExpr),
     Mul(BoxExpr, BoxExpr),

@@ -3,8 +3,13 @@ name = "elysian-naga"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+print = []
+
 [dependencies]
 elysian-core = { path = "../elysian-core" }
+elysian-shapes = { path = "../elysian-shapes" }
 
 naga = "0.13.0"
 indexmap = "2.0.0"

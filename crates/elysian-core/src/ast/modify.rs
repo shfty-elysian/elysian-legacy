@@ -1,8 +1,9 @@
 use std::{
-    borrow::Cow,
     fmt::Debug,
     hash::{Hash, Hasher},
 };
+
+use indexmap::IndexMap;
 
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
@@ -12,78 +13,72 @@ use crate::ir::{
     },
     module::{
         AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
-        SpecializationData, StructDefinition,
+        SpecializationData, StructDefinition, Type,
     },
 };
 
 pub const CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
     FieldDefinition {
-        prop: POSITION_2D,
+        id: POSITION_2D,
         public: true,
     },
     FieldDefinition {
-        prop: POSITION_3D,
+        id: POSITION_3D,
         public: true,
     },
     FieldDefinition {
-        prop: TIME,
+        id: TIME,
         public: true,
     },
     FieldDefinition {
-        prop: DISTANCE,
+        id: DISTANCE,
         public: true,
     },
     FieldDefinition {
-        prop: GRADIENT_2D,
+        id: GRADIENT_2D,
         public: true,
     },
     FieldDefinition {
-        prop: GRADIENT_3D,
+        id: GRADIENT_3D,
         public: true,
     },
     FieldDefinition {
-        prop: NORMAL,
+        id: NORMAL,
         public: true,
     },
     FieldDefinition {
-        prop: UV,
+        id: UV,
         public: true,
     },
     FieldDefinition {
-        prop: TANGENT_2D,
+        id: TANGENT_2D,
         public: true,
     },
     FieldDefinition {
-        prop: TANGENT_3D,
+        id: TANGENT_3D,
         public: true,
     },
     FieldDefinition {
-        prop: COLOR,
+        id: COLOR,
         public: true,
     },
     FieldDefinition {
-        prop: LIGHT,
+        id: LIGHT,
         public: true,
     },
     FieldDefinition {
-        prop: SUPPORT_2D,
+        id: SUPPORT_2D,
         public: true,
     },
     FieldDefinition {
-        prop: SUPPORT_3D,
+        id: SUPPORT_3D,
         public: true,
     },
     FieldDefinition {
-        prop: ERROR,
+        id: ERROR,
         public: true,
     },
 ];
-
-pub const CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition {
-    id: Identifier::new("Context", 1198218077110787867),
-    public: true,
-    fields: Cow::Borrowed(CONTEXT_STRUCT_FIELDS),
-};
 
 pub struct Modify {
     pub pre_modifiers: Vec<DynAsIR>,
@@ -121,13 +116,14 @@ impl AsModule for Modify {
     fn functions(
         &self,
         spec: &SpecializationData,
+        tys: &IndexMap<Identifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<FunctionDefinition> {
         let field_entry_point = self.field.entry_point();
         self.pre_modifiers
             .iter()
             .flat_map(|t| AsIR::functions(t, spec))
-            .chain(self.field.functions(spec, &field_entry_point))
+            .chain(self.field.functions(spec, tys, &field_entry_point))
             .chain(
                 self.post_modifiers
                     .iter()
@@ -137,10 +133,10 @@ impl AsModule for Modify {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: false,
                 }],
-                output: CONTEXT_STRUCT.clone(),
+                output: CONTEXT,
                 block: self
                     .post_modifiers
                     .iter()

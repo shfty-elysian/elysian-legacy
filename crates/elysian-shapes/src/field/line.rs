@@ -4,7 +4,7 @@ use std::{
 };
 
 use elysian_core::{
-    ast::{expr::Expr, modify::CONTEXT_STRUCT},
+    ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, IntoBlock, CONTEXT, POSITION_2D, POSITION_3D},
@@ -56,9 +56,9 @@ impl AsIR for Line {
         &self,
         spec: &SpecializationData,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let dir = if spec.contains(POSITION_2D.id()) {
+        let dir = if spec.contains(&POSITION_2D) {
             DIR_2D
-        } else if spec.contains(POSITION_3D.id()) {
+        } else if spec.contains(&POSITION_3D) {
             DIR_3D
         } else {
             panic!("No position domain set")
@@ -82,15 +82,15 @@ impl AsIR for Line {
                 public: false,
                 inputs: vec![
                     InputDefinition {
-                        prop: dir.clone(),
+                        id: dir.clone(),
                         mutable: false,
                     },
                     InputDefinition {
-                        prop: CONTEXT,
+                        id: CONTEXT,
                         mutable: false,
                     },
                 ],
-                output: CONTEXT_STRUCT.clone(),
+                output: CONTEXT,
                 block: POINT
                     .specialize(&point_spec)
                     .call([ELONGATE

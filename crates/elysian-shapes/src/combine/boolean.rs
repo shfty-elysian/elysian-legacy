@@ -1,13 +1,10 @@
-use elysian_core::{
-    ast::combine::COMBINE_CONTEXT_STRUCT,
-    ir::{
-        as_ir::{AsIR, Domains},
-        ast::{
-            Identifier, IntoBlock, IntoRead, IntoWrite, COMBINE_CONTEXT, DISTANCE, LEFT, OUT, RIGHT,
-        },
-        module::{FunctionDefinition, InputDefinition, SpecializationData},
+use elysian_core::{ir::{
+    as_ir::{AsIR, Domains},
+    ast::{
+        Identifier, IntoBlock, IntoRead, IntoWrite, COMBINE_CONTEXT, DISTANCE, 
     },
-};
+    module::{FunctionDefinition, InputDefinition, SpecializationData},
+}, ast::combine::{OUT, LEFT, RIGHT}};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Boolean {
@@ -35,10 +32,10 @@ impl AsIR for Boolean {
             },
             public: false,
             inputs: vec![InputDefinition {
-                prop: COMBINE_CONTEXT,
+                id: COMBINE_CONTEXT,
                 mutable: true,
             }],
-            output: COMBINE_CONTEXT_STRUCT.clone(),
+            output: COMBINE_CONTEXT,
             block: match self {
                 Boolean::Union | Boolean::Intersection => {
                     [

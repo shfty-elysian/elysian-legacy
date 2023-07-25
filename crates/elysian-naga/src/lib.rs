@@ -1,13 +1,18 @@
 use elysian_core::ir::{
-    ast::{Expr, Number, Property, Stmt, Struct, Value},
+    ast::{
+        Expr, Identifier, Number, Stmt, Struct, Value, COLOR, CONTEXT, MATRIX2, MATRIX3, MATRIX4,
+        POSITION_2D, VECTOR2, VECTOR3, VECTOR4,
+    },
     module::{Module as ElysianModule, NumericType, Type as ElysianType},
 };
+use elysian_shapes::modify::ASPECT;
 use indexmap::IndexMap;
 use naga::{
+    valid::{Capabilities, ModuleInfo, ValidationError, ValidationFlags, Validator},
     Arena, BinaryOperator, Block as NagaBlock, EntryPoint, Expression, Function, FunctionArgument,
     FunctionResult, Handle, Literal, LocalVariable, MathFunction, Module as NagaModule, Range,
     ScalarKind, ShaderStage, Span, Statement, StructMember, SwizzleComponent, Type as NagaType,
-    TypeInner, UniqueArena, VectorSize,
+    TypeInner, UniqueArena, VectorSize, WithSpan,
 };
 
 #[derive(Debug, Default)]
@@ -22,7 +27,7 @@ pub struct LocalVariableStore {
     pointers: IndexMap<Handle<LocalVariable>, Handle<Expression>>,
 }
 
-pub struct NagaWriter<'a> {
+pub struct NagaBuilder<'a> {
     input: &'a ElysianModule,
     types: UniqueArena<NagaType>,
     functions: Arena<Function>,
@@ -31,9 +36,9 @@ pub struct NagaWriter<'a> {
     local_variables: Option<LocalVariableStore>,
 }
 
-impl<'a> NagaWriter<'a> {
+impl<'a> NagaBuilder<'a> {
     pub fn new(module: &'a ElysianModule) -> Self {
-        NagaWriter {
+        NagaBuilder {
             input: module,
             types: Default::default(),
             functions: Default::default(),
@@ -43,12 +48,19 @@ impl<'a> NagaWriter<'a> {
         }
     }
 
-    pub fn module_to_naga(mut self) -> NagaModule {
+    pub fn build(
+        mut self,
+        validation_flags: ValidationFlags,
+        capabilities: Capabilities,
+    ) -> Result<(NagaModule, ModuleInfo), WithSpan<ValidationError>> {
+        #[cfg(feature = "print")]
+        println!("module_to_naga");
+
         self.types_to_naga();
         self.functions_to_naga();
         let entry_point = self.shadertoy_entry_point();
 
-        NagaModule {
+        let module = NagaModule {
             types: self.types,
             special_types: Default::default(),
             constants: Default::default(),
@@ -56,17 +68,28 @@ impl<'a> NagaWriter<'a> {
             const_expressions: Default::default(),
             functions: self.functions,
             entry_points: vec![entry_point],
-        }
+        };
+
+        let mut validator = Validator::new(validation_flags, capabilities);
+        let module_info = validator.validate(&module)?;
+
+        Ok((module, module_info))
     }
 
     fn get_type(&self, name: &str) -> (Handle<NagaType>, &NagaType) {
+        #[cfg(feature = "print")]
+        println!("get_type");
+
         self.types
             .iter()
             .find(|(_, v)| v.name.as_ref().map(String::as_str) == Some(name))
-            .expect("No type")
+            .unwrap_or_else(|| panic!("No type for {}", name))
     }
 
     fn get_function(&self, name: &str) -> (Handle<Function>, &Function) {
+        #[cfg(feature = "print")]
+        println!("get_function");
+
         self.functions
             .iter()
             .find(|(_, v)| v.name.as_ref().map(String::as_str) == Some(name))
@@ -74,6 +97,9 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn get_local_variable(&self, name: &str) -> Option<(Handle<LocalVariable>, &LocalVariable)> {
+        #[cfg(feature = "print")]
+        println!("get_local_variable");
+
         self.local_variables
             .as_ref()?
             .locals
@@ -82,6 +108,9 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn get_pointer(&self, name: &str) -> Option<&Handle<Expression>> {
+        #[cfg(feature = "print")]
+        println!("get_pointer");
+
         let (k, _) = self.get_local_variable(name)?;
         self.local_variables
             .as_ref()
@@ -91,6 +120,9 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn types_to_naga(&mut self) {
+        #[cfg(feature = "print")]
+        println!("types_to_naga");
+
         let bool = self.push_type(NagaType {
             name: Some("Bool".to_string()),
             inner: TypeInner::Scalar {
@@ -100,7 +132,7 @@ impl<'a> NagaWriter<'a> {
         });
 
         let uint = self.push_type(NagaType {
-            name: Some("u32".to_string()),
+            name: Some("UInt".to_string()),
             inner: TypeInner::Scalar {
                 kind: ScalarKind::Uint,
                 width: 4,
@@ -108,7 +140,7 @@ impl<'a> NagaWriter<'a> {
         });
 
         let sint = self.push_type(NagaType {
-            name: Some("i32".to_string()),
+            name: Some("SInt".to_string()),
             inner: TypeInner::Scalar {
                 kind: ScalarKind::Sint,
                 width: 4,
@@ -116,128 +148,109 @@ impl<'a> NagaWriter<'a> {
         });
 
         let float = self.push_type(NagaType {
-            name: Some("f32".to_string()),
+            name: Some("Float".to_string()),
             inner: TypeInner::Scalar {
                 kind: ScalarKind::Float,
                 width: 4,
             },
         });
 
-        self.push_type(NagaType {
-            name: Some("Vector2".to_string()),
-            inner: TypeInner::Vector {
-                size: VectorSize::Bi,
-                kind: ScalarKind::Float,
-                width: 4,
-            },
-        });
-
-        self.push_type(NagaType {
-            name: Some("Vector3".to_string()),
-            inner: TypeInner::Vector {
-                size: VectorSize::Tri,
-                kind: ScalarKind::Float,
-                width: 4,
-            },
-        });
-
-        self.push_type(NagaType {
-            name: Some("Vector4".to_string()),
-            inner: TypeInner::Vector {
-                size: VectorSize::Quad,
-                kind: ScalarKind::Float,
-                width: 4,
-            },
-        });
-
-        self.push_type(NagaType {
-            name: Some("Matrix2".to_string()),
-            inner: TypeInner::Matrix {
-                columns: VectorSize::Bi,
-                rows: VectorSize::Bi,
-                width: 4,
-            },
-        });
-
-        self.push_type(NagaType {
-            name: Some("Matrix3".to_string()),
-            inner: TypeInner::Matrix {
-                columns: VectorSize::Tri,
-                rows: VectorSize::Tri,
-                width: 4,
-            },
-        });
-
-        self.push_type(NagaType {
-            name: Some("Matrix4".to_string()),
-            inner: TypeInner::Matrix {
-                columns: VectorSize::Quad,
-                rows: VectorSize::Quad,
-                width: 4,
-            },
-        });
-
         for def in &self.input.struct_definitions {
-            let (members, span) =
-                def.fields
-                    .iter()
-                    .fold((vec![], 0), |(mut members, total_span), next| {
-                        let (member, span) = match next.prop.ty() {
-                            ElysianType::Boolean => (bool, 1),
-                            ElysianType::Number(n) => match n {
-                                NumericType::UInt => (uint, 4),
-                                NumericType::SInt => (sint, 4),
-                                NumericType::Float => (float, 4),
-                            },
-                            ElysianType::Struct(s) => {
-                                let (handle, ty) = self.get_type(s.id.name());
+            let ty = match &def.id {
+                v if *v == VECTOR2 || *v == VECTOR3 || *v == VECTOR4 => NagaType {
+                    name: Some(def.id.name().to_string()),
+                    inner: TypeInner::Vector {
+                        size: match &def.id {
+                            d if *d == VECTOR2 => VectorSize::Bi,
+                            d if *d == VECTOR3 => VectorSize::Tri,
+                            d if *d == VECTOR4 => VectorSize::Quad,
+                            _ => unreachable!(),
+                        },
+                        kind: ScalarKind::Float,
+                        width: 4,
+                    },
+                },
+                m if *m == MATRIX2 || *m == MATRIX3 || *m == MATRIX4 => NagaType {
+                    name: Some(def.id.name().to_string()),
+                    inner: TypeInner::Matrix {
+                        columns: match &def.id {
+                            d if *d == MATRIX2 => VectorSize::Bi,
+                            d if *d == MATRIX3 => VectorSize::Tri,
+                            d if *d == MATRIX4 => VectorSize::Quad,
+                            _ => unreachable!(),
+                        },
+                        rows: match &def.id {
+                            d if *d == MATRIX2 => VectorSize::Bi,
+                            d if *d == MATRIX3 => VectorSize::Tri,
+                            d if *d == MATRIX4 => VectorSize::Quad,
+                            _ => unreachable!(),
+                        },
+                        width: 4,
+                    },
+                },
+                _ => {
+                    let (members, span) =
+                        def.fields
+                            .iter()
+                            .fold((vec![], 0), |(mut members, total_span), next| {
+                                let (member, span) = match self.get_input_type(&next.id) {
+                                    ElysianType::Boolean => (bool, 1),
+                                    ElysianType::Number(n) => match n {
+                                        NumericType::UInt => (uint, 4),
+                                        NumericType::SInt => (sint, 4),
+                                        NumericType::Float => (float, 4),
+                                    },
+                                    ElysianType::Struct(s) => {
+                                        let (handle, ty) = self.get_type(s.name());
 
-                                let span = match ty.inner {
-                                    TypeInner::Scalar { width, .. } => width as u32,
-                                    TypeInner::Vector { width, size, .. } => {
-                                        width as u32
-                                            * match size {
-                                                VectorSize::Bi => 2,
-                                                VectorSize::Tri => 3,
-                                                VectorSize::Quad => 4,
+                                        let span = match ty.inner {
+                                            TypeInner::Scalar { width, .. } => width as u32,
+                                            TypeInner::Vector { width, size, .. } => {
+                                                width as u32
+                                                    * match size {
+                                                        VectorSize::Bi => 2,
+                                                        VectorSize::Tri => 3,
+                                                        VectorSize::Quad => 4,
+                                                    }
                                             }
+                                            TypeInner::Matrix {
+                                                columns,
+                                                rows,
+                                                width,
+                                            } => {
+                                                width as u32
+                                                    * match columns {
+                                                        VectorSize::Bi => 2,
+                                                        VectorSize::Tri => 3,
+                                                        VectorSize::Quad => 4,
+                                                    }
+                                                    * match rows {
+                                                        VectorSize::Bi => 2,
+                                                        VectorSize::Tri => 3,
+                                                        VectorSize::Quad => 4,
+                                                    }
+                                            }
+                                            TypeInner::Struct { span, .. } => span,
+                                            _ => panic!("Invalid Type"),
+                                        };
+
+                                        (handle, span)
                                     }
-                                    TypeInner::Matrix {
-                                        columns,
-                                        rows,
-                                        width,
-                                    } => {
-                                        width as u32
-                                            * match columns {
-                                                VectorSize::Bi => 2,
-                                                VectorSize::Tri => 3,
-                                                VectorSize::Quad => 4,
-                                            }
-                                            * match rows {
-                                                VectorSize::Bi => 2,
-                                                VectorSize::Tri => 3,
-                                                VectorSize::Quad => 4,
-                                            }
-                                    }
-                                    TypeInner::Struct { span, .. } => span,
-                                    _ => panic!("Invalid Type"),
                                 };
+                                members.push(StructMember {
+                                    name: Some(next.id.name().to_string()),
+                                    ty: member,
+                                    binding: None,
+                                    offset: total_span,
+                                });
+                                (members, total_span + span)
+                            });
 
-                                (handle, span)
-                            }
-                        };
-                        members.push(StructMember {
-                            name: Some(next.prop.name().to_string()),
-                            ty: member,
-                            binding: None,
-                            offset: total_span,
-                        });
-                        (members, total_span + span)
-                    });
-
-            let ty = NagaType {
-                name: Some(def.name().to_string()),
-                inner: TypeInner::Struct { members, span },
+                    NagaType {
+                        name: Some(def.name().to_string()),
+                        inner: TypeInner::Struct { members, span },
+                    }
+                }
             };
 
             self.types.insert(ty, Span::UNDEFINED);
@@ -245,12 +258,18 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn body_mut(&mut self) -> &mut NagaBlock {
+        #[cfg(feature = "print")]
+        println!("body_mut");
+
         self.block_stack
             .last_mut()
             .expect("Not inside a function body")
     }
 
     fn queue_mut(&mut self) -> &mut Vec<Handle<Expression>> {
+        #[cfg(feature = "print")]
+        println!("queue_mut");
+
         &mut self
             .expressions
             .as_mut()
@@ -259,6 +278,9 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn expressions_mut(&mut self) -> &mut Arena<Expression> {
+        #[cfg(feature = "print")]
+        println!("expressions_mut");
+
         &mut self
             .expressions
             .as_mut()
@@ -267,6 +289,9 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn local_variables_mut(&mut self) -> &mut Arena<LocalVariable> {
+        #[cfg(feature = "print")]
+        println!("local_variables_mut");
+
         &mut self
             .local_variables
             .as_mut()
@@ -275,6 +300,9 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn pointers_mut(&mut self) -> &mut IndexMap<Handle<LocalVariable>, Handle<Expression>> {
+        #[cfg(feature = "print")]
+        println!("pointers_mut");
+
         &mut self
             .local_variables
             .as_mut()
@@ -283,11 +311,17 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn push_statement(&mut self, stmt: Statement) {
+        #[cfg(feature = "print")]
+        println!("push_statement");
+
         self.flush_expressions();
         self.body_mut().push(stmt, Span::UNDEFINED);
     }
 
     fn push_expression(&mut self, expr: Expression) -> Handle<Expression> {
+        #[cfg(feature = "print")]
+        println!("push_expression");
+
         let push = match &expr {
             Expression::LocalVariable { .. } => false,
             Expression::FunctionArgument { .. } => false,
@@ -308,10 +342,16 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn push_type(&mut self, ty: NagaType) -> Handle<NagaType> {
+        #[cfg(feature = "print")]
+        println!("push_type");
+
         self.types.insert(ty, Span::UNDEFINED)
     }
 
     fn flush_expressions(&mut self) {
+        #[cfg(feature = "print")]
+        println!("flush_expressions");
+
         let mut iter = self.queue_mut().drain(..);
         if let Some(first) = iter.next() {
             let last = iter.last().unwrap_or_else(|| first);
@@ -323,13 +363,29 @@ impl<'a> NagaWriter<'a> {
         &mut self,
         local: LocalVariable,
     ) -> (Handle<LocalVariable>, Handle<Expression>) {
+        #[cfg(feature = "print")]
+        println!("push_local_variable");
+
         let local = self.local_variables_mut().append(local, Span::UNDEFINED);
         let pointer = self.push_expression(Expression::LocalVariable(local));
         self.pointers_mut().insert(local, pointer);
         (local, pointer)
     }
 
+    fn get_input_type(&self, id: &Identifier) -> &elysian_core::ir::module::Type {
+        #[cfg(feature = "print")]
+        println!("get_input_type");
+
+        self.input
+            .types
+            .get(id)
+            .unwrap_or_else(|| panic!("No input type for {}", id.name()))
+    }
+
     fn functions_to_naga(&mut self) {
+        #[cfg(feature = "print")]
+        println!("functions_to_naga");
+
         let handles = self
             .input
             .function_definitions
@@ -343,8 +399,8 @@ impl<'a> NagaWriter<'a> {
                                 .inputs
                                 .iter()
                                 .map(|input| FunctionArgument {
-                                    name: Some(input.prop.name().to_string()),
-                                    ty: self.get_type(input.prop.ty().name()).0,
+                                    name: Some(input.id.name().to_string()),
+                                    ty: self.get_type(self.get_input_type(&input.id).name()).0,
                                     binding: None,
                                 })
                                 .collect(),
@@ -372,8 +428,8 @@ impl<'a> NagaWriter<'a> {
 
             for (i, input_def) in def.inputs.iter().enumerate() {
                 let (_, local_ptr) = self.push_local_variable(LocalVariable {
-                    name: Some(input_def.prop.name().to_string()),
-                    ty: self.get_type(input_def.prop.ty().name()).0,
+                    name: Some(input_def.id.name().to_string()),
+                    ty: self.get_type(self.get_input_type(&input_def.id).name()).0,
                     init: None,
                 });
 
@@ -396,14 +452,27 @@ impl<'a> NagaWriter<'a> {
         }
     }
 
-    fn access_index(base: Handle<Expression>, prev: &Property, next: &Property) -> Expression {
+    fn access_index(
+        &self,
+        base: Handle<Expression>,
+        prev: &Identifier,
+        next: &Identifier,
+    ) -> Expression {
+        #[cfg(feature = "print")]
+        println!("access_index");
+
         Expression::AccessIndex {
             base,
-            index: match prev.ty() {
-                ElysianType::Struct(s) => s
+            index: match self.get_input_type(prev) {
+                ElysianType::Struct(s) => self
+                    .input
+                    .struct_definitions
+                    .iter()
+                    .find(|cand| cand.id == *s)
+                    .unwrap_or_else(|| panic!("No struct definition for {}", prev.name()))
                     .fields
                     .iter()
-                    .position(|field| field.prop == *next)
+                    .position(|field| field.id == *next)
                     .unwrap_or_else(|| panic!("No field {next:#?} for struct {s:#?}"))
                     as u32,
                 t => panic!("Not a struct: {t:#?}"),
@@ -412,6 +481,9 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn stmt_to_naga(&mut self, stmt: &Stmt) {
+        #[cfg(feature = "print")]
+        println!("stmt_to_naga");
+
         match stmt {
             Stmt::Block(block) => block.0.iter().for_each(|t| self.stmt_to_naga(t)),
             Stmt::Bind { prop, expr } => {
@@ -420,7 +492,7 @@ impl<'a> NagaWriter<'a> {
                 } else {
                     let (_, local_ptr) = self.push_local_variable(naga::LocalVariable {
                         name: Some(prop.name().to_string()),
-                        ty: self.get_type(prop.ty().name()).0,
+                        ty: self.get_type(self.get_input_type(prop).name()).0,
                         init: None,
                     });
                     local_ptr
@@ -445,7 +517,7 @@ impl<'a> NagaWriter<'a> {
                 };
 
                 let (_, pointer) = iter.fold((base.clone(), base_expr), |(prev, expr), next| {
-                    let expr = self.push_expression(Self::access_index(expr, &prev, next));
+                    let expr = self.push_expression(self.access_index(expr, &prev, next));
 
                     (next.clone(), expr)
                 });
@@ -497,7 +569,10 @@ impl<'a> NagaWriter<'a> {
         }
     }
 
-    fn naga_default(ty: &ElysianType) -> Value {
+    fn naga_default(&self, ty: &ElysianType) -> Value {
+        #[cfg(feature = "print")]
+        println!("naga_default");
+
         match ty {
             ElysianType::Boolean => Value::Boolean(false),
             ElysianType::Number(n) => match n {
@@ -507,8 +582,19 @@ impl<'a> NagaWriter<'a> {
             },
             ElysianType::Struct(s) => {
                 let mut out = Struct::new(s.clone());
-                for field in s.fields.iter() {
-                    out.set_mut(field.prop.clone(), Self::naga_default(field.prop.ty()));
+                for field in self
+                    .input
+                    .struct_definitions
+                    .iter()
+                    .find(|cand| cand.id == *s)
+                    .unwrap()
+                    .fields
+                    .iter()
+                {
+                    out.set_mut(
+                        field.id.clone(),
+                        self.naga_default(self.get_input_type(&field.id)),
+                    );
                 }
                 Value::Struct(out)
             }
@@ -516,19 +602,29 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn expr_to_naga(&mut self, expr: &Expr) -> Handle<Expression> {
+        #[cfg(feature = "print")]
+        println!("expr_to_naga");
+
         match expr {
             Expr::Literal(v) => self.value_to_naga(v),
             Expr::Struct(def, members) => {
-                let components = def
+                let components = self
+                    .input
+                    .struct_definitions
+                    .iter()
+                    .find(|cand| cand.id == *def)
+                    .unwrap()
                     .fields
                     .iter()
                     .map(|field| -> Expr {
-                        if let Some(member) = members.get(&field.prop) {
+                        if let Some(member) = members.get(&field.id) {
                             member.clone()
                         } else {
-                            Expr::Literal(Self::naga_default(field.prop.ty()))
+                            Expr::Literal(self.naga_default(&self.get_input_type(&field.id)))
                         }
                     })
+                    .collect::<Vec<_>>()
+                    .into_iter()
                     .map(|member| self.expr_to_naga(&member))
                     .collect();
 
@@ -553,7 +649,7 @@ impl<'a> NagaWriter<'a> {
                 };
 
                 let (_, expr) = iter.fold((base.clone(), base_expr), |(prev, expr), next| {
-                    let access = self.push_expression(Self::access_index(expr, &prev, next));
+                    let access = self.push_expression(self.access_index(expr, &prev, next));
                     (next.clone(), access)
                 });
 
@@ -593,8 +689,8 @@ impl<'a> NagaWriter<'a> {
             | Expr::Div(lhs, rhs)
             | Expr::Lt(lhs, rhs)
             | Expr::Gt(lhs, rhs) => {
-                let type_l = lhs.ty();
-                let type_r = rhs.ty();
+                let type_l = lhs.ty(&self.input.function_definitions, &self.input.types);
+                let type_r = rhs.ty(&self.input.function_definitions, &self.input.types);
 
                 let invalid = |a, b| format!("Invalid Binary Op {}, {}", a, b);
 
@@ -736,6 +832,9 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn number_to_naga(number: &Number) -> Expression {
+        #[cfg(feature = "print")]
+        println!("number_to_naga");
+
         match number {
             Number::UInt(u) => Expression::Literal(Literal::U32(*u as u32)),
             Number::SInt(i) => Expression::Literal(Literal::I32(*i as i32)),
@@ -744,16 +843,27 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn value_to_naga(&mut self, value: &Value) -> Handle<Expression> {
+        #[cfg(feature = "print")]
+        println!("value_to_naga");
+
         match value {
             Value::Boolean(b) => self.push_expression(Expression::Literal(Literal::Bool(*b))),
             Value::Number(n) => self.push_expression(Self::number_to_naga(n)),
             Value::Struct(s) => {
-                let ty = self.get_type(s.def.name()).0;
+                let ty = self.get_type(s.id.name()).0;
 
                 let mut components = vec![];
 
-                for field in s.def.fields.iter() {
-                    let v = s.get(&field.prop);
+                for field in self
+                    .input
+                    .struct_definitions
+                    .iter()
+                    .find(|cand| cand.id == s.id)
+                    .unwrap_or_else(|| panic!("No struct definition for {}", s.id.name()))
+                    .fields
+                    .iter()
+                {
+                    let v = s.get(&field.id);
                     let v = self.value_to_naga(&v);
                     components.push(v);
                 }
@@ -766,6 +876,16 @@ impl<'a> NagaWriter<'a> {
     }
 
     fn shadertoy_entry_point(&mut self) -> EntryPoint {
+        #[cfg(feature = "print")]
+        println!("shadertoy_entry_point");
+
+        let context_struct = self
+            .input
+            .struct_definitions
+            .iter()
+            .find(|cand| cand.id == CONTEXT)
+            .unwrap();
+
         self.block_stack.push(NagaBlock::new());
         self.expressions = Some(ExpressionQueue::default());
         self.local_variables = Some(LocalVariableStore::default());
@@ -828,12 +948,46 @@ impl<'a> NagaWriter<'a> {
 
         let position_2d = self.push_expression(Expression::AccessIndex {
             base: context_ptr,
-            index: 0,
+            index: context_struct
+                .fields
+                .iter()
+                .position(|field| field.id == POSITION_2D)
+                .unwrap() as u32,
         });
 
         self.push_statement(Statement::Store {
             pointer: position_2d,
             value: uv_expr,
+        });
+
+        let aspect = self.push_expression(Expression::AccessIndex {
+            base: context_ptr,
+            index: context_struct
+                .fields
+                .iter()
+                .position(|field| field.id == ASPECT)
+                .unwrap() as u32,
+        });
+
+        let resolution_x = self.push_expression(Expression::AccessIndex {
+            base: resolution_xy,
+            index: 0,
+        });
+
+        let resolution_y = self.push_expression(Expression::AccessIndex {
+            base: resolution_xy,
+            index: 1,
+        });
+
+        let aspect_expr = self.push_expression(Expression::Binary {
+            op: BinaryOperator::Divide,
+            left: resolution_x,
+            right: resolution_y,
+        });
+
+        self.push_statement(Statement::Store {
+            pointer: aspect,
+            value: aspect_expr,
         });
 
         let context = self.push_expression(Expression::Load {
@@ -855,7 +1009,11 @@ impl<'a> NagaWriter<'a> {
 
         let color_ptr = self.push_expression(Expression::AccessIndex {
             base: context_ptr,
-            index: 10,
+            index: context_struct
+                .fields
+                .iter()
+                .position(|field| field.id == COLOR)
+                .unwrap() as u32,
         });
 
         let color = self.push_expression(Expression::Load { pointer: color_ptr });

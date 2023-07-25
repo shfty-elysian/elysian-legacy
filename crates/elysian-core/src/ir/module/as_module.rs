@@ -2,19 +2,25 @@ use std::{
     borrow::Cow,
     collections::{hash_map::RandomState, HashSet},
     fmt::Debug,
+    sync::OnceLock,
 };
 
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
+use uuid::Uuid;
 
 use crate::ir::{
     as_ir::HashIR,
-    ast::{Block, Expr, Identifier, Property, Stmt, CONTEXT},
+    ast::{
+        Block, Expr, Identifier, Property, Stmt, CONTEXT, MATRIX2, MATRIX2_STRUCT, MATRIX3,
+        MATRIX3_STRUCT, MATRIX4, MATRIX4_STRUCT, VECTOR2, VECTOR2_STRUCT, VECTOR3, VECTOR3_STRUCT,
+        VECTOR4, VECTOR4_STRUCT,
+    },
     module::FieldDefinition,
 };
 
-use super::{FunctionDefinition, Module, SpecializationData, StructDefinition};
+use super::{FunctionDefinition, Module, SpecializationData, StructDefinition, Type};
 
-fn expr_props(expr: &Expr) -> Vec<Property> {
+fn expr_props(expr: &Expr) -> Vec<Identifier> {
     match expr {
         Expr::Struct(_, members) => members.values().flat_map(expr_props).collect(),
         Expr::Read(path) => {
@@ -51,7 +57,7 @@ fn expr_props(expr: &Expr) -> Vec<Property> {
     }
 }
 
-fn stmt_props(stmt: &Stmt) -> Vec<Property> {
+fn stmt_props(stmt: &Stmt) -> Vec<Identifier> {
     match stmt {
         Stmt::Block(block) => block.0.iter().flat_map(stmt_props).collect(),
         Stmt::Bind { expr, .. } => expr_props(expr),
@@ -87,52 +93,151 @@ fn stmt_props(stmt: &Stmt) -> Vec<Property> {
     }
 }
 
-fn block_props(block: &Block) -> Vec<Property> {
-    let mut props = IndexSet::<Property, RandomState>::default();
+fn block_props(block: &Block) -> Vec<Identifier> {
+    let mut props = IndexSet::<Identifier, RandomState>::default();
     for stmt in block.0.iter() {
         props.extend(stmt_props(stmt));
     }
     props.into_iter().collect()
 }
 
+/// Distributed slice of Identifier -> Type pairs
+#[linkme::distributed_slice]
+pub static PROPERTIES: [Property] = [..];
+
+pub static PROPERTIES_MAP: OnceLock<IndexMap<Identifier, Type>> = OnceLock::new();
+
+pub fn properties() -> &'static IndexMap<Identifier, Type> {
+    PROPERTIES_MAP.get_or_init(|| {
+        let props: IndexMap<_, _> = PROPERTIES
+            .into_iter()
+            .map(|prop| (prop.id.clone(), prop.ty.clone()))
+            .collect();
+
+        for (i, (id, _)) in props.iter().enumerate() {
+            if let Some((_, (cand, _))) =
+                props
+                    .iter()
+                    .enumerate()
+                    .filter(|(u, _)| i != *u)
+                    .find(|(_, (cand, _))| {
+                        let id = id.uuid();
+                        let cand = cand.uuid();
+                        let nil = Uuid::nil();
+                        if *id == nil && *cand == nil {
+                            return false;
+                        }
+
+                        id == cand
+                    })
+            {
+                panic!(
+                    "Properties: UUID Collision between {} and {}",
+                    cand.name(),
+                    id.name()
+                )
+            }
+        }
+
+        props
+    })
+}
+
+#[linkme::distributed_slice(PROPERTIES)]
+static VECTOR2_PROP: Property = Property {
+    id: VECTOR2,
+    ty: Type::Struct(VECTOR2),
+};
+
+#[linkme::distributed_slice(PROPERTIES)]
+static VECTOR3_PROP: Property = Property {
+    id: VECTOR3,
+    ty: Type::Struct(VECTOR3),
+};
+
+#[linkme::distributed_slice(PROPERTIES)]
+static VECTOR4_PROP: Property = Property {
+    id: VECTOR4,
+    ty: Type::Struct(VECTOR4),
+};
+
+#[linkme::distributed_slice(PROPERTIES)]
+static MATRIX2_PROP: Property = Property {
+    id: MATRIX2,
+    ty: Type::Struct(MATRIX2),
+};
+
+#[linkme::distributed_slice(PROPERTIES)]
+static MATRIX3_PROP: Property = Property {
+    id: MATRIX3,
+    ty: Type::Struct(MATRIX3),
+};
+
+#[linkme::distributed_slice(PROPERTIES)]
+static MATRIX4_PROP: Property = Property {
+    id: MATRIX4,
+    ty: Type::Struct(MATRIX4),
+};
+
 pub trait AsModule: 'static + Debug + HashIR {
     fn module(&self, spec: &SpecializationData) -> Module {
+        let types: IndexMap<_, _> = properties().clone();
+
         let entry_point = self.entry_point();
-        let mut functions = self.functions(spec, &entry_point);
+        let mut functions = self.functions(spec, &types, &entry_point);
 
         let mut set = HashSet::new();
         functions.retain(|x| set.insert(x.id.clone()));
 
-        let mut props = IndexSet::<Property, RandomState>::default();
+        let mut props = IndexSet::<Identifier, RandomState>::default();
         for function in functions.iter() {
             props.extend(block_props(&function.block));
         }
 
         let context_struct = StructDefinition {
-            id: CONTEXT.id().clone(),
+            id: CONTEXT,
             public: true,
             fields: Cow::Owned(
                 props
                     .into_iter()
-                    .map(|prop| FieldDefinition { prop, public: true })
+                    .map(|id| FieldDefinition { id, public: true })
                     .collect(),
             ),
         };
 
+        let struct_definitions = vec![
+            VECTOR2_STRUCT.clone(),
+            VECTOR3_STRUCT.clone(),
+            VECTOR4_STRUCT.clone(),
+            MATRIX2_STRUCT.clone(),
+            MATRIX3_STRUCT.clone(),
+            MATRIX4_STRUCT.clone(),
+            context_struct,
+        ]
+        .into_iter()
+        .chain(self.structs())
+        .collect();
+
         Module {
+            types,
             entry_point,
-            struct_definitions: self.structs(),
+            struct_definitions,
             function_definitions: functions,
         }
     }
 
     fn entry_point(&self) -> Identifier;
+
     fn functions(
         &self,
         spec: &SpecializationData,
+        tys: &IndexMap<Identifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<FunctionDefinition>;
-    fn structs(&self) -> Vec<StructDefinition>;
+
+    fn structs(&self) -> Vec<StructDefinition> {
+        vec![]
+    }
 }
 
 pub type DynAsModule = Box<dyn AsModule>;
@@ -149,9 +254,10 @@ impl AsModule for DynAsModule {
     fn functions(
         &self,
         spec: &SpecializationData,
+        tys: &IndexMap<Identifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<FunctionDefinition> {
-        (**self).functions(spec, entry_point)
+        (**self).functions(spec, tys, entry_point)
     }
 
     fn structs(&self) -> Vec<StructDefinition> {

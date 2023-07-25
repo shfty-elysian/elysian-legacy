@@ -34,12 +34,14 @@
   
   DONE: Implemented as NagaWriter
 
-===============================================================================================
-
 * Iteration pipeline
   * Visualization via bevy requires textual preprocessing to handle bind groups, builtins, etc.
   * Practical approach is probably to generate a WGSL / GLSL function,
     then feed that into a bevy Shader
   * Perhaps use shadertoy? Likely easier than rigging up the corresponding bevy machinery.
   * Eventually, create a small winit + wgpu viewer that renders to a full-screen quad
+
+  DONE: Implemented via postprocessing in elysian-shadertoy module
+
+===============================================================================================
 

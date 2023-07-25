@@ -1,19 +1,20 @@
 use std::{
     fmt::Debug,
-    hash::{Hash, Hasher}, borrow::Cow,
+    hash::{Hash, Hasher},
 };
 
 use elysian_core::{
-    ast::modify::CONTEXT_STRUCT,
+    ast::combine::{LEFT, RIGHT},
     ir::{
         as_ir::Domains,
         ast::{
             vector2, vector3, Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite,
-            Number, CONTEXT, DISTANCE, GRADIENT_2D, GRADIENT_3D, LEFT, RIGHT, VECTOR2_STRUCT, X, Y,
+            Number, CONTEXT, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, X, Y,
         },
-        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
+        module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
     },
 };
+use indexmap::IndexMap;
 
 use crate::modify::{Translate, TRANSLATE};
 
@@ -44,17 +45,18 @@ impl AsModule for CentralDiffGradient {
     fn functions(
         &self,
         spec: &SpecializationData,
+        tys: &IndexMap<Identifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let field_entry_point = self.field.entry_point();
 
-        let (gradient, vec_x, vec_y) = if spec.contains(GRADIENT_2D.id()) {
+        let (gradient, vec_x, vec_y) = if spec.contains(&GRADIENT_2D) {
             (
                 GRADIENT_2D,
                 vector2([1.0, 0.0]).literal(),
                 vector2([0.0, 1.0]).literal(),
             )
-        } else if spec.contains(GRADIENT_3D.id()) {
+        } else if spec.contains(&GRADIENT_3D) {
             (
                 GRADIENT_3D,
                 vector3([1.0, 0.0, 0.0]).literal(),
@@ -63,16 +65,16 @@ impl AsModule for CentralDiffGradient {
         } else {
             return self
                 .field
-                .functions(spec, &field_entry_point)
+                .functions(spec, tys, &field_entry_point)
                 .into_iter()
                 .chain([FunctionDefinition {
                     id: entry_point.clone(),
                     public: true,
                     inputs: vec![InputDefinition {
-                        prop: CONTEXT,
+                        id: CONTEXT,
                         mutable: true,
                     }],
-                    output: CONTEXT_STRUCT.clone(),
+                    output: CONTEXT,
                     block: [CONTEXT.read().output()].block(),
                 }])
                 .collect();
@@ -107,16 +109,16 @@ impl AsModule for CentralDiffGradient {
         );
 
         self.field
-            .functions(spec, &field_entry_point)
+            .functions(spec, tys, &field_entry_point)
             .into_iter()
             .chain([FunctionDefinition {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: true,
                 }],
-                output: CONTEXT_STRUCT.clone(),
+                output: CONTEXT.clone(),
                 block: [
                     CONTEXT.bind(field_entry_point.call(CONTEXT.read())),
                     LEFT.bind(expr_lx),
@@ -126,7 +128,7 @@ impl AsModule for CentralDiffGradient {
                     RIGHT.bind(expr_ry),
                     Y.bind([LEFT, DISTANCE].read() - [RIGHT, DISTANCE].read()),
                     [CONTEXT, gradient].write(Expr::Struct(
-                        Cow::Borrowed(VECTOR2_STRUCT),
+                        VECTOR2,
                         [(X, X.read()), (Y, Y.read())].into_iter().collect(),
                     )),
                     CONTEXT.read().output(),

@@ -4,12 +4,8 @@ use rust_gpu_bridge::{
 };
 use tracing::instrument;
 
-use crate::ir::{
-    ast::{Property, Value},
-    module::StructDefinition,
-};
+use crate::ir::ast::{Identifier, Value};
 use std::{
-    borrow::Cow,
     collections::BTreeMap,
     fmt::{Debug, Display},
     hash::Hash,
@@ -17,15 +13,14 @@ use std::{
 };
 
 use super::{
-    Number, MATRIX2_STRUCT, MATRIX3_STRUCT, MATRIX4_STRUCT, VECTOR2_STRUCT, VECTOR3_STRUCT,
-    VECTOR4_STRUCT, W, W_AXIS_4, X, X_AXIS_2, X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4,
-    Z, Z_AXIS_3, Z_AXIS_4,
+    Number, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
+    X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
 };
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
 pub struct Struct {
-    pub def: Cow<'static, StructDefinition>,
-    pub members: BTreeMap<Property, Value>,
+    pub id: Identifier,
+    pub members: BTreeMap<Identifier, Value>,
 }
 
 impl Display for Struct {
@@ -40,43 +35,43 @@ impl Display for Struct {
 }
 
 impl Struct {
-    pub fn new(def: Cow<'static, StructDefinition>) -> Self {
+    pub fn new(id: Identifier) -> Self {
         Struct {
-            def,
+            id,
             members: Default::default(),
         }
     }
-    pub fn try_get_ref(&self, key: &Property) -> Option<&Value> {
+    pub fn try_get_ref(&self, key: &Identifier) -> Option<&Value> {
         self.members.get(key)
     }
 
-    pub fn try_get_mut(&mut self, key: &Property) -> Option<&mut Value> {
+    pub fn try_get_mut(&mut self, key: &Identifier) -> Option<&mut Value> {
         self.members.get_mut(key)
     }
 
-    pub fn set_mut(&mut self, key: Property, t: Value) {
+    pub fn set_mut(&mut self, key: Identifier, t: Value) {
         self.members.insert(key, t);
     }
 
-    pub fn get(&self, key: &Property) -> Value {
+    pub fn get(&self, key: &Identifier) -> Value {
         self.get_ref(key).clone()
     }
 
-    fn get_ref(&self, key: &Property) -> &Value {
+    fn get_ref(&self, key: &Identifier) -> &Value {
         self.try_get_ref(key)
             .unwrap_or_else(|| panic!("Invalid key {key:#?}"))
     }
 
-    pub fn get_mut(&mut self, key: &Property) -> &mut Value {
+    pub fn get_mut(&mut self, key: &Identifier) -> &mut Value {
         self.try_get_mut(key)
             .unwrap_or_else(|| panic!("Invalid key {key:#?}"))
     }
 
-    pub fn try_get(&self, key: &Property) -> Option<Value> {
+    pub fn try_get(&self, key: &Identifier) -> Option<Value> {
         self.try_get_ref(key).cloned()
     }
 
-    pub fn set(mut self, key: Property, t: Value) -> Self
+    pub fn set(mut self, key: Identifier, t: Value) -> Self
     where
         Self: Sized,
     {
@@ -85,14 +80,14 @@ impl Struct {
     }
 
     #[instrument]
-    pub fn remove(&mut self, key: &Property) -> Value {
+    pub fn remove(&mut self, key: &Identifier) -> Value {
         self.members
             .remove(key)
             .unwrap_or_else(|| panic!("Invalid key {key:?}"))
     }
 
     #[instrument]
-    pub fn get_context(&self, key: &Property) -> Struct {
+    pub fn get_context(&self, key: &Identifier) -> Struct {
         let Value::Struct(c) = self.get_ref(key) else {
         panic!("Value is not a context")
     };
@@ -101,7 +96,7 @@ impl Struct {
     }
 
     #[instrument]
-    pub fn set_number(mut self, key: Property, n: Number) -> Self {
+    pub fn set_number(mut self, key: Identifier, n: Number) -> Self {
         self.members.insert(key, Value::Number(n));
         self
     }
@@ -155,8 +150,8 @@ impl Add<Struct> for Struct {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        assert!(self.def == rhs.def);
-        match self.def.name() {
+        assert!(self.id == rhs.id);
+        match self.id.name() {
             "Vector2" => (Vec2::from(self) + Vec2::from(rhs)).into(),
             "Vector3" => (Vec3::from(self) + Vec3::from(rhs)).into(),
             "Vector4" => (Vec4::from(self) + Vec4::from(rhs)).into(),
@@ -169,8 +164,8 @@ impl Sub<Struct> for Struct {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        assert!(self.def == rhs.def);
-        match self.def.name() {
+        assert!(self.id == rhs.id);
+        match self.id.name() {
             "Vector2" => (Vec2::from(self) - Vec2::from(rhs)).into(),
             "Vector3" => (Vec3::from(self) - Vec3::from(rhs)).into(),
             "Vector4" => (Vec4::from(self) - Vec4::from(rhs)).into(),
@@ -183,7 +178,7 @@ impl Mul<Struct> for Struct {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        match (self.def.name(), rhs.def.name()) {
+        match (self.id.name(), rhs.id.name()) {
             ("Vector2", "Vector2") => (Vec2::from(self) * Vec2::from(rhs)).into(),
             ("Vector3", "Vector3") => (Vec3::from(self) * Vec3::from(rhs)).into(),
             ("Vector4", "Vector4") => (Vec4::from(self) * Vec4::from(rhs)).into(),
@@ -202,8 +197,8 @@ impl Div<Struct> for Struct {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        assert!(self.def == rhs.def);
-        match self.def.name() {
+        assert!(self.id == rhs.id);
+        match self.id.name() {
             "Vector2" => (Vec2::from(self) + Vec2::from(rhs)).into(),
             "Vector3" => (Vec3::from(self) + Vec3::from(rhs)).into(),
             "Vector4" => (Vec4::from(self) + Vec4::from(rhs)).into(),
@@ -216,8 +211,8 @@ impl Dot for Struct {
     type Output = Number;
 
     fn dot(self, rhs: Self) -> Self::Output {
-        assert!(self.def == rhs.def);
-        match self.def.name() {
+        assert!(self.id == rhs.id);
+        match self.id.name() {
             "Vector2" => Vec2::from(self).dot(Vec2::from(rhs)).into(),
             "Vector3" => Vec3::from(self).dot(Vec3::from(rhs)).into(),
             "Vector4" => Vec4::from(self).dot(Vec4::from(rhs)).into(),
@@ -228,8 +223,8 @@ impl Dot for Struct {
 
 impl Min for Struct {
     fn min(self, rhs: Self) -> Self {
-        assert!(self.def == rhs.def);
-        match self.def.name() {
+        assert!(self.id == rhs.id);
+        match self.id.name() {
             "Vector2" => Vec2::from(self).min(Vec2::from(rhs)).into(),
             "Vector3" => Vec3::from(self).min(Vec3::from(rhs)).into(),
             "Vector4" => Vec4::from(self).min(Vec4::from(rhs)).into(),
@@ -240,8 +235,8 @@ impl Min for Struct {
 
 impl Max for Struct {
     fn max(self, rhs: Self) -> Self {
-        assert!(self.def == rhs.def);
-        match self.def.name() {
+        assert!(self.id == rhs.id);
+        match self.id.name() {
             "Vector2" => Vec2::from(self).max(Vec2::from(rhs)).into(),
             "Vector3" => Vec3::from(self).max(Vec3::from(rhs)).into(),
             "Vector4" => Vec4::from(self).max(Vec4::from(rhs)).into(),
@@ -254,8 +249,8 @@ impl Mix for Struct {
     type T = Number;
 
     fn mix(self, to: Self, t: Self::T) -> Self {
-        assert!(self.def == to.def);
-        match self.def.name() {
+        assert!(self.id == to.id);
+        match self.id.name() {
             "Vector2" => Vec2::from(self).mix(Vec2::from(to), t.into()).into(),
             "Vector3" => Vec3::from(self).mix(Vec3::from(to), t.into()).into(),
             "Vector4" => Vec4::from(self).mix(Vec4::from(to), t.into()).into(),
@@ -268,7 +263,7 @@ impl Neg for Struct {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        match self.def.name() {
+        match self.id.name() {
             "Vector2" => Vec2::from(self).neg().into(),
             "Vector3" => Vec3::from(self).neg().into(),
             "Vector4" => Vec4::from(self).neg().into(),
@@ -279,7 +274,7 @@ impl Neg for Struct {
 
 impl Abs for Struct {
     fn abs(self) -> Self {
-        match self.def.name() {
+        match self.id.name() {
             "Vector2" => Vec2::from(self).abs().into(),
             "Vector3" => Vec3::from(self).abs().into(),
             "Vector4" => Vec4::from(self).abs().into(),
@@ -290,7 +285,7 @@ impl Abs for Struct {
 
 impl Sign for Struct {
     fn sign(self) -> Self {
-        match self.def.name() {
+        match self.id.name() {
             "Vector2" => Vec2::from(self).sign().into(),
             "Vector3" => Vec3::from(self).sign().into(),
             "Vector4" => Vec4::from(self).sign().into(),
@@ -303,7 +298,7 @@ impl Length for Struct {
     type Output = Number;
 
     fn length(self) -> Self::Output {
-        match self.def.name() {
+        match self.id.name() {
             "Vector2" => Vec2::from(self).length().into(),
             "Vector3" => Vec3::from(self).length().into(),
             "Vector4" => Vec4::from(self).length().into(),
@@ -314,7 +309,7 @@ impl Length for Struct {
 
 impl Normalize for Struct {
     fn normalize(self) -> Self {
-        match self.def.name() {
+        match self.id.name() {
             "Vector2" => Vec2::from(self).normalize_or_zero().into(),
             "Vector3" => Vec3::from(self).normalize_or_zero().into(),
             "Vector4" => Vec4::from(self).normalize_or_zero().into(),
@@ -325,7 +320,7 @@ impl Normalize for Struct {
 
 impl From<Struct> for Vec2 {
     fn from(value: Struct) -> Self {
-        match value.def.name() {
+        match value.id.name() {
             "Vector2" => Vec2::new(value.get(&X).into(), value.get(&Y).into()),
             _ => panic!("Struct is not a Vec2"),
         }
@@ -334,7 +329,7 @@ impl From<Struct> for Vec2 {
 
 impl From<Struct> for Vec3 {
     fn from(value: Struct) -> Self {
-        match value.def.name() {
+        match value.id.name() {
             "Vector3" => Vec3::new(
                 value.get(&X).into(),
                 value.get(&Y).into(),
@@ -347,7 +342,7 @@ impl From<Struct> for Vec3 {
 
 impl From<Struct> for Vec4 {
     fn from(value: Struct) -> Self {
-        match value.def.name() {
+        match value.id.name() {
             "Vector4" => Vec4::new(
                 value.get(&X).into(),
                 value.get(&Y).into(),
@@ -361,7 +356,7 @@ impl From<Struct> for Vec4 {
 
 impl From<Struct> for Mat2 {
     fn from(value: Struct) -> Self {
-        match value.def.name() {
+        match value.id.name() {
             "Matrix2" => Mat2::from_cols(value.get(&X_AXIS_2).into(), value.get(&Y_AXIS_2).into()),
             _ => panic!("Struct is not a Mat2"),
         }
@@ -370,7 +365,7 @@ impl From<Struct> for Mat2 {
 
 impl From<Struct> for Mat3 {
     fn from(value: Struct) -> Self {
-        match value.def.name() {
+        match value.id.name() {
             "Matrix3" => Mat3::from_cols(
                 value.get(&X_AXIS_3).into(),
                 value.get(&Y_AXIS_3).into(),
@@ -383,7 +378,7 @@ impl From<Struct> for Mat3 {
 
 impl From<Struct> for Mat4 {
     fn from(value: Struct) -> Self {
-        match value.def.name() {
+        match value.id.name() {
             "Matrix4" => Mat4::from_cols(
                 value.get(&X_AXIS_4).into(),
                 value.get(&Y_AXIS_4).into(),
@@ -397,7 +392,7 @@ impl From<Struct> for Mat4 {
 
 impl From<Vec2> for Struct {
     fn from(value: Vec2) -> Self {
-        Struct::new(Cow::Borrowed(VECTOR2_STRUCT))
+        Struct::new(VECTOR2)
             .set(X, value.x.into())
             .set(Y, value.y.into())
     }
@@ -405,7 +400,7 @@ impl From<Vec2> for Struct {
 
 impl From<Vec3> for Struct {
     fn from(value: Vec3) -> Self {
-        Struct::new(Cow::Borrowed(VECTOR3_STRUCT))
+        Struct::new(VECTOR3)
             .set(X, value.x.into())
             .set(Y, value.y.into())
             .set(Z, value.z.into())
@@ -414,7 +409,7 @@ impl From<Vec3> for Struct {
 
 impl From<Vec4> for Struct {
     fn from(value: Vec4) -> Self {
-        Struct::new(Cow::Borrowed(VECTOR4_STRUCT))
+        Struct::new(VECTOR4)
             .set(X, value.x.into())
             .set(Y, value.y.into())
             .set(Z, value.z.into())
@@ -424,7 +419,7 @@ impl From<Vec4> for Struct {
 
 impl From<Mat2> for Struct {
     fn from(value: Mat2) -> Self {
-        Struct::new(Cow::Borrowed(MATRIX2_STRUCT))
+        Struct::new(MATRIX2)
             .set(X_AXIS_2, value.x_axis.into())
             .set(Y_AXIS_2, value.y_axis.into())
     }
@@ -432,7 +427,7 @@ impl From<Mat2> for Struct {
 
 impl From<Mat3> for Struct {
     fn from(value: Mat3) -> Self {
-        Struct::new(Cow::Borrowed(MATRIX3_STRUCT))
+        Struct::new(MATRIX3)
             .set(X_AXIS_3, value.x_axis.into())
             .set(Y_AXIS_3, value.y_axis.into())
             .set(Z_AXIS_3, value.z_axis.into())
@@ -441,7 +436,7 @@ impl From<Mat3> for Struct {
 
 impl From<Mat4> for Struct {
     fn from(value: Mat4) -> Self {
-        Struct::new(Cow::Borrowed(MATRIX4_STRUCT))
+        Struct::new(MATRIX4)
             .set(X_AXIS_4, value.x_axis.into())
             .set(Y_AXIS_4, value.y_axis.into())
             .set(Z_AXIS_4, value.z_axis.into())

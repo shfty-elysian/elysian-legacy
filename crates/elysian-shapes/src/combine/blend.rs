@@ -1,14 +1,18 @@
 use std::fmt::Debug;
 
 use elysian_core::{
-    ast::{combine::COMBINE_CONTEXT_STRUCT, expr::Expr},
+    ast::{
+        combine::{LEFT, OUT, RIGHT},
+        expr::Expr,
+    },
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
-            Identifier, IntoLiteral, IntoRead, IntoWrite, Property, COMBINE_CONTEXT, DISTANCE,
-            LEFT, NUM, OUT, RIGHT,
+            Identifier, IntoLiteral, IntoRead, IntoWrite, Property, COMBINE_CONTEXT, DISTANCE, NUM,
         },
-        module::{FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type},
+        module::{
+            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, PROPERTIES,
+        },
     },
 };
 
@@ -18,13 +22,18 @@ pub const SMOOTH_INTERSECTION: Identifier =
 pub const SMOOTH_SUBTRACTION: Identifier =
     Identifier::new("smooth_subtraction", 1414822549598552032);
 
-pub const K: Property = Property::new("k", Type::Number(NumericType::Float), 12632115441234896764);
+pub const K: Identifier = Identifier::new("k", 12632115441234896764);
+#[linkme::distributed_slice(PROPERTIES)]
+static K_PROP: Property = Property {
+    id: K,
+    ty: Type::Number(NumericType::Float),
+};
 
 #[derive(Debug, Clone)]
 pub enum Blend {
-    SmoothUnion { prop: Property, k: Expr },
-    SmoothIntersection { prop: Property, k: Expr },
-    SmoothSubtraction { prop: Property, k: Expr },
+    SmoothUnion { prop: Identifier, k: Expr },
+    SmoothIntersection { prop: Identifier, k: Expr },
+    SmoothSubtraction { prop: Identifier, k: Expr },
 }
 
 impl std::hash::Hash for Blend {
@@ -56,22 +65,22 @@ impl AsIR for Blend {
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         vec![FunctionDefinition {
             id: match self {
-                Blend::SmoothUnion { prop, .. } => SMOOTH_UNION.concat(prop.id()),
-                Blend::SmoothIntersection { prop, .. } => SMOOTH_INTERSECTION.concat(prop.id()),
-                Blend::SmoothSubtraction { prop, .. } => SMOOTH_SUBTRACTION.concat(prop.id()),
+                Blend::SmoothUnion { prop, .. } => SMOOTH_UNION.concat(prop),
+                Blend::SmoothIntersection { prop, .. } => SMOOTH_INTERSECTION.concat(prop),
+                Blend::SmoothSubtraction { prop, .. } => SMOOTH_SUBTRACTION.concat(prop),
             },
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: K,
+                    id: K,
                     mutable: false,
                 },
                 InputDefinition {
-                    prop: COMBINE_CONTEXT,
+                    id: COMBINE_CONTEXT,
                     mutable: true,
                 },
             ],
-            output: COMBINE_CONTEXT_STRUCT.clone(),
+            output: COMBINE_CONTEXT,
             block: match self {
                 Blend::SmoothUnion { prop, .. } => {
                     let mut block = vec![
@@ -103,7 +112,7 @@ impl AsIR for Blend {
                     block.into_iter().collect()
                 }
                 Blend::SmoothIntersection { prop, .. } => {
-                    let property: Property = prop.clone().into();
+                    let property: Identifier = prop.clone().into();
 
                     let mut block = vec![
                         NUM.bind(
@@ -132,7 +141,7 @@ impl AsIR for Blend {
                     block.into_iter().collect()
                 }
                 Blend::SmoothSubtraction { prop, .. } => {
-                    let property: Property = prop.clone().into();
+                    let property: Identifier = prop.clone().into();
 
                     let mut block = vec![
                         NUM.bind(
@@ -174,15 +183,15 @@ impl AsIR for Blend {
     ) -> elysian_core::ir::ast::Expr {
         match self {
             Blend::SmoothUnion { prop, k } => elysian_core::ir::ast::Expr::Call {
-                function: SMOOTH_UNION.concat(prop.id()),
+                function: SMOOTH_UNION.concat(prop),
                 args: vec![k.clone().into(), input],
             },
             Blend::SmoothIntersection { prop, k } => elysian_core::ir::ast::Expr::Call {
-                function: SMOOTH_INTERSECTION.concat(prop.id()),
+                function: SMOOTH_INTERSECTION.concat(prop),
                 args: vec![k.clone().into(), input],
             },
             Blend::SmoothSubtraction { prop, k } => elysian_core::ir::ast::Expr::Call {
-                function: SMOOTH_SUBTRACTION.concat(prop.id()),
+                function: SMOOTH_SUBTRACTION.concat(prop),
                 args: vec![k.clone().into(), input],
             },
         }

@@ -1,22 +1,26 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{
-        field::Field,
-        modify::{Modify, CONTEXT_STRUCT},
-    },
+    ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, IntoBlock, IntoRead, IntoWrite, Property, CONTEXT, DISTANCE},
-        module::{FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type},
+        module::{
+            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, PROPERTIES,
+        },
     },
 };
 
 use elysian_core::ast::expr::Expr;
 
 pub const ISOSURFACE: Identifier = Identifier::new("isosurface", 1163045471729794054);
-pub const DIST: Property =
-    Property::new("dist", Type::Number(NumericType::Float), 463524741302033362);
+
+pub const DIST: Identifier = Identifier::new("dist", 463524741302033362);
+#[linkme::distributed_slice(PROPERTIES)]
+static DIST_PROP: Property = Property {
+    id: DIST,
+    ty: Type::Number(NumericType::Float),
+};
 
 pub struct Isosurface {
     pub dist: Expr,
@@ -46,13 +50,13 @@ impl Hash for Isosurface {
 
 impl Domains for Isosurface {
     fn domains() -> Vec<Identifier> {
-        vec![DISTANCE.id().clone()]
+        vec![DISTANCE]
     }
 }
 
 impl AsIR for Isosurface {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let block = if spec.contains(DISTANCE.id()) {
+        let block = if spec.contains(&DISTANCE) {
             [
                 [CONTEXT, DISTANCE].write([CONTEXT, DISTANCE].read() - DIST.read()),
                 CONTEXT.read().output(),
@@ -67,15 +71,15 @@ impl AsIR for Isosurface {
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: DIST,
+                    id: DIST,
                     mutable: false,
                 },
                 InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: true,
                 },
             ],
-            output: CONTEXT_STRUCT.clone(),
+            output: CONTEXT,
             block,
         }]
     }

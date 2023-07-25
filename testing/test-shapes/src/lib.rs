@@ -8,7 +8,7 @@ use elysian_core::{
     },
     ir::{
         as_ir::{AsIR, DynAsIR},
-        ast::{Number, COLOR, DISTANCE, GRADIENT_2D},
+        ast::{Number, COLOR, DISTANCE, GRADIENT_2D, NORMAL, X, Y, Z},
         module::{AsModule, DynAsModule},
     },
 };
@@ -17,7 +17,8 @@ use elysian_shapes::{
     combine::{Blend, Boolean},
     field::{Capsule, Circle, Line, Point, Ring},
     modify::{
-        IntoAspect, IntoElongate, IntoIsosurface, IntoManifold, IntoSet, IntoTranslate, ASPECT,
+        IntoAspect, IntoElongate, IntoGradientNormals, IntoIsosurface, IntoManifold, IntoSet,
+        IntoTranslate, ASPECT,
     },
     raymarch::{March, Raymarch},
 };
@@ -152,17 +153,44 @@ pub fn kettle_bell() -> DynAsModule {
 
 pub fn distance_color() -> Expr {
     Expr::Vector4(
-        Box::new(Expr::Sub(
-            Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
-            Box::new(Expr::Read(DISTANCE)),
+        Box::new(Expr::Mul(
+            Box::new(Expr::Sub(
+                Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
+                Box::new(Expr::Read(vec![DISTANCE])),
+            )),
+            Box::new(Expr::Add(
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Read(vec![NORMAL, X])),
+                    Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
+                )),
+                Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
+            )),
         )),
-        Box::new(Expr::Sub(
-            Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
-            Box::new(Expr::Read(DISTANCE)),
+        Box::new(Expr::Mul(
+            Box::new(Expr::Sub(
+                Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
+                Box::new(Expr::Read(vec![DISTANCE])),
+            )),
+            Box::new(Expr::Add(
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Read(vec![NORMAL, Y])),
+                    Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
+                )),
+                Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
+            )),
         )),
-        Box::new(Expr::Sub(
-            Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
-            Box::new(Expr::Read(DISTANCE)),
+        Box::new(Expr::Mul(
+            Box::new(Expr::Sub(
+                Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
+                Box::new(Expr::Read(vec![DISTANCE])),
+            )),
+            Box::new(Expr::Add(
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Read(vec![NORMAL, Z])),
+                    Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
+                )),
+                Box::new(Expr::Literal(Value::Number(Number::Float(0.5)))),
+            )),
         )),
         Box::new(Expr::Literal(Value::Number(Number::Float(1.0)))),
     )
@@ -209,9 +237,12 @@ pub fn raymarched() -> DynAsModule {
                     ),
                 ]
                 .combine([Box::new(Boolean::Union) as Box<dyn AsIR>])
+                .gradient_normals()
                 .set(COLOR, distance_color()),
             ),
-        }, //.modify().aspect(Expr::Read(ASPECT)),
+        }
+        .modify()
+        .aspect(Expr::Read(vec![ASPECT])),
     )
 }
 

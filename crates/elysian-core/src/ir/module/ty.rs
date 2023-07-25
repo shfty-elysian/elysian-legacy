@@ -1,12 +1,10 @@
-use std::borrow::Cow;
-
-use super::StructDefinition;
+use crate::ir::ast::Identifier;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Type {
     Boolean,
     Number(NumericType),
-    Struct(Cow<'static, StructDefinition>),
+    Struct(Identifier),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -19,9 +17,9 @@ pub enum NumericType {
 impl NumericType {
     pub fn name(&self) -> &'static str {
         match self {
-            NumericType::UInt => "u32",
-            NumericType::SInt => "i32",
-            NumericType::Float => "f32",
+            NumericType::UInt => "UInt",
+            NumericType::SInt => "SInt",
+            NumericType::Float => "Float",
         }
     }
 }
@@ -29,7 +27,7 @@ impl NumericType {
 impl<'a> Type {
     pub fn name(&'a self) -> &'a str {
         match self {
-            Type::Boolean => "bool",
+            Type::Boolean => "Bool",
             Type::Number(n) => n.name(),
             Type::Struct(s) => s.name(),
         }

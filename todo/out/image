@@ -2,8 +2,3 @@
 
 * Generalize context -> color conversion
 
-* Account for aspect ratio
-  * Likely better as a more general abstraction that can be applied by backends
-    * Non-uniform scale modifier over position
-    * Premade context viewport -> aspect ratio expression
-

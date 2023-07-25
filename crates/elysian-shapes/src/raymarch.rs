@@ -1,93 +1,118 @@
 use std::{
-    borrow::Cow,
     fmt::Debug,
     hash::{Hash, Hasher},
 };
 
-use elysian_core::{
-    ast::modify::CONTEXT_STRUCT,
-    ir::{
-        ast::{
-            Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, Property, Stmt,
-            CONTEXT, DISTANCE, MATRIX4_STRUCT, POSITION_2D, POSITION_3D, VECTOR3_STRUCT,
-            VECTOR4_STRUCT, W, X, Y, Z,
-        },
-        module::{
-            AsModule, FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type,
-        },
+use elysian_core::ir::{
+    ast::{
+        Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Number, Property, Stmt,
+        CONTEXT, DISTANCE, MATRIX4, POSITION_2D, POSITION_3D, VECTOR3, VECTOR4, W, X, Y, Z,
+    },
+    module::{
+        AsModule, FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type,
+        PROPERTIES,
     },
 };
 
-pub const RAYMARCH: Identifier = Identifier::new("raymarch", 11670715461129592823);
+pub const RAYMARCH: Identifier = Identifier::new("raymarch", 2862797821569013866);
 
-pub const RAY_FROM_4: Property = Property::new(
-    "ray_from_4",
-    Type::Struct(Cow::Borrowed(VECTOR4_STRUCT)),
-    1031119209943889737,
-);
-pub const RAY_TO_4: Property = Property::new(
-    "ray_to_4",
-    Type::Struct(Cow::Borrowed(VECTOR4_STRUCT)),
-    1362247063737049192,
-);
+pub const RAY_FROM_4: Identifier = Identifier::new("ray_from_4", 1327263451507152945);
+#[linkme::distributed_slice(PROPERTIES)]
+static RAY_FROM_4_PROP: Property = Property {
+    id: RAY_FROM_4,
+    ty: Type::Struct(VECTOR4),
+};
 
-pub const RAY_FROM_3: Property = Property::new(
-    "ray_from_3",
-    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
-    1031119209943889737,
-);
-pub const RAY_TO_3: Property = Property::new(
-    "ray_to_3",
-    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
-    1362247063737049192,
-);
+pub const RAY_TO_4: Identifier = Identifier::new("ray_to_4", 1818903141506024705);
+#[linkme::distributed_slice(PROPERTIES)]
+static RAY_TO_4_PROP: Property = Property {
+    id: RAY_TO_4,
+    ty: Type::Struct(VECTOR4),
+};
 
-pub const RAY_POS: Property = Property::new(
-    "ray_pos",
-    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
-    203470946369255426,
-);
-pub const RAY_DIR: Property = Property::new(
-    "ray_dir",
-    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
-    11883607992066663879,
-);
-pub const T: Property = Property::new("t", Type::Number(NumericType::Float), 93144116760520780);
-pub const INV_PROJECTION: Property = Property::new(
-    "inv_proj",
-    Type::Struct(Cow::Borrowed(MATRIX4_STRUCT)),
-    1835117139336577900,
-);
-pub const STEP_SIZE: Property = Property::new(
-    "step_size",
-    Type::Number(NumericType::Float),
-    7777887281564637643,
-);
-pub const EPSILON: Property = Property::new(
-    "epsilon",
-    Type::Number(NumericType::Float),
-    32338215630771851,
-);
-pub const FRAC_1_K: Property = Property::new(
-    "frac_1_k",
-    Type::Number(NumericType::Float),
-    5512322721559903899,
-);
-pub const CANDIDATE: Property = Property::new(
-    "candidate",
-    Type::Struct(Cow::Borrowed(CONTEXT_STRUCT)),
-    1956157168917067266,
-);
-pub const STEPS: Property = Property::new(
-    "steps",
-    Type::Number(NumericType::UInt),
-    1682585060223888912,
-);
-pub const MAX_STEPS: Property = Property::new(
-    "max_steps",
-    Type::Number(NumericType::UInt),
-    1146747975614382616,
-);
+pub const RAY_FROM_3: Identifier = Identifier::new("ray_from_3", 7265576981511357785);
+#[linkme::distributed_slice(PROPERTIES)]
+static RAY_FROM_3_PROP: Property = Property {
+    id: RAY_FROM_3,
+    ty: Type::Struct(VECTOR3),
+};
+
+pub const RAY_TO_3: Identifier = Identifier::new("ray_to_3", 5483986142139922358);
+#[linkme::distributed_slice(PROPERTIES)]
+static RAY_TO_3_PROP: Property = Property {
+    id: RAY_TO_3,
+    ty: Type::Struct(VECTOR3),
+};
+
+pub const RAY_POS: Identifier = Identifier::new("ray_pos", 203470946369255426);
+#[linkme::distributed_slice(PROPERTIES)]
+static RAY_POS_PROP: Property = Property {
+    id: RAY_POS,
+    ty: Type::Struct(VECTOR3),
+};
+
+pub const RAY_DIR: Identifier = Identifier::new("ray_dir", 11883607992066663879);
+#[linkme::distributed_slice(PROPERTIES)]
+static RAY_DIR_PROP: Property = Property {
+    id: RAY_DIR,
+    ty: Type::Struct(VECTOR3),
+};
+
+pub const T: Identifier = Identifier::new("t", 93144116760520780);
+#[linkme::distributed_slice(PROPERTIES)]
+static T_PROP: Property = Property {
+    id: T,
+    ty: Type::Number(NumericType::Float),
+};
+
+pub const INV_PROJECTION: Identifier = Identifier::new("inv_proj", 1835117139336577900);
+#[linkme::distributed_slice(PROPERTIES)]
+static INV_PROJECTION_PROP: Property = Property {
+    id: INV_PROJECTION,
+    ty: Type::Struct(MATRIX4),
+};
+
+pub const STEP_SIZE: Identifier = Identifier::new("step_size", 7777887281564637643);
+#[linkme::distributed_slice(PROPERTIES)]
+static STEP_SIZE_PROP: Property = Property {
+    id: STEP_SIZE,
+    ty: Type::Number(NumericType::UInt),
+};
+
+pub const EPSILON: Identifier = Identifier::new("epsilon", 32338215630771851);
+#[linkme::distributed_slice(PROPERTIES)]
+static EPSILON_PROP: Property = Property {
+    id: EPSILON,
+    ty: Type::Number(NumericType::Float),
+};
+
+pub const FRAC_1_K: Identifier = Identifier::new("frac_1_k", 5512322721559903899);
+#[linkme::distributed_slice(PROPERTIES)]
+static FRAC_1_K_PROP: Property = Property {
+    id: FRAC_1_K,
+    ty: Type::Number(NumericType::Float),
+};
+
+pub const CANDIDATE: Identifier = Identifier::new("candidate", 1956157168917067266);
+#[linkme::distributed_slice(PROPERTIES)]
+static CANDIDATE_PROP: Property = Property {
+    id: CANDIDATE,
+    ty: Type::Struct(CONTEXT),
+};
+
+pub const STEPS: Identifier = Identifier::new("steps", 1682585060223888912);
+#[linkme::distributed_slice(PROPERTIES)]
+static STEPS_PROP: Property = Property {
+    id: STEPS,
+    ty: Type::Number(NumericType::UInt),
+};
+
+pub const MAX_STEPS: Identifier = Identifier::new("max_steps", 1146747975614382616);
+#[linkme::distributed_slice(PROPERTIES)]
+static MAX_STEPS_PROP: Property = Property {
+    id: MAX_STEPS,
+    ty: Type::Number(NumericType::UInt),
+};
 
 pub enum March {
     Fixed {
@@ -135,13 +160,14 @@ impl AsModule for Raymarch {
     fn functions(
         &self,
         spec: &SpecializationData,
+        tys: &indexmap::IndexMap<Identifier, Type>,
         _: &Identifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        if !spec.contains(POSITION_2D.id()) {
+        if !spec.contains(&POSITION_2D) {
             panic!("Raymarch is only compatible with the 2D Position domain");
         }
 
-        if !spec.contains(DISTANCE.id()) {
+        if !spec.contains(&DISTANCE) {
             panic!("Raymarch requires the Distance domain");
         }
 
@@ -159,7 +185,7 @@ impl AsModule for Raymarch {
             RAY_FROM_4.bind(
                 INV_PROJECTION.read()
                     * Expr::Struct(
-                        Cow::Borrowed(VECTOR4_STRUCT),
+                        VECTOR4,
                         [
                             (X, [CONTEXT, POSITION_2D, X].read()),
                             (Y, [CONTEXT, POSITION_2D, Y].read()),
@@ -171,7 +197,7 @@ impl AsModule for Raymarch {
                     ),
             ),
             RAY_FROM_3.bind(Expr::Struct(
-                Cow::Borrowed(VECTOR3_STRUCT),
+                VECTOR3,
                 [
                     (X, [RAY_FROM_4, X].read() / [RAY_FROM_4, W].read()),
                     (Y, [RAY_FROM_4, Y].read() / [RAY_FROM_4, W].read()),
@@ -183,7 +209,7 @@ impl AsModule for Raymarch {
             RAY_TO_4.bind(
                 INV_PROJECTION.read()
                     * Expr::Struct(
-                        Cow::Borrowed(VECTOR4_STRUCT),
+                        VECTOR4,
                         [
                             (X, [CONTEXT, POSITION_2D, X].read()),
                             (Y, [CONTEXT, POSITION_2D, Y].read()),
@@ -195,7 +221,7 @@ impl AsModule for Raymarch {
                     ),
             ),
             RAY_TO_3.bind(Expr::Struct(
-                Cow::Borrowed(VECTOR3_STRUCT),
+                VECTOR3,
                 [
                     (X, [RAY_TO_4, X].read() / [RAY_TO_4, W].read()),
                     (Y, [RAY_TO_4, Y].read() / [RAY_TO_4, W].read()),
@@ -212,7 +238,7 @@ impl AsModule for Raymarch {
         let mut loop_body = vec![
             RAY_POS.bind(RAY_FROM_3.read() + RAY_DIR.read() * T.read()),
             [CONTEXT, POSITION_3D].write(Expr::Struct(
-                Cow::Borrowed(VECTOR3_STRUCT),
+                VECTOR3,
                 [
                     (X, [RAY_POS, X].read()),
                     (Y, [RAY_POS, Y].read()),
@@ -251,16 +277,16 @@ impl AsModule for Raymarch {
         ]);
 
         self.field
-            .functions(&spec_3d, &field_entry_point)
+            .functions(&spec_3d, tys, &field_entry_point)
             .into_iter()
             .chain([FunctionDefinition {
                 id: RAYMARCH,
                 public: false,
                 inputs: vec![InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: true,
                 }],
-                output: CONTEXT_STRUCT.clone(),
+                output: CONTEXT,
                 block: block.block(),
             }])
             .collect()

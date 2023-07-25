@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 elysian-core = { path = "../elysian-core" }
+indexmap = "2.0.0"
+linkme = "0.3.13"

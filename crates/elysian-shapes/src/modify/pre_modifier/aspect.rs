@@ -1,28 +1,27 @@
-use std::{fmt::Debug, hash::Hash, borrow::Cow};
+use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{
-        field::Field,
-        modify::{Modify, CONTEXT_STRUCT},
-    },
+    ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
             Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, Property, CONTEXT,
-            POSITION_2D, POSITION_3D, VECTOR2_STRUCT, X, Y,
+            POSITION_2D, POSITION_3D, VECTOR2, X, Y,
         },
-        module::{FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type},
+        module::{
+            FunctionDefinition, InputDefinition, NumericType, SpecializationData, Type, PROPERTIES,
+        },
     },
 };
 
 use elysian_core::ast::expr::Expr;
 
-pub const ASPECT_FUNCTION: Identifier = Identifier::new("aspect", 948144044945271613);
-pub const ASPECT: Property = Property::new(
-    "aspect",
-    Type::Number(NumericType::Float),
-    346035631277210970,
-);
+pub const ASPECT: Identifier = Identifier::new("aspect", 346035631277210970);
+#[linkme::distributed_slice(PROPERTIES)]
+static ASPECT_PROP: Property = Property {
+    id: ASPECT,
+    ty: Type::Number(NumericType::Float),
+};
 
 #[derive(Debug, Clone)]
 pub struct Aspect {
@@ -37,31 +36,31 @@ impl Hash for Aspect {
 
 impl Domains for Aspect {
     fn domains() -> Vec<Identifier> {
-        vec![POSITION_2D.id().clone(), POSITION_3D.id().clone()]
+        vec![POSITION_2D, POSITION_3D]
     }
 }
 
 impl AsIR for Aspect {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let aspect = elysian_core::ir::ast::Expr::Struct(
-            Cow::Borrowed(VECTOR2_STRUCT),
+            VECTOR2,
             [(X, ASPECT.read()), (Y, 1.0.literal())].into(),
         );
 
         vec![FunctionDefinition {
-            id: ASPECT_FUNCTION.specialize(spec),
+            id: ASPECT.specialize(spec),
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: ASPECT.clone(),
+                    id: ASPECT.clone(),
                     mutable: false,
                 },
                 InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: true,
                 },
             ],
-            output: CONTEXT_STRUCT.clone(),
+            output: CONTEXT,
             block: [
                 [CONTEXT, POSITION_2D].write([CONTEXT, POSITION_2D].read() * aspect),
                 CONTEXT.read().output(),
@@ -75,7 +74,7 @@ impl AsIR for Aspect {
         spec: &SpecializationData,
         input: elysian_core::ir::ast::Expr,
     ) -> elysian_core::ir::ast::Expr {
-        ASPECT_FUNCTION
+        ASPECT
             .specialize(spec)
             .call([self.aspect.clone().into(), input])
     }

@@ -1,12 +1,9 @@
-use std::{borrow::Cow, collections::BTreeMap, fmt::Debug, hash::Hasher};
+use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 
-use elysian_core::{
-    ast::modify::CONTEXT_STRUCT,
-    ir::{
-        ast::Stmt::{self, *},
-        ast::{Expr, Identifier, Struct, Value, CONTEXT},
-        module::{FieldDefinition, FunctionDefinition, Module, StructDefinition},
-    },
+use elysian_core::ir::{
+    ast::Stmt::{self, *},
+    ast::{Expr, Identifier, Struct, Value, CONTEXT},
+    module::{FunctionDefinition, Module},
 };
 use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
 
@@ -30,7 +27,7 @@ impl Debug for Interpreter {
 impl Default for Interpreter {
     fn default() -> Self {
         Self {
-            context: Struct::new(Cow::Borrowed(CONTEXT_STRUCT)),
+            context: Struct::new(CONTEXT),
             functions: Default::default(),
             should_break: Default::default(),
             output: Default::default(),
@@ -57,20 +54,14 @@ impl std::hash::Hash for Interpreter {
     }
 }
 
-pub const INTERPRETER_CONTEXT_FIELDS: &'static [FieldDefinition] = &[FieldDefinition {
-    prop: CONTEXT,
-    public: false,
-}];
+pub const INTERPRETER_CONTEXT: Identifier =
+    Identifier::new("InterpreterContext", 1198218077110787867);
 
-pub const INTERPRETER_CONTEXT: &'static StructDefinition = &StructDefinition {
-    id: Identifier::new("InterpreterContext", 1198218077110787867),
-    public: false,
-    fields: Cow::Borrowed(INTERPRETER_CONTEXT_FIELDS),
-};
+const CALL_CONTEXT: Identifier = Identifier::new("CallContext", 0);
 
 pub fn evaluate_module(mut interpreter: Interpreter, module: &Module) -> Struct {
     interpreter.context =
-        Struct::new(Cow::Borrowed(INTERPRETER_CONTEXT)).set(CONTEXT, Value::Struct(interpreter.context));
+        Struct::new(INTERPRETER_CONTEXT).set(CONTEXT, Value::Struct(interpreter.context));
     interpreter.functions = module
         .function_definitions
         .iter()
@@ -196,12 +187,6 @@ pub fn evaluate_block(
     list.iter().fold(interpreter, evaluate_stmt)
 }
 
-const STRUCT_NULL: &'static StructDefinition = &StructDefinition {
-    id: Identifier::new("null", 0),
-    public: false,
-    fields: Cow::Borrowed(&[]),
-};
-
 pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Expr) -> Value {
     match expr {
         Expr::Literal(l) => {
@@ -244,11 +229,11 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
                 .unwrap_or_else(|| panic!("Invalid function {:#?}", function));
 
             let context = Struct {
-                def: Cow::Borrowed(STRUCT_NULL),
+                id: CALL_CONTEXT,
                 members: f
                     .inputs
                     .iter()
-                    .map(|input| input.prop.clone())
+                    .map(|input| input.id.clone())
                     .zip(args.iter().map(|arg| evaluate_expr(interpreter, arg)))
                     .collect(),
             };

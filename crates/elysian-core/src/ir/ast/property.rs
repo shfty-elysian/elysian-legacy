@@ -1,125 +1,147 @@
-use std::{borrow::Cow, fmt::Display};
+use std::fmt::Display;
 
-use crate::{
-    ast::{combine::COMBINE_CONTEXT_STRUCT, modify::CONTEXT_STRUCT},
-    ir::{
-        ast::{
-            Expr::{self, *},
-            Stmt::{self, *},
-        },
-        module::{NumericType, Type},
+use crate::ir::{
+    ast::{
+        Expr::{self, *},
+        Stmt::{self, *},
     },
+    module::{NumericType, Type, PROPERTIES},
 };
 
-use super::{Identifier, VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT};
+use super::{Identifier, VECTOR2, VECTOR3, VECTOR4};
 
-pub const POSITION_2D: Property = Property::new(
-    "position_2d",
-    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
-    19300293251480055481,
-);
-pub const POSITION_3D: Property = Property::new(
-    "position_3d",
-    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
-    2063026210185456313,
-);
-pub const TIME: Property =
-    Property::new("time", Type::Number(NumericType::Float), 391570251245214947);
-pub const DISTANCE: Property = Property::new(
-    "distance",
-    Type::Number(NumericType::Float),
-    20699600731090380932,
-);
-pub const GRADIENT_2D: Property = Property::new(
-    "gradient_2d",
-    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
-    16702807221222221695,
-);
-pub const GRADIENT_3D: Property = Property::new(
-    "gradient_3d",
-    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
-    1183200891820394544,
-);
-pub const NORMAL: Property = Property::new(
-    "normal",
-    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
-    1183200891820394544,
-);
-pub const UV: Property = Property::new(
-    "uv",
-    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
-    1527481748115194786,
-);
-pub const TANGENT_2D: Property = Property::new(
-    "tangent_2d",
-    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
-    12976793731289731131,
-);
-pub const TANGENT_3D: Property = Property::new(
-    "tangent_3d",
-    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
-    17286461381478601027,
-);
-pub const COLOR: Property = Property::new(
-    "color",
-    Type::Struct(Cow::Borrowed(VECTOR4_STRUCT)),
-    84604795624457789,
-);
-pub const LIGHT: Property = Property::new(
-    "light",
-    Type::Number(NumericType::Float),
-    1330409404139204842,
-);
-pub const SUPPORT_2D: Property = Property::new(
-    "support_2d",
-    Type::Struct(Cow::Borrowed(VECTOR2_STRUCT)),
-    85970193295239647,
-);
-pub const SUPPORT_3D: Property = Property::new(
-    "support_3d",
-    Type::Struct(Cow::Borrowed(VECTOR3_STRUCT)),
-    5120220911040556255970193295239647,
-);
-pub const ERROR: Property = Property::new(
-    "error",
-    Type::Number(NumericType::Float),
-    209621851525461471,
-);
-pub const NUM: Property =
-    Property::new("num", Type::Number(NumericType::Float), 1349662877516236181);
+pub const POSITION_2D: Identifier = Identifier::new("position_2d", 19300293251480055481);
+#[linkme::distributed_slice(PROPERTIES)]
+static POSITION_2D_PROP: Property = Property {
+    id: POSITION_2D,
+    ty: Type::Struct(VECTOR2),
+};
 
-pub const CONTEXT: Property = Property::new(
-    "context",
-    Type::Struct(Cow::Borrowed(CONTEXT_STRUCT)),
-    595454262490629935,
-);
-pub const COMBINE_CONTEXT: Property = Property::new(
-    "combine_context",
-    Type::Struct(Cow::Borrowed(COMBINE_CONTEXT_STRUCT)),
-    671133652169921634,
-);
+pub const POSITION_3D: Identifier = Identifier::new("position_3d", 2063026210185456313);
+#[linkme::distributed_slice(PROPERTIES)]
+static POSITION_3D_PROP: Property = Property {
+    id: POSITION_3D,
+    ty: Type::Struct(VECTOR3),
+};
 
-pub const LEFT: Property = Property::new(
-    "left",
-    Type::Struct(Cow::Borrowed(CONTEXT_STRUCT)),
-    635254731934742132,
-);
-pub const RIGHT: Property = Property::new(
-    "right",
-    Type::Struct(Cow::Borrowed(CONTEXT_STRUCT)),
-    5251097991491214179,
-);
-pub const OUT: Property = Property::new(
-    "out",
-    Type::Struct(Cow::Borrowed(CONTEXT_STRUCT)),
-    1470763158891875334,
-);
+pub const TIME: Identifier = Identifier::new("time", 391570251245214947);
+#[linkme::distributed_slice(PROPERTIES)]
+static TIME_PROP: Property = Property {
+    id: TIME,
+    ty: Type::Number(NumericType::Float),
+};
+
+pub const DISTANCE: Identifier = Identifier::new("distance", 20699600731090380932);
+#[linkme::distributed_slice(PROPERTIES)]
+static DISTANCE_PROP: Property = Property {
+    id: DISTANCE,
+    ty: Type::Number(NumericType::Float),
+};
+
+pub const GRADIENT_2D: Identifier = Identifier::new("gradient_2d", 16702807221222221695);
+#[linkme::distributed_slice(PROPERTIES)]
+static GRADIENT_2D_PROP: Property = Property {
+    id: GRADIENT_2D,
+    ty: Type::Struct(VECTOR2),
+};
+
+pub const GRADIENT_3D: Identifier = Identifier::new("gradient_3d", 1282963704979353552);
+#[linkme::distributed_slice(PROPERTIES)]
+static GRADIENT_3D_PROP: Property = Property {
+    id: GRADIENT_3D,
+    ty: Type::Struct(VECTOR3),
+};
+
+pub const NORMAL: Identifier = Identifier::new("normal", 1183200891820394544);
+#[linkme::distributed_slice(PROPERTIES)]
+static NORMAL_PROP: Property = Property {
+    id: NORMAL,
+    ty: Type::Struct(VECTOR3),
+};
+
+pub const UV: Identifier = Identifier::new("uv", 1527481748115194786);
+#[linkme::distributed_slice(PROPERTIES)]
+static UV_PROP: Property = Property {
+    id: UV,
+    ty: Type::Struct(VECTOR2),
+};
+
+pub const TANGENT_2D: Identifier = Identifier::new("tangent_2d", 12976793731289731131);
+#[linkme::distributed_slice(PROPERTIES)]
+static TANGENT_2D_PROP: Property = Property {
+    id: TANGENT_2D,
+    ty: Type::Struct(VECTOR2),
+};
+
+pub const TANGENT_3D: Identifier = Identifier::new("tangent_3d", 17286461381478601027);
+#[linkme::distributed_slice(PROPERTIES)]
+static TANGENT_3D_PROP: Property = Property {
+    id: TANGENT_3D,
+    ty: Type::Struct(VECTOR3),
+};
+
+pub const COLOR: Identifier = Identifier::new("color", 84604795624457789);
+#[linkme::distributed_slice(PROPERTIES)]
+static COLOR_PROP: Property = Property {
+    id: COLOR,
+    ty: Type::Struct(VECTOR4),
+};
+
+pub const LIGHT: Identifier = Identifier::new("light", 1330409404139204842);
+#[linkme::distributed_slice(PROPERTIES)]
+static LIGHT_PROP: Property = Property {
+    id: LIGHT,
+    ty: Type::Number(NumericType::Float),
+};
+
+pub const SUPPORT_2D: Identifier = Identifier::new("support_2d", 85970193295239647);
+#[linkme::distributed_slice(PROPERTIES)]
+static SUPPORT_2D_PROP: Property = Property {
+    id: SUPPORT_2D,
+    ty: Type::Struct(VECTOR2),
+};
+
+pub const SUPPORT_3D: Identifier =
+    Identifier::new("support_3d", 5120220911040556255970193295239647);
+#[linkme::distributed_slice(PROPERTIES)]
+static SUPPORT_3D_PROP: Property = Property {
+    id: SUPPORT_3D,
+    ty: Type::Struct(VECTOR3),
+};
+
+pub const ERROR: Identifier = Identifier::new("error", 209621851525461471);
+#[linkme::distributed_slice(PROPERTIES)]
+static ERROR_PROP: Property = Property {
+    id: ERROR,
+    ty: Type::Number(NumericType::Float),
+};
+
+pub const NUM: Identifier = Identifier::new("num", 1349662877516236181);
+#[linkme::distributed_slice(PROPERTIES)]
+static NUM_PROP: Property = Property {
+    id: NUM,
+    ty: Type::Number(NumericType::Float),
+};
+
+pub const CONTEXT: Identifier = Identifier::new("Context", 595454262490629935);
+#[linkme::distributed_slice(PROPERTIES)]
+static CONTEXT_PROP: Property = Property {
+    id: CONTEXT,
+    ty: Type::Struct(CONTEXT),
+};
+
+pub const COMBINE_CONTEXT: Identifier = Identifier::new("CombineContext", 671133652169921634);
+#[linkme::distributed_slice(PROPERTIES)]
+static COMBINE_CONTEXT_PROP: Property = Property {
+    id: COMBINE_CONTEXT,
+    ty: Type::Struct(COMBINE_CONTEXT),
+};
 
 /// Named, typed unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Property {
-    id: Identifier,
-    ty: Type,
+    pub id: Identifier,
+    pub ty: Type,
 }
 
 impl Display for Property {
@@ -168,21 +190,6 @@ impl Property {
     pub fn name_unique(&self) -> String {
         self.id.name_unique()
     }
-
-    pub fn read(self) -> Expr {
-        Read(vec![self])
-    }
-
-    pub fn bind(self, expr: Expr) -> Stmt {
-        Bind { prop: self, expr }
-    }
-
-    pub fn write(self, expr: Expr) -> Stmt {
-        Write {
-            path: vec![self],
-            expr,
-        }
-    }
 }
 
 pub trait IntoRead {
@@ -191,7 +198,7 @@ pub trait IntoRead {
 
 impl<T> IntoRead for T
 where
-    T: IntoIterator<Item = Property>,
+    T: IntoIterator<Item = Identifier>,
 {
     fn read(self) -> Expr {
         Read(self.into_iter().collect())
@@ -204,7 +211,7 @@ pub trait IntoWrite {
 
 impl<T> IntoWrite for T
 where
-    T: IntoIterator<Item = Property>,
+    T: IntoIterator<Item = Identifier>,
 {
     fn write(self, expr: Expr) -> Stmt {
         Write {

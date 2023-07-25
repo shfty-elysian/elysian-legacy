@@ -1,10 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{
-        field::Field,
-        modify::{Modify, CONTEXT_STRUCT},
-    },
+    ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
@@ -22,25 +19,25 @@ pub struct Manifold;
 
 impl Domains for Manifold {
     fn domains() -> Vec<Identifier> {
-        vec![GRADIENT_2D.id().clone(), GRADIENT_3D.id().clone()]
+        vec![GRADIENT_2D, GRADIENT_3D]
     }
 }
 
 impl AsIR for Manifold {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let gradient = if spec.contains(GRADIENT_2D.id()) {
+        let gradient = if spec.contains(&GRADIENT_2D) {
             GRADIENT_2D
-        } else if spec.contains(GRADIENT_3D.id()) {
+        } else if spec.contains(&GRADIENT_3D) {
             GRADIENT_3D
         } else {
             return vec![FunctionDefinition {
                 id: MANIFOLD.specialize(spec),
                 public: false,
                 inputs: vec![InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: true,
                 }],
-                output: CONTEXT_STRUCT.clone(),
+                output: CONTEXT,
                 block: [CONTEXT.read().output()].block(),
             }];
         };
@@ -49,10 +46,10 @@ impl AsIR for Manifold {
             id: MANIFOLD.specialize(spec),
             public: false,
             inputs: vec![InputDefinition {
-                prop: CONTEXT,
+                id: CONTEXT,
                 mutable: true,
             }],
-            output: CONTEXT_STRUCT.clone(),
+            output: CONTEXT,
             block: [
                 NUM.bind([CONTEXT, DISTANCE].read()),
                 [CONTEXT, DISTANCE].write(NUM.read().abs()),

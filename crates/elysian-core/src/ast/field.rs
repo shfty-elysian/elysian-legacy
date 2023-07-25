@@ -3,13 +3,13 @@ use std::{
     hash::{Hash, Hasher},
 };
 
+use indexmap::IndexMap;
+
 use crate::ir::{
     as_ir::{AsIR, DynAsIR},
     ast::{Identifier, IntoBlock, CONTEXT},
-    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, StructDefinition},
+    module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData, Type},
 };
-
-use super::modify::CONTEXT_STRUCT;
 
 pub struct Field {
     pub field: DynAsIR,
@@ -35,6 +35,7 @@ impl AsModule for Field {
     fn functions(
         &self,
         spec: &SpecializationData,
+        _: &IndexMap<Identifier, Type>,
         entry_point: &Identifier,
     ) -> Vec<FunctionDefinition> {
         self.field
@@ -44,17 +45,13 @@ impl AsModule for Field {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: false,
                 }],
-                output: CONTEXT_STRUCT.clone(),
+                output: CONTEXT,
                 block: self.field.expression(spec, CONTEXT.read()).output().block(),
             })
             .collect()
-    }
-
-    fn structs(&self) -> Vec<StructDefinition> {
-        vec![CONTEXT_STRUCT.clone()]
     }
 }
 

@@ -273,19 +273,38 @@
 
   DONE: Added Vector* and Matrix* variants for constructing via Expr
 
-=========================================================================================================
+* Account for aspect ratio
+  * Likely better as a more general abstraction that can be applied by backends
+    * Non-uniform scale modifier over position
+    * Premade context viewport -> aspect ratio expression
+
+  DONE: Implemented via Aspect post modifier; 2D only non-uniform scaling
+
+* UUID collision checking
+  * Currently too easy to accidentally duplicate
+
+  DONE: UUIDs are checked for collision during distributed slice collection
 
 * Move struct and function definitions from const-level to value-level,
   * Use const-friendly identifiers to support existing use cases / extensibility
   * Needed for conditional context struct generation
+
+  DONE: Types, structs and functions are now represented by ID in IR,
+        and looked up by implementations
 
 * Generate Context / CombineContext structs conditionally
   * Currently outputting a hardcoded set of members
   * Need to walk the elysian tree and aggregate properties,
     use to generate structs
 
-* UUID collision checking
-  * Currently too easy to accidentally duplicate
+  DONE: Context is now generated based on a tree walk enumerating reads and writes,
+        CombineContext remains static via Cow usage, and is injected by Combine as needed
+
+=========================================================================================================
+
+* Strongly-typed Identifier
+  * Need a way to strengthen differentiation between property, function and struct identifiers
+  * Add a generic param to denote specific use?
 
 * Consider extending base AST Read expr with path functionality
   * Currently no way to access member fields, ex vector / matrix components

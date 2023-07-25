@@ -1,0 +1,10 @@
+[package]
+name = "elysian-shadertoy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elysian-core = { path = "../elysian-core" }
+elysian-naga = { path = "../elysian-naga" }
+
+naga = { version = "0.13.0", features = ["glsl-out", "validate"] }

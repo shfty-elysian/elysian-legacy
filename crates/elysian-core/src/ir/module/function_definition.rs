@@ -1,15 +1,13 @@
 use std::hash::{Hash, Hasher};
 
-use crate::ir::ast::{Block, Identifier, Property};
-
-use super::StructDefinition;
+use crate::ir::ast::{Block, Identifier};
 
 #[derive(Debug, Clone)]
 pub struct FunctionDefinition {
     pub id: Identifier,
     pub public: bool,
     pub inputs: Vec<InputDefinition>,
-    pub output: StructDefinition,
+    pub output: Identifier,
     pub block: Block,
 }
 
@@ -54,6 +52,6 @@ impl FunctionDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct InputDefinition {
-    pub prop: Property,
+    pub id: Identifier,
     pub mutable: bool,
 }

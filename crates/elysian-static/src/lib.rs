@@ -1,12 +1,10 @@
 use elysian_core::ir::module::SpecializationData;
 use elysian_interpreter::{evaluate_module, Interpreter};
-pub use prettyplease;
+use elysian_syn::module_to_string;
 
 use std::{collections::BTreeMap, sync::OnceLock};
 
 use elysian_core::ir::{ast::Struct, module::AsModule};
-
-use crate::module_to_syn;
 
 pub type ShapeHash = u64;
 pub type ShapeFn = fn(Struct) -> Struct;
@@ -54,10 +52,7 @@ pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, Box<dyn AsModule>)>>(
 ) {
     let source: String = t
         .into_iter()
-        .map(|(name, shape)| {
-            let syn = module_to_syn(&shape, spec, name);
-            prettyplease::unparse(&syn)
-        })
+        .map(|(name, shape)| module_to_string(&shape, spec, name))
         .collect();
 
     let out_dir = std::env::var_os("OUT_DIR").expect("No OUT_DIR environment variable");
@@ -101,4 +96,3 @@ where
         })
     }
 }
-

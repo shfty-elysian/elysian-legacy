@@ -1,12 +1,12 @@
-use std::{fmt::Debug, hash::Hash, borrow::Cow};
+use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::modify::{Modify, CONTEXT_STRUCT},
+    ast::modify::Modify,
     ir::{
         as_ir::{AsIR, Domains},
         ast::{
             Expr, Identifier, IntoBlock, IntoLiteral, IntoRead, IntoWrite, CONTEXT, GRADIENT_2D,
-            GRADIENT_3D, NORMAL, VECTOR3_STRUCT, X, Y, Z,
+            GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z,
         },
         module::{AsModule, FunctionDefinition, InputDefinition, SpecializationData},
     },
@@ -19,18 +19,18 @@ pub struct GradientNormals;
 
 impl Domains for GradientNormals {
     fn domains() -> Vec<Identifier> {
-        vec![GRADIENT_2D.id().clone(), GRADIENT_3D.id().clone()]
+        vec![GRADIENT_2D, GRADIENT_3D]
     }
 }
 
 impl AsIR for GradientNormals {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let block = if spec.contains(GRADIENT_2D.id()) {
+        let block = if spec.contains(&GRADIENT_2D) {
             [
                 GRADIENT_2D.bind([CONTEXT, GRADIENT_2D].read().normalize()),
                 [CONTEXT, NORMAL].write(
                     Expr::Struct(
-                        Cow::Borrowed(VECTOR3_STRUCT),
+                        VECTOR3,
                         [
                             (X, [GRADIENT_2D, X].read()),
                             (Y, [GRADIENT_2D, Y].read()),
@@ -44,7 +44,7 @@ impl AsIR for GradientNormals {
                 CONTEXT.read().output(),
             ]
             .block()
-        } else if spec.contains(GRADIENT_3D.id()) {
+        } else if spec.contains(&GRADIENT_3D) {
             [
                 [CONTEXT, NORMAL].write([CONTEXT, GRADIENT_3D].read().normalize()),
                 CONTEXT.read().output(),
@@ -58,10 +58,10 @@ impl AsIR for GradientNormals {
             id: GRADIENT_NORMALS.specialize(spec),
             public: false,
             inputs: vec![InputDefinition {
-                prop: CONTEXT,
+                id: CONTEXT,
                 mutable: true,
             }],
-            output: CONTEXT_STRUCT.clone(),
+            output: CONTEXT,
             block,
         }]
     }

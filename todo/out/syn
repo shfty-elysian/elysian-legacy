@@ -42,9 +42,11 @@
 
   SKIPPED: syn doesn't appear to support infinity, so switched to using MAX instead
 
-============================================================================================
-
 * Move static_shapes functionality into its own crate
+
+  DONE: Implemented as elysian-static crate
+
+============================================================================================
 
 * Stronger typing for emitted code
   * Currently able to bind properties with implicit types,
@@ -55,6 +57,9 @@
   * Should be using parse_quote where possible to avoid boilerplate
   * Some cases unavoidable due to what appear to be bugs in parse_quote
     * ex. Struct expressions not outputting a , between the last member and terminating ..
+
+* Fix casing warnings
+  * Need to require camel-case identifiers, convert them as appropriate
 
 * Fix mutability warnings
   * Need to include mutability info, or infer it somehow

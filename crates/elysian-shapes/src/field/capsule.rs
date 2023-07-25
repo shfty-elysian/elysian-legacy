@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use elysian_core::ast::modify::CONTEXT_STRUCT;
 use elysian_core::ir::ast::IntoBlock;
 use elysian_core::{
     ast::expr::Expr,
@@ -62,9 +61,9 @@ impl AsIR for Capsule {
         &self,
         spec: &SpecializationData,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let dir = if spec.contains(POSITION_2D.id()) {
+        let dir = if spec.contains(&POSITION_2D) {
             DIR_2D
-        } else if spec.contains(POSITION_3D.id()) {
+        } else if spec.contains(&POSITION_3D) {
             DIR_3D
         } else {
             panic!("No position domain");
@@ -89,19 +88,19 @@ impl AsIR for Capsule {
             public: false,
             inputs: vec![
                 InputDefinition {
-                    prop: dir.clone(),
+                    id: dir.clone(),
                     mutable: false,
                 },
                 InputDefinition {
-                    prop: RADIUS,
+                    id: RADIUS,
                     mutable: false,
                 },
                 InputDefinition {
-                    prop: CONTEXT,
+                    id: CONTEXT,
                     mutable: false,
                 },
             ],
-            output: CONTEXT_STRUCT.clone(),
+            output: CONTEXT,
             block: ISOSURFACE
                 .specialize(&isosurface_spec)
                 .call([
