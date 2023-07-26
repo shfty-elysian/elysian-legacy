@@ -2,12 +2,14 @@ use std::hash::Hash;
 
 use elysian_core::ir::{
     as_ir::{AsIR, Domains},
-    ast::{Expr, IntoBlock, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D},
+    ast::{Expr, IntoBlock, Stmt, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D},
     module::{
-        FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
-        PropertyIdentifier, SpecializationData, CONTEXT_PROP,
+        FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, PropertyIdentifier,
+        SpecializationData, CONTEXT_PROP,
     },
 };
+
+use elysian_macros::elysian_stmt;
 
 pub const POINT: FunctionIdentifier = FunctionIdentifier::new("point", 2023836058494613125);
 
@@ -42,13 +44,12 @@ impl AsIR for Point {
 
         let mut block = vec![];
         if distance {
-            block.push(
-                [CONTEXT_PROP, DISTANCE].write([CONTEXT_PROP, position.clone()].read().length()),
-            )
+            block.push(elysian_stmt!(#CONTEXT_PROP.#DISTANCE = #CONTEXT_PROP.#position.length()))
         };
 
         if let Some(gradient) = gradient {
-            block.push([CONTEXT_PROP, gradient].write([CONTEXT_PROP, position].read().normalize()));
+            block
+                .push(elysian_stmt!(#CONTEXT_PROP.#gradient = #CONTEXT_PROP.#position.normalize()));
         }
 
         block.push(CONTEXT_PROP.read().output());

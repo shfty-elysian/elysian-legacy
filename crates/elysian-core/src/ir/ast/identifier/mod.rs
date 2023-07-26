@@ -2,6 +2,9 @@ use std::borrow::Cow;
 
 use uuid::Uuid;
 
+#[cfg(feature = "quote")]
+mod to_tokens;
+
 /// Named unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Identifier {

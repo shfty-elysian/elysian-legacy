@@ -4,16 +4,17 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{IntoBlock, DISTANCE},
+        ast::{Block, Expr, Stmt, DISTANCE},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
-            NumericType, PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
         },
     },
     property,
 };
 
-use elysian_core::ast::expr::Expr;
+use elysian_core::ast::expr::Expr as AstExpr;
+use elysian_macros::elysian_block;
 
 pub const ISOSURFACE: FunctionIdentifier =
     FunctionIdentifier::new("isosurface", 1163045471729794054);
@@ -22,7 +23,7 @@ pub const DIST: PropertyIdentifier = PropertyIdentifier::new("dist", 46352474130
 property!(DIST, DIST_PROP, Type::Number(NumericType::Float));
 
 pub struct Isosurface {
-    pub dist: Expr,
+    pub dist: AstExpr,
 }
 
 impl Debug for Isosurface {
@@ -56,13 +57,14 @@ impl Domains for Isosurface {
 impl AsIR for Isosurface {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let block = if spec.contains(&DISTANCE) {
-            [
-                [CONTEXT_PROP, DISTANCE].write([CONTEXT_PROP, DISTANCE].read() - DIST.read()),
-                CONTEXT_PROP.read().output(),
-            ]
-            .block()
+            elysian_block! {
+                #CONTEXT_PROP.#DISTANCE = #CONTEXT_PROP.#DISTANCE - #DIST;
+                return #CONTEXT_PROP;
+            }
         } else {
-            [CONTEXT_PROP.read().output()].block()
+            elysian_block! {
+                return #CONTEXT_PROP;
+            }
         };
 
         vec![FunctionDefinition {
@@ -83,11 +85,7 @@ impl AsIR for Isosurface {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
+    fn expression_impl(&self, spec: &SpecializationData, input: Expr) -> Expr {
         ISOSURFACE
             .specialize(spec)
             .call([self.dist.clone().into(), input])

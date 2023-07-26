@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 elysian-core = { path = "../elysian-core" }
+elysian-macros = { path = "../elysian-macros" }
 elysian-interpreter = { path = "../elysian-interpreter" }
 rust-gpu-bridge = { path = "../../../bevy-rust-gpu-project/crates/rust-gpu-bridge", features = ["glam"] }
 

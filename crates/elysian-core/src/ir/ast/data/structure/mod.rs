@@ -20,6 +20,9 @@ use super::{
     X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
 };
 
+#[cfg(feature = "quote")]
+mod to_tokens;
+
 #[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
 pub struct Struct {
     pub id: StructIdentifier,

@@ -1,6 +1,6 @@
 use elysian::{
     core::ir::module::SpecializationData,
-    syn::{module_to_syn, prettyplease},
+    syn::output::{module_to_syn, prettyplease},
 };
 
 fn main() {

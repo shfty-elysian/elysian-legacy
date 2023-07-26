@@ -3,7 +3,13 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::ir::{ast::{Block, Expr}, module::PropertyIdentifier};
+use crate::ir::{
+    ast::{Block, Expr},
+    module::PropertyIdentifier,
+};
+
+#[cfg(feature = "quote")]
+mod to_tokens;
 
 /// Statement consuming the result of an expression
 pub enum Stmt {
@@ -112,4 +118,3 @@ impl Stmt {
         }
     }
 }
-

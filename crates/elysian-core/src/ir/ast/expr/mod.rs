@@ -15,6 +15,9 @@ use super::{
     stmt::Stmt, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, X, Y, Z,
 };
 
+#[cfg(feature = "quote")]
+mod to_tokens;
+
 /// Expression resulting in a value
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
@@ -25,21 +28,21 @@ pub enum Expr {
         function: FunctionIdentifier,
         args: Vec<Expr>,
     },
-    Add(BoxExpr, BoxExpr),
-    Sub(BoxExpr, BoxExpr),
-    Mul(BoxExpr, BoxExpr),
-    Div(BoxExpr, BoxExpr),
-    Min(BoxExpr, BoxExpr),
-    Max(BoxExpr, BoxExpr),
-    Mix(BoxExpr, BoxExpr, BoxExpr),
-    Lt(BoxExpr, BoxExpr),
-    Gt(BoxExpr, BoxExpr),
     Neg(BoxExpr),
     Abs(BoxExpr),
     Sign(BoxExpr),
     Length(BoxExpr),
     Normalize(BoxExpr),
+    Add(BoxExpr, BoxExpr),
+    Sub(BoxExpr, BoxExpr),
+    Mul(BoxExpr, BoxExpr),
+    Div(BoxExpr, BoxExpr),
+    Lt(BoxExpr, BoxExpr),
+    Gt(BoxExpr, BoxExpr),
+    Min(BoxExpr, BoxExpr),
+    Max(BoxExpr, BoxExpr),
     Dot(BoxExpr, BoxExpr),
+    Mix(BoxExpr, BoxExpr, BoxExpr),
 }
 
 impl IntoIterator for Expr {

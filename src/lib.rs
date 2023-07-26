@@ -2,6 +2,10 @@ pub mod core {
     pub use elysian_core::*;
 }
 
+pub mod macros {
+    pub use elysian_macros::*;
+}
+
 #[cfg(feature = "syn")]
 pub mod syn {
     pub use elysian_syn::*;

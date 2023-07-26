@@ -4,13 +4,14 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{IntoBlock, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM},
+        ast::{Block, Expr, Stmt, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
-            PropertyIdentifier, SpecializationData, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+            SpecializationData, CONTEXT_PROP,
         },
     },
 };
+use elysian_macros::elysian_block;
 
 pub const MANIFOLD: FunctionIdentifier = FunctionIdentifier::new("manifold", 7861274791729269697);
 
@@ -38,7 +39,9 @@ impl AsIR for Manifold {
                     mutable: true,
                 }],
                 output: CONTEXT_PROP,
-                block: [CONTEXT_PROP.read().output()].block(),
+                block: elysian_block! {
+                    return #CONTEXT_PROP;
+                },
             }];
         };
 
@@ -50,14 +53,11 @@ impl AsIR for Manifold {
                 mutable: true,
             }],
             output: CONTEXT_PROP,
-            block: [
-                NUM.bind([CONTEXT_PROP, DISTANCE].read()),
-                [CONTEXT_PROP, DISTANCE].write(NUM.read().abs()),
-                [CONTEXT_PROP, gradient.clone()]
-                    .write([CONTEXT_PROP, gradient].read() * NUM.read().sign()),
-                CONTEXT_PROP.read().output(),
-            ]
-            .block(),
+            block: elysian_block! {
+                let #NUM = #CONTEXT_PROP.#DISTANCE;
+                #CONTEXT_PROP.#gradient = #CONTEXT_PROP.#gradient * #NUM.sign();
+                return #CONTEXT_PROP;
+            },
         }]
     }
 

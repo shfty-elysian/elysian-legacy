@@ -1,2 +1,36 @@
 * Create a Syn -> IR pipeline to simplify Block / Stmt / Expr notation
   * Should ultimately work similar to parse_quote
+
+  DONE: Implemented via elysian_expr, elysian_stmt, elysian_block macros
+
+==============================================================================================
+
+* Elide semicolon from elysian_stmt
+
+* Elide braces from elysian_block
+
+* Support the full range of expression functions
+
+* Create equivalent macro for parsing a rust function into a FunctionDefinition
+  * Will need to support FunctionIdentifier substitution
+
+* Create equivalent macro for parsing a rust struct into a StructDefinition
+  * Will need to support StructIdentifier substitution
+
+* Generalize and make less brittle
+  * Introspecting the structure of PropertyIdentifier / Identifier
+    and relying on implementation details of its ToTokens impl
+    in order to sub in passthrough identifiers is not ideal
+
+  * Need to be able to inject arbitrary literals from the outer rust context
+    without specializing too hard around structure
+    * Baseline is arbitrary types of identifiers, but general IR substitution would be ideal
+      * i.e. Being able to bind an elysian_expr! result,
+        and inject it directly into another elysian_*! invocation without needing to inline
+
+  * Should be able to inject rust attributes to mark elements for replacement
+    instead of checking against specifically-named idents
+    * How to preserve these attributes across the Rust -> IR -> Rust boundary?
+      * May need to integrate more tightly so it skips concrete IR
+        and goes straight from Rust -> Rust
+      * Some sort of ToTokens wrapper trait that can introduce metadata via param?

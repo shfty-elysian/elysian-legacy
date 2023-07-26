@@ -1,12 +1,15 @@
 use std::{
-    borrow::Cow,
     fmt::Display,
     ops::{Deref, DerefMut},
 };
 
-use crate::ir::ast::{Expr, Identifier};
+use crate::ir::{
+    ast::{Expr, Identifier},
+    module::PropertyIdentifier,
+};
 
-use super::PropertyIdentifier;
+#[cfg(feature = "quote")]
+mod to_tokens;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StructIdentifier(pub Identifier);
@@ -61,27 +64,4 @@ impl From<StructIdentifier> for Identifier {
     fn from(value: StructIdentifier) -> Self {
         value.0
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct StructDefinition {
-    pub id: StructIdentifier,
-    pub public: bool,
-    pub fields: Cow<'static, [FieldDefinition]>,
-}
-
-impl StructDefinition {
-    pub fn name(&self) -> &str {
-        self.id.name()
-    }
-
-    pub fn name_unique(&self) -> String {
-        self.id.name_unique()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct FieldDefinition {
-    pub id: PropertyIdentifier,
-    pub public: bool,
 }

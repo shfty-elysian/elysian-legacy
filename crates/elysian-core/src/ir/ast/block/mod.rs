@@ -1,5 +1,8 @@
 mod into_block;
 
+#[cfg(feature = "quote")]
+mod to_tokens;
+
 pub use into_block::*;
 
 use std::{

@@ -324,11 +324,15 @@
 
   DONE: Implemented via PropertyIdentifier wrapper
 
-=========================================================================================================
-
 * Strongly-typed Function Identifier
 
+  DONE: Implemented as FunctionIdentifier
+
 * Strongly-typed Struct Identifier
+
+  DONE: Implemented as StructIdentifier
+
+=========================================================================================================
 
 * Consider moving unary / binary / ternary ops into shareable enums
   * Would likely need to make generic for compatibility across

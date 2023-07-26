@@ -3,9 +3,8 @@ name = "elysian-shapes"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-elysian-core = { path = "../elysian-core" }
+elysian-core = { path = "../elysian-core", features = ["internal"] }
+elysian-macros = { path = "../elysian-macros" }
 indexmap = "2.0.0"
 linkme = "0.3.13"
