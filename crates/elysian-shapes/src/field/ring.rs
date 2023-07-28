@@ -44,14 +44,9 @@ impl AsIR for Ring {
         &self,
         spec: &SpecializationData,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let isosurface_spec = spec.filter(Isosurface::domains());
-        let manifold_spec = spec.filter(Manifold::domains());
-        let circle_spec = spec.filter(Circle::domains());
-
-        let isosurface_func = ISOSURFACE.specialize(&isosurface_spec);
-        let manifold_func = MANIFOLD.specialize(&manifold_spec);
-        let circle_func = CIRCLE.specialize(&circle_spec);
-
+        let isosurface = ISOSURFACE.specialize(&spec.filter(Isosurface::domains()));
+        let manifold = MANIFOLD.specialize(&spec.filter(Manifold::domains()));
+        let circle = CIRCLE.specialize(&spec.filter(Circle::domains()));
         let ring = RING.specialize(spec);
 
         Circle {
@@ -68,7 +63,7 @@ impl AsIR for Ring {
         )
         .chain(elysian_function! {
             fn ring(RADIUS, WIDTH, CONTEXT) -> CONTEXT {
-                return isosurface_func(WIDTH, manifold_func(circle_func(RADIUS, CONTEXT)));
+                return isosurface(WIDTH, manifold(circle(RADIUS, CONTEXT)));
             }
         })
         .collect()

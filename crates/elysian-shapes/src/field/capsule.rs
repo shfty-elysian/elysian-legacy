@@ -46,12 +46,8 @@ impl AsIR for Capsule {
             panic!("No position domain");
         };
 
-        let isosurface_spec = spec.filter(Isosurface::domains());
-        let line_spec = spec.filter(Line::domains());
-
-        let isosurface_func = ISOSURFACE.specialize(&isosurface_spec);
-        let line_func = LINE.specialize(&line_spec);
-
+        let isosurface = ISOSURFACE.specialize(&spec.filter(Isosurface::domains()));
+        let line = LINE.specialize(&spec.filter(Line::domains()));
         let capsule = CAPSULE.specialize(spec);
 
         Line {
@@ -67,7 +63,7 @@ impl AsIR for Capsule {
         )
         .chain(elysian_function! {
             fn capsule(dir, RADIUS, CONTEXT) -> CONTEXT {
-                return isosurface_func(RADIUS, line_func(dir, CONTEXT));
+                return isosurface(RADIUS, line(dir, CONTEXT));
             }
         })
         .collect()

@@ -86,8 +86,7 @@ impl AsModule for CentralDiffGradient {
                 .collect();
         };
 
-        let translate_spec = spec.filter(Translate::domains());
-        let translate_func = TRANSLATE.specialize(&translate_spec);
+        let translate = TRANSLATE.specialize(&spec.filter(Translate::domains()));
 
         let epsilon = self.epsilon.literal();
 
@@ -97,11 +96,11 @@ impl AsModule for CentralDiffGradient {
             .chain([elysian_function! {
                 pub fn entry_point(mut CONTEXT) -> CONTEXT {
                     let CONTEXT = field_entry_point(CONTEXT);
-                    let LEFT = field_entry_point(translate_func(#vec_x * -#epsilon, CONTEXT));
-                    let RIGHT = field_entry_point(#translate_func(#vec_x * #epsilon, CONTEXT));
+                    let LEFT = field_entry_point(translate(#vec_x * -#epsilon, CONTEXT));
+                    let RIGHT = field_entry_point(#translate(#vec_x * #epsilon, CONTEXT));
                     let X = LEFT.DISTANCE - RIGHT.DISTANCE;
-                    let LEFT = field_entry_point(translate_func(#vec_y * -#epsilon, CONTEXT));
-                    let RIGHT = field_entry_point(translate_func(#vec_y * #epsilon, CONTEXT));
+                    let LEFT = field_entry_point(translate(#vec_y * -#epsilon, CONTEXT));
+                    let RIGHT = field_entry_point(translate(#vec_y * #epsilon, CONTEXT));
                     let Y = LEFT.DISTANCE - RIGHT.DISTANCE;
                     CONTEXT.gradient = VECTOR2 {
                         X: X,

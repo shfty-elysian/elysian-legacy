@@ -46,12 +46,8 @@ impl AsIR for Line {
             panic!("No position domain set")
         };
 
-        let point_spec = spec.filter(Point::domains());
-        let elongate_spec = spec.filter(Elongate::domains());
-
-        let point_func = POINT.specialize(&point_spec);
-        let elongate_func = ELONGATE.specialize(&elongate_spec);
-
+        let point = POINT.specialize(&spec.filter(Point::domains()));
+        let elongate = ELONGATE.specialize(&spec.filter(Elongate::domains()));
         let line = LINE.specialize(spec);
 
         Point
@@ -66,7 +62,7 @@ impl AsIR for Line {
             )
             .chain(elysian_function! {
                 fn line(dir, CONTEXT) -> CONTEXT {
-                    return point_func(elongate_func(dir, CONTEXT));
+                    return point(elongate(dir, CONTEXT));
                 }
             })
             .collect()

@@ -41,12 +41,8 @@ impl AsIR for Circle {
         &self,
         spec: &SpecializationData,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let point_spec = spec.filter(Point::domains());
-        let isosurface_spec = spec.filter(Isosurface::domains());
-
-        let point_func = POINT.specialize(&point_spec);
-        let isosurface_func = ISOSURFACE.specialize(&isosurface_spec);
-
+        let point = POINT.specialize(&spec.filter(Point::domains()));
+        let isosurface = ISOSURFACE.specialize(&spec.filter(Isosurface::domains()));
         let circle = CIRCLE.specialize(spec);
 
         Point
@@ -60,7 +56,7 @@ impl AsIR for Circle {
             )
             .chain(elysian_function! {
                 fn circle(RADIUS, CONTEXT) -> CONTEXT {
-                    return isosurface_func(RADIUS, point_func(CONTEXT));
+                    return isosurface(RADIUS, point(CONTEXT));
                 }
             })
             .collect()

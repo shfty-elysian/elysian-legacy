@@ -230,11 +230,11 @@ impl AsModule for Raymarch {
                             CONTEXT = CANDIDATE
                         }
 
+                        STEPS = STEPS + 1u32;
+
                         if CONTEXT.DISTANCE < 0.0 {
                             break;
                         }
-
-                        STEPS = STEPS + 1u32;
 
                         if STEPS > MAX_STEPS {
                             break;
