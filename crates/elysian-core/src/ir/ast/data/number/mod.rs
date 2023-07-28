@@ -9,9 +9,6 @@ use crate::ir::ast::Expr;
 
 use super::{Struct, Value};
 
-#[cfg(feature = "quote")]
-mod to_tokens;
-
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum Number {
     UInt(u64),

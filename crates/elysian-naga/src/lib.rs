@@ -7,7 +7,7 @@ use elysian_core::ir::{
         Module as ElysianModule, NumericType, PropertyIdentifier, Type as ElysianType, CONTEXT,
     },
 };
-use elysian_shapes::modify::ASPECT_PROP;
+use elysian_shapes::modify::ASPECT;
 use indexmap::IndexMap;
 use naga::{
     valid::{Capabilities, ModuleInfo, ValidationError, ValidationFlags, Validator},
@@ -953,7 +953,7 @@ impl<'a> NagaBuilder<'a> {
             index: context_struct
                 .fields
                 .iter()
-                .position(|field| field.id == POSITION_2D)
+                .position(|field| *field.id == POSITION_2D)
                 .unwrap() as u32,
         });
 
@@ -967,7 +967,7 @@ impl<'a> NagaBuilder<'a> {
             index: context_struct
                 .fields
                 .iter()
-                .position(|field| field.id == ASPECT_PROP)
+                .position(|field| *field.id == ASPECT)
                 .expect("No aspect field") as u32,
         });
 
@@ -1014,7 +1014,7 @@ impl<'a> NagaBuilder<'a> {
             index: context_struct
                 .fields
                 .iter()
-                .position(|field| field.id == COLOR)
+                .position(|field| *field.id == COLOR)
                 .unwrap() as u32,
         });
 

@@ -1,13 +1,11 @@
 mod into_block;
 
-#[cfg(feature = "quote")]
-mod to_tokens;
-
 pub use into_block::*;
 
 use std::{
     fmt::Debug,
     hash::{Hash, Hasher},
+    ops::{Deref, DerefMut},
 };
 
 use crate::ir::ast::Stmt;
@@ -36,6 +34,20 @@ impl Clone for Block {
 impl Hash for Block {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.hash(state);
+    }
+}
+
+impl Deref for Block {
+    type Target = Vec<Stmt>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Block {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

@@ -1,77 +1,67 @@
-use std::{
-    fmt::Debug,
-    hash::{Hash, Hasher},
-};
+use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{IntoBlock, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
+        ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
-            PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+            SpecializationData, StructIdentifier, Type, CONTEXT,
         },
     },
     property,
 };
 
 use elysian_core::ast::expr::Expr;
+use elysian_proc_macros::{elysian_block, elysian_expr};
 
 pub const ELONGATE: FunctionIdentifier = FunctionIdentifier::new("elongate", 1022510703206415324);
 pub const ELONGATE_INFINITE: FunctionIdentifier =
     FunctionIdentifier::new("elongate_infinite", 1799909959882308009);
 
-pub const DIR_2D: PropertyIdentifier = PropertyIdentifier::new("dir_2d", 10994004961423687819);
+pub const DIR_2D: Identifier = Identifier::new("dir_2d", 10994004961423687819);
 property!(DIR_2D, DIR_2D_PROP, Type::Struct(StructIdentifier(VECTOR2)));
 
-pub const DIR_3D: PropertyIdentifier = PropertyIdentifier::new("dir_3d", 66909101541205811);
+pub const DIR_3D: Identifier = Identifier::new("dir_3d", 66909101541205811);
 property!(DIR_3D, DIR_3D_PROP, Type::Struct(StructIdentifier(VECTOR3)));
 
+#[derive(Debug, Clone, Hash)]
 pub struct Elongate {
     pub dir: Expr,
     pub infinite: bool,
 }
 
-impl Debug for Elongate {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Elongate")
-            .field("dir", &self.dir)
-            .field("infinite", &self.infinite)
-            .finish()
-    }
-}
-
-impl Clone for Elongate {
-    fn clone(&self) -> Self {
-        Self {
-            dir: self.dir.clone(),
-            infinite: self.infinite.clone(),
-        }
-    }
-}
-
-impl Hash for Elongate {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.dir.hash(state);
-        self.infinite.hash(state);
-    }
-}
-
 impl Domains for Elongate {
     fn domains() -> Vec<PropertyIdentifier> {
-        vec![POSITION_2D, POSITION_3D]
+        vec![POSITION_2D.into(), POSITION_3D.into()]
     }
 }
 
 impl AsIR for Elongate {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let (position, dir) = if spec.contains(&POSITION_2D) {
+        let (position, dir) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, DIR_2D)
-        } else if spec.contains(&POSITION_3D) {
+        } else if spec.contains(&POSITION_3D.into()) {
             (POSITION_3D, DIR_3D)
         } else {
             panic!("No position domain");
+        };
+
+        let expr = elysian_expr! {
+            CONTEXT.position.dot(dir.normalize())
+        };
+
+        let block = if self.infinite {
+            elysian_block! {
+                CONTEXT.position = CONTEXT.position - dir.normalize() * #expr;
+                return CONTEXT
+            }
+        } else {
+            elysian_block! {
+                CONTEXT.position = CONTEXT.position - dir.normalize() * #expr.max(-dir.length()).min(dir.length());
+                return CONTEXT
+            }
         };
 
         vec![FunctionDefinition {
@@ -83,35 +73,16 @@ impl AsIR for Elongate {
             public: false,
             inputs: vec![
                 InputDefinition {
-                    id: dir.clone(),
+                    id: dir.clone().into(),
                     mutable: false,
                 },
                 InputDefinition {
-                    id: CONTEXT_PROP,
+                    id: CONTEXT.into(),
                     mutable: true,
                 },
             ],
-            output: CONTEXT_PROP,
-            block: {
-                let expr = [CONTEXT_PROP, position.clone()]
-                    .read()
-                    .dot(dir.clone().read().normalize());
-
-                [
-                    [CONTEXT_PROP, position.clone()].write(
-                        [CONTEXT_PROP, position].read()
-                            - dir.clone().read().normalize()
-                                * if self.infinite {
-                                    expr
-                                } else {
-                                    expr.max(-dir.clone().read().length())
-                                        .min(dir.clone().read().length())
-                                },
-                    ),
-                    CONTEXT_PROP.read().output(),
-                ]
-                .block()
-            },
+            output: CONTEXT.into(),
+            block,
         }]
     }
 

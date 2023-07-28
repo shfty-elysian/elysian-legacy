@@ -6,15 +6,12 @@ edition = "2021"
 [features]
 default = []
 internal = []
-quote = ["dep:quote", "dep:proc-macro2"]
 
 [dependencies]
 rust-gpu-bridge = { path = "../../../bevy-rust-gpu-project/crates/rust-gpu-bridge", features = ["glam"] }
+elysian-proc-macros = { path = "../elysian-proc-macros" }
 
 uuid = { version = "1.4.0", features = ["v4"] }
 tracing = "0.1.37"
 indexmap = "2.0.0"
 linkme = "0.3.13"
-
-quote = { version = "1.0.32", optional = true }
-proc-macro2 = { version = "1.0.66", optional = true }

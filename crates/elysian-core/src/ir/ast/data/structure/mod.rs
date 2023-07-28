@@ -20,9 +20,6 @@ use super::{
     X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
 };
 
-#[cfg(feature = "quote")]
-mod to_tokens;
-
 #[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
 pub struct Struct {
     pub id: StructIdentifier,
@@ -327,7 +324,7 @@ impl Normalize for Struct {
 impl From<Struct> for Vec2 {
     fn from(value: Struct) -> Self {
         match value.id.name() {
-            "Vector2" => Vec2::new(value.get(&X).into(), value.get(&Y).into()),
+            "Vector2" => Vec2::new(value.get(&X.into()).into(), value.get(&Y.into()).into()),
             _ => panic!("Struct is not a Vec2"),
         }
     }
@@ -337,9 +334,9 @@ impl From<Struct> for Vec3 {
     fn from(value: Struct) -> Self {
         match value.id.name() {
             "Vector3" => Vec3::new(
-                value.get(&X).into(),
-                value.get(&Y).into(),
-                value.get(&Z).into(),
+                value.get(&X.into()).into(),
+                value.get(&Y.into()).into(),
+                value.get(&Z.into()).into(),
             ),
             _ => panic!("Struct is not a Vec3"),
         }
@@ -350,10 +347,10 @@ impl From<Struct> for Vec4 {
     fn from(value: Struct) -> Self {
         match value.id.name() {
             "Vector4" => Vec4::new(
-                value.get(&X).into(),
-                value.get(&Y).into(),
-                value.get(&Z).into(),
-                value.get(&W).into(),
+                value.get(&X.into()).into(),
+                value.get(&Y.into()).into(),
+                value.get(&Z.into()).into(),
+                value.get(&W.into()).into(),
             ),
             _ => panic!("Struct is not a Vec3"),
         }
@@ -363,7 +360,10 @@ impl From<Struct> for Vec4 {
 impl From<Struct> for Mat2 {
     fn from(value: Struct) -> Self {
         match value.id.name() {
-            "Matrix2" => Mat2::from_cols(value.get(&X_AXIS_2).into(), value.get(&Y_AXIS_2).into()),
+            "Matrix2" => Mat2::from_cols(
+                value.get(&X_AXIS_2.into()).into(),
+                value.get(&Y_AXIS_2.into()).into(),
+            ),
             _ => panic!("Struct is not a Mat2"),
         }
     }
@@ -373,9 +373,9 @@ impl From<Struct> for Mat3 {
     fn from(value: Struct) -> Self {
         match value.id.name() {
             "Matrix3" => Mat3::from_cols(
-                value.get(&X_AXIS_3).into(),
-                value.get(&Y_AXIS_3).into(),
-                value.get(&Z_AXIS_3).into(),
+                value.get(&X_AXIS_3.into()).into(),
+                value.get(&Y_AXIS_3.into()).into(),
+                value.get(&Z_AXIS_3.into()).into(),
             ),
             _ => panic!("Struct is not a Mat3"),
         }
@@ -386,10 +386,10 @@ impl From<Struct> for Mat4 {
     fn from(value: Struct) -> Self {
         match value.id.name() {
             "Matrix4" => Mat4::from_cols(
-                value.get(&X_AXIS_4).into(),
-                value.get(&Y_AXIS_4).into(),
-                value.get(&Z_AXIS_4).into(),
-                value.get(&W_AXIS_4).into(),
+                value.get(&X_AXIS_4.into()).into(),
+                value.get(&Y_AXIS_4.into()).into(),
+                value.get(&Z_AXIS_4.into()).into(),
+                value.get(&W_AXIS_4.into()).into(),
             ),
             _ => panic!("Struct is not a Mat4"),
         }
@@ -399,53 +399,53 @@ impl From<Struct> for Mat4 {
 impl From<Vec2> for Struct {
     fn from(value: Vec2) -> Self {
         Struct::new(StructIdentifier(VECTOR2))
-            .set(X, value.x.into())
-            .set(Y, value.y.into())
+            .set(X.into(), value.x.into())
+            .set(Y.into(), value.y.into())
     }
 }
 
 impl From<Vec3> for Struct {
     fn from(value: Vec3) -> Self {
         Struct::new(StructIdentifier(VECTOR3))
-            .set(X, value.x.into())
-            .set(Y, value.y.into())
-            .set(Z, value.z.into())
+            .set(X.into(), value.x.into())
+            .set(Y.into(), value.y.into())
+            .set(Z.into(), value.z.into())
     }
 }
 
 impl From<Vec4> for Struct {
     fn from(value: Vec4) -> Self {
         Struct::new(StructIdentifier(VECTOR4))
-            .set(X, value.x.into())
-            .set(Y, value.y.into())
-            .set(Z, value.z.into())
-            .set(W, value.w.into())
+            .set(X.into(), value.x.into())
+            .set(Y.into(), value.y.into())
+            .set(Z.into(), value.z.into())
+            .set(W.into(), value.w.into())
     }
 }
 
 impl From<Mat2> for Struct {
     fn from(value: Mat2) -> Self {
         Struct::new(StructIdentifier(MATRIX2))
-            .set(X_AXIS_2, value.x_axis.into())
-            .set(Y_AXIS_2, value.y_axis.into())
+            .set(X_AXIS_2.into(), value.x_axis.into())
+            .set(Y_AXIS_2.into(), value.y_axis.into())
     }
 }
 
 impl From<Mat3> for Struct {
     fn from(value: Mat3) -> Self {
         Struct::new(StructIdentifier(MATRIX3))
-            .set(X_AXIS_3, value.x_axis.into())
-            .set(Y_AXIS_3, value.y_axis.into())
-            .set(Z_AXIS_3, value.z_axis.into())
+            .set(X_AXIS_3.into(), value.x_axis.into())
+            .set(Y_AXIS_3.into(), value.y_axis.into())
+            .set(Z_AXIS_3.into(), value.z_axis.into())
     }
 }
 
 impl From<Mat4> for Struct {
     fn from(value: Mat4) -> Self {
         Struct::new(StructIdentifier(MATRIX4))
-            .set(X_AXIS_4, value.x_axis.into())
-            .set(Y_AXIS_4, value.y_axis.into())
-            .set(Z_AXIS_4, value.z_axis.into())
-            .set(W_AXIS_4, value.w_axis.into())
+            .set(X_AXIS_4.into(), value.x_axis.into())
+            .set(Y_AXIS_4.into(), value.y_axis.into())
+            .set(Z_AXIS_4.into(), value.z_axis.into())
+            .set(W_AXIS_4.into(), value.w_axis.into())
     }
 }

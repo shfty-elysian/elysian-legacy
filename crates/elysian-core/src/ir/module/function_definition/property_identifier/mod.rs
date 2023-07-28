@@ -6,9 +6,6 @@ use std::{
 
 use crate::ir::ast::{Expr, Identifier, Stmt};
 
-#[cfg(feature = "quote")]
-mod to_tokens;
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PropertyIdentifier(pub Identifier);
 

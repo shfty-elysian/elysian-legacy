@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-elysian-core = { path = "../elysian-core", features = ["internal"] }
-elysian-macros = { path = "../elysian-macros" }
+elysian-core = { path = "../elysian-core" }
+elysian-proc-macros = { path = "../elysian-proc-macros", features = ["internal"] }
+elysian-decl-macros = { path = "../elysian-decl-macros" }
 indexmap = "2.0.0"
 linkme = "0.3.13"

@@ -8,9 +8,6 @@ use crate::ir::{
     module::PropertyIdentifier,
 };
 
-#[cfg(feature = "quote")]
-mod to_tokens;
-
 /// Statement consuming the result of an expression
 pub enum Stmt {
     Block(Block),

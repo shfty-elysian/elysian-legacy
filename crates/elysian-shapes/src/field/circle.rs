@@ -1,20 +1,17 @@
-use std::{
-    fmt::Debug,
-    hash::{Hash, Hasher},
-};
+use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::IntoBlock,
+        ast::Identifier,
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
     property,
 };
+use elysian_decl_macros::elysian_function;
 
 use crate::modify::{Isosurface, ISOSURFACE};
 
@@ -22,33 +19,12 @@ use super::{Point, POINT};
 
 pub const CIRCLE: FunctionIdentifier = FunctionIdentifier::new("circle", 15738477621793375359);
 
-pub const RADIUS: PropertyIdentifier = PropertyIdentifier::new("radius", 213754678517975478);
+pub const RADIUS: Identifier = Identifier::new("radius", 213754678517975478);
 property!(RADIUS, RADIUS_PROP, Type::Number(NumericType::Float));
 
+#[derive(Debug, Clone, Hash)]
 pub struct Circle {
-    pub radius: Expr,
-}
-
-impl Debug for Circle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Circle")
-            .field("radius", &self.radius)
-            .finish()
-    }
-}
-
-impl Clone for Circle {
-    fn clone(&self) -> Self {
-        Self {
-            radius: self.radius.clone(),
-        }
-    }
-}
-
-impl Hash for Circle {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.radius.hash(state);
-    }
+    pub radius: elysian_core::ast::expr::Expr,
 }
 
 impl Domains for Circle {
@@ -68,6 +44,11 @@ impl AsIR for Circle {
         let point_spec = spec.filter(Point::domains());
         let isosurface_spec = spec.filter(Isosurface::domains());
 
+        let point_func = POINT.specialize(&point_spec);
+        let isosurface_func = ISOSURFACE.specialize(&isosurface_spec);
+
+        let circle = CIRCLE.specialize(spec);
+
         Point
             .functions(spec)
             .into_iter()
@@ -77,28 +58,10 @@ impl AsIR for Circle {
                 }
                 .functions(spec),
             )
-            .chain(FunctionDefinition {
-                id: CIRCLE.specialize(spec),
-                public: false,
-                inputs: vec![
-                    InputDefinition {
-                        id: RADIUS,
-                        mutable: false,
-                    },
-                    InputDefinition {
-                        id: CONTEXT_PROP,
-                        mutable: false,
-                    },
-                ],
-                output: CONTEXT_PROP,
-                block: ISOSURFACE
-                    .specialize(&isosurface_spec)
-                    .call([
-                        RADIUS.read(),
-                        POINT.specialize(&point_spec).call(CONTEXT_PROP.read()),
-                    ])
-                    .output()
-                    .block(),
+            .chain(elysian_function! {
+                fn circle(RADIUS, CONTEXT) -> CONTEXT {
+                    return isosurface_func(RADIUS, point_func(CONTEXT));
+                }
             })
             .collect()
     }

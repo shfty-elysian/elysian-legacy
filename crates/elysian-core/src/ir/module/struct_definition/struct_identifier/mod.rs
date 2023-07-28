@@ -8,9 +8,6 @@ use crate::ir::{
     module::PropertyIdentifier,
 };
 
-#[cfg(feature = "quote")]
-mod to_tokens;
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StructIdentifier(pub Identifier);
 

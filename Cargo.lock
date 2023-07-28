@@ -213,9 +213,10 @@ name = "elysian"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-decl-macros",
  "elysian-image",
- "elysian-macros",
  "elysian-naga",
+ "elysian-proc-macros",
  "elysian-shadertoy",
  "elysian-static",
  "elysian-syn",
@@ -226,14 +227,17 @@ dependencies = [
 name = "elysian-core"
 version = "0.1.0"
 dependencies = [
+ "elysian-proc-macros",
  "indexmap 2.0.0",
  "linkme",
- "proc-macro2",
- "quote",
  "rust-gpu-bridge",
  "tracing",
  "uuid",
 ]
+
+[[package]]
+name = "elysian-decl-macros"
+version = "0.1.0"
 
 [[package]]
 name = "elysian-image"
@@ -259,16 +263,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "elysian-macros"
-version = "0.1.0"
-dependencies = [
- "elysian-core",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "elysian-naga"
 version = "0.1.0"
 dependencies = [
@@ -276,6 +270,15 @@ dependencies = [
  "elysian-shapes",
  "indexmap 2.0.0",
  "naga",
+]
+
+[[package]]
+name = "elysian-proc-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -292,7 +295,8 @@ name = "elysian-shapes"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
- "elysian-macros",
+ "elysian-decl-macros",
+ "elysian-proc-macros",
  "indexmap 2.0.0",
  "linkme",
 ]
@@ -313,7 +317,7 @@ version = "0.1.0"
 dependencies = [
  "elysian-core",
  "elysian-interpreter",
- "elysian-macros",
+ "elysian-proc-macros",
  "prettyplease",
  "proc-macro2",
  "quote",
@@ -1108,6 +1112,7 @@ name = "test-shapes"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-proc-macros",
  "elysian-shapes",
  "rust-gpu-bridge",
 ]

@@ -1,18 +1,17 @@
 [package]
-name = "elysian-macros"
+name = "elysian-proc-macros"
 version = "0.1.0"
 edition = "2021"
 
 [features]
 default = ["syn"]
 syn = []
+internal = []
 
 [lib]
 proc-macro = true
 
 [dependencies]
-elysian-core = { path = "../elysian-core", features = ["quote"] }
-
 proc-macro2 = "1.0.66"
 syn = "2.0.27"
 quote = "1.0.32"

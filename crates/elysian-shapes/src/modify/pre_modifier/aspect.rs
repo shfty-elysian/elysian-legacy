@@ -4,70 +4,41 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Identifier, IntoBlock, IntoLiteral, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
+        ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
-            NumericType, PropertyIdentifier, SpecializationData, StructIdentifier, Type,
-            CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
     property,
 };
 
 use elysian_core::ast::expr::Expr;
+use elysian_decl_macros::elysian_function;
 
 pub const ASPECT: Identifier = Identifier::new("aspect", 346035631277210970);
-pub const ASPECT_PROP: PropertyIdentifier = PropertyIdentifier(ASPECT);
-pub const ASPECT_FUNC: FunctionIdentifier = FunctionIdentifier(ASPECT);
-property!(
-    ASPECT_PROP,
-    ASPECT_PROP_DEF,
-    Type::Number(NumericType::Float)
-);
+property!(ASPECT, ASPECT_PROP_DEF, Type::Number(NumericType::Float));
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub struct Aspect {
     pub aspect: Expr,
 }
 
-impl Hash for Aspect {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.aspect.hash(state);
-    }
-}
-
 impl Domains for Aspect {
     fn domains() -> Vec<PropertyIdentifier> {
-        vec![POSITION_2D, POSITION_3D]
+        vec![POSITION_2D.into(), POSITION_3D.into()]
     }
 }
 
 impl AsIR for Aspect {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let aspect = elysian_core::ir::ast::Expr::Struct(
-            StructIdentifier(VECTOR2),
-            [(X, ASPECT_PROP.read()), (Y, 1.0.literal())].into(),
-        );
+        let aspect = FunctionIdentifier(ASPECT).specialize(spec);
 
-        vec![FunctionDefinition {
-            id: ASPECT_FUNC.specialize(spec),
-            public: false,
-            inputs: vec![
-                InputDefinition {
-                    id: ASPECT_PROP,
-                    mutable: false,
-                },
-                InputDefinition {
-                    id: CONTEXT_PROP,
-                    mutable: true,
-                },
-            ],
-            output: CONTEXT_PROP,
-            block: [
-                [CONTEXT_PROP, POSITION_2D].write([CONTEXT_PROP, POSITION_2D].read() * aspect),
-                CONTEXT_PROP.read().output(),
-            ]
-            .block(),
+        vec![elysian_function! {
+            fn aspect(ASPECT, mut CONTEXT) -> CONTEXT {
+                CONTEXT.POSITION_2D = CONTEXT.POSITION_2D * VECTOR2 { X: ASPECT, Y: 1.0 };
+                return CONTEXT;
+            }
         }]
     }
 
@@ -76,7 +47,7 @@ impl AsIR for Aspect {
         spec: &SpecializationData,
         input: elysian_core::ir::ast::Expr,
     ) -> elysian_core::ir::ast::Expr {
-        ASPECT_FUNC
+        FunctionIdentifier(ASPECT)
             .specialize(spec)
             .call([self.aspect.clone().into(), input])
     }

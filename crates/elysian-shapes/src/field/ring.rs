@@ -1,20 +1,18 @@
-use std::{
-    fmt::Debug,
-    hash::{Hash, Hasher},
-};
+use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::IntoBlock,
+        ast::Identifier,
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
     property,
 };
+use elysian_decl_macros::elysian_function;
 
 use crate::modify::{Isosurface, Manifold, ISOSURFACE, MANIFOLD};
 
@@ -22,37 +20,13 @@ use super::{Circle, CIRCLE, RADIUS};
 
 pub const RING: FunctionIdentifier = FunctionIdentifier::new("ring", 18972348581943461950);
 
-pub const WIDTH: PropertyIdentifier = PropertyIdentifier::new("width", 2742125101201765597);
+pub const WIDTH: Identifier = Identifier::new("width", 2742125101201765597);
 property!(WIDTH, WIDTH_PROP, Type::Number(NumericType::Float));
 
+#[derive(Debug, Clone, Hash)]
 pub struct Ring {
     pub radius: Expr,
     pub width: Expr,
-}
-
-impl Debug for Ring {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Ring")
-            .field("radius", &self.radius)
-            .field("width", &self.width)
-            .finish()
-    }
-}
-
-impl Clone for Ring {
-    fn clone(&self) -> Self {
-        Self {
-            radius: self.radius.clone(),
-            width: self.width.clone(),
-        }
-    }
-}
-
-impl Hash for Ring {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.radius.hash(state);
-        self.width.hash(state);
-    }
 }
 
 impl Domains for Ring {
@@ -74,6 +48,12 @@ impl AsIR for Ring {
         let manifold_spec = spec.filter(Manifold::domains());
         let circle_spec = spec.filter(Circle::domains());
 
+        let isosurface_func = ISOSURFACE.specialize(&isosurface_spec);
+        let manifold_func = MANIFOLD.specialize(&manifold_spec);
+        let circle_func = CIRCLE.specialize(&circle_spec);
+
+        let ring = RING.specialize(spec);
+
         Circle {
             radius: self.radius.clone(),
         }
@@ -86,36 +66,10 @@ impl AsIR for Ring {
             }
             .functions(spec),
         )
-        .chain(FunctionDefinition {
-            id: RING.specialize(spec),
-            public: false,
-            inputs: vec![
-                InputDefinition {
-                    id: RADIUS,
-                    mutable: false,
-                },
-                InputDefinition {
-                    id: WIDTH,
-                    mutable: false,
-                },
-                InputDefinition {
-                    id: CONTEXT_PROP,
-                    mutable: false,
-                },
-            ],
-            output: CONTEXT_PROP,
-            block: ISOSURFACE
-                .specialize(&isosurface_spec)
-                .call([
-                    WIDTH.read(),
-                    MANIFOLD.specialize(&manifold_spec).call(
-                        CIRCLE
-                            .specialize(&circle_spec)
-                            .call([RADIUS.read(), CONTEXT_PROP.read()]),
-                    ),
-                ])
-                .output()
-                .block(),
+        .chain(elysian_function! {
+            fn ring(RADIUS, WIDTH, CONTEXT) -> CONTEXT {
+                return isosurface_func(WIDTH, manifold_func(circle_func(RADIUS, CONTEXT)));
+            }
         })
         .collect()
     }

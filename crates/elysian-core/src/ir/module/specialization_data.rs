@@ -12,14 +12,26 @@ pub struct SpecializationData {
 impl SpecializationData {
     pub fn new_2d() -> Self {
         Self {
-            domains: [POSITION_2D, DISTANCE, GRADIENT_2D].into_iter().collect(),
+            domains: [
+                PropertyIdentifier(POSITION_2D),
+                PropertyIdentifier(DISTANCE),
+                PropertyIdentifier(GRADIENT_2D),
+            ]
+            .into_iter()
+            .collect(),
             ..Default::default()
         }
     }
 
     pub fn new_3d() -> Self {
         Self {
-            domains: [POSITION_3D, DISTANCE, GRADIENT_3D].into_iter().collect(),
+            domains: [
+                PropertyIdentifier(POSITION_3D),
+                PropertyIdentifier(DISTANCE),
+                PropertyIdentifier(GRADIENT_3D),
+            ]
+            .into_iter()
+            .collect(),
             ..Default::default()
         }
     }

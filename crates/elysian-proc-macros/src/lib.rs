@@ -1,12 +1,9 @@
-mod passthrough_visitor;
-mod rust_reader;
+mod syn_to_elysian;
 
-use passthrough_visitor::PassthroughVisitor;
-use proc_macro::{Group, Ident, Punct, Spacing, TokenStream, TokenTree};
+use proc_macro::{Group, Ident, Punct, TokenStream, TokenTree};
 use quote::quote;
-use syn::{parse_quote, visit_mut::VisitMut, Block, Expr, Stmt};
-
-use crate::rust_reader::RustReader;
+use syn::{Block, Expr, Stmt};
+use syn_to_elysian::SynToElysian;
 
 fn passthrough_idents(tokens: TokenStream) -> (TokenStream, Vec<Ident>) {
     let mut iter = tokens.clone().into_iter();
@@ -46,15 +43,10 @@ pub fn elysian_expr(tokens: TokenStream) -> TokenStream {
     let (tokens, passthrough_idents) = passthrough_idents(tokens);
 
     let expr: Expr = syn::parse(tokens).expect("Failed to parse Expr");
+    let expr = SynToElysian::new(passthrough_idents).parse_expr(&expr);
+    //panic!("{expr:}");
 
-    let mut reader = RustReader::default();
-    reader.read_expr(&expr);
-    let block = reader.pop_expr();
-
-    let mut tokens: Expr = parse_quote!({#block});
-    PassthroughVisitor { passthrough_idents }.visit_expr_mut(&mut tokens);
-
-    quote!(#tokens).into()
+    quote!(#expr).into()
 }
 
 #[proc_macro]
@@ -69,15 +61,10 @@ pub fn elysian_stmt(tokens: TokenStream) -> TokenStream {
     let (tokens, passthrough_idents) = passthrough_idents(tokens);
 
     let stmt: Stmt = syn::parse(tokens).expect("Failed to parse Stmt");
+    let stmt = SynToElysian::new(passthrough_idents).parse_stmt(&stmt);
+    //panic!("{stmt:}");
 
-    let mut reader = RustReader::default();
-    reader.read_stmt(&stmt);
-    let block = reader.pop_stmt();
-
-    let mut tokens: Stmt = parse_quote!({#block});
-    PassthroughVisitor { passthrough_idents }.visit_stmt_mut(&mut tokens);
-
-    quote!(#tokens).into()
+    quote!(#stmt).into()
 }
 
 #[proc_macro]
@@ -90,13 +77,8 @@ pub fn elysian_block(tokens: TokenStream) -> TokenStream {
     let (tokens, passthrough_idents) = passthrough_idents(tokens);
 
     let block: Block = syn::parse(tokens).expect("Failed to parse Block");
+    let block = SynToElysian::new(passthrough_idents).parse_block(&block);
+    //panic!("{block:}");
 
-    let mut reader = RustReader::default();
-    reader.read_block(&block);
-    let block = reader.pop_block();
-
-    let mut tokens: Block = parse_quote!({#block});
-    PassthroughVisitor { passthrough_idents }.visit_block_mut(&mut tokens);
-
-    quote!(#tokens).into()
+    quote!(#block).into()
 }

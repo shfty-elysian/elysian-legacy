@@ -3,7 +3,10 @@ use std::fmt::Debug;
 use crate::{
     ast::expr::Expr as ElysianExpr,
     ir::{
-        ast::Value,
+        ast::{
+            Value, W_AXIS_4, X_AXIS_2, X_AXIS_3, X_AXIS_4, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z_AXIS_3,
+            Z_AXIS_4,
+        },
         module::{
             FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
             StructIdentifier, Type, CONTEXT,
@@ -11,12 +14,7 @@ use crate::{
     },
 };
 
-use super::{
-    stmt::Stmt, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, X, Y, Z,
-};
-
-#[cfg(feature = "quote")]
-mod to_tokens;
+use super::{stmt::Stmt, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, X, Y, Z};
 
 /// Expression resulting in a value
 #[derive(Debug, Clone, PartialEq)]
@@ -55,6 +53,7 @@ impl IntoIterator for Expr {
     }
 }
 
+use elysian_proc_macros::elysian_expr;
 use indexmap::IndexMap;
 use Expr::*;
 
@@ -62,48 +61,78 @@ impl From<ElysianExpr> for Expr {
     fn from(value: ElysianExpr) -> Self {
         match value {
             ElysianExpr::Literal(v) => Expr::Literal(v.into()),
-            ElysianExpr::Vector2(x, y) => Expr::Struct(
-                StructIdentifier(VECTOR2),
-                [(X, (*x).into()), (Y, (*y).into())].into_iter().collect(),
-            ),
-            ElysianExpr::Vector3(x, y, z) => Expr::Struct(
-                StructIdentifier(VECTOR3),
-                [(X, (*x).into()), (Y, (*y).into()), (Z, (*z).into())]
-                    .into_iter()
-                    .collect(),
-            ),
-            ElysianExpr::Vector4(x, y, z, w) => Expr::Struct(
-                StructIdentifier(VECTOR4),
-                [
-                    (X, (*x).into()),
-                    (Y, (*y).into()),
-                    (Z, (*z).into()),
-                    (W, (*w).into()),
-                ]
-                .into_iter()
-                .collect(),
-            ),
-            ElysianExpr::Matrix2(x, y) => Expr::Struct(
-                StructIdentifier(MATRIX2),
-                [(X, (*x).into()), (Y, (*y).into())].into_iter().collect(),
-            ),
-            ElysianExpr::Matrix3(x, y, z) => Expr::Struct(
-                StructIdentifier(MATRIX3),
-                [(X, (*x).into()), (Y, (*y).into()), (Z, (*z).into())]
-                    .into_iter()
-                    .collect(),
-            ),
-            ElysianExpr::Matrix4(x, y, z, w) => Expr::Struct(
-                StructIdentifier(MATRIX4),
-                [
-                    (X, (*x).into()),
-                    (Y, (*y).into()),
-                    (Z, (*z).into()),
-                    (W, (*w).into()),
-                ]
-                .into_iter()
-                .collect(),
-            ),
+            ElysianExpr::Vector2(x, y) => {
+                let x = Expr::from((*x).clone());
+                let y = Expr::from((*y).clone());
+                elysian_expr! {
+                    VECTOR2 {
+                        X: #x,
+                        Y: #y
+                    }
+                }
+            }
+            ElysianExpr::Vector3(x, y, z) => {
+                let x = Expr::from((*x).clone());
+                let y = Expr::from((*y).clone());
+                let z = Expr::from((*z).clone());
+                elysian_expr! {
+                    VECTOR3 {
+                        X: #x,
+                        Y: #y,
+                        Z: #z
+                    }
+                }
+            }
+            ElysianExpr::Vector4(x, y, z, w) => {
+                let x = Expr::from((*x).clone());
+                let y = Expr::from((*y).clone());
+                let z = Expr::from((*z).clone());
+                let w = Expr::from((*w).clone());
+                elysian_expr! {
+                    VECTOR4 {
+                        X: #x,
+                        Y: #y,
+                        Z: #z,
+                        W: #w
+                    }
+                }
+            }
+            ElysianExpr::Matrix2(x, y) => {
+                let x = Expr::from((*x).clone());
+                let y = Expr::from((*y).clone());
+                elysian_expr! {
+                    MATRIX2 {
+                        X_AXIS_2: #x,
+                        Y_AXIS_2: #y,
+                    }
+                }
+            }
+            ElysianExpr::Matrix3(x, y, z) => {
+                let x = Expr::from((*x).clone());
+                let y = Expr::from((*y).clone());
+                let z = Expr::from((*z).clone());
+                elysian_expr! {
+                    MATRIX3 {
+                        X_AXIS_3: #x,
+                        Y_AXIS_3: #y,
+                        Z_AXIS_3: #z,
+                    }
+                }
+            }
+            ElysianExpr::Matrix4(x, y, z, w) => {
+                let x = Expr::from((*x).clone());
+                let y = Expr::from((*y).clone());
+                let z = Expr::from((*z).clone());
+                let w = Expr::from((*w).clone());
+                elysian_expr! {
+                    MATRIX4 {
+                        X_AXIS_4: #x,
+                        Y_AXIS_4: #y,
+                        Z_AXIS_4: #z,
+                        W_AXIS_4: #w,
+                    }
+                }
+            }
             ElysianExpr::Read(p) => {
                 Expr::Read([PropertyIdentifier(CONTEXT)].into_iter().chain(p).collect())
             }

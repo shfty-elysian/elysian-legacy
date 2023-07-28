@@ -1,4 +1,4 @@
-use elysian_shapes::modify::ASPECT_PROP;
+use elysian_shapes::modify::ASPECT;
 use image::RgbImage;
 use rust_gpu_bridge::glam::Vec4;
 use tracing::instrument;
@@ -40,27 +40,27 @@ where
                 .flat_map(|(x, y)| {
                     let ctx = Struct::new(StructIdentifier(CONTEXT))
                         .set(
-                            POSITION_2D,
+                            POSITION_2D.into(),
                             Value::Struct(
                                 Struct::new(StructIdentifier(VECTOR2))
                                     .set(
-                                        X,
+                                        X.into(),
                                         (((x as f32 / width as f32) - 0.5) * 2.0 / scale).into(),
                                     )
                                     .set(
-                                        Y,
+                                        Y.into(),
                                         (((y as f32 / height as f32) - 0.5) * -2.0 / scale).into(),
                                     ),
                             ),
                         )
                         .set(
-                            ASPECT_PROP,
+                            ASPECT.into(),
                             Value::Number(Number::Float(width as f64 / height as f64)),
                         );
 
                     let ctx = shape(ctx);
 
-                    let c: Vec4 = ctx.get(&COLOR).into();
+                    let c: Vec4 = ctx.get(&COLOR.into()).into();
                     [
                         (c.x * 255.0).round() as u8,
                         (c.y * 255.0).round() as u8,

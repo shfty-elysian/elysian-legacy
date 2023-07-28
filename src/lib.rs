@@ -3,7 +3,8 @@ pub mod core {
 }
 
 pub mod macros {
-    pub use elysian_macros::*;
+    pub use elysian_proc_macros::*;
+    pub use elysian_decl_macros::*;
 }
 
 #[cfg(feature = "syn")]

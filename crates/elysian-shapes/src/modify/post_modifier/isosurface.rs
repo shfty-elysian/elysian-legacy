@@ -4,66 +4,45 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Block, Expr, Stmt, DISTANCE},
+        ast::{Expr, Identifier, DISTANCE},
         module::{
             FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
     property,
 };
 
 use elysian_core::ast::expr::Expr as AstExpr;
-use elysian_macros::elysian_block;
+use elysian_proc_macros::elysian_block;
 
 pub const ISOSURFACE: FunctionIdentifier =
     FunctionIdentifier::new("isosurface", 1163045471729794054);
 
-pub const DIST: PropertyIdentifier = PropertyIdentifier::new("dist", 463524741302033362);
+pub const DIST: Identifier = Identifier::new("dist", 463524741302033362);
 property!(DIST, DIST_PROP, Type::Number(NumericType::Float));
 
+#[derive(Debug, Clone, Hash)]
 pub struct Isosurface {
     pub dist: AstExpr,
 }
 
-impl Debug for Isosurface {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Isosurface")
-            .field("dist", &self.dist)
-            .finish()
-    }
-}
-
-impl Clone for Isosurface {
-    fn clone(&self) -> Self {
-        Self {
-            dist: self.dist.clone(),
-        }
-    }
-}
-
-impl Hash for Isosurface {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.dist.hash(state);
-    }
-}
-
 impl Domains for Isosurface {
     fn domains() -> Vec<PropertyIdentifier> {
-        vec![DISTANCE]
+        vec![DISTANCE.into()]
     }
 }
 
 impl AsIR for Isosurface {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let block = if spec.contains(&DISTANCE) {
+        let block = if spec.contains(&DISTANCE.into()) {
             elysian_block! {
-                #CONTEXT_PROP.#DISTANCE = #CONTEXT_PROP.#DISTANCE - #DIST;
-                return #CONTEXT_PROP;
+                CONTEXT.DISTANCE = CONTEXT.DISTANCE - DIST;
+                return CONTEXT;
             }
         } else {
             elysian_block! {
-                return #CONTEXT_PROP;
+                return CONTEXT;
             }
         };
 
@@ -72,15 +51,15 @@ impl AsIR for Isosurface {
             public: false,
             inputs: vec![
                 InputDefinition {
-                    id: DIST,
+                    id: DIST.into(),
                     mutable: false,
                 },
                 InputDefinition {
-                    id: CONTEXT_PROP,
+                    id: CONTEXT.into(),
                     mutable: true,
                 },
             ],
-            output: CONTEXT_PROP,
+            output: CONTEXT.into(),
             block,
         }]
     }

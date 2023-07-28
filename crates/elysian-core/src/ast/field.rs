@@ -10,7 +10,7 @@ use crate::ir::{
     ast::IntoBlock,
     module::{
         AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead,
-        PropertyIdentifier, SpecializationData, Type, CONTEXT_PROP,
+        PropertyIdentifier, SpecializationData, Type, CONTEXT,
     },
 };
 
@@ -48,13 +48,13 @@ impl AsModule for Field {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    id: CONTEXT_PROP,
+                    id: PropertyIdentifier(CONTEXT),
                     mutable: false,
                 }],
-                output: CONTEXT_PROP,
+                output: PropertyIdentifier(CONTEXT),
                 block: self
                     .field
-                    .expression(spec, CONTEXT_PROP.read())
+                    .expression(spec, PropertyIdentifier(CONTEXT).read())
                     .output()
                     .block(),
             })

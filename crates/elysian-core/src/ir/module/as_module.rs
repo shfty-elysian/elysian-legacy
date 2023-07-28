@@ -107,15 +107,16 @@ fn block_props(block: &Block) -> Vec<PropertyIdentifier> {
 macro_rules! property {
     ($id:ident, $prop:ident, $ty:expr) => {
         #[linkme::distributed_slice(elysian_core::ir::module::PROPERTIES)]
-        static $prop: elysian_core::ir::ast::Property =
-            elysian_core::ir::ast::Property { id: $id, ty: $ty };
+        static $prop: elysian_core::ir::ast::Property = elysian_core::ir::ast::Property {
+            id: elysian_core::ir::module::PropertyIdentifier($id),
+            ty: $ty,
+        };
     };
 }
 
 pub const CONTEXT: Identifier = Identifier::new("Context", 595454262490629935);
-pub const CONTEXT_PROP: PropertyIdentifier = PropertyIdentifier(CONTEXT);
 property!(
-    CONTEXT_PROP,
+    CONTEXT,
     CONTEXT_PROP_DEF,
     Type::Struct(StructIdentifier(CONTEXT))
 );

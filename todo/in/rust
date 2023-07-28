@@ -3,19 +3,9 @@
 
   DONE: Implemented via elysian_expr, elysian_stmt, elysian_block macros
 
-==============================================================================================
-
-* Elide semicolon from elysian_stmt
-
-* Elide braces from elysian_block
-
 * Support the full range of expression functions
 
-* Create equivalent macro for parsing a rust function into a FunctionDefinition
-  * Will need to support FunctionIdentifier substitution
-
-* Create equivalent macro for parsing a rust struct into a StructDefinition
-  * Will need to support StructIdentifier substitution
+  DONE: All existing functions are covered
 
 * Generalize and make less brittle
   * Introspecting the structure of PropertyIdentifier / Identifier
@@ -34,3 +24,20 @@
       * May need to integrate more tightly so it skips concrete IR
         and goes straight from Rust -> Rust
       * Some sort of ToTokens wrapper trait that can introduce metadata via param?
+
+  DONE: Reimplemented using a Rust -> Rust parser that interpolates by default,
+        and uses a # prefix to compose pre-converted IR
+
+* Create equivalent macro for parsing a rust function into a FunctionDefinition
+  * Will need to support FunctionIdentifier substitution
+
+  DONE: Implemented as declarative elysian_function macro
+
+==============================================================================================
+
+* Create equivalent macro for parsing a rust struct into a StructDefinition
+  * Will need to support StructIdentifier substitution
+
+* Expansion functionality for unsupported Rust operations
+  * ex. Converting add-assign into a write
+        Converting do / while / for into loop w/conditional breaks

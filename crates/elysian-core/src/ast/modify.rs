@@ -14,69 +14,69 @@ use crate::ir::{
     module::{
         AsModule, DynAsModule, FieldDefinition, FunctionDefinition, FunctionIdentifier,
         InputDefinition, IntoRead, PropertyIdentifier, SpecializationData, StructDefinition, Type,
-        CONTEXT_PROP,
+        CONTEXT,
     },
 };
 
 pub const CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
     FieldDefinition {
-        id: POSITION_2D,
+        id: PropertyIdentifier(POSITION_2D),
         public: true,
     },
     FieldDefinition {
-        id: POSITION_3D,
+        id: PropertyIdentifier(POSITION_3D),
         public: true,
     },
     FieldDefinition {
-        id: TIME,
+        id: PropertyIdentifier(TIME),
         public: true,
     },
     FieldDefinition {
-        id: DISTANCE,
+        id: PropertyIdentifier(DISTANCE),
         public: true,
     },
     FieldDefinition {
-        id: GRADIENT_2D,
+        id: PropertyIdentifier(GRADIENT_2D),
         public: true,
     },
     FieldDefinition {
-        id: GRADIENT_3D,
+        id: PropertyIdentifier(GRADIENT_3D),
         public: true,
     },
     FieldDefinition {
-        id: NORMAL,
+        id: PropertyIdentifier(NORMAL),
         public: true,
     },
     FieldDefinition {
-        id: UV,
+        id: PropertyIdentifier(UV),
         public: true,
     },
     FieldDefinition {
-        id: TANGENT_2D,
+        id: PropertyIdentifier(TANGENT_2D),
         public: true,
     },
     FieldDefinition {
-        id: TANGENT_3D,
+        id: PropertyIdentifier(TANGENT_3D),
         public: true,
     },
     FieldDefinition {
-        id: COLOR,
+        id: PropertyIdentifier(COLOR),
         public: true,
     },
     FieldDefinition {
-        id: LIGHT,
+        id: PropertyIdentifier(LIGHT),
         public: true,
     },
     FieldDefinition {
-        id: SUPPORT_2D,
+        id: PropertyIdentifier(SUPPORT_2D),
         public: true,
     },
     FieldDefinition {
-        id: SUPPORT_3D,
+        id: PropertyIdentifier(SUPPORT_3D),
         public: true,
     },
     FieldDefinition {
-        id: ERROR,
+        id: PropertyIdentifier(ERROR),
         public: true,
     },
 ];
@@ -134,10 +134,10 @@ impl AsModule for Modify {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    id: CONTEXT_PROP,
+                    id: PropertyIdentifier(CONTEXT),
                     mutable: false,
                 }],
-                output: CONTEXT_PROP,
+                output: PropertyIdentifier(CONTEXT),
                 block: self
                     .post_modifiers
                     .iter()
@@ -145,7 +145,9 @@ impl AsModule for Modify {
                         field_entry_point.call([self
                             .pre_modifiers
                             .iter()
-                            .fold(CONTEXT_PROP.read(), |acc, next| next.expression(spec, acc))]),
+                            .fold(PropertyIdentifier(CONTEXT).read(), |acc, next| {
+                                next.expression(spec, acc)
+                            })]),
                         |acc, next| next.expression(spec, acc),
                     )
                     .output()

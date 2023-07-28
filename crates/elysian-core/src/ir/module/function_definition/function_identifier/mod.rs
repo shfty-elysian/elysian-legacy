@@ -11,9 +11,6 @@ use crate::ir::ast::{Expr, Identifier};
 
 use super::SpecializationData;
 
-#[cfg(feature = "quote")]
-mod to_tokens;
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FunctionIdentifier(pub Identifier);
 

@@ -16,9 +16,6 @@ use super::{
     X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
 };
 
-#[cfg(feature = "quote")]
-mod to_tokens;
-
 /// Concrete value
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -290,8 +287,8 @@ where
 {
     Value::Struct(
         Struct::new(StructIdentifier(VECTOR2))
-            .set(X, t[0].clone().into())
-            .set(Y, t[1].clone().into()),
+            .set(X.into(), t[0].clone().into())
+            .set(Y.into(), t[1].clone().into()),
     )
 }
 
@@ -302,9 +299,9 @@ where
 {
     Value::Struct(
         Struct::new(StructIdentifier(VECTOR3))
-            .set(X, t[0].clone().into())
-            .set(Y, t[1].clone().into())
-            .set(Z, t[2].clone().into()),
+            .set(X.into(), t[0].clone().into())
+            .set(Y.into(), t[1].clone().into())
+            .set(Z.into(), t[2].clone().into()),
     )
 }
 
@@ -315,10 +312,10 @@ where
 {
     Value::Struct(
         Struct::new(StructIdentifier(VECTOR4))
-            .set(X, t[0].clone().into())
-            .set(Y, t[1].clone().into())
-            .set(Z, t[2].clone().into())
-            .set(W, t[3].clone().into()),
+            .set(X.into(), t[0].clone().into())
+            .set(Y.into(), t[1].clone().into())
+            .set(Z.into(), t[2].clone().into())
+            .set(W.into(), t[3].clone().into()),
     )
 }
 
@@ -329,8 +326,8 @@ where
 {
     Value::Struct(
         Struct::new(StructIdentifier(MATRIX2))
-            .set(X_AXIS_2, vector2(t[0].clone()))
-            .set(Y_AXIS_2, vector2(t[1].clone())),
+            .set(X_AXIS_2.into(), vector2(t[0].clone()))
+            .set(Y_AXIS_2.into(), vector2(t[1].clone())),
     )
 }
 
@@ -341,9 +338,9 @@ where
 {
     Value::Struct(
         Struct::new(StructIdentifier(MATRIX3))
-            .set(X_AXIS_3, vector3(t[0].clone()))
-            .set(Y_AXIS_3, vector3(t[1].clone()))
-            .set(Z_AXIS_3, vector3(t[2].clone())),
+            .set(X_AXIS_3.into(), vector3(t[0].clone()))
+            .set(Y_AXIS_3.into(), vector3(t[1].clone()))
+            .set(Z_AXIS_3.into(), vector3(t[2].clone())),
     )
 }
 
@@ -354,10 +351,10 @@ where
 {
     Value::Struct(
         Struct::new(StructIdentifier(MATRIX4))
-            .set(X_AXIS_4, vector4(t[0].clone()))
-            .set(Y_AXIS_4, vector4(t[1].clone()))
-            .set(Z_AXIS_4, vector4(t[2].clone()))
-            .set(W_AXIS_4, vector4(t[3].clone())),
+            .set(X_AXIS_4.into(), vector4(t[0].clone()))
+            .set(Y_AXIS_4.into(), vector4(t[1].clone()))
+            .set(Z_AXIS_4.into(), vector4(t[2].clone()))
+            .set(W_AXIS_4.into(), vector4(t[3].clone())),
     )
 }
 
@@ -365,8 +362,8 @@ impl From<Vec2> for Value {
     fn from(value: Vec2) -> Self {
         Value::Struct(
             Struct::new(StructIdentifier(VECTOR2))
-                .set(X, value.x.into())
-                .set(Y, value.y.into()),
+                .set(X.into(), value.x.into())
+                .set(Y.into(), value.y.into()),
         )
     }
 }
@@ -375,9 +372,9 @@ impl From<Vec3> for Value {
     fn from(value: Vec3) -> Self {
         Value::Struct(
             Struct::new(StructIdentifier(VECTOR3))
-                .set(X, value.x.into())
-                .set(Y, value.y.into())
-                .set(Z, value.z.into()),
+                .set(X.into(), value.x.into())
+                .set(Y.into(), value.y.into())
+                .set(Z.into(), value.z.into()),
         )
     }
 }
@@ -386,10 +383,10 @@ impl From<Vec4> for Value {
     fn from(value: Vec4) -> Self {
         Value::Struct(
             Struct::new(StructIdentifier(VECTOR4))
-                .set(X, value.x.into())
-                .set(Y, value.y.into())
-                .set(Z, value.z.into())
-                .set(W, value.w.into()),
+                .set(X.into(), value.x.into())
+                .set(Y.into(), value.y.into())
+                .set(Z.into(), value.z.into())
+                .set(W.into(), value.w.into()),
         )
     }
 }
@@ -462,7 +459,7 @@ impl From<Value> for Vec2 {
             panic!("Value is not a Struct")
         };
 
-        Vec2::new(s.get(&X).into(), s.get(&Y).into())
+        Vec2::new(s.get(&X.into()).into(), s.get(&Y.into()).into())
     }
 }
 
@@ -472,7 +469,11 @@ impl From<Value> for Vec3 {
             panic!("Value is not a Struct")
         };
 
-        Vec3::new(s.get(&X).into(), s.get(&Y).into(), s.get(&Z).into())
+        Vec3::new(
+            s.get(&X.into()).into(),
+            s.get(&Y.into()).into(),
+            s.get(&Z.into()).into(),
+        )
     }
 }
 
@@ -483,10 +484,10 @@ impl From<Value> for Vec4 {
     };
 
         Vec4::new(
-            s.get(&X).into(),
-            s.get(&Y).into(),
-            s.get(&Z).into(),
-            s.get(&W).into(),
+            s.get(&X.into()).into(),
+            s.get(&Y.into()).into(),
+            s.get(&Z.into()).into(),
+            s.get(&W.into()).into(),
         )
     }
 }

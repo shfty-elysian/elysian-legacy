@@ -4,14 +4,14 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{Block, Expr, Stmt, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM},
+        ast::{DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM},
         module::{
             FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-            SpecializationData, CONTEXT_PROP,
+            SpecializationData, CONTEXT,
         },
     },
 };
-use elysian_macros::elysian_block;
+use elysian_decl_macros::elysian_function;
 
 pub const MANIFOLD: FunctionIdentifier = FunctionIdentifier::new("manifold", 7861274791729269697);
 
@@ -20,44 +20,33 @@ pub struct Manifold;
 
 impl Domains for Manifold {
     fn domains() -> Vec<PropertyIdentifier> {
-        vec![GRADIENT_2D, GRADIENT_3D]
+        vec![GRADIENT_2D.into(), GRADIENT_3D.into()]
     }
 }
 
 impl AsIR for Manifold {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let gradient = if spec.contains(&GRADIENT_2D) {
+        let manifold = MANIFOLD.specialize(spec);
+
+        let gradient = if spec.contains(&GRADIENT_2D.into()) {
             GRADIENT_2D
-        } else if spec.contains(&GRADIENT_3D) {
+        } else if spec.contains(&GRADIENT_3D.into()) {
             GRADIENT_3D
         } else {
-            return vec![FunctionDefinition {
-                id: MANIFOLD.specialize(spec),
-                public: false,
-                inputs: vec![InputDefinition {
-                    id: CONTEXT_PROP,
-                    mutable: true,
-                }],
-                output: CONTEXT_PROP,
-                block: elysian_block! {
-                    return #CONTEXT_PROP;
-                },
+            return vec![elysian_function! {
+                fn manifold(CONTEXT) -> CONTEXT {
+                    return CONTEXT
+                }
             }];
         };
 
-        vec![FunctionDefinition {
-            id: MANIFOLD.specialize(spec),
-            public: false,
-            inputs: vec![InputDefinition {
-                id: CONTEXT_PROP,
-                mutable: true,
-            }],
-            output: CONTEXT_PROP,
-            block: elysian_block! {
-                let #NUM = #CONTEXT_PROP.#DISTANCE;
-                #CONTEXT_PROP.#gradient = #CONTEXT_PROP.#gradient * #NUM.sign();
-                return #CONTEXT_PROP;
-            },
+        vec![elysian_function! {
+            fn manifold(mut CONTEXT) -> CONTEXT {
+                let NUM = CONTEXT.DISTANCE;
+                CONTEXT.DISTANCE = NUM.abs();
+                CONTEXT.gradient = CONTEXT.gradient * NUM.sign();
+                return CONTEXT;
+            }
         }]
     }
 

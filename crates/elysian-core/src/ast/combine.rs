@@ -4,44 +4,42 @@ use std::hash::{Hash, Hasher};
 
 use indexmap::IndexMap;
 
-use crate::ir::ast::{COMBINE_CONTEXT, COMBINE_CONTEXT_PROP};
-use crate::ir::module::{
-    FunctionIdentifier, IntoRead, PropertyIdentifier, StructIdentifier, Type, CONTEXT_PROP,
-};
 use crate::ir::{
     as_ir::{AsIR, DynAsIR, HashIR},
-    ast::{Block, Expr},
+    ast::{Block, Expr, Identifier, COMBINE_CONTEXT},
     module::{
-        AsModule, DynAsModule, FieldDefinition, FunctionDefinition, InputDefinition,
-        SpecializationData, StructDefinition, CONTEXT,
+        AsModule, DynAsModule, FieldDefinition, FunctionDefinition, FunctionIdentifier,
+        InputDefinition, IntoRead, PropertyIdentifier, SpecializationData, StructDefinition,
+        StructIdentifier, Type, CONTEXT,
     },
 };
 use crate::property;
+use elysian_proc_macros::elysian_stmt;
 
-pub const LEFT: PropertyIdentifier = PropertyIdentifier::new("left", 635254731934742132);
+pub const LEFT: Identifier = Identifier::new("left", 635254731934742132);
 property!(LEFT, LEFT_PROP_DEF, Type::Struct(StructIdentifier(CONTEXT)));
 
-pub const RIGHT: PropertyIdentifier = PropertyIdentifier::new("right", 5251097991491214179);
+pub const RIGHT: Identifier = Identifier::new("right", 5251097991491214179);
 property!(
     RIGHT,
     RIGHT_PROP_DEF,
     Type::Struct(StructIdentifier(CONTEXT))
 );
 
-pub const OUT: PropertyIdentifier = PropertyIdentifier::new("out", 1470763158891875334);
+pub const OUT: Identifier = Identifier::new("out", 1470763158891875334);
 property!(OUT, OUT_PROP_DEF, Type::Struct(StructIdentifier(CONTEXT)));
 
 pub const COMBINE_CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
     FieldDefinition {
-        id: LEFT,
+        id: PropertyIdentifier(LEFT),
         public: false,
     },
     FieldDefinition {
-        id: RIGHT,
+        id: PropertyIdentifier(RIGHT),
         public: false,
     },
     FieldDefinition {
-        id: OUT,
+        id: PropertyIdentifier(OUT),
         public: false,
     },
 ];
@@ -107,28 +105,38 @@ impl AsModule for Combine {
 
         let mut block = vec![];
 
-        iter.fold(base.call(CONTEXT_PROP.read()), |acc, next| {
-            block.push(
-                COMBINE_CONTEXT_PROP.bind(
-                    StructIdentifier(COMBINE_CONTEXT)
-                        .construct([(LEFT, acc), (RIGHT, next.call(CONTEXT_PROP.read()))]),
-                ),
-            );
-            block.push(COMBINE_CONTEXT_PROP.bind(self.combinator.iter().fold(
-                COMBINE_CONTEXT_PROP.read(),
-                |acc: Expr, next| {
-                    let Expr::Call{ function, args } = next.expression(spec, acc) else  {
+        iter.fold(
+            base.call(PropertyIdentifier(CONTEXT).read()),
+            |acc, next| {
+                let next = (**next).clone();
+                block.push(elysian_stmt! {
+                    let COMBINE_CONTEXT = COMBINE_CONTEXT {
+                        LEFT: #acc,
+                        RIGHT: #next(CONTEXT)
+                    }
+                });
+                block.push(
+                    PropertyIdentifier(COMBINE_CONTEXT).bind(self.combinator.iter().fold(
+                        PropertyIdentifier(COMBINE_CONTEXT).read(),
+                        |acc: Expr, next| {
+                            let Expr::Call{ function, args } = next.expression(spec, acc) else  {
                             panic!("Combinator expression is not a Call")
                         };
 
-                    Expr::Call { function, args }
-                },
-            )));
-            block.push(OUT.bind([COMBINE_CONTEXT_PROP, OUT].read()));
-            OUT.read()
-        });
+                            Expr::Call { function, args }
+                        },
+                    )),
+                );
+                block.push(
+                    PropertyIdentifier(OUT).bind(
+                        [PropertyIdentifier(COMBINE_CONTEXT), PropertyIdentifier(OUT)].read(),
+                    ),
+                );
+                PropertyIdentifier(OUT).read()
+            },
+        );
 
-        block.push(OUT.read().output());
+        block.push(PropertyIdentifier(OUT).read().output());
 
         let block = Block(block);
 
@@ -140,10 +148,10 @@ impl AsModule for Combine {
                 id: entry_point.clone(),
                 public: true,
                 inputs: vec![InputDefinition {
-                    id: CONTEXT_PROP,
+                    id: PropertyIdentifier(CONTEXT),
                     mutable: false,
                 }],
-                output: CONTEXT_PROP,
+                output: PropertyIdentifier(CONTEXT),
                 block,
             }])
             .collect()

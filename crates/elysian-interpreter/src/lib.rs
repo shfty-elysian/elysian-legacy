@@ -4,7 +4,7 @@ use elysian_core::ir::{
     ast::Stmt::{self, *},
     ast::{Expr, Identifier, Struct, Value},
     module::{
-        FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT, CONTEXT_PROP,
+        FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT, 
     },
 };
 use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
@@ -63,7 +63,7 @@ const CALL_CONTEXT: Identifier = Identifier::new("CallContext", 0);
 
 pub fn evaluate_module(mut interpreter: Interpreter, module: &Module) -> Struct {
     interpreter.context = Struct::new(StructIdentifier(INTERPRETER_CONTEXT))
-        .set(CONTEXT_PROP, Value::Struct(interpreter.context));
+        .set(CONTEXT.into(), Value::Struct(interpreter.context));
     interpreter.functions = module
         .function_definitions
         .iter()

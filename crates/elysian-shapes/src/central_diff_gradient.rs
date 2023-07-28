@@ -7,16 +7,15 @@ use elysian_core::{
     ast::combine::{LEFT, RIGHT},
     ir::{
         as_ir::Domains,
-        ast::{
-            vector2, vector3, Expr, IntoBlock, IntoLiteral, Number, DISTANCE, GRADIENT_2D,
-            GRADIENT_3D, VECTOR2, X, Y,
-        },
+        ast::{Number, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
         module::{
-            AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
-            PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT_PROP,
+            AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+            SpecializationData, Type, CONTEXT,
         },
     },
 };
+use elysian_decl_macros::elysian_function;
+use elysian_proc_macros::elysian_expr;
 use indexmap::IndexMap;
 
 use crate::modify::{Translate, TRANSLATE};
@@ -51,92 +50,65 @@ impl AsModule for CentralDiffGradient {
         tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+        let entry_point = entry_point.clone();
         let field_entry_point = self.field.entry_point();
 
-        let (gradient, vec_x, vec_y) = if spec.contains(&GRADIENT_2D) {
+        let (gradient, vec_x, vec_y) = if spec.contains(&GRADIENT_2D.into()) {
             (
                 GRADIENT_2D,
-                vector2([1.0, 0.0]).literal(),
-                vector2([0.0, 1.0]).literal(),
+                elysian_expr!(VECTOR2 { X: 1.0, Y: 0.0 }),
+                elysian_expr!(VECTOR2 { X: 0.0, Y: 1.0 }),
             )
-        } else if spec.contains(&GRADIENT_3D) {
+        } else if spec.contains(&GRADIENT_3D.into()) {
             (
                 GRADIENT_3D,
-                vector3([1.0, 0.0, 0.0]).literal(),
-                vector3([0.0, 1.0, 0.0]).literal(),
+                elysian_expr!(VECTOR3 {
+                    X: 1.0,
+                    Y: 0.0,
+                    Z: 0.0
+                }),
+                elysian_expr!(VECTOR3 {
+                    X: 0.0,
+                    Y: 1.0,
+                    Z: 0.0
+                }),
             )
         } else {
             return self
                 .field
                 .functions(spec, tys, &field_entry_point)
                 .into_iter()
-                .chain([FunctionDefinition {
-                    id: entry_point.clone(),
-                    public: true,
-                    inputs: vec![InputDefinition {
-                        id: CONTEXT_PROP,
-                        mutable: true,
-                    }],
-                    output: CONTEXT_PROP,
-                    block: [CONTEXT_PROP.read().output()].block(),
-                }])
+                .chain(elysian_function! {
+                    fn entry_point(mut CONTEXT) -> CONTEXT {
+                        return CONTEXT;
+                    }
+                })
                 .collect();
         };
 
         let translate_spec = spec.filter(Translate::domains());
+        let translate_func = TRANSLATE.specialize(&translate_spec);
 
         let epsilon = self.epsilon.literal();
-
-        let expr_lx = field_entry_point.call(
-            TRANSLATE
-                .specialize(&translate_spec)
-                .call([vec_x.clone() * -epsilon.clone(), CONTEXT_PROP.read()]),
-        );
-
-        let expr_rx = field_entry_point.call(
-            TRANSLATE
-                .specialize(&translate_spec)
-                .call([vec_x * epsilon.clone(), CONTEXT_PROP.read()]),
-        );
-
-        let expr_ly = field_entry_point.call(
-            TRANSLATE
-                .specialize(&translate_spec)
-                .call([vec_y.clone() * -epsilon.clone(), CONTEXT_PROP.read()]),
-        );
-
-        let expr_ry = field_entry_point.call(
-            TRANSLATE
-                .specialize(&translate_spec)
-                .call([vec_y * epsilon.clone(), CONTEXT_PROP.read()]),
-        );
 
         self.field
             .functions(spec, tys, &field_entry_point)
             .into_iter()
-            .chain([FunctionDefinition {
-                id: entry_point.clone(),
-                public: true,
-                inputs: vec![InputDefinition {
-                    id: CONTEXT_PROP,
-                    mutable: true,
-                }],
-                output: CONTEXT_PROP.clone(),
-                block: [
-                    CONTEXT_PROP.bind(field_entry_point.call(CONTEXT_PROP.read())),
-                    LEFT.bind(expr_lx),
-                    RIGHT.bind(expr_rx),
-                    X.bind([LEFT, DISTANCE].read() - [RIGHT, DISTANCE].read()),
-                    LEFT.bind(expr_ly),
-                    RIGHT.bind(expr_ry),
-                    Y.bind([LEFT, DISTANCE].read() - [RIGHT, DISTANCE].read()),
-                    [CONTEXT_PROP, gradient].write(Expr::Struct(
-                        StructIdentifier(VECTOR2),
-                        [(X, X.read()), (Y, Y.read())].into_iter().collect(),
-                    )),
-                    CONTEXT_PROP.read().output(),
-                ]
-                .block(),
+            .chain([elysian_function! {
+                pub fn entry_point(mut CONTEXT) -> CONTEXT {
+                    let CONTEXT = field_entry_point(CONTEXT);
+                    let LEFT = field_entry_point(translate_func(#vec_x * -#epsilon, CONTEXT));
+                    let RIGHT = field_entry_point(#translate_func(#vec_x * #epsilon, CONTEXT));
+                    let X = LEFT.DISTANCE - RIGHT.DISTANCE;
+                    let LEFT = field_entry_point(translate_func(#vec_y * -#epsilon, CONTEXT));
+                    let RIGHT = field_entry_point(translate_func(#vec_y * #epsilon, CONTEXT));
+                    let Y = LEFT.DISTANCE - RIGHT.DISTANCE;
+                    CONTEXT.gradient = VECTOR2 {
+                        X: X,
+                        Y: Y,
+                    };
+                    return CONTEXT;
+                }
             }])
             .collect()
     }

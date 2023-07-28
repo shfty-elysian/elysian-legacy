@@ -1,19 +1,17 @@
-use std::{
-    fmt::Debug,
-    hash::{Hash, Hasher},
-};
+use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
     ast::expr::Expr,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{IntoBlock, POSITION_2D, POSITION_3D},
+        ast::{POSITION_2D, POSITION_3D},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, PropertyIdentifier,
-            SpecializationData, CONTEXT_PROP,
+            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+            SpecializationData, CONTEXT,
         },
     },
 };
+use elysian_decl_macros::elysian_function;
 
 use crate::modify::{Elongate, DIR_2D, DIR_3D, ELONGATE};
 
@@ -21,28 +19,9 @@ use super::{Point, POINT};
 
 pub const LINE: FunctionIdentifier = FunctionIdentifier::new("line", 14339483921749952476);
 
+#[derive(Debug, Clone, Hash)]
 pub struct Line {
     pub dir: Expr,
-}
-
-impl Debug for Line {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Line").field("dir", &self.dir).finish()
-    }
-}
-
-impl Clone for Line {
-    fn clone(&self) -> Self {
-        Self {
-            dir: self.dir.clone(),
-        }
-    }
-}
-
-impl Hash for Line {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.dir.hash(state);
-    }
 }
 
 impl Domains for Line {
@@ -59,9 +38,9 @@ impl AsIR for Line {
         &self,
         spec: &SpecializationData,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let dir = if spec.contains(&POSITION_2D) {
+        let dir = if spec.contains(&POSITION_2D.into()) {
             DIR_2D
-        } else if spec.contains(&POSITION_3D) {
+        } else if spec.contains(&POSITION_3D.into()) {
             DIR_3D
         } else {
             panic!("No position domain set")
@@ -69,6 +48,11 @@ impl AsIR for Line {
 
         let point_spec = spec.filter(Point::domains());
         let elongate_spec = spec.filter(Elongate::domains());
+
+        let point_func = POINT.specialize(&point_spec);
+        let elongate_func = ELONGATE.specialize(&elongate_spec);
+
+        let line = LINE.specialize(spec);
 
         Point
             .functions(spec)
@@ -80,27 +64,10 @@ impl AsIR for Line {
                 }
                 .functions(spec),
             )
-            .chain(FunctionDefinition {
-                id: LINE.specialize(spec),
-                public: false,
-                inputs: vec![
-                    InputDefinition {
-                        id: dir.clone(),
-                        mutable: false,
-                    },
-                    InputDefinition {
-                        id: CONTEXT_PROP,
-                        mutable: false,
-                    },
-                ],
-                output: CONTEXT_PROP,
-                block: POINT
-                    .specialize(&point_spec)
-                    .call([ELONGATE
-                        .specialize(&elongate_spec)
-                        .call([dir.read(), CONTEXT_PROP.read()])])
-                    .output()
-                    .block(),
+            .chain(elysian_function! {
+                fn line(dir, CONTEXT) -> CONTEXT {
+                    return point_func(elongate_func(dir, CONTEXT));
+                }
             })
             .collect()
     }

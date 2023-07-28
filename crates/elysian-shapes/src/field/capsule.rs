@@ -1,16 +1,16 @@
 use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
-use elysian_core::ir::ast::IntoBlock;
-use elysian_core::ir::module::{FunctionIdentifier, PropertyIdentifier, CONTEXT_PROP};
+use elysian_core::ir::module::{FunctionIdentifier, PropertyIdentifier, CONTEXT};
 use elysian_core::{
-    ast::expr::Expr,
+    ast::expr::Expr as ElysianExpr,
     ir::{
         as_ir::{AsIR, Domains},
         ast::{POSITION_2D, POSITION_3D},
-        module::{FunctionDefinition, InputDefinition, IntoRead, SpecializationData},
+        module::{FunctionDefinition, InputDefinition, SpecializationData},
     },
 };
+use elysian_decl_macros::elysian_function;
 
 use crate::modify::{Isosurface, DIR_2D, DIR_3D, ISOSURFACE};
 
@@ -18,34 +18,10 @@ use super::{Line, LINE, RADIUS};
 
 pub const CAPSULE: FunctionIdentifier = FunctionIdentifier::new("capsule", 14339483921749952476);
 
+#[derive(Debug, Clone, Hash)]
 pub struct Capsule {
-    pub dir: Expr,
-    pub radius: Expr,
-}
-
-impl Debug for Capsule {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Capsule")
-            .field("dir", &self.dir)
-            .field("radius", &self.radius)
-            .finish()
-    }
-}
-
-impl Clone for Capsule {
-    fn clone(&self) -> Self {
-        Self {
-            dir: self.dir.clone(),
-            radius: self.radius.clone(),
-        }
-    }
-}
-
-impl Hash for Capsule {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.dir.hash(state);
-        self.radius.hash(state);
-    }
+    pub dir: ElysianExpr,
+    pub radius: ElysianExpr,
 }
 
 impl Domains for Capsule {
@@ -62,9 +38,9 @@ impl AsIR for Capsule {
         &self,
         spec: &SpecializationData,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let dir = if spec.contains(&POSITION_2D) {
+        let dir = if spec.contains(&POSITION_2D.into()) {
             DIR_2D
-        } else if spec.contains(&POSITION_3D) {
+        } else if spec.contains(&POSITION_3D.into()) {
             DIR_3D
         } else {
             panic!("No position domain");
@@ -72,6 +48,11 @@ impl AsIR for Capsule {
 
         let isosurface_spec = spec.filter(Isosurface::domains());
         let line_spec = spec.filter(Line::domains());
+
+        let isosurface_func = ISOSURFACE.specialize(&isosurface_spec);
+        let line_func = LINE.specialize(&line_spec);
+
+        let capsule = CAPSULE.specialize(spec);
 
         Line {
             dir: self.dir.clone(),
@@ -84,33 +65,10 @@ impl AsIR for Capsule {
             }
             .functions(spec),
         )
-        .chain(FunctionDefinition {
-            id: CAPSULE.specialize(spec),
-            public: false,
-            inputs: vec![
-                InputDefinition {
-                    id: dir.clone(),
-                    mutable: false,
-                },
-                InputDefinition {
-                    id: RADIUS,
-                    mutable: false,
-                },
-                InputDefinition {
-                    id: CONTEXT_PROP,
-                    mutable: false,
-                },
-            ],
-            output: CONTEXT_PROP,
-            block: ISOSURFACE
-                .specialize(&isosurface_spec)
-                .call([
-                    RADIUS.read(),
-                    LINE.specialize(&line_spec)
-                        .call([dir.read(), CONTEXT_PROP.read()]),
-                ])
-                .output()
-                .block(),
+        .chain(elysian_function! {
+            fn capsule(dir, RADIUS, CONTEXT) -> CONTEXT {
+                return isosurface_func(RADIUS, line_func(dir, CONTEXT));
+            }
         })
         .collect()
     }

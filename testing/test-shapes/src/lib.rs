@@ -8,22 +8,27 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, DynAsIR},
         ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, X, Y, Z},
-        module::{AsModule, DynAsModule},
+        module::{AsModule, DynAsModule, PropertyIdentifier},
     },
 };
 use elysian_shapes::{
-    combine::{Blend, Boolean},
+    combine::{SmoothSubtraction, SmoothUnion, Subtraction, Union},
     field::{Capsule, Circle, Line, Point, Ring},
     modify::{
         IntoAspect, IntoElongate, IntoGradientNormals, IntoIsosurface, IntoManifold, IntoSet,
-        IntoTranslate, ASPECT_PROP,
+        IntoTranslate, ASPECT,
     },
     raymarch::{March, Raymarch},
 };
 use rust_gpu_bridge::glam::Mat4;
 
 pub fn point() -> DynAsModule {
-    Box::new(Point.field())
+    Box::new(
+        Point
+            .field()
+            .set(COLOR.into(), distance_color())
+            .aspect(Expr::Read(vec![ASPECT.into()])),
+    )
 }
 
 pub fn circle() -> DynAsModule {
@@ -31,7 +36,9 @@ pub fn circle() -> DynAsModule {
         Circle {
             radius: 0.5.literal(),
         }
-        .field(),
+        .field()
+        .set(COLOR.into(), distance_color())
+        .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
 
@@ -40,7 +47,9 @@ pub fn line() -> DynAsModule {
         Line {
             dir: [1.0, 0.0].literal(),
         }
-        .field(),
+        .field()
+        .set(COLOR.into(), distance_color())
+        .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
 
@@ -50,7 +59,9 @@ pub fn capsule() -> DynAsModule {
             dir: [1.5, 0.0].literal(),
             radius: 0.5.literal(),
         }
-        .field(),
+        .field()
+        .set(COLOR.into(), distance_color())
+        .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
 
@@ -60,23 +71,25 @@ pub fn ring() -> DynAsModule {
             radius: 1.0.literal(),
             width: 0.2.literal(),
         }
-        .field(),
+        .field()
+        .set(COLOR.into(), distance_color())
+        .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
 
 pub fn union() -> DynAsModule {
-    Box::new([circle(), line()].combine([Box::new(Boolean::Union) as Box<dyn AsIR>]))
+    Box::new([circle(), line()].combine([Box::new(Union) as Box<dyn AsIR>]))
 }
 
 pub fn smooth_union() -> DynAsModule {
     Box::new([circle(), line()].combine([
-        Box::new(Boolean::Union) as Box<dyn AsIR>,
-        Box::new(Blend::SmoothUnion {
-            prop: DISTANCE,
+        Box::new(Union) as Box<dyn AsIR>,
+        Box::new(SmoothUnion {
+            prop: DISTANCE.into(),
             k: 0.4.literal(),
         }),
-        Box::new(Blend::SmoothUnion {
-            prop: GRADIENT_2D,
+        Box::new(SmoothUnion {
+            prop: GRADIENT_2D.into(),
             k: 0.4.literal(),
         }),
     ]))
@@ -84,25 +97,25 @@ pub fn smooth_union() -> DynAsModule {
 
 pub fn kettle_bell() -> DynAsModule {
     let smooth_union: [DynAsIR; 3] = [
-        Box::new(Boolean::Union),
-        Box::new(Blend::SmoothUnion {
-            prop: DISTANCE,
+        Box::new(Union),
+        Box::new(SmoothUnion {
+            prop: DISTANCE.into(),
             k: 0.4.literal(),
         }),
-        Box::new(Blend::SmoothUnion {
-            prop: GRADIENT_2D,
+        Box::new(SmoothUnion {
+            prop: GRADIENT_2D.into(),
             k: 0.4.literal(),
         }),
     ];
 
     let smooth_subtraction: [DynAsIR; 3] = [
-        Box::new(Boolean::Subtraction),
-        Box::new(Blend::SmoothSubtraction {
-            prop: DISTANCE,
+        Box::new(Subtraction),
+        Box::new(SmoothSubtraction {
+            prop: DISTANCE.into(),
             k: 0.4.literal(),
         }),
-        Box::new(Blend::SmoothSubtraction {
-            prop: GRADIENT_2D,
+        Box::new(SmoothSubtraction {
+            prop: GRADIENT_2D.into(),
             k: 0.4.literal(),
         }),
     ];
@@ -142,17 +155,29 @@ pub fn kettle_bell() -> DynAsModule {
     let shape_d = shape_c
         .modify()
         .gradient_normals()
-        .set(COLOR, distance_color())
-        .aspect(Expr::Read(vec![ASPECT_PROP]));
+        .set(COLOR.into(), distance_normal_color())
+        .aspect(Expr::Read(vec![ASPECT.into()]));
 
     Box::new(shape_d)
 }
 
 pub fn distance_color() -> Expr {
     Expr::vector4(
-        (1.0.literal() - DISTANCE.read()) * ([NORMAL, X].read() * 0.5.literal() + 0.5.literal()),
-        (1.0.literal() - DISTANCE.read()) * ([NORMAL, Y].read() * 0.5.literal() + 0.5.literal()),
-        (1.0.literal() - DISTANCE.read()) * ([NORMAL, Z].read() * 0.5.literal() + 0.5.literal()),
+        1.0.literal() - PropertyIdentifier(DISTANCE).read(),
+        1.0.literal() - PropertyIdentifier(DISTANCE).read(),
+        1.0.literal() - PropertyIdentifier(DISTANCE).read(),
+        1.0.literal(),
+    )
+}
+
+pub fn distance_normal_color() -> Expr {
+    Expr::vector4(
+        (1.0.literal() - PropertyIdentifier(DISTANCE).read())
+            * ([NORMAL.into(), X.into()].read() * 0.5.literal() + 0.5.literal()),
+        (1.0.literal() - PropertyIdentifier(DISTANCE).read())
+            * ([NORMAL.into(), Y.into()].read() * 0.5.literal() + 0.5.literal()),
+        (1.0.literal() - PropertyIdentifier(DISTANCE).read())
+            * ([NORMAL.into(), Z.into()].read() * 0.5.literal() + 0.5.literal()),
         1.0.literal(),
     )
 }
@@ -197,13 +222,13 @@ pub fn raymarched() -> DynAsModule {
                             .isosurface(0.2.literal()),
                     ),
                 ]
-                .combine([Box::new(Boolean::Union) as Box<dyn AsIR>])
+                .combine([Box::new(Union) as Box<dyn AsIR>])
                 .gradient_normals()
-                .set(COLOR, distance_color()),
+                .set(COLOR.into(), distance_normal_color()),
             ),
         }
         .modify()
-        .aspect(Expr::Read(vec![ASPECT_PROP])),
+        .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
 

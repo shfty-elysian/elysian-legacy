@@ -1,7 +1,7 @@
 use elysian_core::ir::{
     ast::{
-        Identifier, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X,
-        X_AXIS_2, X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
+        Identifier, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
+        X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
     },
     module::{
         Module, NumericType, PropertyIdentifier, SpecializationData, StructIdentifier, CONTEXT,
@@ -138,10 +138,7 @@ where
                                     Visibility::Inherited
                                 },
                                 mutability: FieldMutability::None,
-                                ident: Some(Ident::new(
-                                    &field.id.name_unique(),
-                                    Span::call_site(),
-                                )),
+                                ident: Some(Ident::new(&field.id.name_unique(), Span::call_site())),
                                 colon_token: Default::default(),
                                 ty: Type::Path(TypePath {
                                     qself: None,
@@ -542,40 +539,55 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
                     paren_token: Default::default(),
                     args: match structure.name() {
                         "Vector2" => [
-                            expr_to_syn(module, fields.get(&X).expect("No X for Vec2")),
-                            expr_to_syn(module, fields.get(&Y).expect("No Y for Vec2")),
+                            expr_to_syn(
+                                module,
+                                fields.get(&PropertyIdentifier(X)).expect("No X for Vec2"),
+                            ),
+                            expr_to_syn(
+                                module,
+                                fields.get(&PropertyIdentifier(Y)).expect("No Y for Vec2"),
+                            ),
                         ]
                         .into_iter()
                         .collect(),
                         "Vector3" => [
-                            expr_to_syn(module, fields.get(&X).expect("No X for Vec3")),
-                            expr_to_syn(module, fields.get(&Y).expect("No Y for Vec3")),
-                            expr_to_syn(module, fields.get(&Z).expect("No Z for Vec3")),
+                            expr_to_syn(
+                                module,
+                                fields.get(&PropertyIdentifier(X)).expect("No X for Vec3"),
+                            ),
+                            expr_to_syn(
+                                module,
+                                fields.get(&PropertyIdentifier(Y)).expect("No Y for Vec3"),
+                            ),
+                            expr_to_syn(
+                                module,
+                                fields.get(&PropertyIdentifier(Z)).expect("No Z for Vec3"),
+                            ),
                         ]
                         .into_iter()
                         .collect(),
                         "Vector4" => [
                             expr_to_syn(
                                 module,
-                                fields.get(&X).unwrap_or_else(|| {
+                                fields.get(&PropertyIdentifier(X)).unwrap_or_else(|| {
                                     panic!("No X in {fields:#?} for {structure:#?}")
                                 }),
                             ),
                             expr_to_syn(
                                 module,
-                                fields.get(&Y).unwrap_or_else(|| {
+                                fields.get(&PropertyIdentifier(Y)).unwrap_or_else(|| {
                                     panic!("No Y in {fields:#?} for {structure:#?}")
                                 }),
                             ),
                             expr_to_syn(
                                 module,
-                                fields.get(&Z).unwrap_or_else(|| {
+                                fields.get(&PropertyIdentifier(Z)).unwrap_or_else(|| {
                                     panic!("No Z in {fields:#?} for {structure:#?}")
                                 }),
                             ),
                             expr_to_syn(
                                 module,
-                                fields.get(&W).unwrap_or_else(|| {
+                                fields.get(&PropertyIdentifier(W)).unwrap_or_else(|| {
                                     panic!("No W in {fields:#?} for {structure:#?}")
                                 }),
                             ),
@@ -585,11 +597,15 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
                         "Matrix2" => [
                             expr_to_syn(
                                 module,
-                                fields.get(&X_AXIS_2).expect("No X_AXIS for Matrix2"),
+                                fields
+                                    .get(&PropertyIdentifier(X_AXIS_2))
+                                    .expect("No X_AXIS for Matrix2"),
                             ),
                             expr_to_syn(
                                 module,
-                                fields.get(&Y_AXIS_2).expect("No Y_AXIS for Matrix2"),
+                                fields
+                                    .get(&PropertyIdentifier(Y_AXIS_2))
+                                    .expect("No Y_AXIS for Matrix2"),
                             ),
                         ]
                         .into_iter()
@@ -597,15 +613,21 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
                         "Matrix3" => [
                             expr_to_syn(
                                 module,
-                                fields.get(&X_AXIS_3).expect("No X_AXIS for Matrix3"),
+                                fields
+                                    .get(&PropertyIdentifier(X_AXIS_3))
+                                    .expect("No X_AXIS for Matrix3"),
                             ),
                             expr_to_syn(
                                 module,
-                                fields.get(&Y_AXIS_3).expect("No Y_AXIS for Matrix3"),
+                                fields
+                                    .get(&PropertyIdentifier(Y_AXIS_3))
+                                    .expect("No Y_AXIS for Matrix3"),
                             ),
                             expr_to_syn(
                                 module,
-                                fields.get(&Z_AXIS_3).expect("No Z_AXIS for Matrix3"),
+                                fields
+                                    .get(&PropertyIdentifier(Z_AXIS_3))
+                                    .expect("No Z_AXIS for Matrix3"),
                             ),
                         ]
                         .into_iter()
@@ -613,19 +635,27 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
                         "Matrix4" => [
                             expr_to_syn(
                                 module,
-                                fields.get(&X_AXIS_4).expect("No X_AXIS for Matrix4"),
+                                fields
+                                    .get(&PropertyIdentifier(X_AXIS_4))
+                                    .expect("No X_AXIS for Matrix4"),
                             ),
                             expr_to_syn(
                                 module,
-                                fields.get(&Y_AXIS_4).expect("No Y_AXIS for Matrix4"),
+                                fields
+                                    .get(&PropertyIdentifier(Y_AXIS_4))
+                                    .expect("No Y_AXIS for Matrix4"),
                             ),
                             expr_to_syn(
                                 module,
-                                fields.get(&Z_AXIS_4).expect("No Z_AXIS for Matrix4"),
+                                fields
+                                    .get(&PropertyIdentifier(Z_AXIS_4))
+                                    .expect("No Z_AXIS for Matrix4"),
                             ),
                             expr_to_syn(
                                 module,
-                                fields.get(&W_AXIS_4).expect("No W_AXIS for Matrix4"),
+                                fields
+                                    .get(&PropertyIdentifier(W_AXIS_4))
+                                    .expect("No W_AXIS for Matrix4"),
                             ),
                         ]
                         .into_iter()
@@ -804,4 +834,3 @@ fn path_to_syn(path: &Vec<PropertyIdentifier>) -> Expr {
         })
     })
 }
-

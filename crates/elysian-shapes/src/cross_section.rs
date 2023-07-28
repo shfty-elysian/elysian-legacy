@@ -4,12 +4,13 @@ use std::{
 };
 
 use elysian_core::ir::{
-    ast::{Expr, IntoBlock, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
+    ast::{Expr, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
     module::{
-        AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
-        PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT_PROP,
+        AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+        SpecializationData, Type, CONTEXT,
     },
 };
+use elysian_decl_macros::elysian_function;
 use indexmap::IndexMap;
 
 pub const CROSS_SECTION: FunctionIdentifier =
@@ -46,42 +47,31 @@ impl AsModule for CrossSection {
         tys: &IndexMap<PropertyIdentifier, Type>,
         _: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        if !spec.contains(&POSITION_2D) {
+        if !spec.contains(&POSITION_2D.into()) {
             panic!("CrossSection is only compatible with the 2D position domain");
         }
 
-        let spec_3d = SpecializationData::new_3d();
+        let x_axis = Expr::from(self.x_axis.clone());
+        let y_axis = Expr::from(self.y_axis.clone());
+
         let field_entry_point = self.field.entry_point();
+
         self.field
-            .functions(&spec_3d, tys, &field_entry_point)
+            .functions(&SpecializationData::new_3d(), tys, &field_entry_point)
             .into_iter()
-            .chain([FunctionDefinition {
-                id: CROSS_SECTION,
-                public: false,
-                inputs: vec![InputDefinition {
-                    id: CONTEXT_PROP,
-                    mutable: true,
-                }],
-                output: CONTEXT_PROP,
-                block: [
-                    [CONTEXT_PROP, POSITION_3D].write(
-                        Expr::from(self.x_axis.clone()) * [CONTEXT_PROP, POSITION_2D, X].read()
-                            + Expr::from(self.y_axis.clone())
-                                * [CONTEXT_PROP, POSITION_2D, Y].read(),
-                    ),
-                    CONTEXT_PROP.bind(field_entry_point.call(CONTEXT_PROP.read())),
-                    [CONTEXT_PROP, GRADIENT_2D].write(Expr::Struct(
-                        StructIdentifier(VECTOR2),
-                        [
-                            (X, [CONTEXT_PROP, GRADIENT_3D, X].read()),
-                            (Y, [CONTEXT_PROP, GRADIENT_3D, Y].read()),
-                        ]
-                        .into_iter()
-                        .collect(),
-                    )),
-                    CONTEXT_PROP.read().output(),
-                ]
-                .block(),
+            .chain([elysian_function! {
+                fn CROSS_SECTION(mut CONTEXT) -> CONTEXT {
+                    CONTEXT.POSITION_3D =
+                        #x_axis * CONTEXT.POSITION_2D.X
+                            + #y_axis * CONTEXT.POSITION_2D.Y;
+
+                    let CONTEXT = field_entry_point(CONTEXT);
+                    CONTEXT.GRADIENT_2D = VECTOR2 {
+                        X: CONTEXT.GRADIENT_3D.X,
+                        Y: CONTEXT.GRADIENT_3D.Y,
+                    };
+                    return CONTEXT;
+                }
             }])
             .collect()
     }

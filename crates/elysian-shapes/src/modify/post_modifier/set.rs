@@ -4,13 +4,14 @@ use elysian_core::{
     ast::modify::Modify,
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{IntoBlock, GRADIENT_2D, GRADIENT_3D},
+        ast::{Expr, GRADIENT_2D, GRADIENT_3D},
         module::{
-            AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, IntoWrite,
-            PropertyIdentifier, SpecializationData, CONTEXT_PROP,
+            AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+            SpecializationData, CONTEXT,
         },
     },
 };
+use elysian_decl_macros::elysian_function;
 
 pub const SET: FunctionIdentifier = FunctionIdentifier::new("set", 1768232690987692666);
 
@@ -22,27 +23,22 @@ pub struct Set {
 
 impl Domains for Set {
     fn domains() -> Vec<PropertyIdentifier> {
-        vec![GRADIENT_2D, GRADIENT_3D]
+        vec![GRADIENT_2D.into(), GRADIENT_3D.into()]
     }
 }
 
 impl AsIR for Set {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let block = [
-            [CONTEXT_PROP, self.id.clone()].write(self.expr.clone().into()),
-            CONTEXT_PROP.read().output(),
-        ]
-        .block();
+        let prop = self.id.clone();
+        let expr = Expr::from(self.expr.clone());
 
-        vec![FunctionDefinition {
-            id: SET.specialize(spec),
-            public: false,
-            inputs: vec![InputDefinition {
-                id: CONTEXT_PROP,
-                mutable: true,
-            }],
-            output: CONTEXT_PROP,
-            block,
+        let set = SET.specialize(spec);
+
+        vec![elysian_function! {
+            fn set(mut CONTEXT) -> CONTEXT {
+                CONTEXT.prop = #expr;
+                return CONTEXT
+            }
         }]
     }
 

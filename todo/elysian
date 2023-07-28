@@ -332,6 +332,25 @@
 
   DONE: Implemented as StructIdentifier
 
+* Consider moving test-bin build.rs into test-shapes
+  * Would result in better encapsulation if feasible
+  * May be worth feature-gating to avoid compiling static shapes where unnecessary
+    * ex. In the syn crate
+
+  SKIPPED: Not feasible as it causes a cyclic dependency between build script and crate
+
+* Long-term: Consider using a subset of rhai for IR / interpreter purposes
+  * Large in scope, but offers simplification via disabling functionality
+    * Raw engine + minimal set of modules
+  * Would simplify rust -> IR -> output process
+  * Opens up a lot of potential for extensibility
+  * Gut feeling says rhai isn't the right choice for internals,
+    since its specializations differ from those of the existing IR;
+    better to consider it for frontend scripting or such
+
+  SKIPPED: Potentially as an output target, but both Elysian and rhai are too specialized
+           to their individual use-cases to be interchangeable.
+
 =========================================================================================================
 
 * Consider moving unary / binary / ternary ops into shareable enums
@@ -382,16 +401,3 @@
 * Error handling pass
   * Replace panics with Result and error types
 
-* Consider moving test-bin build.rs into test-shapes
-  * Would result in better encapsulation if feasible
-  * May be worth feature-gating to avoid compiling static shapes where unnecessary
-    * ex. In the syn crate
-
-* Long-term: Consider using a subset of rhai for IR / interpreter purposes
-  * Large in scope, but offers simplification via disabling functionality
-    * Raw engine + minimal set of modules
-  * Would simplify rust -> IR -> output process
-  * Opens up a lot of potential for extensibility
-  * Gut feeling says rhai isn't the right choice for internals,
-    since its specializations differ from those of the existing IR;
-    better to consider it for frontend scripting or such
