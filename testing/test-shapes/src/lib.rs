@@ -5,9 +5,8 @@ use elysian_core::{
         field::IntoField,
     },
     ir::{
-        as_ir::{AsIR, DynAsIR},
         ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, UV, X, Y, Z},
-        module::{AsModule, DynAsModule, PropertyIdentifier},
+        module::{AsIR, DynAsIR, PropertyIdentifier},
     },
 };
 use elysian_shapes::{
@@ -21,7 +20,7 @@ use elysian_shapes::{
 };
 use rust_gpu_bridge::glam::Mat4;
 
-pub fn point() -> DynAsModule {
+pub fn point() -> DynAsIR {
     Box::new(
         Point
             .field()
@@ -31,7 +30,7 @@ pub fn point() -> DynAsModule {
     )
 }
 
-pub fn chebyshev() -> DynAsModule {
+pub fn chebyshev() -> DynAsIR {
     Box::new(
         Chebyshev
             .field()
@@ -41,7 +40,7 @@ pub fn chebyshev() -> DynAsModule {
     )
 }
 
-pub fn line() -> DynAsModule {
+pub fn line() -> DynAsIR {
     Box::new(
         Line {
             dir: [1.0, 0.0].literal(),
@@ -52,7 +51,7 @@ pub fn line() -> DynAsModule {
     )
 }
 
-fn quad() -> DynAsModule {
+fn quad() -> DynAsIR {
     let extent = [1.0, 0.5].literal();
 
     Box::new(
@@ -61,7 +60,7 @@ fn quad() -> DynAsModule {
                 Point
                     .field()
                     .basis_bound(BoundType::Lower, Expr::Literal([0.0, 0.0].into())),
-            ) as Box<dyn AsModule>,
+            ) as Box<dyn AsIR>,
             Box::new(
                 Chebyshev
                     .field()
@@ -69,7 +68,7 @@ fn quad() -> DynAsModule {
             ),
         ]
         .combine([
-            Box::new(Sided { flip: false }) as Box<dyn AsIR>,
+            Box::new(Sided { flip: false }) as DynAsIR,
             Box::new(Displace {
                 prop: DISTANCE.into(),
             }),
@@ -86,7 +85,7 @@ fn quad() -> DynAsModule {
     )
 }
 
-pub fn circle() -> DynAsModule {
+pub fn circle() -> DynAsIR {
     Box::new(
         Circle {
             radius: 0.5.literal(),
@@ -97,7 +96,7 @@ pub fn circle() -> DynAsModule {
     )
 }
 
-pub fn capsule() -> DynAsModule {
+pub fn capsule() -> DynAsIR {
     Box::new(
         Capsule {
             dir: [1.5, 0.0].literal(),
@@ -109,7 +108,7 @@ pub fn capsule() -> DynAsModule {
     )
 }
 
-pub fn ring() -> DynAsModule {
+pub fn ring() -> DynAsIR {
     Box::new(
         Ring {
             radius: 1.0.literal(),
@@ -121,13 +120,13 @@ pub fn ring() -> DynAsModule {
     )
 }
 
-pub fn union() -> DynAsModule {
-    Box::new([circle(), line()].combine([Box::new(Union::default()) as Box<dyn AsIR>]))
+pub fn union() -> DynAsIR {
+    Box::new([circle(), line()].combine([Box::new(Union::default()) as DynAsIR]))
 }
 
-pub fn smooth_union() -> DynAsModule {
+pub fn smooth_union() -> DynAsIR {
     Box::new([circle(), line()].combine([
-        Box::new(Union::default()) as Box<dyn AsIR>,
+        Box::new(Union::default()) as DynAsIR,
         Box::new(SmoothUnion {
             prop: DISTANCE.into(),
             k: 0.4.literal(),
@@ -143,7 +142,7 @@ pub fn smooth_union() -> DynAsModule {
     ]))
 }
 
-pub fn kettle_bell() -> DynAsModule {
+pub fn kettle_bell() -> DynAsIR {
     let smooth_union: [DynAsIR; 4] = [
         Box::new(Union::default()),
         Box::new(SmoothUnion {
@@ -176,7 +175,7 @@ pub fn kettle_bell() -> DynAsModule {
         }),
     ];
 
-    let shape_a: [DynAsModule; 2] = [
+    let shape_a: [DynAsIR; 2] = [
         Box::new(
             Circle {
                 radius: 1.0.literal(),
@@ -194,7 +193,7 @@ pub fn kettle_bell() -> DynAsModule {
         ),
     ];
 
-    let shape_b: [DynAsModule; 2] = [
+    let shape_b: [DynAsIR; 2] = [
         Box::new(shape_a.combine(smooth_union)),
         Box::new(
             Capsule {
@@ -216,7 +215,7 @@ pub fn kettle_bell() -> DynAsModule {
     Box::new(shape_d)
 }
 
-pub fn letter_t() -> DynAsModule {
+pub fn letter_t() -> DynAsIR {
     let smooth_union: [DynAsIR; 4] = [
         Box::new(Union::default()),
         Box::new(SmoothUnion {
@@ -233,14 +232,14 @@ pub fn letter_t() -> DynAsModule {
         }),
     ];
 
-    let shape_a: DynAsModule = Box::new(
+    let shape_a: DynAsIR = Box::new(
         Line {
             dir: [1.0, 0.0].literal(),
         }
         .field(),
     );
 
-    let shape_b: DynAsModule = Box::new(
+    let shape_b: DynAsIR = Box::new(
         Line {
             dir: [0.0, 1.0].literal(),
         }
@@ -248,7 +247,7 @@ pub fn letter_t() -> DynAsModule {
         .translate([0.0, -1.2].literal()),
     );
 
-    let foo = [shape_a as DynAsModule, shape_b]
+    let foo = [shape_a as DynAsIR, shape_b]
         .combine(smooth_union)
         .translate([0.0, 1.0].literal());
 
@@ -297,7 +296,7 @@ pub fn uv_color() -> Expr {
     )
 }
 
-pub fn raymarched() -> DynAsModule {
+pub fn raymarched() -> DynAsIR {
     //let projection = Mat4::orthographic_rh(-1.0, 1.0, -1.0, 1.0, 0.0, 10.0);
     let projection = Mat4::perspective_infinite_rh(std::f32::consts::PI * 0.5, 1.0, 0.01);
     Box::new(
@@ -317,7 +316,7 @@ pub fn raymarched() -> DynAsModule {
                             .isosurface(1.0.literal())
                             .manifold()
                             .isosurface(0.2.literal()),
-                    ) as Box<dyn AsModule>,
+                    ) as Box<dyn AsIR>,
                     Box::new(
                         Point
                             .field()
@@ -337,7 +336,7 @@ pub fn raymarched() -> DynAsModule {
                             .isosurface(0.2.literal()),
                     ),
                 ]
-                .combine([Box::new(Union::default()) as Box<dyn AsIR>])
+                .combine([Box::new(Union::default()) as DynAsIR])
                 .gradient_normals()
                 .set_post(COLOR.into(), uv_color()),
             ),
@@ -346,11 +345,11 @@ pub fn raymarched() -> DynAsModule {
     )
 }
 
-pub fn test_shape() -> DynAsModule {
+pub fn test_shape() -> DynAsIR {
     letter_t()
 }
 
-pub fn shapes() -> [(&'static str, DynAsModule); 12] {
+pub fn shapes() -> [(&'static str, DynAsIR); 12] {
     [
         ("point", point()),
         ("chebyshev", chebyshev()),

@@ -1,13 +1,10 @@
 use std::hash::Hash;
 
 use elysian_core::ir::{
-    as_ir::{AsIR, Domains},
-    ast::{
-        Block, Expr, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y, Z,
-    },
+    ast::{Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y, Z},
     module::{
-        FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-        SpecializationData, CONTEXT,
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+        PropertyIdentifier, SpecializationData, CONTEXT,
     },
 };
 
@@ -37,7 +34,11 @@ impl Domains for Chebyshev {
 }
 
 impl AsIR for Chebyshev {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let (position, gradient) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, Some(GRADIENT_2D))
         } else if spec.contains(&POSITION_3D.into()) {
@@ -89,7 +90,7 @@ impl AsIR for Chebyshev {
         block.push(elysian_stmt! { return CONTEXT });
 
         vec![FunctionDefinition {
-            id: CHEBYSHEV.specialize(&spec),
+            id: entry_point.clone(),
             public: false,
             inputs: vec![InputDefinition {
                 id: CONTEXT.into(),
@@ -100,7 +101,7 @@ impl AsIR for Chebyshev {
         }]
     }
 
-    fn expression_impl(&self, spec: &SpecializationData, input: Expr) -> Expr {
-        CHEBYSHEV.specialize(spec).call(input)
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        CHEBYSHEV.specialize(spec)
     }
 }

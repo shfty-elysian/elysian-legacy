@@ -1,14 +1,13 @@
 use std::hash::Hash;
 
 use elysian_core::ir::{
-    as_ir::{AsIR, Domains},
     ast::{
-        Block, Expr, IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV,
+        Block, IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV,
         VECTOR2, X, Y, Z,
     },
     module::{
-        FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, PropertyIdentifier,
-        SpecializationData, CONTEXT,
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead,
+        PropertyIdentifier, SpecializationData, CONTEXT,
     },
 };
 
@@ -39,7 +38,11 @@ impl Domains for Point {
 }
 
 impl AsIR for Point {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let position = if spec.contains(&POSITION_2D.into()) {
             POSITION_2D
         } else if spec.contains(&POSITION_3D.into()) {
@@ -109,7 +112,7 @@ impl AsIR for Point {
         block.push(PropertyIdentifier(CONTEXT).read().output());
 
         vec![FunctionDefinition {
-            id: POINT.specialize(&spec),
+            id: entry_point.clone(),
             public: false,
             inputs: vec![InputDefinition {
                 id: CONTEXT.into(),
@@ -120,7 +123,7 @@ impl AsIR for Point {
         }]
     }
 
-    fn expression_impl(&self, spec: &SpecializationData, input: Expr) -> Expr {
-        POINT.specialize(spec).call(input)
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        POINT.specialize(spec)
     }
 }

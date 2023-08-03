@@ -3,11 +3,10 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{Block, Expr, Identifier, DISTANCE, POSITION_2D, POSITION_3D, UV, X},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            NumericType, PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
     property,
@@ -46,7 +45,11 @@ impl Domains for Isosurface {
 }
 
 impl AsIR for Isosurface {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let mut block = Block::default();
 
         if spec.contains(&DISTANCE.into()) {
@@ -66,7 +69,7 @@ impl AsIR for Isosurface {
         });
 
         vec![FunctionDefinition {
-            id: ISOSURFACE.specialize(spec),
+            id: entry_point.clone(),
             public: false,
             inputs: vec![
                 InputDefinition {
@@ -83,10 +86,12 @@ impl AsIR for Isosurface {
         }]
     }
 
-    fn expression_impl(&self, spec: &SpecializationData, input: Expr) -> Expr {
-        ISOSURFACE
-            .specialize(spec)
-            .call([self.dist.clone().into(), input])
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        ISOSURFACE.specialize(spec)
+    }
+
+    fn arguments(&self, input: Expr) -> Vec<Expr> {
+        vec![self.dist.clone().into(), input]
     }
 }
 

@@ -3,11 +3,10 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::{expr::Expr, field::Field, modify::Modify},
     ir::{
-        as_ir::{AsIR, Domains, HashIR},
         ast::{Block, Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-            SpecializationData, StructIdentifier, Type, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+            PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT,
         },
     },
     property,
@@ -65,7 +64,11 @@ impl Domains for BasisBound {
 }
 
 impl AsIR for BasisBound {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let (position, bound) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, BOUND_2D)
         } else if spec.contains(&POSITION_3D.into()) {
@@ -122,13 +125,8 @@ impl AsIR for BasisBound {
             return CONTEXT
         });
 
-        let basis_bound = match self.ty {
-            BoundType::Lower => BASIS_LOWER_BOUND.specialize(spec),
-            BoundType::Upper => BASIS_UPPER_BOUND.specialize(spec),
-        };
-
         vec![FunctionDefinition {
-            id: basis_bound,
+            id: entry_point.clone(),
             public: false,
             inputs: vec![
                 InputDefinition {
@@ -145,17 +143,16 @@ impl AsIR for BasisBound {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
         match self.ty {
             BoundType::Lower => BASIS_LOWER_BOUND,
             BoundType::Upper => BASIS_UPPER_BOUND,
         }
         .specialize(spec)
-        .call([self.bound.clone().into(), input])
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.bound.clone().into(), input]
     }
 }
 

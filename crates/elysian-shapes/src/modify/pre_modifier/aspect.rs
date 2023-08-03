@@ -1,16 +1,12 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{
-        field::Field,
-        modify::{IntoModify, Modify},
-    },
+    ast::modify::{IntoModify, Modify},
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
         module::{
-            FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
-            SpecializationData, Type, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
     property,
@@ -41,25 +37,25 @@ impl Domains for Aspect {
 }
 
 impl AsIR for Aspect {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let aspect = FunctionIdentifier(ASPECT).specialize(spec);
-
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         vec![elysian_function! {
-            fn aspect(ASPECT, mut CONTEXT) -> CONTEXT {
+            fn entry_point(ASPECT, mut CONTEXT) -> CONTEXT {
                 CONTEXT.POSITION_2D = CONTEXT.POSITION_2D * VECTOR2 { X: ASPECT, Y: 1.0 };
                 return CONTEXT;
             }
         }]
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        FunctionIdentifier(ASPECT)
-            .specialize(spec)
-            .call([self.aspect.clone().into(), input])
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier(ASPECT).specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.aspect.clone().into(), input]
     }
 }
 

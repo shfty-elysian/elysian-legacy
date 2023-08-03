@@ -7,7 +7,7 @@ use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIter
 
 use elysian_core::ir::{
     ast::{Number, Struct, Value, COLOR, POSITION_2D, VECTOR2, X, Y},
-    module::{AsModule, SpecializationData, StructIdentifier, CONTEXT},
+    module::{AsIR, SpecializationData, StructIdentifier, CONTEXT},
 };
 use elysian_static::dispatch_shape;
 
@@ -20,7 +20,7 @@ pub fn rasterize<T>(
     scale: f32,
 ) -> RgbImage
 where
-    T: AsModule,
+    T: AsIR,
 {
     let shape = dispatch_shape(shape, spec);
 

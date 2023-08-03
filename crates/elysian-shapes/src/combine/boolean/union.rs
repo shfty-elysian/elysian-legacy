@@ -1,9 +1,11 @@
 use elysian_core::{
     ast::combine::{LEFT, OUT, RIGHT},
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{Block, COMBINE_CONTEXT, DISTANCE},
-        module::{FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData},
+        module::{
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            SpecializationData,
+        },
     },
 };
 use elysian_proc_macros::{elysian_block, elysian_stmt};
@@ -16,7 +18,11 @@ pub struct Union;
 impl Domains for Union {}
 
 impl AsIR for Union {
-    fn functions_impl(&self, _: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let mut block = Block::default();
 
         block.extend(elysian_block! {
@@ -33,7 +39,7 @@ impl AsIR for Union {
         });
 
         vec![FunctionDefinition {
-            id: UNION,
+            id: entry_point.clone(),
             public: false,
             inputs: vec![InputDefinition {
                 id: COMBINE_CONTEXT.into(),
@@ -44,14 +50,7 @@ impl AsIR for Union {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        _: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        elysian_core::ir::ast::Expr::Call {
-            function: UNION,
-            args: vec![input],
-        }
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        UNION
     }
 }

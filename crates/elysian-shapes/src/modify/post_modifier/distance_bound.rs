@@ -3,12 +3,12 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::{expr::Expr, field::Field, modify::Modify},
     ir::{
-        as_ir::{AsIR, Domains, HashIR},
         ast::{Block, Identifier, DISTANCE, POSITION_2D, POSITION_3D},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+            AsIR, FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
             PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
+        module::{Domains, HashIR},
     },
     property,
 };
@@ -50,7 +50,11 @@ impl Domains for DistanceBound {
 }
 
 impl AsIR for DistanceBound {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let mut block = Block::default();
 
         match self.ty {
@@ -66,13 +70,8 @@ impl AsIR for DistanceBound {
             return CONTEXT
         });
 
-        let distance_bound = match self.ty {
-            BoundType::Lower => DISTANCE_LOWER_BOUND.specialize(spec),
-            BoundType::Upper => DISTANCE_UPPER_BOUND.specialize(spec),
-        };
-
         vec![FunctionDefinition {
-            id: distance_bound,
+            id: entry_point.clone(),
             public: false,
             inputs: vec![
                 InputDefinition {
@@ -89,17 +88,16 @@ impl AsIR for DistanceBound {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
         match self.ty {
             BoundType::Lower => DISTANCE_LOWER_BOUND,
             BoundType::Upper => DISTANCE_UPPER_BOUND,
         }
         .specialize(spec)
-        .call([self.bound.clone().into(), input])
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.bound.clone().into(), input]
     }
 }
 

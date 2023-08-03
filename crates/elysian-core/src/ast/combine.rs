@@ -2,19 +2,17 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use indexmap::IndexMap;
-
+use crate::ir::module::DomainsDyn;
 use crate::ir::{
-    as_ir::{AsIR, DynAsIR, HashIR},
     ast::{Block, Expr, Identifier, COMBINE_CONTEXT},
     module::{
-        AsModule, DynAsModule, FieldDefinition, FunctionDefinition, FunctionIdentifier,
+        AsIR, DynAsIR, FieldDefinition, FunctionDefinition, FunctionIdentifier, HashIR,
         InputDefinition, IntoRead, PropertyIdentifier, SpecializationData, StructDefinition,
         StructIdentifier, Type, CONTEXT,
     },
 };
 use crate::property;
-use elysian_proc_macros::elysian_stmt;
+use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 pub const LEFT: Identifier = Identifier::new("left", 635254731934742132);
 property!(LEFT, LEFT_PROP_DEF, Type::Struct(StructIdentifier(CONTEXT)));
@@ -51,8 +49,8 @@ pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition 
 };
 
 pub struct Combine {
-    pub combinator: Vec<Box<dyn AsIR>>,
-    pub shapes: Vec<DynAsModule>,
+    pub combinator: Vec<DynAsIR>,
+    pub shapes: Vec<DynAsIR>,
 }
 
 impl Debug for Combine {
@@ -75,25 +73,34 @@ impl Hash for Combine {
     }
 }
 
-impl AsModule for Combine {
-    fn entry_point(&self) -> FunctionIdentifier {
+impl DomainsDyn for Combine {
+    fn domains_dyn(&self) -> Vec<PropertyIdentifier> {
+        self.combinator
+            .iter()
+            .flat_map(|t| t.domains_dyn())
+            .chain(self.shapes.iter().flat_map(|t| t.domains_dyn()))
+            .collect()
+    }
+}
+
+impl AsIR for Combine {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
         FunctionIdentifier::new_dynamic("combine")
     }
 
-    fn functions(
+    fn functions_impl(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
         let (shape_entry_points, shape_functions): (Vec<_>, Vec<_>) = self
             .shapes
             .iter()
             .map(|shape| {
-                let entry_point = shape.entry_point();
+                let entry_point = shape.entry_point(spec);
                 (
                     entry_point.clone(),
-                    shape.functions(spec, tys, &entry_point),
+                    shape.functions_impl(spec, &entry_point),
                 )
             })
             .unzip();
@@ -109,34 +116,37 @@ impl AsModule for Combine {
             base.call(PropertyIdentifier(CONTEXT).read()),
             |acc, next| {
                 let next = (**next).clone();
+
                 block.push(elysian_stmt! {
                     let COMBINE_CONTEXT = COMBINE_CONTEXT {
                         LEFT: #acc,
                         RIGHT: #next(CONTEXT)
                     }
                 });
-                block.push(
-                    PropertyIdentifier(COMBINE_CONTEXT).bind(self.combinator.iter().fold(
-                        PropertyIdentifier(COMBINE_CONTEXT).read(),
-                        |acc: Expr, next| {
-                            let Expr::Call{ function, args } = next.expression(spec, acc) else  {
-                                panic!("Combinator expression is not a Call")
-                            };
 
-                            Expr::Call { function, args }
-                        },
-                    )),
+                let combinator = self.combinator.iter().fold(
+                    elysian_stmt! { COMBINE_CONTEXT },
+                    |acc: Expr, next| {
+                        let Expr::Call{ function, args } = next.expression(spec, acc) else  {
+                            panic!("Combinator expression is not a Call")
+                        };
+
+                        Expr::Call { function, args }
+                    },
                 );
-                block.push(
-                    PropertyIdentifier(OUT).bind(
-                        [PropertyIdentifier(COMBINE_CONTEXT), PropertyIdentifier(OUT)].read(),
-                    ),
-                );
-                PropertyIdentifier(OUT).read()
+
+                block.extend(elysian_block! {
+                    let COMBINE_CONTEXT = #combinator;
+                    let OUT = COMBINE_CONTEXT.OUT;
+                });
+
+                elysian_stmt! { OUT }
             },
         );
 
-        block.push(PropertyIdentifier(OUT).read().output());
+        block.push(elysian_stmt! {
+            return OUT
+        });
 
         let block = Block(block);
 
@@ -170,7 +180,7 @@ pub trait IntoCombine {
 
 impl<T> IntoCombine for T
 where
-    T: IntoIterator<Item = DynAsModule>,
+    T: IntoIterator<Item = DynAsIR>,
 {
     fn combine<V>(self, combinator: V) -> Combine
     where

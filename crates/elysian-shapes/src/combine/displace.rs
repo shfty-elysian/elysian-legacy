@@ -3,19 +3,17 @@ use std::fmt::Debug;
 use elysian_core::{
     ast::combine::{LEFT, OUT, RIGHT},
     ir::{
-        as_ir::{AsIR, Domains},
         ast::COMBINE_CONTEXT,
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-            SpecializationData,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            PropertyIdentifier, SpecializationData,
         },
     },
 };
 
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
-pub const DISPLACE: FunctionIdentifier =
-    FunctionIdentifier::new("displace", 13382542451638139261);
+pub const DISPLACE: FunctionIdentifier = FunctionIdentifier::new("displace", 13382542451638139261);
 
 #[derive(Debug, Clone, Hash)]
 pub struct Displace {
@@ -25,7 +23,11 @@ pub struct Displace {
 impl Domains for Displace {}
 
 impl AsIR for Displace {
-    fn functions_impl(&self, _: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let prop = (*self.prop).clone();
 
         let mut block = elysian_block! {
@@ -35,7 +37,7 @@ impl AsIR for Displace {
         block.push(elysian_stmt!(return COMBINE_CONTEXT));
 
         vec![FunctionDefinition {
-            id: FunctionIdentifier(DISPLACE.0.concat(&self.prop)),
+            id: entry_point.clone(),
             public: false,
             inputs: vec![InputDefinition {
                 id: COMBINE_CONTEXT.into(),
@@ -46,15 +48,7 @@ impl AsIR for Displace {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        _: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        elysian_core::ir::ast::Expr::Call {
-            function: FunctionIdentifier(DISPLACE.0.concat(&self.prop)),
-            args: vec![input],
-        }
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier(DISPLACE.0.concat(&self.prop))
     }
 }
-

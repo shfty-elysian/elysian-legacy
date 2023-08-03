@@ -3,17 +3,14 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use indexmap::IndexMap;
-
 use crate::ir::{
-    as_ir::{AsIR, DynAsIR},
     ast::{
         IntoBlock, COLOR, DISTANCE, ERROR, GRADIENT_2D, GRADIENT_3D, LIGHT, NORMAL, POSITION_2D,
         POSITION_3D, SUPPORT_2D, SUPPORT_3D, TANGENT_2D, TANGENT_3D, TIME, UV,
     },
     module::{
-        AsModule, DynAsModule, FieldDefinition, FunctionDefinition, FunctionIdentifier,
-        InputDefinition, IntoRead, PropertyIdentifier, SpecializationData, StructDefinition, Type,
+        AsIR, DomainsDyn, DynAsIR, FieldDefinition, FunctionDefinition, FunctionIdentifier,
+        InputDefinition, IntoRead, PropertyIdentifier, SpecializationData, StructDefinition,
         CONTEXT,
     },
 };
@@ -83,7 +80,7 @@ pub const CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
 
 pub struct Modify {
     pub pre_modifiers: Vec<DynAsIR>,
-    pub field: DynAsModule,
+    pub field: DynAsIR,
     pub post_modifiers: Vec<DynAsIR>,
 }
 
@@ -109,26 +106,47 @@ impl Hash for Modify {
     }
 }
 
-impl AsModule for Modify {
-    fn entry_point(&self) -> FunctionIdentifier {
+impl DomainsDyn for Modify {
+    fn domains_dyn(&self) -> Vec<PropertyIdentifier> {
+        self.pre_modifiers
+            .iter()
+            .flat_map(|t| t.domains_dyn())
+            .chain(self.field.domains_dyn())
+            .chain(self.post_modifiers.iter().flat_map(|t| t.domains_dyn()))
+            .collect()
+    }
+}
+
+impl AsIR for Modify {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
         FunctionIdentifier::new_dynamic("modify")
     }
 
-    fn functions(
+    fn functions_impl(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let field_entry_point = self.field.entry_point();
-        self.pre_modifiers
+        let pre_entry_points: Vec<_> = self
+            .pre_modifiers
             .iter()
-            .flat_map(|t| AsIR::functions(t, spec))
-            .chain(self.field.functions(spec, tys, &field_entry_point))
+            .map(|t| (t, t.entry_point(spec)))
+            .collect();
+        let field_entry_point = self.field.entry_point(spec);
+        let post_entry_points: Vec<_> = self
+            .post_modifiers
+            .iter()
+            .map(|t| (t, t.entry_point(spec)))
+            .collect();
+
+        pre_entry_points
+            .iter()
+            .flat_map(|(t, entry)| AsIR::functions_impl(*t, spec, entry))
+            .chain(self.field.functions_impl(spec, &field_entry_point))
             .chain(
-                self.post_modifiers
+                post_entry_points
                     .iter()
-                    .flat_map(|t| AsIR::functions(t, spec)),
+                    .flat_map(|(t, entry)| AsIR::functions_impl(*t, spec, entry)),
             )
             .chain(FunctionDefinition {
                 id: entry_point.clone(),
@@ -138,17 +156,15 @@ impl AsModule for Modify {
                     mutable: false,
                 }],
                 output: PropertyIdentifier(CONTEXT),
-                block: self
-                    .post_modifiers
+                block: post_entry_points
                     .iter()
                     .fold(
-                        field_entry_point.call([self
-                            .pre_modifiers
+                        field_entry_point.call([pre_entry_points
                             .iter()
-                            .fold(PropertyIdentifier(CONTEXT).read(), |acc, next| {
-                                next.expression(spec, acc)
+                            .fold(PropertyIdentifier(CONTEXT).read(), |acc, (t, entry)| {
+                                entry.call(t.arguments(acc))
                             })]),
-                        |acc, next| next.expression(spec, acc),
+                        |acc, (t, entry)| entry.call(t.arguments(acc)),
                     )
                     .output()
                     .block(),
@@ -161,7 +177,7 @@ impl AsModule for Modify {
     }
 }
 
-pub trait IntoModify: 'static + Sized + AsModule {
+pub trait IntoModify: 'static + Sized + AsIR {
     fn modify(self) -> Modify {
         Modify {
             pre_modifiers: Default::default(),
@@ -171,4 +187,4 @@ pub trait IntoModify: 'static + Sized + AsModule {
     }
 }
 
-impl<T> IntoModify for T where T: 'static + Sized + AsModule {}
+impl<T> IntoModify for T where T: 'static + Sized + AsIR {}

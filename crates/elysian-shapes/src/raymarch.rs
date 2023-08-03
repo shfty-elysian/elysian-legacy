@@ -10,7 +10,7 @@ use elysian_core::{
             VECTOR3, VECTOR4, W, X, Y, Z,
         },
         module::{
-            AsModule, FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
+            AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, NumericType,
             SpecializationData, StructIdentifier, Type, CONTEXT,
         },
     },
@@ -18,7 +18,6 @@ use elysian_core::{
 };
 use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_stmt;
-use indexmap::IndexMap;
 
 pub const RAYMARCH: FunctionIdentifier = FunctionIdentifier::new("raymarch", 2862797821569013866);
 
@@ -117,7 +116,7 @@ pub struct Raymarch {
     pub max_steps: elysian_core::ast::expr::Expr,
     pub march: March,
     pub inv_projection: elysian_core::ast::expr::Expr,
-    pub field: Box<dyn AsModule>,
+    pub field: Box<dyn AsIR>,
 }
 
 impl Debug for Raymarch {
@@ -134,15 +133,20 @@ impl Hash for Raymarch {
     }
 }
 
-impl AsModule for Raymarch {
-    fn entry_point(&self) -> FunctionIdentifier {
+impl DomainsDyn for Raymarch {
+    fn domains_dyn(&self) -> Vec<elysian_core::ir::module::PropertyIdentifier> {
+        self.field.domains_dyn()
+    }
+}
+
+impl AsIR for Raymarch {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
         RAYMARCH
     }
 
-    fn functions(
+    fn functions_impl(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<PropertyIdentifier, Type>,
         _: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         if !spec.contains(&POSITION_2D.into()) {
@@ -154,7 +158,7 @@ impl AsModule for Raymarch {
         }
 
         let spec_3d = SpecializationData::new_3d();
-        let field_entry_point = self.field.entry_point();
+        let field_entry_point = self.field.entry_point(spec);
 
         let max_steps = Expr::from(self.max_steps.clone());
         let inv_projection = Expr::from(self.inv_projection.clone());
@@ -183,7 +187,7 @@ impl AsModule for Raymarch {
         };
 
         self.field
-            .functions(&spec_3d, tys, &field_entry_point)
+            .functions_impl(&spec_3d, &field_entry_point)
             .into_iter()
             .chain([elysian_function! {
                 fn RAYMARCH(mut CONTEXT) -> CONTEXT {

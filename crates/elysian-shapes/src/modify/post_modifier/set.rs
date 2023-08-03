@@ -3,10 +3,9 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::modify::Modify,
     ir::{
-        as_ir::{AsIR, Domains},
-        ast::{Expr, GRADIENT_2D, GRADIENT_3D},
+        ast::Expr,
         module::{
-            AsModule, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
             SpecializationData, CONTEXT,
         },
     },
@@ -29,35 +28,27 @@ impl Hash for Set {
     }
 }
 
-impl Domains for Set {
-    fn domains() -> Vec<PropertyIdentifier> {
-        vec![]
-    }
-}
+impl Domains for Set {}
 
 impl AsIR for Set {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let prop = self.id.clone();
         let expr = Expr::from(self.expr.clone());
 
-        let set = FunctionIdentifier((*SET).concat(&(*self.id))).specialize(spec);
-
         vec![elysian_function! {
-            fn set(mut CONTEXT) -> CONTEXT {
+            fn entry_point(mut CONTEXT) -> CONTEXT {
                 CONTEXT.prop = #expr;
                 return CONTEXT
             }
         }]
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        FunctionIdentifier((*SET).concat(&(*self.id)))
-            .specialize(spec)
-            .call(input)
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier((*SET).concat(&(*self.id))).specialize(spec)
     }
 }
 
@@ -68,7 +59,7 @@ pub trait IntoSet {
 
 impl<T> IntoSet for T
 where
-    T: AsModule,
+    T: 'static + AsIR,
 {
     fn set_pre(self, id: PropertyIdentifier, expr: elysian_core::ast::expr::Expr) -> Modify {
         Modify {

@@ -3,11 +3,10 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM, UV, X},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-            SpecializationData, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            PropertyIdentifier, SpecializationData, CONTEXT,
         },
     },
 };
@@ -31,9 +30,11 @@ impl Domains for Manifold {
 }
 
 impl AsIR for Manifold {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let manifold = MANIFOLD.specialize(spec);
-
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let mut block = Block::default();
 
         block.extend(elysian_block! {
@@ -64,7 +65,7 @@ impl AsIR for Manifold {
         block.push(elysian_stmt! { return CONTEXT });
 
         vec![FunctionDefinition {
-            id: manifold,
+            id: entry_point.clone(),
             public: false,
             inputs: vec![InputDefinition {
                 id: CONTEXT.into(),
@@ -75,12 +76,8 @@ impl AsIR for Manifold {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        MANIFOLD.specialize(spec).call(input)
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        MANIFOLD.specialize(spec)
     }
 }
 

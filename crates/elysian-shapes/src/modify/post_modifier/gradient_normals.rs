@@ -3,11 +3,10 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::modify::Modify,
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{GRADIENT_2D, GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z},
         module::{
-            AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-            SpecializationData, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            PropertyIdentifier, SpecializationData, CONTEXT,
         },
     },
 };
@@ -32,7 +31,11 @@ impl Domains for GradientNormals {
 }
 
 impl AsIR for GradientNormals {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let block = if spec.contains(&GRADIENT_2D.into()) {
             elysian_block! {
                 CONTEXT.NORMAL = VECTOR3 {
@@ -54,7 +57,7 @@ impl AsIR for GradientNormals {
         };
 
         vec![FunctionDefinition {
-            id: GRADIENT_NORMALS.specialize(spec),
+            id: entry_point.clone(),
             public: false,
             inputs: vec![InputDefinition {
                 id: CONTEXT.into(),
@@ -65,12 +68,8 @@ impl AsIR for GradientNormals {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        GRADIENT_NORMALS.specialize(spec).call(input)
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        GRADIENT_NORMALS.specialize(spec)
     }
 }
 
@@ -80,7 +79,7 @@ pub trait IntoGradientNormals {
 
 impl<T> IntoGradientNormals for T
 where
-    T: AsModule,
+    T: 'static + AsIR,
 {
     fn gradient_normals(self) -> Modify {
         Modify {

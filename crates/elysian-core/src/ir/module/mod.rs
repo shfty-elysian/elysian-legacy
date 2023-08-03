@@ -1,15 +1,20 @@
-mod as_module;
+mod as_ir;
+mod domains;
 mod function_definition;
+mod hash_ir;
 mod specialization_data;
 mod struct_definition;
 mod ty;
 
-pub use as_module::*;
+pub use as_ir::*;
+pub use domains::*;
 pub use function_definition::*;
-use indexmap::IndexMap;
+pub use hash_ir::*;
 pub use specialization_data::*;
 pub use struct_definition::*;
 pub use ty::*;
+
+use indexmap::IndexMap;
 
 #[derive(Debug)]
 pub struct Module {

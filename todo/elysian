@@ -351,6 +351,17 @@
   SKIPPED: Potentially as an output target, but both Elysian and rhai are too specialized
            to their individual use-cases to be interchangeable.
 
+* Better generalization for AsIR / AsModule
+  * AsModule is currently lacking certain features that AsIR has
+    * ex. Entrypoint specialization
+    * This is in part to simplify the Struct -> Context -> Struct
+      conversion required for static shape dispatch
+    * Feels like there should be some abstraction that can
+      subsume both, have its features consumed a-la carte
+    * Things like GradientNormals don't feel first-class as is, whereas AsIR implementors do
+
+  DONE: Merged AsModule into AsIR
+
 =========================================================================================================
 
 * Consider moving unary / binary / ternary ops into shareable enums
@@ -381,15 +392,6 @@
 
 * Implement conditional boolean operators
   * Needs to be its own AsModule to be able to orchestrate execution
-
-* Better generalization for AsIR / AsModule
-  * AsModule is currently lacking certain features that AsIR has
-    * ex. Entrypoint specialization
-    * This is in part to simplify the Struct -> Context -> Struct
-      conversion required for static shape dispatch
-    * Feels like there should be some abstraction that can
-      subsume both, have its features consumed a-la carte
-    * Things like GradientNormals don't feel first-class as is, whereas AsIR implementors do
 
 * Stronger typing for pre / post / field IR conversion
   * At minimum, create separate traits to identify a given symbol as each

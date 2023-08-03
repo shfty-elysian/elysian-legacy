@@ -2,11 +2,11 @@ use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
     ir::{
-        as_ir::{AsIR, Domains},
         ast::Identifier,
+        module::Domains,
         module::{
-            FunctionDefinition, FunctionIdentifier, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT,
+            AsIR, FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
+            SpecializationData, Type, CONTEXT,
         },
     },
     property,
@@ -47,10 +47,10 @@ impl AsIR for Circle {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let point = POINT.specialize(&spec.filter(Point::domains()));
         let isosurface = ISOSURFACE.specialize(&spec.filter(Isosurface::domains()));
-        let circle = CIRCLE.specialize(spec);
 
         Point
             .functions(spec)
@@ -62,20 +62,18 @@ impl AsIR for Circle {
                 .functions(spec),
             )
             .chain(elysian_function! {
-                fn circle(RADIUS, CONTEXT) -> CONTEXT {
+                fn entry_point(RADIUS, CONTEXT) -> CONTEXT {
                     return isosurface(RADIUS, point(CONTEXT));
                 }
             })
             .collect()
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        CIRCLE
-            .specialize(spec)
-            .call([self.radius.clone().into(), input])
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        CIRCLE.specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.radius.clone().into(), input]
     }
 }

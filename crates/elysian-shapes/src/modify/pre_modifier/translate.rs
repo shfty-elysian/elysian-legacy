@@ -3,11 +3,10 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::modify::{IntoModify, Modify},
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
-            FunctionDefinition, FunctionIdentifier, PropertyIdentifier, SpecializationData,
-            StructIdentifier, Type, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
+            SpecializationData, StructIdentifier, Type, CONTEXT,
         },
     },
     property,
@@ -51,7 +50,11 @@ impl Domains for Translate {
 }
 
 impl AsIR for Translate {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let (position, delta) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, DELTA_2D)
         } else if spec.contains(&POSITION_3D.into()) {
@@ -60,24 +63,20 @@ impl AsIR for Translate {
             panic!("No position domain")
         };
 
-        let translate = TRANSLATE.specialize(spec);
-
         vec![elysian_function! {
-            fn translate(delta, mut CONTEXT) -> CONTEXT {
+            fn entry_point(delta, mut CONTEXT) -> CONTEXT {
                 CONTEXT.position = CONTEXT.position - delta;
                 return CONTEXT;
             }
         }]
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        TRANSLATE
-            .specialize(spec)
-            .call([self.delta.clone().into(), input])
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        TRANSLATE.specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.delta.clone().into(), input]
     }
 }
 

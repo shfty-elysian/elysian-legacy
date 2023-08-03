@@ -3,25 +3,22 @@ use std::{
     hash::{Hash, Hasher},
 };
 
+use crate::modify::{Translate, TRANSLATE};
 use elysian_core::{
     ast::combine::{LEFT, RIGHT},
     ir::{
-        as_ir::Domains,
         ast::{Number, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
         module::{
-            AsModule, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
-            SpecializationData, Type, CONTEXT,
+            AsIR, Domains, DomainsDyn, FunctionDefinition, FunctionIdentifier,
+            SpecializationData, CONTEXT,
         },
     },
 };
 use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_expr;
-use indexmap::IndexMap;
-
-use crate::modify::{Translate, TRANSLATE};
 
 pub struct CentralDiffGradient {
-    pub field: Box<dyn AsModule>,
+    pub field: Box<dyn AsIR>,
     pub epsilon: Number,
 }
 
@@ -39,19 +36,23 @@ impl Hash for CentralDiffGradient {
     }
 }
 
-impl AsModule for CentralDiffGradient {
-    fn entry_point(&self) -> FunctionIdentifier {
+impl DomainsDyn for CentralDiffGradient {
+    fn domains_dyn(&self) -> Vec<elysian_core::ir::module::PropertyIdentifier> {
+        self.field.domains_dyn()
+    }
+}
+
+impl AsIR for CentralDiffGradient {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
         FunctionIdentifier::new_dynamic("central_diff_gradient")
     }
 
-    fn functions(
+    fn functions_impl(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let entry_point = entry_point.clone();
-        let field_entry_point = self.field.entry_point();
 
         let (gradient, vec_x, vec_y) = if spec.contains(&GRADIENT_2D.into()) {
             (
@@ -76,7 +77,7 @@ impl AsModule for CentralDiffGradient {
         } else {
             return self
                 .field
-                .functions(spec, tys, &field_entry_point)
+                .functions(spec)
                 .into_iter()
                 .chain(elysian_function! {
                     fn entry_point(mut CONTEXT) -> CONTEXT {
@@ -90,8 +91,10 @@ impl AsModule for CentralDiffGradient {
 
         let epsilon = self.epsilon.literal();
 
+        let field_entry_point = self.field.entry_point(spec);
+
         self.field
-            .functions(spec, tys, &field_entry_point)
+            .functions_impl(spec, &field_entry_point)
             .into_iter()
             .chain([elysian_function! {
                 pub fn entry_point(mut CONTEXT) -> CONTEXT {

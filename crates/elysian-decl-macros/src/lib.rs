@@ -40,7 +40,7 @@ macro_rules! elysian_function_args {
 macro_rules! elysian_function_inner {
     ($pub:tt | $ident:ident | [$($args:tt)*] | $ret:ident | $body:tt) => {
         FunctionDefinition {
-            id: $ident,
+            id: $ident.clone(),
             public: $pub,
             inputs: $crate::elysian_function_args!([].into_iter() => $($args)*),
 

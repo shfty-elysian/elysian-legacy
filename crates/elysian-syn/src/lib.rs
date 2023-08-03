@@ -21,7 +21,7 @@ use syn::{
 
 use elysian_core::ir::{
     ast::{Block as IrBlock, Expr as IrExpr, Stmt as IrStmt},
-    module::AsModule,
+    module::AsIR,
 };
 
 pub fn type_to_syn(ty: &elysian_core::ir::module::Type) -> TokenStream {
@@ -62,14 +62,14 @@ pub fn property_to_syn(id: &Identifier) -> TokenStream {
 
 pub fn module_to_string<T>(input: &T, spec: &SpecializationData, name: &str) -> String
 where
-    T: AsModule,
+    T: AsIR,
 {
     prettyplease::unparse(&module_to_syn(input, spec, name))
 }
 
 pub fn module_to_syn<T>(input: &T, spec: &SpecializationData, name: &str) -> File
 where
-    T: AsModule,
+    T: AsIR,
 {
     let name = Ident::new(name, Span::call_site());
 

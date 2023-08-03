@@ -4,7 +4,7 @@ use elysian_syn::module_to_string;
 
 use std::{collections::BTreeMap, sync::OnceLock};
 
-use elysian_core::ir::{ast::Struct, module::AsModule};
+use elysian_core::ir::{ast::Struct, module::AsIR};
 
 pub type ShapeHash = u64;
 pub type ShapeFn = fn(Struct) -> Struct;
@@ -46,7 +46,7 @@ pub fn static_shapes_map() -> &'static BTreeMap<ShapeHash, ShapeFn> {
 }
 
 /// Build.rs static shape registrar
-pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, Box<dyn AsModule>)>>(
+pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, Box<dyn AsIR>)>>(
     t: T,
     spec: &SpecializationData,
 ) {
@@ -75,7 +75,7 @@ pub fn dispatch_shape<T>(
     spec: &SpecializationData,
 ) -> Box<dyn Fn(Struct) -> Struct + Send + Sync>
 where
-    T: AsModule,
+    T: AsIR,
 {
     let hash = shape.hash_ir();
 

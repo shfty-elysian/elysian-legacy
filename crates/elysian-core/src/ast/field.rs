@@ -3,14 +3,11 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use indexmap::IndexMap;
-
 use crate::ir::{
-    as_ir::{AsIR, DynAsIR},
-    ast::IntoBlock,
+    ast::{Expr, IntoBlock},
     module::{
-        AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead,
-        PropertyIdentifier, SpecializationData, Type, CONTEXT,
+        AsIR, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead,
+        PropertyIdentifier, SpecializationData, CONTEXT, DomainsDyn,
     },
 };
 
@@ -30,19 +27,27 @@ impl Hash for Field {
     }
 }
 
-impl AsModule for Field {
-    fn entry_point(&self) -> FunctionIdentifier {
+impl DomainsDyn for Field {
+    fn domains_dyn(&self) -> Vec<PropertyIdentifier> {
+        self.field.domains_dyn()
+    }
+}
+
+impl AsIR for Field {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
         FunctionIdentifier::new_dynamic("field")
     }
 
-    fn functions(
+    fn functions_impl(
         &self,
         spec: &SpecializationData,
-        _: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
+        let field_entry_point = self.field.entry_point(spec);
+        let field_args = self.field.arguments(PropertyIdentifier(CONTEXT).read());
+
         self.field
-            .functions(spec)
+            .functions_impl(spec, &field_entry_point)
             .into_iter()
             .chain(FunctionDefinition {
                 id: entry_point.clone(),
@@ -52,11 +57,12 @@ impl AsModule for Field {
                     mutable: false,
                 }],
                 output: PropertyIdentifier(CONTEXT),
-                block: self
-                    .field
-                    .expression(spec, PropertyIdentifier(CONTEXT).read())
-                    .output()
-                    .block(),
+                block: Expr::Call {
+                    function: field_entry_point,
+                    args: field_args,
+                }
+                .output()
+                .block(),
             })
             .collect()
     }

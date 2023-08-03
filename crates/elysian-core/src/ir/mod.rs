@@ -1,4 +1,3 @@
-pub mod as_ir;
 pub mod ast;
 pub mod module;
 

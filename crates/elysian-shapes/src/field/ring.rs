@@ -3,10 +3,9 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::expr::Expr,
     ir::{
-        as_ir::{AsIR, Domains},
         ast::Identifier,
         module::{
-            FunctionDefinition, FunctionIdentifier, NumericType,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType,
             PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
@@ -51,11 +50,11 @@ impl AsIR for Ring {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let isosurface = ISOSURFACE.specialize(&spec.filter(Isosurface::domains()));
         let manifold = MANIFOLD.specialize(&spec.filter(Manifold::domains()));
         let circle = CIRCLE.specialize(&spec.filter(Circle::domains()));
-        let ring = RING.specialize(spec);
 
         Circle {
             radius: self.radius.clone(),
@@ -70,19 +69,18 @@ impl AsIR for Ring {
             .functions(spec),
         )
         .chain(elysian_function! {
-            fn ring(RADIUS, WIDTH, CONTEXT) -> CONTEXT {
+            fn entry_point(RADIUS, WIDTH, CONTEXT) -> CONTEXT {
                 return isosurface(WIDTH, manifold(circle(RADIUS, CONTEXT)));
             }
         })
         .collect()
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
         RING.specialize(spec)
-            .call([self.radius.clone().into(), self.width.clone().into(), input])
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.radius.clone().into(), self.width.clone().into(), input]
     }
 }

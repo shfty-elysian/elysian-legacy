@@ -1,11 +1,10 @@
 use elysian_core::{
     ast::combine::{LEFT, OUT, RIGHT},
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{Block, COMBINE_CONTEXT, DISTANCE},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-            SpecializationData,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            PropertyIdentifier, SpecializationData,
         },
     },
 };
@@ -22,7 +21,11 @@ pub struct Sided {
 impl Domains for Sided {}
 
 impl AsIR for Sided {
-    fn functions_impl(&self, _: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let mut block = Block::default();
 
         let side = if self.flip { RIGHT } else { LEFT };
@@ -36,7 +39,7 @@ impl AsIR for Sided {
         });
 
         vec![FunctionDefinition {
-            id: SIDED,
+            id: entry_point.clone(),
             public: false,
             inputs: vec![InputDefinition {
                 id: COMBINE_CONTEXT.into(),
@@ -47,15 +50,8 @@ impl AsIR for Sided {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        _: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        elysian_core::ir::ast::Expr::Call {
-            function: SIDED,
-            args: vec![input],
-        }
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        SIDED
     }
 }
 
@@ -69,12 +65,14 @@ pub struct SidedProp {
 impl Domains for SidedProp {}
 
 impl AsIR for SidedProp {
-    fn functions_impl(&self, _: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let mut block = Block::default();
 
         let prop = &self.prop;
-
-        let sided = FunctionIdentifier((*SIDED).concat(prop));
 
         let (left, right) = if self.flip {
             (RIGHT, LEFT)
@@ -96,7 +94,7 @@ impl AsIR for SidedProp {
         });
 
         vec![FunctionDefinition {
-            id: sided,
+            id: entry_point.clone(),
             public: false,
             inputs: vec![InputDefinition {
                 id: COMBINE_CONTEXT.into(),
@@ -107,14 +105,7 @@ impl AsIR for SidedProp {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        _: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        elysian_core::ir::ast::Expr::Call {
-            function: (*SIDED).concat(&self.prop).into(),
-            args: vec![input],
-        }
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        (*SIDED).concat(&self.prop).into()
     }
 }

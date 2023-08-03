@@ -6,11 +6,10 @@ use elysian_core::{
         expr::Expr,
     },
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{COMBINE_CONTEXT, DISTANCE, NUM},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-            SpecializationData,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            PropertyIdentifier, SpecializationData,
         },
     },
 };
@@ -30,7 +29,11 @@ pub struct SmoothSubtraction {
 impl Domains for SmoothSubtraction {}
 
 impl AsIR for SmoothSubtraction {
-    fn functions_impl(&self, _: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        _: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let prop = (*self.prop).clone();
 
         let mut block = elysian_block! {
@@ -55,7 +58,7 @@ impl AsIR for SmoothSubtraction {
         block.push(elysian_stmt!(return COMBINE_CONTEXT));
 
         vec![FunctionDefinition {
-            id: FunctionIdentifier(SMOOTH_SUBTRACTION.0.concat(&self.prop)),
+            id: entry_point.clone(),
             public: false,
             inputs: vec![
                 InputDefinition {
@@ -72,14 +75,11 @@ impl AsIR for SmoothSubtraction {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        _: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        elysian_core::ir::ast::Expr::Call {
-            function: FunctionIdentifier(SMOOTH_SUBTRACTION.0.concat(&self.prop)),
-            args: vec![self.k.clone().into(), input],
-        }
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier(SMOOTH_SUBTRACTION.0.concat(&self.prop))
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.k.clone().into(), input]
     }
 }

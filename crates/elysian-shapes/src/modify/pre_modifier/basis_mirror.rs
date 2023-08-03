@@ -1,11 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::ir::{
-    as_ir::Domains,
     ast::{Block, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D},
     module::{
-        AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-        SpecializationData, CONTEXT,
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+        PropertyIdentifier, SpecializationData, CONTEXT,
     },
 };
 
@@ -16,7 +15,7 @@ pub const BASIS_MIRROR: FunctionIdentifier =
 
 #[derive(Debug)]
 pub struct BasisMirror {
-    field: Box<dyn AsModule>,
+    field: Box<dyn AsIR>,
 }
 
 impl Hash for BasisMirror {
@@ -37,18 +36,17 @@ impl Domains for BasisMirror {
     }
 }
 
-impl AsModule for BasisMirror {
-    fn entry_point(&self) -> FunctionIdentifier {
+impl AsIR for BasisMirror {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
         FunctionIdentifier::new_dynamic("basis_mirror")
     }
 
-    fn functions(
+    fn functions_impl(
         &self,
         spec: &SpecializationData,
-        tys: &indexmap::IndexMap<PropertyIdentifier, elysian_core::ir::module::Type>,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let field_entry_point = self.field.entry_point();
+        let field_entry_point = self.field.entry_point(spec);
 
         let position = if spec.contains(&POSITION_2D.into()) {
             POSITION_2D
@@ -85,7 +83,7 @@ impl AsModule for BasisMirror {
         });
 
         self.field
-            .functions(spec, tys, &field_entry_point)
+            .functions_impl(spec, &field_entry_point)
             .into_iter()
             .chain(FunctionDefinition {
                 id: entry_point.clone(),
@@ -111,7 +109,7 @@ pub trait IntoBasisMirror {
 
 impl<T> IntoBasisMirror for T
 where
-    T: AsModule,
+    T: 'static + AsIR,
 {
     fn basis_mirror(self) -> BasisMirror {
         BasisMirror {

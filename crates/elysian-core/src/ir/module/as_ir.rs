@@ -9,17 +9,16 @@ use indexmap::{IndexMap, IndexSet};
 use uuid::Uuid;
 
 use crate::ir::{
-    as_ir::HashIR,
     ast::{
         Block, Expr, Identifier, Property, Stmt, MATRIX2_STRUCT, MATRIX3_STRUCT, MATRIX4_STRUCT,
         VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT,
     },
-    module::FieldDefinition,
+    module::{FieldDefinition, HashIR},
 };
 
 use super::{
-    FunctionDefinition, FunctionIdentifier, Module, PropertyIdentifier, SpecializationData,
-    StructDefinition, StructIdentifier, Type,
+    DomainsDyn, FunctionDefinition, FunctionIdentifier, Module, PropertyIdentifier,
+    SpecializationData, StructDefinition, StructIdentifier, Type,
 };
 
 fn expr_props(expr: &Expr) -> Vec<PropertyIdentifier> {
@@ -170,13 +169,12 @@ pub const SAFE_NORMALIZE_3: FunctionIdentifier =
 pub const SAFE_NORMALIZE_4: FunctionIdentifier =
     FunctionIdentifier::new("safe_normalize_4", 18890028961074310202);
 
-pub trait AsModule: 'static + Debug + HashIR {
+pub trait AsIR: Debug + HashIR + DomainsDyn {
     fn module(&self, spec: &SpecializationData) -> Module {
         let types: IndexMap<_, _> = properties().clone();
 
-        let entry_point = self.entry_point();
-
-        let mut functions = self.functions(spec, &types, &entry_point);
+        let entry_point = self.entry_point(spec);
+        let mut functions = self.functions_impl(spec, &entry_point);
 
         let mut set = HashSet::new();
         functions.retain(|x| set.insert(x.id.clone()));
@@ -218,12 +216,27 @@ pub trait AsModule: 'static + Debug + HashIR {
         }
     }
 
-    fn entry_point(&self) -> FunctionIdentifier;
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier;
 
-    fn functions(
+    fn arguments(&self, input: Expr) -> Vec<Expr> {
+        vec![input]
+    }
+
+    fn expression(&self, spec: &SpecializationData, input: Expr) -> Expr {
+        Expr::Call {
+            function: self.entry_point(spec),
+            args: self.arguments(input),
+        }
+    }
+
+    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+        let spec = spec.filter(self.domains_dyn());
+        let entry_point = self.entry_point(&spec);
+        self.functions_impl(&spec, &entry_point)
+    }
+    fn functions_impl(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition>;
 
@@ -232,32 +245,45 @@ pub trait AsModule: 'static + Debug + HashIR {
     }
 }
 
-pub type DynAsModule = Box<dyn AsModule>;
+pub type DynAsIR = Box<dyn AsIR>;
 
-impl AsModule for DynAsModule {
+impl DomainsDyn for DynAsIR {
+    fn domains_dyn(&self) -> Vec<PropertyIdentifier> {
+        (**self).domains_dyn()
+    }
+}
+
+impl AsIR for DynAsIR {
     fn module(&self, spec: &SpecializationData) -> Module {
         (**self).module(spec)
     }
 
-    fn entry_point(&self) -> FunctionIdentifier {
-        (**self).entry_point()
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        (**self).entry_point(spec)
     }
 
-    fn functions(
+    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+        (**self).functions(spec)
+    }
+
+    fn functions_impl(
         &self,
         spec: &SpecializationData,
-        tys: &IndexMap<PropertyIdentifier, Type>,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        (**self).functions(spec, tys, entry_point)
+        (**self).functions_impl(spec, entry_point)
     }
 
     fn structs(&self) -> Vec<StructDefinition> {
         (**self).structs()
     }
+
+    fn arguments(&self, input: Expr) -> Vec<Expr> {
+        (**self).arguments(input)
+    }
 }
 
-impl HashIR for DynAsModule {
+impl HashIR for DynAsIR {
     fn hash_ir(&self) -> u64 {
         (**self).hash_ir()
     }

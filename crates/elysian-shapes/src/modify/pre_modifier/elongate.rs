@@ -3,11 +3,10 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-            SpecializationData, StructIdentifier, Type, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT,
         },
     },
     property,
@@ -51,7 +50,11 @@ impl Domains for Elongate {
 }
 
 impl AsIR for Elongate {
-    fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_impl(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition> {
         let (position, dir) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, DIR_2D)
         } else if spec.contains(&POSITION_3D.into()) {
@@ -77,11 +80,7 @@ impl AsIR for Elongate {
         };
 
         vec![FunctionDefinition {
-            id: if self.infinite {
-                ELONGATE_INFINITE.specialize(spec)
-            } else {
-                ELONGATE.specialize(spec)
-            },
+            id: entry_point.clone(),
             public: false,
             inputs: vec![
                 InputDefinition {
@@ -98,17 +97,17 @@ impl AsIR for Elongate {
         }]
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
         if self.infinite {
-            ELONGATE_INFINITE.specialize(spec)
+            ELONGATE_INFINITE
         } else {
-            ELONGATE.specialize(spec)
+            ELONGATE
         }
-        .call([self.dir.clone().into(), input])
+        .specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.dir.clone().into(), input]
     }
 }
 

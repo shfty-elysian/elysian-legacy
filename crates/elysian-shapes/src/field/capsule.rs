@@ -1,13 +1,12 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use elysian_core::ir::module::{FunctionIdentifier, PropertyIdentifier, CONTEXT};
+use elysian_core::ir::module::{AsIR, FunctionIdentifier, PropertyIdentifier, CONTEXT};
 use elysian_core::{
     ast::expr::Expr as ElysianExpr,
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{POSITION_2D, POSITION_3D},
-        module::{FunctionDefinition, SpecializationData},
+        module::{Domains, FunctionDefinition, SpecializationData},
     },
 };
 use elysian_decl_macros::elysian_function;
@@ -45,6 +44,7 @@ impl AsIR for Capsule {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let dir = if spec.contains(&POSITION_2D.into()) {
             DIR_2D
@@ -56,7 +56,6 @@ impl AsIR for Capsule {
 
         let isosurface = ISOSURFACE.specialize(&spec.filter(Isosurface::domains()));
         let line = LINE.specialize(&spec.filter(Line::domains()));
-        let capsule = CAPSULE.specialize(spec);
 
         Line {
             dir: self.dir.clone(),
@@ -70,20 +69,18 @@ impl AsIR for Capsule {
             .functions(spec),
         )
         .chain(elysian_function! {
-            fn capsule(dir, RADIUS, CONTEXT) -> CONTEXT {
+            fn entry_point(dir, RADIUS, CONTEXT) -> CONTEXT {
                 return isosurface(RADIUS, line(dir, CONTEXT));
             }
         })
         .collect()
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        CAPSULE
-            .specialize(spec)
-            .call([self.dir.clone().into(), self.radius.clone().into(), input])
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        CAPSULE.specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.dir.clone().into(), self.radius.clone().into(), input]
     }
 }

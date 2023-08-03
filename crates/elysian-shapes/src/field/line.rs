@@ -3,10 +3,9 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::expr::Expr,
     ir::{
-        as_ir::{AsIR, Domains},
         ast::{POSITION_2D, POSITION_3D},
         module::{
-            FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
             SpecializationData, CONTEXT,
         },
     },
@@ -44,6 +43,7 @@ impl AsIR for Line {
     fn functions_impl(
         &self,
         spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let dir = if spec.contains(&POSITION_2D.into()) {
             DIR_2D
@@ -55,7 +55,6 @@ impl AsIR for Line {
 
         let point = POINT.specialize(&spec.filter(Point::domains()));
         let elongate = ELONGATE.specialize(&spec.filter(Elongate::domains()));
-        let line = LINE.specialize(spec);
 
         Point
             .functions(spec)
@@ -68,18 +67,18 @@ impl AsIR for Line {
                 .functions(spec),
             )
             .chain(elysian_function! {
-                fn line(dir, CONTEXT) -> CONTEXT {
+                fn entry_point(dir, CONTEXT) -> CONTEXT {
                     return point(elongate(dir, CONTEXT));
                 }
             })
             .collect()
     }
 
-    fn expression_impl(
-        &self,
-        spec: &SpecializationData,
-        input: elysian_core::ir::ast::Expr,
-    ) -> elysian_core::ir::ast::Expr {
-        LINE.specialize(spec).call([self.dir.clone().into(), input])
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        LINE.specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.dir.clone().into(), input]
     }
 }
