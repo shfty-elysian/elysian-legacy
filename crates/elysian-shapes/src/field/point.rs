@@ -38,6 +38,10 @@ impl Domains for Point {
 }
 
 impl AsIR for Point {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        POINT.specialize(spec)
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -121,9 +125,5 @@ impl AsIR for Point {
             output: CONTEXT.into(),
             block,
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        POINT.specialize(spec)
     }
 }

@@ -29,6 +29,14 @@ pub struct SmoothSubtraction {
 impl Domains for SmoothSubtraction {}
 
 impl AsIR for SmoothSubtraction {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier(SMOOTH_SUBTRACTION.0.concat(&self.prop))
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.k.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
@@ -73,13 +81,5 @@ impl AsIR for SmoothSubtraction {
             output: COMBINE_CONTEXT.into(),
             block,
         }]
-    }
-
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier(SMOOTH_SUBTRACTION.0.concat(&self.prop))
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.k.clone().into(), input]
     }
 }

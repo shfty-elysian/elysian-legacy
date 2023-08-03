@@ -40,6 +40,14 @@ impl Domains for Line {
 }
 
 impl AsIR for Line {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        LINE.specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.dir.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -72,13 +80,5 @@ impl AsIR for Line {
                 }
             })
             .collect()
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        LINE.specialize(spec)
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.dir.clone().into(), input]
     }
 }

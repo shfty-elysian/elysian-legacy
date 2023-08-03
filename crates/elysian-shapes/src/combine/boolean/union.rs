@@ -1,14 +1,11 @@
 use elysian_core::{
     ast::combine::{LEFT, OUT, RIGHT},
     ir::{
-        ast::{Block, COMBINE_CONTEXT, DISTANCE},
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            SpecializationData,
-        },
+        ast::{COMBINE_CONTEXT, DISTANCE},
+        module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData},
     },
 };
-use elysian_proc_macros::{elysian_block, elysian_stmt};
+use elysian_decl_macros::elysian_function;
 
 pub const UNION: FunctionIdentifier = FunctionIdentifier::new("union", 1894363406191409858);
 
@@ -18,39 +15,26 @@ pub struct Union;
 impl Domains for Union {}
 
 impl AsIR for Union {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        UNION
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let mut block = Block::default();
+        vec![elysian_function! {
+            fn entry_point(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
+                if COMBINE_CONTEXT.LEFT.DISTANCE < COMBINE_CONTEXT.RIGHT.DISTANCE {
+                    COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.LEFT;
+                }
+                else {
+                    COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.RIGHT;
+                }
 
-        block.extend(elysian_block! {
-            if COMBINE_CONTEXT.LEFT.DISTANCE < COMBINE_CONTEXT.RIGHT.DISTANCE {
-                COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.LEFT;
+                return COMBINE_CONTEXT;
             }
-            else {
-                COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.RIGHT;
-            }
-        });
-
-        block.push(elysian_stmt! {
-            return COMBINE_CONTEXT
-        });
-
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![InputDefinition {
-                id: COMBINE_CONTEXT.into(),
-                mutable: true,
-            }],
-            output: COMBINE_CONTEXT.into(),
-            block,
         }]
-    }
-
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        UNION
     }
 }

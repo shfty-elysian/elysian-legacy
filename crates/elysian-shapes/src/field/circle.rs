@@ -44,6 +44,14 @@ impl Domains for Circle {
 }
 
 impl AsIR for Circle {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        CIRCLE.specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.radius.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -67,13 +75,5 @@ impl AsIR for Circle {
                 }
             })
             .collect()
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        CIRCLE.specialize(spec)
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.radius.clone().into(), input]
     }
 }

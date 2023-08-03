@@ -47,6 +47,14 @@ impl Domains for Ring {
 }
 
 impl AsIR for Ring {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        RING.specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.radius.clone().into(), self.width.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -74,13 +82,5 @@ impl AsIR for Ring {
             }
         })
         .collect()
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        RING.specialize(spec)
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.radius.clone().into(), self.width.clone().into(), input]
     }
 }

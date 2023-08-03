@@ -29,6 +29,14 @@ pub struct SmoothUnion {
 impl Domains for SmoothUnion {}
 
 impl AsIR for SmoothUnion {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier(SMOOTH_UNION.0.concat(&self.prop))
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.k.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
@@ -75,13 +83,5 @@ impl AsIR for SmoothUnion {
             output: COMBINE_CONTEXT.into(),
             block,
         }]
-    }
-
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier(SMOOTH_UNION.0.concat(&self.prop))
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.k.clone().into(), input]
     }
 }

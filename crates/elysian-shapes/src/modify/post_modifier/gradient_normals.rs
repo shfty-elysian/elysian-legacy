@@ -31,6 +31,10 @@ impl Domains for GradientNormals {
 }
 
 impl AsIR for GradientNormals {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        GRADIENT_NORMALS.specialize(spec)
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -66,10 +70,6 @@ impl AsIR for GradientNormals {
             output: CONTEXT.into(),
             block,
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        GRADIENT_NORMALS.specialize(spec)
     }
 }
 

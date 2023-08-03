@@ -41,6 +41,14 @@ impl Domains for Capsule {
 }
 
 impl AsIR for Capsule {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        CAPSULE.specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.dir.clone().into(), self.radius.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -74,13 +82,5 @@ impl AsIR for Capsule {
             }
         })
         .collect()
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        CAPSULE.specialize(spec)
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.dir.clone().into(), self.radius.clone().into(), input]
     }
 }

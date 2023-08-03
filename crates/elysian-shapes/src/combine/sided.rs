@@ -1,14 +1,14 @@
 use elysian_core::{
     ast::combine::{LEFT, OUT, RIGHT},
     ir::{
-        ast::{Block, COMBINE_CONTEXT, DISTANCE},
+        ast::{COMBINE_CONTEXT, DISTANCE},
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            PropertyIdentifier, SpecializationData,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
+            SpecializationData,
         },
     },
 };
-use elysian_proc_macros::{elysian_block, elysian_stmt};
+use elysian_decl_macros::elysian_function;
 
 pub const SIDED: FunctionIdentifier = FunctionIdentifier::new("sided", 19756903452063788266);
 
@@ -21,37 +21,23 @@ pub struct Sided {
 impl Domains for Sided {}
 
 impl AsIR for Sided {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        SIDED
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let mut block = Block::default();
-
         let side = if self.flip { RIGHT } else { LEFT };
 
-        block.extend(elysian_block! {
-            COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.side;
-        });
-
-        block.push(elysian_stmt! {
-            return COMBINE_CONTEXT
-        });
-
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![InputDefinition {
-                id: COMBINE_CONTEXT.into(),
-                mutable: true,
-            }],
-            output: COMBINE_CONTEXT.into(),
-            block,
+        vec![elysian_function! {
+            fn entry_point(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
+                COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.side;
+                return COMBINE_CONTEXT
+            }
         }]
-    }
-
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        SIDED
     }
 }
 
@@ -65,13 +51,15 @@ pub struct SidedProp {
 impl Domains for SidedProp {}
 
 impl AsIR for SidedProp {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        (*SIDED).concat(&self.prop).into()
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let mut block = Block::default();
-
         let prop = &self.prop;
 
         let (left, right) = if self.flip {
@@ -80,32 +68,17 @@ impl AsIR for SidedProp {
             (LEFT, RIGHT)
         };
 
-        block.extend(elysian_block! {
-            if COMBINE_CONTEXT.OUT.DISTANCE > 0.0 {
-                COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.left.prop;
-            }
-            else {
-                COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.right.prop;
-            }
-        });
+        vec![elysian_function! {
+            fn entry_point(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
+                if COMBINE_CONTEXT.OUT.DISTANCE > 0.0 {
+                    COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.left.prop;
+                }
+                else {
+                    COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.right.prop;
+                }
 
-        block.push(elysian_stmt! {
-            return COMBINE_CONTEXT
-        });
-
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![InputDefinition {
-                id: COMBINE_CONTEXT.into(),
-                mutable: true,
-            }],
-            output: COMBINE_CONTEXT.into(),
-            block,
+                return COMBINE_CONTEXT;
+            }
         }]
-    }
-
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        (*SIDED).concat(&self.prop).into()
     }
 }

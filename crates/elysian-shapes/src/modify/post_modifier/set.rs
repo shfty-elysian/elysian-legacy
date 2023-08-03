@@ -31,6 +31,10 @@ impl Hash for Set {
 impl Domains for Set {}
 
 impl AsIR for Set {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier((*SET).concat(&(*self.id))).specialize(spec)
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
@@ -45,10 +49,6 @@ impl AsIR for Set {
                 return CONTEXT
             }
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier((*SET).concat(&(*self.id))).specialize(spec)
     }
 }
 

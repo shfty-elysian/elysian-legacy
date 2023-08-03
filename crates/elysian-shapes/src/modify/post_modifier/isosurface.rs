@@ -45,6 +45,14 @@ impl Domains for Isosurface {
 }
 
 impl AsIR for Isosurface {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        ISOSURFACE.specialize(spec)
+    }
+
+    fn arguments(&self, input: Expr) -> Vec<Expr> {
+        vec![self.dist.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -84,14 +92,6 @@ impl AsIR for Isosurface {
             output: CONTEXT.into(),
             block,
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        ISOSURFACE.specialize(spec)
-    }
-
-    fn arguments(&self, input: Expr) -> Vec<Expr> {
-        vec![self.dist.clone().into(), input]
     }
 }
 

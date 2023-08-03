@@ -34,6 +34,10 @@ impl Domains for Chebyshev {
 }
 
 impl AsIR for Chebyshev {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        CHEBYSHEV.specialize(spec)
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -99,9 +103,5 @@ impl AsIR for Chebyshev {
             output: CONTEXT.into(),
             block,
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        CHEBYSHEV.specialize(spec)
     }
 }

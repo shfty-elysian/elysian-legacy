@@ -16,6 +16,10 @@ pub struct Subtraction;
 impl Domains for Subtraction {}
 
 impl AsIR for Subtraction {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        SUBTRACTION
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
@@ -34,9 +38,5 @@ impl AsIR for Subtraction {
                 return COMBINE_CONTEXT;
             }
         }]
-    }
-
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        SUBTRACTION
     }
 }

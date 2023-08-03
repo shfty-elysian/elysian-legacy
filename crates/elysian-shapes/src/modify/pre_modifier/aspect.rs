@@ -37,6 +37,14 @@ impl Domains for Aspect {
 }
 
 impl AsIR for Aspect {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier(ASPECT).specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.aspect.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
@@ -48,14 +56,6 @@ impl AsIR for Aspect {
                 return CONTEXT;
             }
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier(ASPECT).specialize(spec)
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.aspect.clone().into(), input]
     }
 }
 

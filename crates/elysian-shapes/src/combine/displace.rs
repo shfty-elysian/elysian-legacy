@@ -5,13 +5,12 @@ use elysian_core::{
     ir::{
         ast::COMBINE_CONTEXT,
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            PropertyIdentifier, SpecializationData,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
+            SpecializationData,
         },
     },
 };
-
-use elysian_proc_macros::{elysian_block, elysian_stmt};
+use elysian_decl_macros::elysian_function;
 
 pub const DISPLACE: FunctionIdentifier = FunctionIdentifier::new("displace", 13382542451638139261);
 
@@ -23,6 +22,10 @@ pub struct Displace {
 impl Domains for Displace {}
 
 impl AsIR for Displace {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier(DISPLACE.0.concat(&self.prop))
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
@@ -30,25 +33,11 @@ impl AsIR for Displace {
     ) -> Vec<FunctionDefinition> {
         let prop = (*self.prop).clone();
 
-        let mut block = elysian_block! {
-            COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.LEFT.prop + COMBINE_CONTEXT.RIGHT.prop;
-        };
-
-        block.push(elysian_stmt!(return COMBINE_CONTEXT));
-
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![InputDefinition {
-                id: COMBINE_CONTEXT.into(),
-                mutable: true,
-            }],
-            output: COMBINE_CONTEXT.into(),
-            block,
+        vec![elysian_function! {
+            fn entry_point(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
+                COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.LEFT.prop + COMBINE_CONTEXT.RIGHT.prop;
+                return COMBINE_CONTEXT;
+            }
         }]
-    }
-
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier(DISPLACE.0.concat(&self.prop))
     }
 }

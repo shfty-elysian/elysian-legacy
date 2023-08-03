@@ -50,6 +50,19 @@ impl Domains for Elongate {
 }
 
 impl AsIR for Elongate {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        if self.infinite {
+            ELONGATE_INFINITE
+        } else {
+            ELONGATE
+        }
+        .specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.dir.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -95,19 +108,6 @@ impl AsIR for Elongate {
             output: CONTEXT.into(),
             block,
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        if self.infinite {
-            ELONGATE_INFINITE
-        } else {
-            ELONGATE
-        }
-        .specialize(spec)
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.dir.clone().into(), input]
     }
 }
 

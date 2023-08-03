@@ -64,6 +64,18 @@ impl Domains for BasisBound {
 }
 
 impl AsIR for BasisBound {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        match self.ty {
+            BoundType::Lower => BASIS_LOWER_BOUND,
+            BoundType::Upper => BASIS_UPPER_BOUND,
+        }
+        .specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.bound.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -141,18 +153,6 @@ impl AsIR for BasisBound {
             output: CONTEXT.into(),
             block,
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        match self.ty {
-            BoundType::Lower => BASIS_LOWER_BOUND,
-            BoundType::Upper => BASIS_UPPER_BOUND,
-        }
-        .specialize(spec)
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.bound.clone().into(), input]
     }
 }
 

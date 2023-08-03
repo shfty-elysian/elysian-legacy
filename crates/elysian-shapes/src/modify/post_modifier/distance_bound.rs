@@ -50,6 +50,18 @@ impl Domains for DistanceBound {
 }
 
 impl AsIR for DistanceBound {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        match self.ty {
+            BoundType::Lower => DISTANCE_LOWER_BOUND,
+            BoundType::Upper => DISTANCE_UPPER_BOUND,
+        }
+        .specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.bound.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
@@ -86,18 +98,6 @@ impl AsIR for DistanceBound {
             output: CONTEXT.into(),
             block,
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        match self.ty {
-            BoundType::Lower => DISTANCE_LOWER_BOUND,
-            BoundType::Upper => DISTANCE_UPPER_BOUND,
-        }
-        .specialize(spec)
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.bound.clone().into(), input]
     }
 }
 

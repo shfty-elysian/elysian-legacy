@@ -2,7 +2,7 @@ use elysian_core::{
     ast::combine::{LEFT, OUT, RIGHT},
     ir::{
         ast::{COMBINE_CONTEXT, DISTANCE},
-        module::{Domains, AsIR, FunctionDefinition, FunctionIdentifier, SpecializationData},
+        module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData},
     },
 };
 use elysian_decl_macros::elysian_function;
@@ -16,6 +16,10 @@ pub struct Intersection;
 impl Domains for Intersection {}
 
 impl AsIR for Intersection {
+    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+        INTERSECTION
+    }
+
     fn functions_impl(
         &self,
         _: &SpecializationData,
@@ -33,9 +37,5 @@ impl AsIR for Intersection {
                 return COMBINE_CONTEXT;
             }
         }]
-    }
-
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        INTERSECTION
     }
 }

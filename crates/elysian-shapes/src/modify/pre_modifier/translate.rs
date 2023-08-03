@@ -50,6 +50,14 @@ impl Domains for Translate {
 }
 
 impl AsIR for Translate {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        TRANSLATE.specialize(spec)
+    }
+
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+        vec![self.delta.clone().into(), input]
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -69,14 +77,6 @@ impl AsIR for Translate {
                 return CONTEXT;
             }
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        TRANSLATE.specialize(spec)
-    }
-
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.delta.clone().into(), input]
     }
 }
 

@@ -30,6 +30,10 @@ impl Domains for Manifold {
 }
 
 impl AsIR for Manifold {
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        MANIFOLD.specialize(spec)
+    }
+
     fn functions_impl(
         &self,
         spec: &SpecializationData,
@@ -74,10 +78,6 @@ impl AsIR for Manifold {
             output: CONTEXT.into(),
             block,
         }]
-    }
-
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        MANIFOLD.specialize(spec)
     }
 }
 
