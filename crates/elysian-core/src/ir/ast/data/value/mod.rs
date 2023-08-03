@@ -1,12 +1,12 @@
 use std::{
     fmt::{Debug, Display},
     hash::{Hash, Hasher},
-    ops::{Add, Div, Mul, Neg, Sub},
+    ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Sub},
 };
 
 use rust_gpu_bridge::{
     glam::{Vec2, Vec3, Vec4},
-    Abs, Dot, Length, Max, Min, Mix, Normalize, Sign,
+    Abs, Acos, Atan, Atan2, Dot, Length, Max, Min, Mix, Normalize, Sign,
 };
 
 use crate::ir::module::StructIdentifier;
@@ -112,6 +112,28 @@ impl Div<Value> for Value {
     }
 }
 
+impl BitAnd for Value {
+    type Output = Value;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Boolean(a), Value::Boolean(b)) => Value::Boolean(a & b),
+            _ => panic!("Invalid BitAnd"),
+        }
+    }
+}
+
+impl BitOr for Value {
+    type Output = Value;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Boolean(a), Value::Boolean(b)) => Value::Boolean(a | b),
+            _ => panic!("Invalid BitOr"),
+        }
+    }
+}
+
 impl Mix for Value {
     type T = Value;
 
@@ -210,6 +232,33 @@ impl Max for Value {
             (Value::Number(a), Value::Number(b)) => a.clone().max(b.clone()).into(),
             (Value::Struct(a), Value::Struct(b)) => a.clone().max(b.clone()).into(),
             _ => panic!("Invalid Max {:#?}, {:#?}", self, rhs),
+        }
+    }
+}
+
+impl Acos for Value {
+    fn acos(self) -> Self {
+        match &self {
+            Value::Number(a) => a.clone().acos().into(),
+            _ => panic!("Invalid Atan2 {:#?}", self),
+        }
+    }
+}
+
+impl Atan for Value {
+    fn atan(self) -> Self {
+        match &self {
+            Value::Number(a) => a.clone().atan().into(),
+            _ => panic!("Invalid Atan {:#?}", self),
+        }
+    }
+}
+
+impl Atan2 for Value {
+    fn atan2(self, rhs: Self) -> Self {
+        match (&self, &rhs) {
+            (Value::Number(a), Value::Number(b)) => a.clone().atan2(b.clone()).into(),
+            _ => panic!("Invalid Atan2 {:#?}, {:#?}", self, rhs),
         }
     }
 }

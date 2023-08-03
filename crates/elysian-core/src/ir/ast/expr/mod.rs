@@ -29,17 +29,24 @@ pub enum Expr {
     Neg(BoxExpr),
     Abs(BoxExpr),
     Sign(BoxExpr),
+    Acos(BoxExpr),
+    Atan(BoxExpr),
     Length(BoxExpr),
     Normalize(BoxExpr),
     Add(BoxExpr, BoxExpr),
     Sub(BoxExpr, BoxExpr),
     Mul(BoxExpr, BoxExpr),
     Div(BoxExpr, BoxExpr),
+    Eq(BoxExpr, BoxExpr),
+    Ne(BoxExpr, BoxExpr),
     Lt(BoxExpr, BoxExpr),
     Gt(BoxExpr, BoxExpr),
+    And(BoxExpr, BoxExpr),
+    Or(BoxExpr, BoxExpr),
     Min(BoxExpr, BoxExpr),
     Max(BoxExpr, BoxExpr),
     Dot(BoxExpr, BoxExpr),
+    Atan2(BoxExpr, BoxExpr),
     Mix(BoxExpr, BoxExpr, BoxExpr),
 }
 
@@ -143,6 +150,8 @@ impl From<ElysianExpr> for Expr {
             ElysianExpr::Min(lhs, rhs) => Expr::Min(lhs.into(), rhs.into()),
             ElysianExpr::Max(lhs, rhs) => Expr::Max(lhs.into(), rhs.into()),
             ElysianExpr::Mix(lhs, rhs, t) => Expr::Mix(lhs.into(), rhs.into(), t.into()),
+            ElysianExpr::Eq(lhs, rhs) => Expr::Eq(lhs.into(), rhs.into()),
+            ElysianExpr::Ne(lhs, rhs) => Expr::Ne(lhs.into(), rhs.into()),
             ElysianExpr::Lt(lhs, rhs) => Expr::Lt(lhs.into(), rhs.into()),
             ElysianExpr::Gt(lhs, rhs) => Expr::Gt(lhs.into(), rhs.into()),
             ElysianExpr::Neg(t) => Expr::Neg(t.into()),
@@ -195,6 +204,22 @@ impl core::ops::Div for Expr {
     }
 }
 
+impl core::ops::BitAnd for Expr {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        And(Box::new(self), Box::new(rhs))
+    }
+}
+
+impl core::ops::BitOr for Expr {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Or(Box::new(self), Box::new(rhs))
+    }
+}
+
 impl core::ops::Neg for Expr {
     type Output = Self;
 
@@ -239,6 +264,8 @@ impl Expr {
             Neg(t) => t.ty(function_defs, types),
             Abs(t) => t.ty(function_defs, types),
             Sign(t) => t.ty(function_defs, types),
+            Acos(t) => t.ty(function_defs, types),
+            Atan(t) => t.ty(function_defs, types),
             Length(t) => match t.ty(function_defs, types) {
                 Type::Boolean => panic!("Invalid Length"),
                 Type::Number(n) => Type::Number(n),
@@ -256,9 +283,14 @@ impl Expr {
             | Div(lhs, rhs)
             | Min(lhs, rhs)
             | Max(lhs, rhs)
+            | Eq(lhs, rhs)
+            | Ne(lhs, rhs)
             | Lt(lhs, rhs)
             | Gt(lhs, rhs)
+            | And(lhs, rhs)
+            | Or(lhs, rhs)
             | Dot(lhs, rhs)
+            | Atan2(lhs, rhs)
             | Mix(lhs, rhs, ..) => {
                 match (lhs.ty(function_defs, types), rhs.ty(function_defs, types)) {
                     (Type::Boolean, Type::Boolean) => Type::Boolean,
@@ -311,19 +343,41 @@ impl Expr {
                             ("Vector4", "Vector4") => Type::Struct(a),
                             _ => panic!("Invalid Binary Op"),
                         },
-                        Min(_, _) | Max(_, _) | Lt(_, _) | Gt(_, _) | Dot(_, _) | Mix(_, _, _) => {
+                        Lt(_, _)
+                        | Gt(_, _)
+                        | Eq(_, _)
+                        | Ne(_, _)
+                        | Dot(_, _)
+                        | Min(_, _)
+                        | Max(_, _)
+                        | Mix(_, _, _) => {
                             if a.name_unique() != b.name_unique() {
                                 panic!("Invalid Binary Op")
                             }
 
                             Type::Struct(a)
                         }
+                        And(_, _) | Or(_, _) => {
+                            if a.name() == "Bool" && b.name() == "Bool" {
+                                Type::Boolean
+                            } else {
+                                panic!("Invalid Binary Op")
+                            }
+                        }
                         _ => unreachable!(),
                     },
-                    _ => panic!("Invalid BinaryOp"),
+                    _ => panic!("Invalid Binary Op"),
                 }
             }
         }
+    }
+
+    pub fn eq(self, rhs: Expr) -> Expr {
+        Eq(Box::new(self), Box::new(rhs))
+    }
+
+    pub fn ne(self, rhs: Expr) -> Expr {
+        Ne(Box::new(self), Box::new(rhs))
     }
 
     pub fn lt(self, rhs: Expr) -> Expr {
@@ -332,6 +386,14 @@ impl Expr {
 
     pub fn gt(self, rhs: Expr) -> Expr {
         Gt(Box::new(self), Box::new(rhs))
+    }
+
+    pub fn and(self, rhs: Expr) -> Expr {
+        And(Box::new(self), Box::new(rhs))
+    }
+
+    pub fn or(self, rhs: Expr) -> Expr {
+        Or(Box::new(self), Box::new(rhs))
     }
 
     pub fn min(self, rhs: Expr) -> Expr {
@@ -350,6 +412,10 @@ impl Expr {
         Dot(Box::new(self), Box::new(rhs))
     }
 
+    pub fn atan2(self, rhs: Expr) -> Expr {
+        Atan2(Box::new(self), Box::new(rhs))
+    }
+
     pub fn abs(self) -> Expr {
         Abs(Box::new(self))
     }
@@ -364,6 +430,14 @@ impl Expr {
 
     pub fn normalize(self) -> Expr {
         Normalize(Box::new(self))
+    }
+
+    pub fn acos(self) -> Expr {
+        Expr::Acos(Box::new(self))
+    }
+
+    pub fn atan(self) -> Expr {
+        Expr::Atan(Box::new(self))
     }
 
     pub fn output(self) -> Stmt {

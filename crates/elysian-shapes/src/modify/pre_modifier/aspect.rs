@@ -6,7 +6,7 @@ use elysian_core::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+            FunctionDefinition, FunctionIdentifier, NumericType,
             PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
@@ -19,9 +19,16 @@ use elysian_decl_macros::elysian_function;
 pub const ASPECT: Identifier = Identifier::new("aspect", 346035631277210970);
 property!(ASPECT, ASPECT_PROP_DEF, Type::Number(NumericType::Float));
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct Aspect {
     pub aspect: Expr,
+}
+
+impl Hash for Aspect {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        ASPECT.uuid().hash(state);
+        self.aspect.hash(state);
+    }
 }
 
 impl Domains for Aspect {

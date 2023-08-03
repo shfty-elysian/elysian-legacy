@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Div, Mul, Neg, Sub},
 };
 
-use rust_gpu_bridge::{Abs, Max, Min, Mix, Sign};
+use rust_gpu_bridge::{Abs, Acos, Atan, Atan2, Max, Min, Mix, Sign};
 
 use crate::ir::ast::Expr;
 
@@ -187,6 +187,33 @@ impl Max for Number {
             (Number::SInt(a), Number::SInt(b)) => Max::max(a, b).into(),
             (Number::Float(a), Number::Float(b)) => Number::Float(a.max(b)),
             _ => panic!("Invalid Max"),
+        }
+    }
+}
+
+impl Atan2 for Number {
+    fn atan2(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (Number::Float(a), Number::Float(b)) => Number::Float(a.atan2(b)),
+            _ => panic!("Invalid Atan2"),
+        }
+    }
+}
+
+impl Acos for Number {
+    fn acos(self) -> Self {
+        match self {
+            Number::Float(a) => Number::Float(a.acos()),
+            _ => panic!("Invalid Atan2"),
+        }
+    }
+}
+
+impl Atan for Number {
+    fn atan(self) -> Self {
+        match self {
+            Number::Float(a) => Number::Float(a.atan()),
+            _ => panic!("Invalid Atan"),
         }
     }
 }

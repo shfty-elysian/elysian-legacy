@@ -6,7 +6,7 @@ use elysian_core::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+            FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
             SpecializationData, StructIdentifier, Type, CONTEXT,
         },
     },
@@ -32,9 +32,16 @@ property!(
     Type::Struct(StructIdentifier(VECTOR3))
 );
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct Translate {
     pub delta: Expr,
+}
+
+impl Hash for Translate {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        TRANSLATE.uuid().hash(state);
+        self.delta.hash(state);
+    }
 }
 
 impl Domains for Translate {

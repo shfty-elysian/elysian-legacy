@@ -227,6 +227,7 @@ dependencies = [
 name = "elysian-core"
 version = "0.1.0"
 dependencies = [
+ "elysian-decl-macros",
  "elysian-proc-macros",
  "indexmap 2.0.0",
  "linkme",
@@ -267,6 +268,8 @@ name = "elysian-naga"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-decl-macros",
+ "elysian-proc-macros",
  "elysian-shapes",
  "indexmap 2.0.0",
  "naga",

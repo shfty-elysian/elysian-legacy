@@ -28,6 +28,8 @@ pub enum Expr {
     Sub(BoxExpr, BoxExpr),
     Mul(BoxExpr, BoxExpr),
     Div(BoxExpr, BoxExpr),
+    Eq(BoxExpr, BoxExpr),
+    Ne(BoxExpr, BoxExpr),
     Lt(BoxExpr, BoxExpr),
     Gt(BoxExpr, BoxExpr),
     Min(BoxExpr, BoxExpr),

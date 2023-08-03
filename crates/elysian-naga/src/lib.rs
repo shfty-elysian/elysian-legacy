@@ -4,9 +4,11 @@ use elysian_core::ir::{
         VECTOR3, VECTOR4,
     },
     module::{
-        Module as ElysianModule, NumericType, PropertyIdentifier, Type as ElysianType, CONTEXT,
+        FunctionDefinition, Module as ElysianModule, NumericType, PropertyIdentifier,
+        Type as ElysianType, CONTEXT, SAFE_NORMALIZE_2, SAFE_NORMALIZE_3, SAFE_NORMALIZE_4,
     },
 };
+use elysian_decl_macros::elysian_function;
 use elysian_shapes::modify::ASPECT;
 use indexmap::IndexMap;
 use naga::{
@@ -33,6 +35,7 @@ pub struct NagaBuilder<'a> {
     input: &'a ElysianModule,
     types: UniqueArena<NagaType>,
     functions: Arena<Function>,
+    function: Option<FunctionDefinition>,
     block_stack: Vec<NagaBlock>,
     expressions: Option<ExpressionQueue>,
     local_variables: Option<LocalVariableStore>,
@@ -44,6 +47,7 @@ impl<'a> NagaBuilder<'a> {
             input: module,
             types: Default::default(),
             functions: Default::default(),
+            function: Default::default(),
             block_stack: Default::default(),
             expressions: Default::default(),
             local_variables: Default::default(),
@@ -388,10 +392,39 @@ impl<'a> NagaBuilder<'a> {
         #[cfg(feature = "print")]
         println!("functions_to_naga");
 
-        let handles = self
-            .input
-            .function_definitions
+        let builtins = vec![
+            elysian_function! {
+                fn SAFE_NORMALIZE_2(VECTOR2) -> VECTOR2 {
+                    if VECTOR2.length() > 0.0 {
+                        return VECTOR2.normalize();
+                    }
+
+                    return VECTOR2;
+                }
+            },
+            elysian_function! {
+                fn SAFE_NORMALIZE_3(VECTOR3) -> VECTOR3 {
+                    if VECTOR3.length() > 0.0 {
+                        return VECTOR3.normalize();
+                    }
+
+                    return VECTOR3;
+                }
+            },
+            elysian_function! {
+                fn SAFE_NORMALIZE_4(VECTOR4) -> VECTOR4 {
+                    if VECTOR4.length() > 0.0 {
+                        return VECTOR4.normalize();
+                    }
+
+                    return VECTOR4;
+                }
+            },
+        ];
+
+        let handles = builtins
             .iter()
+            .chain(self.input.function_definitions.iter())
             .map(|def| {
                 (
                     self.functions.append(
@@ -443,9 +476,11 @@ impl<'a> NagaBuilder<'a> {
                 });
             }
 
+            self.function = Some(def.clone());
             for stmt in def.block.0.iter() {
                 self.stmt_to_naga(stmt);
             }
+            self.function = None;
 
             let f = self.functions.get_mut(handle);
             f.expressions = self.expressions.take().unwrap().expressions;
@@ -689,8 +724,12 @@ impl<'a> NagaBuilder<'a> {
             | Expr::Sub(lhs, rhs)
             | Expr::Mul(lhs, rhs)
             | Expr::Div(lhs, rhs)
+            | Expr::Eq(lhs, rhs)
+            | Expr::Ne(lhs, rhs)
             | Expr::Lt(lhs, rhs)
-            | Expr::Gt(lhs, rhs) => {
+            | Expr::Gt(lhs, rhs)
+            | Expr::And(lhs, rhs)
+            | Expr::Or(lhs, rhs) => {
                 let type_l = lhs.ty(&self.input.function_definitions, &self.input.props);
                 let type_r = rhs.ty(&self.input.function_definitions, &self.input.props);
 
@@ -754,8 +793,13 @@ impl<'a> NagaBuilder<'a> {
                             | ("Vector4", "Vector4") => (lhs, rhs),
                             _ => panic!("{}", invalid(a.name(), b.name())),
                         },
-                        Expr::Lt(_, _) => todo!(),
-                        Expr::Gt(_, _) => todo!(),
+                        Expr::Eq(_, _) | Expr::Ne(_, _) | Expr::Lt(_, _) | Expr::Gt(_, _) => {
+                            if a == b {
+                                (lhs, rhs)
+                            } else {
+                                panic!("{}", invalid(a.name(), b.name()))
+                            }
+                        }
                         _ => unreachable!(),
                     },
                     _ => panic!("Invalid Binary Op"),
@@ -770,15 +814,22 @@ impl<'a> NagaBuilder<'a> {
                         Expr::Sub(..) => BinaryOperator::Subtract,
                         Expr::Mul(..) => BinaryOperator::Multiply,
                         Expr::Div(..) => BinaryOperator::Divide,
+                        Expr::Eq(..) => BinaryOperator::Equal,
+                        Expr::Ne(..) => BinaryOperator::NotEqual,
                         Expr::Lt(..) => BinaryOperator::Less,
                         Expr::Gt(..) => BinaryOperator::Greater,
+                        Expr::And(..) => BinaryOperator::LogicalAnd,
+                        Expr::Or(..) => BinaryOperator::LogicalOr,
                         _ => unreachable!(),
                     },
                     left,
                     right,
                 })
             }
-            Expr::Min(lhs, rhs) | Expr::Max(lhs, rhs) | Expr::Dot(lhs, rhs) => {
+            Expr::Min(lhs, rhs)
+            | Expr::Max(lhs, rhs)
+            | Expr::Dot(lhs, rhs)
+            | Expr::Atan2(lhs, rhs) => {
                 let arg = self.expr_to_naga(lhs);
                 let arg1 = self.expr_to_naga(rhs);
                 let expr = self.push_expression(Expression::Math {
@@ -786,6 +837,7 @@ impl<'a> NagaBuilder<'a> {
                         Expr::Min(..) => MathFunction::Min,
                         Expr::Max(..) => MathFunction::Max,
                         Expr::Dot(..) => MathFunction::Dot,
+                        Expr::Atan2(..) => MathFunction::Atan2,
                         _ => unreachable!(),
                     },
                     arg,
@@ -796,24 +848,63 @@ impl<'a> NagaBuilder<'a> {
 
                 expr
             }
-            Expr::Abs(t) | Expr::Sign(t) | Expr::Length(t) | Expr::Normalize(t) => {
+            Expr::Abs(t) | Expr::Sign(t) | Expr::Length(t) | Expr::Acos(t) | Expr::Atan(t) => {
                 let arg = self.expr_to_naga(t);
 
-                let expr = self.push_expression(Expression::Math {
+                self.push_expression(Expression::Math {
                     fun: match expr {
                         Expr::Abs(..) => MathFunction::Abs,
                         Expr::Sign(..) => MathFunction::Sign,
                         Expr::Length(..) => MathFunction::Length,
                         Expr::Normalize(..) => MathFunction::Normalize,
+                        Expr::Acos(..) => MathFunction::Acos,
+                        Expr::Atan(..) => MathFunction::Atan,
                         _ => unreachable!(),
                     },
                     arg,
                     arg1: None,
                     arg2: None,
                     arg3: None,
-                });
+                })
+            }
+            Expr::Normalize(t) => {
+                let arg = self.expr_to_naga(t);
 
-                expr
+                let function_id = &self.function.as_ref().unwrap().id;
+                if *function_id == SAFE_NORMALIZE_2
+                    || *function_id == SAFE_NORMALIZE_3
+                    || *function_id == SAFE_NORMALIZE_4
+                {
+                    self.push_expression(Expression::Math {
+                        fun: MathFunction::Normalize,
+                        arg,
+                        arg1: None,
+                        arg2: None,
+                        arg3: None,
+                    })
+                } else {
+                    let function =
+                        match t.ty(&self.input.function_definitions, &self.input.props) {
+                            ElysianType::Struct(s) => match s.name() {
+                                "Vector2" => self.get_function(&SAFE_NORMALIZE_2.name_unique()),
+                                "Vector3" => self.get_function(&SAFE_NORMALIZE_3.name_unique()),
+                                "Vector4" => self.get_function(&SAFE_NORMALIZE_4.name_unique()),
+                                _ => panic!("Invalid Normalize"),
+                            },
+                            _ => panic!("Invalid Normalize"),
+                        }
+                        .0;
+
+                    let call_result = self.push_expression(Expression::CallResult(function));
+
+                    self.push_statement(Statement::Call {
+                        function,
+                        arguments: vec![arg],
+                        result: Some(call_result),
+                    });
+
+                    call_result
+                }
             }
             Expr::Mix(lhs, rhs, t) => {
                 let arg = self.expr_to_naga(lhs);

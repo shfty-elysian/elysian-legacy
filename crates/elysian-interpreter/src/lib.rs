@@ -3,11 +3,9 @@ use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 use elysian_core::ir::{
     ast::Stmt::{self, *},
     ast::{Expr, Identifier, Struct, Value},
-    module::{
-        FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT, 
-    },
+    module::{FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT},
 };
-use rust_gpu_bridge::{Abs, Dot, Length, Max, Min, Mix, Normalize, Sign};
+use rust_gpu_bridge::{Abs, Acos, Atan, Atan2, Dot, Length, Max, Min, Mix, Normalize, Sign};
 
 pub struct Interpreter {
     pub context: Struct,
@@ -252,6 +250,41 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
             .output
             .expect("Function returned nothing")
         }
+        Expr::Neg(op) => {
+            #[cfg(feature = "print")]
+            println!("Neg");
+            -evaluate_expr(interpreter, op)
+        }
+        Expr::Abs(op) => {
+            #[cfg(feature = "print")]
+            println!("Abs");
+            evaluate_expr(interpreter, op).abs()
+        }
+        Expr::Sign(op) => {
+            #[cfg(feature = "print")]
+            println!("Sign");
+            evaluate_expr(interpreter, op).sign()
+        }
+        Expr::Acos(op) => {
+            #[cfg(feature = "print")]
+            println!("Acos");
+            evaluate_expr(interpreter, op).acos()
+        }
+        Expr::Atan(op) => {
+            #[cfg(feature = "print")]
+            println!("Atan");
+            evaluate_expr(interpreter, op).atan()
+        }
+        Expr::Length(op) => {
+            #[cfg(feature = "print")]
+            println!("Length");
+            evaluate_expr(interpreter, op).length()
+        }
+        Expr::Normalize(op) => {
+            #[cfg(feature = "print")]
+            println!("Normalize");
+            evaluate_expr(interpreter, op).normalize()
+        }
         Expr::Add(lhs, rhs) => {
             #[cfg(feature = "print")]
             println!("Add");
@@ -272,6 +305,16 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
             println!("Div");
             evaluate_expr(interpreter, lhs) / evaluate_expr(interpreter, rhs)
         }
+        Expr::Eq(lhs, rhs) => {
+            #[cfg(feature = "print")]
+            println!("Lt");
+            (evaluate_expr(interpreter, lhs) == evaluate_expr(interpreter, rhs)).into()
+        }
+        Expr::Ne(lhs, rhs) => {
+            #[cfg(feature = "print")]
+            println!("Lt");
+            (evaluate_expr(interpreter, lhs) != evaluate_expr(interpreter, rhs)).into()
+        }
         Expr::Lt(lhs, rhs) => {
             #[cfg(feature = "print")]
             println!("Lt");
@@ -281,6 +324,16 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
             #[cfg(feature = "print")]
             println!("Gt");
             (evaluate_expr(interpreter, lhs) > evaluate_expr(interpreter, rhs)).into()
+        }
+        Expr::And(lhs, rhs) => {
+            #[cfg(feature = "print")]
+            println!("And");
+            (evaluate_expr(interpreter, lhs) & evaluate_expr(interpreter, rhs)).into()
+        }
+        Expr::Or(lhs, rhs) => {
+            #[cfg(feature = "print")]
+            println!("And");
+            (evaluate_expr(interpreter, lhs) | evaluate_expr(interpreter, rhs)).into()
         }
         Expr::Min(lhs, rhs) => {
             #[cfg(feature = "print")]
@@ -302,35 +355,15 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
                 )
                 .into()
         }
-        Expr::Neg(op) => {
-            #[cfg(feature = "print")]
-            println!("Neg");
-            -evaluate_expr(interpreter, op)
-        }
-        Expr::Abs(op) => {
-            #[cfg(feature = "print")]
-            println!("Abs");
-            evaluate_expr(interpreter, op).abs()
-        }
-        Expr::Sign(op) => {
-            #[cfg(feature = "print")]
-            println!("Sign");
-            evaluate_expr(interpreter, op).sign()
-        }
-        Expr::Length(op) => {
-            #[cfg(feature = "print")]
-            println!("Length");
-            evaluate_expr(interpreter, op).length()
-        }
-        Expr::Normalize(op) => {
-            #[cfg(feature = "print")]
-            println!("Normalize");
-            evaluate_expr(interpreter, op).normalize()
-        }
         Expr::Dot(lhs, rhs) => {
             #[cfg(feature = "print")]
             println!("Dot");
             evaluate_expr(interpreter, lhs).dot(evaluate_expr(interpreter, rhs))
+        }
+        Expr::Atan2(lhs, rhs) => {
+            #[cfg(feature = "print")]
+            println!("Atan2");
+            evaluate_expr(interpreter, lhs).atan2(evaluate_expr(interpreter, rhs))
         }
     }
 }

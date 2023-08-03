@@ -7,16 +7,16 @@ use elysian_core::{
     },
     ir::{
         as_ir::{AsIR, DynAsIR},
-        ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, X, Y, Z},
+        ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, POSITION_2D, UV, X, Y, Z},
         module::{AsModule, DynAsModule, PropertyIdentifier},
     },
 };
 use elysian_shapes::{
-    combine::{SmoothSubtraction, SmoothUnion, Subtraction, Union},
-    field::{Capsule, Circle, Line, Point, Ring},
+    combine::{Displace, Sided, SidedProp, SmoothSubtraction, SmoothUnion, Subtraction, Union},
+    field::{Capsule, Chebyshev, Circle, Line, Point, Ring},
     modify::{
-        IntoAspect, IntoElongate, IntoGradientNormals, IntoIsosurface, IntoManifold, IntoSet,
-        IntoTranslate, ASPECT,
+        BoundType, IntoAspect, IntoBasisBound, IntoBasisMirror, IntoDistanceBound, IntoElongate,
+        IntoGradientNormals, IntoIsosurface, IntoManifold, IntoSet, IntoTranslate, ASPECT,
     },
     raymarch::{March, Raymarch},
 };
@@ -26,19 +26,19 @@ pub fn point() -> DynAsModule {
     Box::new(
         Point
             .field()
-            .set(COLOR.into(), distance_color())
+            .gradient_normals()
+            .set_post(COLOR.into(), distance_normal_color())
             .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
 
-pub fn circle() -> DynAsModule {
+pub fn chebyshev() -> DynAsModule {
     Box::new(
-        Circle {
-            radius: 0.5.literal(),
-        }
-        .field()
-        .set(COLOR.into(), distance_color())
-        .aspect(Expr::Read(vec![ASPECT.into()])),
+        Chebyshev
+            .field()
+            .gradient_normals()
+            .set_post(COLOR.into(), distance_normal_color())
+            .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
 
@@ -48,7 +48,53 @@ pub fn line() -> DynAsModule {
             dir: [1.0, 0.0].literal(),
         }
         .field()
-        .set(COLOR.into(), distance_color())
+        .set_post(COLOR.into(), uv_color())
+        .aspect(Expr::Read(vec![ASPECT.into()])),
+    )
+}
+
+fn quad() -> DynAsModule {
+    let extent = [1.0, 0.5].literal();
+
+    Box::new(
+        [
+            Box::new(
+                Point
+                    .field()
+                    .basis_bound(BoundType::Lower, Expr::Literal([0.0, 0.0].into())),
+            ) as Box<dyn AsModule>,
+            Box::new(
+                Chebyshev
+                    .field()
+                    .distance_bound(BoundType::Upper, Expr::Literal(0.0.into())),
+            ),
+        ]
+        .combine([
+            Box::new(Sided { flip: false }) as Box<dyn AsIR>,
+            Box::new(Displace {
+                prop: DISTANCE.into(),
+            }),
+            Box::new(SidedProp {
+                prop: GRADIENT_2D.into(),
+                flip: false,
+            }),
+        ])
+        .modify()
+        .translate(extent.clone())
+        .basis_mirror()
+        .gradient_normals()
+        .set_post(COLOR.into(), normal_color())
+        .aspect(Expr::Read(vec![ASPECT.into()])),
+    )
+}
+
+pub fn circle() -> DynAsModule {
+    Box::new(
+        Circle {
+            radius: 0.5.literal(),
+        }
+        .field()
+        .set_post(COLOR.into(), uv_color())
         .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
@@ -60,7 +106,7 @@ pub fn capsule() -> DynAsModule {
             radius: 0.5.literal(),
         }
         .field()
-        .set(COLOR.into(), distance_color())
+        .set_post(COLOR.into(), uv_color())
         .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
@@ -72,32 +118,36 @@ pub fn ring() -> DynAsModule {
             width: 0.2.literal(),
         }
         .field()
-        .set(COLOR.into(), distance_color())
+        .set_post(COLOR.into(), uv_color())
         .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
 
 pub fn union() -> DynAsModule {
-    Box::new([circle(), line()].combine([Box::new(Union) as Box<dyn AsIR>]))
+    Box::new([circle(), line()].combine([Box::new(Union::default()) as Box<dyn AsIR>]))
 }
 
 pub fn smooth_union() -> DynAsModule {
     Box::new([circle(), line()].combine([
-        Box::new(Union) as Box<dyn AsIR>,
+        Box::new(Union::default()) as Box<dyn AsIR>,
         Box::new(SmoothUnion {
             prop: DISTANCE.into(),
             k: 0.4.literal(),
         }),
         Box::new(SmoothUnion {
             prop: GRADIENT_2D.into(),
+            k: 0.4.literal(),
+        }),
+        Box::new(SmoothUnion {
+            prop: UV.into(),
             k: 0.4.literal(),
         }),
     ]))
 }
 
 pub fn kettle_bell() -> DynAsModule {
-    let smooth_union: [DynAsIR; 3] = [
-        Box::new(Union),
+    let smooth_union: [DynAsIR; 4] = [
+        Box::new(Union::default()),
         Box::new(SmoothUnion {
             prop: DISTANCE.into(),
             k: 0.4.literal(),
@@ -106,9 +156,13 @@ pub fn kettle_bell() -> DynAsModule {
             prop: GRADIENT_2D.into(),
             k: 0.4.literal(),
         }),
+        Box::new(SmoothUnion {
+            prop: UV.into(),
+            k: 0.4.literal(),
+        }),
     ];
 
-    let smooth_subtraction: [DynAsIR; 3] = [
+    let smooth_subtraction: [DynAsIR; 4] = [
         Box::new(Subtraction),
         Box::new(SmoothSubtraction {
             prop: DISTANCE.into(),
@@ -116,6 +170,10 @@ pub fn kettle_bell() -> DynAsModule {
         }),
         Box::new(SmoothSubtraction {
             prop: GRADIENT_2D.into(),
+            k: 0.4.literal(),
+        }),
+        Box::new(SmoothSubtraction {
+            prop: UV.into(),
             k: 0.4.literal(),
         }),
     ];
@@ -155,7 +213,7 @@ pub fn kettle_bell() -> DynAsModule {
     let shape_d = shape_c
         .modify()
         .gradient_normals()
-        .set(COLOR.into(), distance_normal_color())
+        .set_post(COLOR.into(), uv_color())
         .aspect(Expr::Read(vec![ASPECT.into()]));
 
     Box::new(shape_d)
@@ -163,21 +221,39 @@ pub fn kettle_bell() -> DynAsModule {
 
 pub fn distance_color() -> Expr {
     Expr::vector4(
-        1.0.literal() - PropertyIdentifier(DISTANCE).read(),
-        1.0.literal() - PropertyIdentifier(DISTANCE).read(),
-        1.0.literal() - PropertyIdentifier(DISTANCE).read(),
+        1.0.literal() - PropertyIdentifier(DISTANCE).read().abs(),
+        1.0.literal() - PropertyIdentifier(DISTANCE).read().abs(),
+        1.0.literal() - PropertyIdentifier(DISTANCE).read().abs(),
+        1.0.literal(),
+    )
+}
+
+pub fn normal_color() -> Expr {
+    Expr::vector4(
+        [NORMAL.into(), X.into()].read() * 0.5.literal() + 0.5.literal(),
+        [NORMAL.into(), Y.into()].read() * 0.5.literal() + 0.5.literal(),
+        [NORMAL.into(), Z.into()].read() * 0.5.literal() + 0.5.literal(),
         1.0.literal(),
     )
 }
 
 pub fn distance_normal_color() -> Expr {
     Expr::vector4(
-        (1.0.literal() - PropertyIdentifier(DISTANCE).read())
+        (1.0.literal() - PropertyIdentifier(DISTANCE).read().abs())
             * ([NORMAL.into(), X.into()].read() * 0.5.literal() + 0.5.literal()),
-        (1.0.literal() - PropertyIdentifier(DISTANCE).read())
+        (1.0.literal() - PropertyIdentifier(DISTANCE).read().abs())
             * ([NORMAL.into(), Y.into()].read() * 0.5.literal() + 0.5.literal()),
-        (1.0.literal() - PropertyIdentifier(DISTANCE).read())
+        (1.0.literal() - PropertyIdentifier(DISTANCE).read().abs())
             * ([NORMAL.into(), Z.into()].read() * 0.5.literal() + 0.5.literal()),
+        1.0.literal(),
+    )
+}
+
+pub fn uv_color() -> Expr {
+    Expr::vector4(
+        [PropertyIdentifier(UV), PropertyIdentifier(X)].read(),
+        [PropertyIdentifier(UV), PropertyIdentifier(Y)].read(),
+        0.0.literal(),
         1.0.literal(),
     )
 }
@@ -222,9 +298,9 @@ pub fn raymarched() -> DynAsModule {
                             .isosurface(0.2.literal()),
                     ),
                 ]
-                .combine([Box::new(Union) as Box<dyn AsIR>])
+                .combine([Box::new(Union::default()) as Box<dyn AsIR>])
                 .gradient_normals()
-                .set(COLOR.into(), distance_normal_color()),
+                .set_post(COLOR.into(), uv_color()),
             ),
         }
         .modify()
@@ -233,13 +309,16 @@ pub fn raymarched() -> DynAsModule {
 }
 
 pub fn test_shape() -> DynAsModule {
-    raymarched()
+    quad()
 }
 
-pub fn shapes() -> [(&'static str, DynAsModule); 8] {
+pub fn shapes() -> [(&'static str, DynAsModule); 11] {
     [
         ("point", point()),
+        ("chebyshev", chebyshev()),
         ("line", line()),
+        ("quad", quad()),
+        ("circle", circle()),
         ("capsule", capsule()),
         ("ring", ring()),
         ("union", union()),

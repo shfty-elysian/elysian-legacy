@@ -4,23 +4,29 @@ use elysian_core::{
     ast::{field::Field, modify::Modify},
     ir::{
         as_ir::{AsIR, Domains},
-        ast::{DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM},
+        ast::{Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM, UV, X},
         module::{
             FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
             SpecializationData, CONTEXT,
         },
     },
 };
-use elysian_decl_macros::elysian_function;
+use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 pub const MANIFOLD: FunctionIdentifier = FunctionIdentifier::new("manifold", 7861274791729269697);
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct Manifold;
+
+impl Hash for Manifold {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        MANIFOLD.uuid().hash(state);
+    }
+}
 
 impl Domains for Manifold {
     fn domains() -> Vec<PropertyIdentifier> {
-        vec![GRADIENT_2D.into(), GRADIENT_3D.into()]
+        vec![GRADIENT_2D.into(), GRADIENT_3D.into(), UV.into()]
     }
 }
 
@@ -28,25 +34,44 @@ impl AsIR for Manifold {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let manifold = MANIFOLD.specialize(spec);
 
+        let mut block = Block::default();
+
+        block.extend(elysian_block! {
+            let NUM = CONTEXT.DISTANCE;
+            CONTEXT.DISTANCE = NUM.abs();
+        });
+
         let gradient = if spec.contains(&GRADIENT_2D.into()) {
-            GRADIENT_2D
+            Some(GRADIENT_2D)
         } else if spec.contains(&GRADIENT_3D.into()) {
-            GRADIENT_3D
+            Some(GRADIENT_3D)
         } else {
-            return vec![elysian_function! {
-                fn manifold(CONTEXT) -> CONTEXT {
-                    return CONTEXT
-                }
-            }];
+            None
         };
 
-        vec![elysian_function! {
-            fn manifold(mut CONTEXT) -> CONTEXT {
-                let NUM = CONTEXT.DISTANCE;
-                CONTEXT.DISTANCE = NUM.abs();
-                CONTEXT.gradient = CONTEXT.gradient * NUM.sign();
-                return CONTEXT;
-            }
+        if let Some(gradient) = gradient {
+            block.push(elysian_stmt! {
+                CONTEXT.gradient = CONTEXT.gradient * NUM.sign()
+            })
+        };
+
+        if spec.contains(&UV.into()) {
+            block.push(elysian_stmt! {
+                CONTEXT.UV.X = CONTEXT.UV.X * NUM.sign()
+            })
+        }
+
+        block.push(elysian_stmt! { return CONTEXT });
+
+        vec![FunctionDefinition {
+            id: manifold,
+            public: false,
+            inputs: vec![InputDefinition {
+                id: CONTEXT.into(),
+                mutable: true,
+            }],
+            output: CONTEXT.into(),
+            block,
         }]
     }
 

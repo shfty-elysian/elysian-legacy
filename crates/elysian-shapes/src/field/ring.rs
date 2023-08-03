@@ -6,7 +6,7 @@ use elysian_core::{
         as_ir::{AsIR, Domains},
         ast::Identifier,
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+            FunctionDefinition, FunctionIdentifier, NumericType,
             PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
@@ -23,10 +23,18 @@ pub const RING: FunctionIdentifier = FunctionIdentifier::new("ring", 18972348581
 pub const WIDTH: Identifier = Identifier::new("width", 2742125101201765597);
 property!(WIDTH, WIDTH_PROP, Type::Number(NumericType::Float));
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct Ring {
     pub radius: Expr,
     pub width: Expr,
+}
+
+impl Hash for Ring {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        RING.uuid().hash(state);
+        self.radius.hash(state);
+        self.width.hash(state);
+    }
 }
 
 impl Domains for Ring {

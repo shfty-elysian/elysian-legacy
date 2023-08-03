@@ -6,7 +6,7 @@ use elysian_core::{
         as_ir::{AsIR, Domains},
         ast::{POSITION_2D, POSITION_3D},
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+            FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
             SpecializationData, CONTEXT,
         },
     },
@@ -19,9 +19,16 @@ use super::{Point, POINT};
 
 pub const LINE: FunctionIdentifier = FunctionIdentifier::new("line", 14339483921749952476);
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct Line {
     pub dir: Expr,
+}
+
+impl Hash for Line {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        LINE.uuid().hash(state);
+        self.dir.hash(state);
+    }
 }
 
 impl Domains for Line {

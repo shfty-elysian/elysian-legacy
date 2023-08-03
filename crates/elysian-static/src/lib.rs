@@ -1,6 +1,6 @@
 use elysian_core::ir::module::SpecializationData;
 use elysian_interpreter::{evaluate_module, Interpreter};
-use elysian_syn::output::module_to_string;
+use elysian_syn::module_to_string;
 
 use std::{collections::BTreeMap, sync::OnceLock};
 

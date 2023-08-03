@@ -6,7 +6,7 @@ use std::{
 use elysian_core::ir::{
     ast::{Expr, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
     module::{
-        AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+        AsModule, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
         SpecializationData, Type, CONTEXT,
     },
 };

@@ -7,7 +7,7 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{POSITION_2D, POSITION_3D},
-        module::{FunctionDefinition, InputDefinition, SpecializationData},
+        module::{FunctionDefinition, SpecializationData},
     },
 };
 use elysian_decl_macros::elysian_function;
@@ -18,10 +18,18 @@ use super::{Line, LINE, RADIUS};
 
 pub const CAPSULE: FunctionIdentifier = FunctionIdentifier::new("capsule", 14339483921749952476);
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct Capsule {
     pub dir: ElysianExpr,
     pub radius: ElysianExpr,
+}
+
+impl Hash for Capsule {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        CAPSULE.uuid().hash(state);
+        self.dir.hash(state);
+        self.radius.hash(state);
+    }
 }
 
 impl Domains for Capsule {

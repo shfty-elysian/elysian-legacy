@@ -3,7 +3,7 @@ use elysian_core::{
     ir::{
         as_ir::{AsIR, Domains},
         ast::{COMBINE_CONTEXT, DISTANCE},
-        module::{FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData},
+        module::{FunctionDefinition, FunctionIdentifier, SpecializationData},
     },
 };
 use elysian_decl_macros::elysian_function;
@@ -20,7 +20,7 @@ impl AsIR for Intersection {
     fn functions_impl(&self, _: &SpecializationData) -> Vec<FunctionDefinition> {
         vec![elysian_function! {
             fn INTERSECTION(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
-                if COMBINE_CONTEXT.LEFT.DISTANCE > COMBINE_CONTEXT.RIGHT.DISTANCE {
+                if COMBINE_CONTEXT.LEFT.DISTANCE >= COMBINE_CONTEXT.RIGHT.DISTANCE {
                     COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.LEFT;
                 }
                 else {

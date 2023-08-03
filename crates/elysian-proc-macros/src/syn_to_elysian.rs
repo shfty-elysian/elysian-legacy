@@ -122,8 +122,14 @@ impl SynToElysian {
                     syn::BinOp::Sub(_) => quote!((#left - #right)),
                     syn::BinOp::Mul(_) => quote!((#left * #right)),
                     syn::BinOp::Div(_) => quote!((#left / #right)),
+                    syn::BinOp::Eq(_) => quote!(#left.eq(#right)),
+                    syn::BinOp::Ne(_) => quote!(#left.ne(#right)),
                     syn::BinOp::Lt(_) => quote!(#left.lt(#right)),
+                    syn::BinOp::Le(_) => quote!((#left.lt(#right) | #left.eq(#right))),
                     syn::BinOp::Gt(_) => quote!(#left.gt(#right)),
+                    syn::BinOp::Ge(_) => quote!((#left.gt(#right) | #left.eq(#right))),
+                    syn::BinOp::And(_) => quote!((#left.and(#right))),
+                    syn::BinOp::Or(_) => quote!((#left.or(#right))),
                     t => unimplemented!("SynExpr::Binary: {t:#?}"),
                 }
             }
@@ -256,6 +262,8 @@ impl SynToElysian {
                         "length" => quote!(#receiver.length()),
                         "normalize" => quote!(#receiver.normalize()),
                         "sign" => quote!(#receiver.sign()),
+                        "acos" => quote!(#receiver.acos()),
+                        "atan" => quote!(#receiver.atan()),
                         _ => panic!("Unsupported method"),
                     },
                     1 => {
@@ -265,6 +273,7 @@ impl SynToElysian {
                             "min" => quote!(#receiver.min(#rhs)),
                             "max" => quote!(#receiver.max(#rhs)),
                             "dot" => quote!(#receiver.dot(#rhs)),
+                            "atan2" => quote!(#receiver.atan2(#rhs)),
                             _ => panic!("Unsupported method"),
                         }
                     }

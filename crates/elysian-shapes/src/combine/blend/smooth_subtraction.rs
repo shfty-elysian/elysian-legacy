@@ -31,7 +31,7 @@ impl Domains for SmoothSubtraction {}
 
 impl AsIR for SmoothSubtraction {
     fn functions_impl(&self, _: &SpecializationData) -> Vec<FunctionDefinition> {
-        let property = (*self.prop).clone();
+        let prop = (*self.prop).clone();
 
         let mut block = elysian_block! {
             let NUM = (
@@ -40,13 +40,13 @@ impl AsIR for SmoothSubtraction {
                         + COMBINE_CONTEXT.LEFT.DISTANCE
                 ) / K).max(0.0).min(1.0);
 
-            COMBINE_CONTEXT.OUT.property = COMBINE_CONTEXT.LEFT.property.mix(
-                -COMBINE_CONTEXT.RIGHT.property,
+            COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.LEFT.prop.mix(
+                -COMBINE_CONTEXT.RIGHT.prop,
                 NUM
             );
         };
 
-        if property == DISTANCE {
+        if prop == DISTANCE {
             block.push(elysian_stmt!(
                 COMBINE_CONTEXT.OUT.DISTANCE = COMBINE_CONTEXT.OUT.DISTANCE + K * NUM * (1.0 - NUM)
             ));

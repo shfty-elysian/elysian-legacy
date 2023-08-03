@@ -5,7 +5,7 @@ use elysian_core::{
         as_ir::{AsIR, Domains},
         ast::Identifier,
         module::{
-            FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+            FunctionDefinition, FunctionIdentifier, NumericType,
             PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
@@ -22,9 +22,16 @@ pub const CIRCLE: FunctionIdentifier = FunctionIdentifier::new("circle", 1573847
 pub const RADIUS: Identifier = Identifier::new("radius", 213754678517975478);
 property!(RADIUS, RADIUS_PROP, Type::Number(NumericType::Float));
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct Circle {
     pub radius: elysian_core::ast::expr::Expr,
+}
+
+impl Hash for Circle {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        CIRCLE.uuid().hash(state);
+        self.radius.hash(state);
+    }
 }
 
 impl Domains for Circle {

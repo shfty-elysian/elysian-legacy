@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::ir::ast::{Identifier, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D};
+use crate::ir::ast::{Identifier, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV};
 
 use super::PropertyIdentifier;
 
@@ -16,6 +16,7 @@ impl SpecializationData {
                 PropertyIdentifier(POSITION_2D),
                 PropertyIdentifier(DISTANCE),
                 PropertyIdentifier(GRADIENT_2D),
+                PropertyIdentifier(UV),
             ]
             .into_iter()
             .collect(),
@@ -29,6 +30,7 @@ impl SpecializationData {
                 PropertyIdentifier(POSITION_3D),
                 PropertyIdentifier(DISTANCE),
                 PropertyIdentifier(GRADIENT_3D),
+                PropertyIdentifier(UV),
             ]
             .into_iter()
             .collect(),

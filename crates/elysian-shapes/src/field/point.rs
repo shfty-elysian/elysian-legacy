@@ -2,19 +2,28 @@ use std::hash::Hash;
 
 use elysian_core::ir::{
     as_ir::{AsIR, Domains},
-    ast::{Block, Expr, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D},
+    ast::{
+        Block, Expr, IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV,
+        VECTOR2, X, Y, Z,
+    },
     module::{
         FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead, PropertyIdentifier,
         SpecializationData, CONTEXT,
     },
 };
 
-use elysian_proc_macros::elysian_stmt;
+use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 pub const POINT: FunctionIdentifier = FunctionIdentifier::new("point", 2023836058494613125);
 
-#[derive(Debug, Copy, Clone, Hash)]
+#[derive(Debug, Copy, Clone)]
 pub struct Point;
+
+impl Hash for Point {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        POINT.uuid().hash(state);
+    }
+}
 
 impl Domains for Point {
     fn domains() -> Vec<PropertyIdentifier> {
@@ -24,6 +33,7 @@ impl Domains for Point {
             DISTANCE.into(),
             GRADIENT_2D.into(),
             GRADIENT_3D.into(),
+            UV.into(),
         ]
     }
 }
@@ -48,6 +58,12 @@ impl AsIR for Point {
             None
         };
 
+        let uv = if spec.contains(&UV.into()) {
+            Some(UV)
+        } else {
+            None
+        };
+
         let mut block = Block::default();
 
         if distance {
@@ -58,6 +74,36 @@ impl AsIR for Point {
             block.push(elysian_stmt!(
                 CONTEXT.gradient = CONTEXT.position.normalize()
             ));
+        }
+
+        let pi = core::f32::consts::PI.literal();
+
+        if let Some(uv) = uv {
+            match &position {
+                p if *p == POSITION_2D => {
+                    block.extend(elysian_block! {
+                        CONTEXT.uv = VECTOR2 {
+                            X: CONTEXT.position.length(),
+                            Y: (CONTEXT.position.Y.atan2(CONTEXT.position.X) / #pi) * 0.5 + 0.5
+                        };
+                    });
+                }
+                p if *p == POSITION_3D => {
+                    block.extend(elysian_block! {
+                        CONTEXT.uv = VECTOR2 {
+                            X: (CONTEXT.position.Z / CONTEXT.position.length()).acos(),
+                            Y: (CONTEXT.position.Y.sign() * (
+                                CONTEXT.position.X / VECTOR2 {
+                                    X: CONTEXT.position.X,
+                                    Y: CONTEXT.position.Y,
+                                }.length()
+                            ).acos() / #pi) * 0.5 + 0.5,
+
+                        };
+                    });
+                }
+                _ => unreachable!(),
+            }
         }
 
         block.push(PropertyIdentifier(CONTEXT).read().output());

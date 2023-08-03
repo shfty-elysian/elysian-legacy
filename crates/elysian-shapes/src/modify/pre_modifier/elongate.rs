@@ -26,10 +26,22 @@ property!(DIR_2D, DIR_2D_PROP, Type::Struct(StructIdentifier(VECTOR2)));
 pub const DIR_3D: Identifier = Identifier::new("dir_3d", 66909101541205811);
 property!(DIR_3D, DIR_3D_PROP, Type::Struct(StructIdentifier(VECTOR3)));
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct Elongate {
     pub dir: Expr,
     pub infinite: bool,
+}
+
+impl Hash for Elongate {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        if self.infinite {
+            ELONGATE.uuid().hash(state);
+        } else {
+            ELONGATE_INFINITE.uuid().hash(state);
+        }
+        self.dir.hash(state);
+        self.infinite.hash(state);
+    }
 }
 
 impl Domains for Elongate {

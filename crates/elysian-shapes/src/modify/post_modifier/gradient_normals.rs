@@ -16,8 +16,14 @@ use elysian_proc_macros::elysian_block;
 pub const GRADIENT_NORMALS: FunctionIdentifier =
     FunctionIdentifier::new("gradient_normals", 18573716892008865657);
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct GradientNormals;
+
+impl Hash for GradientNormals {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        GRADIENT_NORMALS.uuid().hash(state);
+    }
+}
 
 impl Domains for GradientNormals {
     fn domains() -> Vec<PropertyIdentifier> {
@@ -29,10 +35,9 @@ impl AsIR for GradientNormals {
     fn functions_impl(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let block = if spec.contains(&GRADIENT_2D.into()) {
             elysian_block! {
-                let GRADIENT_2D = CONTEXT.GRADIENT_2D.normalize();
                 CONTEXT.NORMAL = VECTOR3 {
-                    X: GRADIENT_2D.X,
-                    Y: GRADIENT_2D.Y,
+                    X: CONTEXT.GRADIENT_2D.X,
+                    Y: CONTEXT.GRADIENT_2D.Y,
                     Z: 1.0,
                 }.normalize();
                 return CONTEXT;

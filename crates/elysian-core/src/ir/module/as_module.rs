@@ -163,11 +163,19 @@ pub fn properties() -> &'static IndexMap<PropertyIdentifier, Type> {
     })
 }
 
+pub const SAFE_NORMALIZE_2: FunctionIdentifier =
+    FunctionIdentifier::new("safe_normalize_2", 18883451341246143490);
+pub const SAFE_NORMALIZE_3: FunctionIdentifier =
+    FunctionIdentifier::new("safe_normalize_3", 174303162393329419);
+pub const SAFE_NORMALIZE_4: FunctionIdentifier =
+    FunctionIdentifier::new("safe_normalize_4", 18890028961074310202);
+
 pub trait AsModule: 'static + Debug + HashIR {
     fn module(&self, spec: &SpecializationData) -> Module {
         let types: IndexMap<_, _> = properties().clone();
 
         let entry_point = self.entry_point();
+
         let mut functions = self.functions(spec, &types, &entry_point);
 
         let mut set = HashSet::new();

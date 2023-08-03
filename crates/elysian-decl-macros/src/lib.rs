@@ -2,7 +2,7 @@
 macro_rules! elysian_function_arg {
     ($target:expr => mut $arg:ident, $($next:tt)*) => {
         $crate::elysian_function_arg!(
-            $target.chain([InputDefinition {
+            $target.chain([elysian_core::ir::module::InputDefinition {
                 id: $arg.clone().into(),
                 mutable: true,
             }]) => $($next)*
@@ -10,19 +10,19 @@ macro_rules! elysian_function_arg {
     };
     ($target:expr => $arg:ident, $($next:tt)*) => {
         $crate::elysian_function_arg!(
-        $target.chain([InputDefinition {
+        $target.chain([elysian_core::ir::module::InputDefinition {
             id: $arg.clone().into(),
             mutable: false,
         }]) => $($next)*)
     };
     ($target:expr => mut $arg:ident) => {
-        $target.chain([InputDefinition {
+        $target.chain([elysian_core::ir::module::InputDefinition {
             id: $arg.clone().into(),
             mutable: true,
         }])
     };
     ($target:expr => $arg:ident) => {
-        $target.chain([InputDefinition {
+        $target.chain([elysian_core::ir::module::InputDefinition {
             id: $arg.clone().into(),
             mutable: false,
         }])

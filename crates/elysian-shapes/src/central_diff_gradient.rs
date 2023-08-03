@@ -9,7 +9,7 @@ use elysian_core::{
         as_ir::Domains,
         ast::{Number, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
         module::{
-            AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+            AsModule, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
             SpecializationData, Type, CONTEXT,
         },
     },

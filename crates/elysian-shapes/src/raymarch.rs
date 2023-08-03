@@ -10,8 +10,8 @@ use elysian_core::{
             VECTOR3, VECTOR4, W, X, Y, Z,
         },
         module::{
-            AsModule, FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
-            PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT,
+            AsModule, FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
+            SpecializationData, StructIdentifier, Type, CONTEXT,
         },
     },
     property,
