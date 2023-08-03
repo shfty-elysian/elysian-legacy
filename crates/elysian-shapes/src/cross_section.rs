@@ -45,7 +45,7 @@ impl AsIR for CrossSection {
         CROSS_SECTION
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         _: &FunctionIdentifier,
@@ -60,7 +60,7 @@ impl AsIR for CrossSection {
         let field_entry_point = self.field.entry_point(spec);
 
         self.field
-            .functions(&SpecializationData::new_3d())
+            .functions_internal(&SpecializationData::new_3d())
             .into_iter()
             .chain([elysian_function! {
                 fn CROSS_SECTION(mut CONTEXT) -> CONTEXT {

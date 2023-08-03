@@ -55,7 +55,7 @@ impl AsIR for Ring {
         vec![self.radius.clone().into(), self.width.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -67,14 +67,14 @@ impl AsIR for Ring {
         Circle {
             radius: self.radius.clone(),
         }
-        .functions(spec)
+        .functions_internal(spec)
         .into_iter()
-        .chain(Manifold.functions(spec))
+        .chain(Manifold.functions_internal(spec))
         .chain(
             Isosurface {
                 dist: self.width.clone(),
             }
-            .functions(spec),
+            .functions_internal(spec),
         )
         .chain(elysian_function! {
             fn entry_point(RADIUS, WIDTH, CONTEXT) -> CONTEXT {

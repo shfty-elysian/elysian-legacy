@@ -45,7 +45,7 @@ impl AsIR for Aspect {
         vec![self.aspect.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,

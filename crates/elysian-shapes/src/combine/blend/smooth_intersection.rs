@@ -37,7 +37,7 @@ impl AsIR for SmoothIntersection {
         vec![self.k.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,

@@ -62,7 +62,7 @@ impl AsIR for DistanceBound {
         vec![self.bound.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,

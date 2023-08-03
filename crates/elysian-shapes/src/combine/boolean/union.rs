@@ -19,7 +19,7 @@ impl AsIR for Union {
         UNION
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,

@@ -26,7 +26,7 @@ impl AsIR for Displace {
         FunctionIdentifier(DISPLACE.0.concat(&self.prop))
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,

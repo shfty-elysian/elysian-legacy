@@ -41,7 +41,7 @@ impl AsIR for BasisMirror {
         FunctionIdentifier::new_dynamic("basis_mirror")
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -83,7 +83,7 @@ impl AsIR for BasisMirror {
         });
 
         self.field
-            .functions_impl(spec, &field_entry_point)
+            .functions(spec, &field_entry_point)
             .into_iter()
             .chain(FunctionDefinition {
                 id: entry_point.clone(),

@@ -38,7 +38,7 @@ impl AsIR for Chebyshev {
         CHEBYSHEV.specialize(spec)
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,

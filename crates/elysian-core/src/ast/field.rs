@@ -38,7 +38,7 @@ impl AsIR for Field {
         FunctionIdentifier::new_dynamic("field")
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -47,7 +47,7 @@ impl AsIR for Field {
         let field_args = self.field.arguments(PropertyIdentifier(CONTEXT).read());
 
         self.field
-            .functions_impl(spec, &field_entry_point)
+            .functions(spec, &field_entry_point)
             .into_iter()
             .chain(FunctionDefinition {
                 id: entry_point.clone(),

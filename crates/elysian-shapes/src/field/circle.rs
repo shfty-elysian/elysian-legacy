@@ -52,7 +52,7 @@ impl AsIR for Circle {
         vec![self.radius.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -61,13 +61,13 @@ impl AsIR for Circle {
         let isosurface = ISOSURFACE.specialize(&spec.filter(Isosurface::domains()));
 
         Point
-            .functions(spec)
+            .functions_internal(spec)
             .into_iter()
             .chain(
                 Isosurface {
                     dist: self.radius.clone(),
                 }
-                .functions(spec),
+                .functions_internal(spec),
             )
             .chain(elysian_function! {
                 fn entry_point(RADIUS, CONTEXT) -> CONTEXT {

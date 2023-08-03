@@ -58,7 +58,7 @@ impl AsIR for Translate {
         vec![self.delta.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,

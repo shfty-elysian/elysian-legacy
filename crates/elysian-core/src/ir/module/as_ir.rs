@@ -174,7 +174,7 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
         let types: IndexMap<_, _> = properties().clone();
 
         let entry_point = self.entry_point(spec);
-        let mut functions = self.functions_impl(spec, &entry_point);
+        let mut functions = self.functions(spec, &entry_point);
 
         let mut set = HashSet::new();
         functions.retain(|x| set.insert(x.id.clone()));
@@ -229,12 +229,13 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
         }
     }
 
-    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+    fn functions_internal(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let spec = spec.filter(self.domains_dyn());
         let entry_point = self.entry_point(&spec);
-        self.functions_impl(&spec, &entry_point)
+        self.functions(&spec, &entry_point)
     }
-    fn functions_impl(
+
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -262,16 +263,16 @@ impl AsIR for DynAsIR {
         (**self).entry_point(spec)
     }
 
-    fn functions(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        (**self).functions(spec)
+    fn functions_internal(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
+        (**self).functions_internal(spec)
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        (**self).functions_impl(spec, entry_point)
+        (**self).functions(spec, entry_point)
     }
 
     fn structs(&self) -> Vec<StructDefinition> {

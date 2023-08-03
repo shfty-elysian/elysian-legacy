@@ -49,7 +49,7 @@ impl AsIR for Capsule {
         vec![self.dir.clone().into(), self.radius.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -68,13 +68,13 @@ impl AsIR for Capsule {
         Line {
             dir: self.dir.clone(),
         }
-        .functions(spec)
+        .functions_internal(spec)
         .into_iter()
         .chain(
             Isosurface {
                 dist: self.radius.clone(),
             }
-            .functions(spec),
+            .functions_internal(spec),
         )
         .chain(elysian_function! {
             fn entry_point(dir, RADIUS, CONTEXT) -> CONTEXT {

@@ -34,7 +34,7 @@ impl AsIR for Manifold {
         MANIFOLD.specialize(spec)
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,

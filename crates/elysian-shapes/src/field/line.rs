@@ -48,7 +48,7 @@ impl AsIR for Line {
         vec![self.dir.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -65,14 +65,14 @@ impl AsIR for Line {
         let elongate = ELONGATE.specialize(&spec.filter(Elongate::domains()));
 
         Point
-            .functions(spec)
+            .functions_internal(spec)
             .into_iter()
             .chain(
                 Elongate {
                     dir: self.dir.clone(),
                     infinite: false,
                 }
-                .functions(spec),
+                .functions_internal(spec),
             )
             .chain(elysian_function! {
                 fn entry_point(dir, CONTEXT) -> CONTEXT {

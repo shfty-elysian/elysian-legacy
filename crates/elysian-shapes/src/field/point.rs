@@ -42,7 +42,7 @@ impl AsIR for Point {
         POINT.specialize(spec)
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,

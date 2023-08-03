@@ -47,7 +47,7 @@ impl AsIR for CentralDiffGradient {
         FunctionIdentifier::new_dynamic("central_diff_gradient")
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -77,7 +77,7 @@ impl AsIR for CentralDiffGradient {
         } else {
             return self
                 .field
-                .functions(spec)
+                .functions_internal(spec)
                 .into_iter()
                 .chain(elysian_function! {
                     fn entry_point(mut CONTEXT) -> CONTEXT {
@@ -94,7 +94,7 @@ impl AsIR for CentralDiffGradient {
         let field_entry_point = self.field.entry_point(spec);
 
         self.field
-            .functions_impl(spec, &field_entry_point)
+            .functions(spec, &field_entry_point)
             .into_iter()
             .chain([elysian_function! {
                 pub fn entry_point(mut CONTEXT) -> CONTEXT {

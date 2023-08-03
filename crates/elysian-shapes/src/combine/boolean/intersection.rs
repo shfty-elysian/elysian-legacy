@@ -20,7 +20,7 @@ impl AsIR for Intersection {
         INTERSECTION
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,

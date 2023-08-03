@@ -53,7 +53,7 @@ impl AsIR for Isosurface {
         vec![self.dist.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,

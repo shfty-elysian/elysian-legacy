@@ -76,7 +76,7 @@ impl AsIR for BasisBound {
         vec![self.bound.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,

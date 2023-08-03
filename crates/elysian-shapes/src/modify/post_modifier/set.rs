@@ -35,7 +35,7 @@ impl AsIR for Set {
         FunctionIdentifier((*SET).concat(&(*self.id))).specialize(spec)
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,

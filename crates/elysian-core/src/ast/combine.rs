@@ -88,7 +88,7 @@ impl AsIR for Combine {
         FunctionIdentifier::new_dynamic("combine")
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -100,7 +100,7 @@ impl AsIR for Combine {
                 let entry_point = shape.entry_point(spec);
                 (
                     entry_point.clone(),
-                    shape.functions_impl(spec, &entry_point),
+                    shape.functions(spec, &entry_point),
                 )
             })
             .unzip();
@@ -152,7 +152,7 @@ impl AsIR for Combine {
 
         self.combinator
             .iter()
-            .flat_map(|t| t.functions(spec))
+            .flat_map(|t| t.functions_internal(spec))
             .chain(shape_functions)
             .chain([FunctionDefinition {
                 id: entry_point.clone(),

@@ -144,7 +144,7 @@ impl AsIR for Raymarch {
         RAYMARCH
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         _: &FunctionIdentifier,
@@ -187,7 +187,7 @@ impl AsIR for Raymarch {
         };
 
         self.field
-            .functions_impl(&spec_3d, &field_entry_point)
+            .functions(&spec_3d, &field_entry_point)
             .into_iter()
             .chain([elysian_function! {
                 fn RAYMARCH(mut CONTEXT) -> CONTEXT {

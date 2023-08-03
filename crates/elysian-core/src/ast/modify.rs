@@ -122,7 +122,7 @@ impl AsIR for Modify {
         FunctionIdentifier::new_dynamic("modify")
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -141,12 +141,12 @@ impl AsIR for Modify {
 
         pre_entry_points
             .iter()
-            .flat_map(|(t, entry)| AsIR::functions_impl(*t, spec, entry))
-            .chain(self.field.functions_impl(spec, &field_entry_point))
+            .flat_map(|(t, entry)| AsIR::functions(*t, spec, entry))
+            .chain(self.field.functions(spec, &field_entry_point))
             .chain(
                 post_entry_points
                     .iter()
-                    .flat_map(|(t, entry)| AsIR::functions_impl(*t, spec, entry)),
+                    .flat_map(|(t, entry)| AsIR::functions(*t, spec, entry)),
             )
             .chain(FunctionDefinition {
                 id: entry_point.clone(),

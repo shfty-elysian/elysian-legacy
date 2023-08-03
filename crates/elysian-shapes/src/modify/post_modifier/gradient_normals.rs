@@ -35,7 +35,7 @@ impl AsIR for GradientNormals {
         GRADIENT_NORMALS.specialize(spec)
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,

@@ -25,7 +25,7 @@ impl AsIR for Sided {
         SIDED
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,
@@ -55,7 +55,7 @@ impl AsIR for SidedProp {
         (*SIDED).concat(&self.prop).into()
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,

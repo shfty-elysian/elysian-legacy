@@ -63,7 +63,7 @@ impl AsIR for Elongate {
         vec![self.dir.clone().into(), input]
     }
 
-    fn functions_impl(
+    fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
