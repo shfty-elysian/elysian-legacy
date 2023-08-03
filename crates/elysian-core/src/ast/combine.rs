@@ -98,10 +98,7 @@ impl AsIR for Combine {
             .iter()
             .map(|shape| {
                 let entry_point = shape.entry_point(spec);
-                (
-                    entry_point.clone(),
-                    shape.functions(spec, &entry_point),
-                )
+                (entry_point.clone(), shape.functions(spec, &entry_point))
             })
             .unzip();
 
@@ -126,12 +123,9 @@ impl AsIR for Combine {
 
                 let combinator = self.combinator.iter().fold(
                     elysian_stmt! { COMBINE_CONTEXT },
-                    |acc: Expr, next| {
-                        let Expr::Call{ function, args } = next.expression(spec, acc) else  {
-                            panic!("Combinator expression is not a Call")
-                        };
-
-                        Expr::Call { function, args }
+                    |acc: Expr, next| Expr::Call {
+                        function: next.entry_point(spec),
+                        args: next.arguments(acc),
                     },
                 );
 

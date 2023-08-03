@@ -169,7 +169,9 @@ pub const SAFE_NORMALIZE_3: FunctionIdentifier =
 pub const SAFE_NORMALIZE_4: FunctionIdentifier =
     FunctionIdentifier::new("safe_normalize_4", 18890028961074310202);
 
+/// A type that can be converted into Elysian IR
 pub trait AsIR: Debug + HashIR + DomainsDyn {
+    /// Generate a Module from this implementor
     fn module(&self, spec: &SpecializationData) -> Module {
         let types: IndexMap<_, _> = properties().clone();
 
@@ -216,31 +218,32 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
         }
     }
 
+    /// Generate the function identifier used to reference this implementor
     fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier;
 
+    /// Generate a list of arguments used to call this implementor
     fn arguments(&self, input: Expr) -> Vec<Expr> {
         vec![input]
     }
 
-    fn expression(&self, spec: &SpecializationData, input: Expr) -> Expr {
-        Expr::Call {
-            function: self.entry_point(spec),
-            args: self.arguments(input),
-        }
-    }
-
+    /// Filter the provided spec, generate an entry point, and return a list of functions
+    /// NOTE: A given entry point must be generated only once,
+    ///       so this should be considered a utility function for cases where
+    ///       a given entry point does not need to be referenced
     fn functions_internal(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
         let spec = spec.filter(self.domains_dyn());
         let entry_point = self.entry_point(&spec);
         self.functions(&spec, &entry_point)
     }
 
+    /// Given a spec and entry point, produce a list of function definitions
     fn functions(
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition>;
 
+    /// Produce a list of struct definitions
     fn structs(&self) -> Vec<StructDefinition> {
         vec![]
     }
