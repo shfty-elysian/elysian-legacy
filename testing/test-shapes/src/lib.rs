@@ -3,11 +3,10 @@ use elysian_core::{
         combine::IntoCombine,
         expr::{Expr, IntoLiteral, IntoRead},
         field::IntoField,
-        modify::IntoModify,
     },
     ir::{
         as_ir::{AsIR, DynAsIR},
-        ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, POSITION_2D, UV, X, Y, Z},
+        ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, UV, X, Y, Z},
         module::{AsModule, DynAsModule, PropertyIdentifier},
     },
 };
@@ -79,7 +78,6 @@ fn quad() -> DynAsModule {
                 flip: false,
             }),
         ])
-        .modify()
         .translate(extent.clone())
         .basis_mirror()
         .gradient_normals()
@@ -211,12 +209,53 @@ pub fn kettle_bell() -> DynAsModule {
     let shape_c = shape_b.combine(smooth_subtraction);
 
     let shape_d = shape_c
-        .modify()
         .gradient_normals()
         .set_post(COLOR.into(), uv_color())
         .aspect(Expr::Read(vec![ASPECT.into()]));
 
     Box::new(shape_d)
+}
+
+pub fn letter_t() -> DynAsModule {
+    let smooth_union: [DynAsIR; 4] = [
+        Box::new(Union::default()),
+        Box::new(SmoothUnion {
+            prop: DISTANCE.into(),
+            k: 0.4.literal(),
+        }),
+        Box::new(SmoothUnion {
+            prop: GRADIENT_2D.into(),
+            k: 0.4.literal(),
+        }),
+        Box::new(SmoothUnion {
+            prop: UV.into(),
+            k: 0.4.literal(),
+        }),
+    ];
+
+    let shape_a: DynAsModule = Box::new(
+        Line {
+            dir: [1.0, 0.0].literal(),
+        }
+        .field(),
+    );
+
+    let shape_b: DynAsModule = Box::new(
+        Line {
+            dir: [0.0, 1.0].literal(),
+        }
+        .field()
+        .translate([0.0, -1.2].literal()),
+    );
+
+    let foo = [shape_a as DynAsModule, shape_b]
+        .combine(smooth_union)
+        .translate([0.0, 1.0].literal());
+
+    Box::new(
+        foo.set_post(COLOR.into(), distance_color())
+            .aspect(Expr::Read([ASPECT.into()].into())),
+    )
 }
 
 pub fn distance_color() -> Expr {
@@ -303,16 +342,15 @@ pub fn raymarched() -> DynAsModule {
                 .set_post(COLOR.into(), uv_color()),
             ),
         }
-        .modify()
         .aspect(Expr::Read(vec![ASPECT.into()])),
     )
 }
 
 pub fn test_shape() -> DynAsModule {
-    quad()
+    letter_t()
 }
 
-pub fn shapes() -> [(&'static str, DynAsModule); 11] {
+pub fn shapes() -> [(&'static str, DynAsModule); 12] {
     [
         ("point", point()),
         ("chebyshev", chebyshev()),
@@ -324,6 +362,7 @@ pub fn shapes() -> [(&'static str, DynAsModule); 11] {
         ("union", union()),
         ("smooth_union", smooth_union()),
         ("kettle_bell", kettle_bell()),
+        ("letter_t", letter_t()),
         ("raymarched", raymarched()),
     ]
 }

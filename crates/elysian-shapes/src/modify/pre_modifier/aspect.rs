@@ -1,13 +1,16 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{field::Field, modify::Modify},
+    ast::{
+        field::Field,
+        modify::{IntoModify, Modify},
+    },
     ir::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
         module::{
-            FunctionDefinition, FunctionIdentifier, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT,
+            FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
+            SpecializationData, Type, CONTEXT,
         },
     },
     property,
@@ -64,19 +67,13 @@ pub trait IntoAspect {
     fn aspect(self, delta: elysian_core::ast::expr::Expr) -> Modify;
 }
 
-impl IntoAspect for Field {
+impl<T> IntoAspect for T
+where
+    T: IntoModify,
+{
     fn aspect(self, aspect: elysian_core::ast::expr::Expr) -> Modify {
-        Modify {
-            pre_modifiers: vec![Box::new(Aspect { aspect })],
-            field: Box::new(self),
-            post_modifiers: Default::default(),
-        }
-    }
-}
-
-impl IntoAspect for Modify {
-    fn aspect(mut self, aspect: elysian_core::ast::expr::Expr) -> Modify {
-        self.pre_modifiers.push(Box::new(Aspect { aspect }));
-        self
+        let mut m = self.modify();
+        m.pre_modifiers.push(Box::new(Aspect { aspect }));
+        m
     }
 }

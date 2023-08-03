@@ -1,13 +1,13 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{field::Field, modify::Modify},
+    ast::modify::{IntoModify, Modify},
     ir::{
         as_ir::{AsIR, Domains},
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
-            FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
-            SpecializationData, StructIdentifier, Type, CONTEXT,
+            FunctionDefinition, FunctionIdentifier, PropertyIdentifier, SpecializationData,
+            StructIdentifier, Type, CONTEXT,
         },
     },
     property,
@@ -85,19 +85,13 @@ pub trait IntoTranslate {
     fn translate(self, delta: elysian_core::ast::expr::Expr) -> Modify;
 }
 
-impl IntoTranslate for Field {
+impl<T> IntoTranslate for T
+where
+    T: IntoModify,
+{
     fn translate(self, delta: elysian_core::ast::expr::Expr) -> Modify {
-        Modify {
-            pre_modifiers: vec![Box::new(Translate { delta })],
-            field: Box::new(self),
-            post_modifiers: Default::default(),
-        }
-    }
-}
-
-impl IntoTranslate for Modify {
-    fn translate(mut self, delta: elysian_core::ast::expr::Expr) -> Modify {
-        self.pre_modifiers.push(Box::new(Translate { delta }));
-        self
+        let mut m = self.modify();
+        m.pre_modifiers.push(Box::new(Translate { delta }));
+        m
     }
 }

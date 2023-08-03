@@ -120,8 +120,8 @@ impl AsModule for Combine {
                         PropertyIdentifier(COMBINE_CONTEXT).read(),
                         |acc: Expr, next| {
                             let Expr::Call{ function, args } = next.expression(spec, acc) else  {
-                            panic!("Combinator expression is not a Call")
-                        };
+                                panic!("Combinator expression is not a Call")
+                            };
 
                             Expr::Call { function, args }
                         },
