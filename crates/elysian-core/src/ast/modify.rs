@@ -159,11 +159,15 @@ impl AsIR for Modify {
                 block: post_entry_points
                     .iter()
                     .fold(
-                        field_entry_point.call([pre_entry_points
-                            .iter()
-                            .fold(PropertyIdentifier(CONTEXT).read(), |acc, (t, entry)| {
-                                entry.call(t.arguments(acc))
-                            })]),
+                        field_entry_point.call(
+                            self.field.arguments(
+                                pre_entry_points
+                                    .iter()
+                                    .fold(PropertyIdentifier(CONTEXT).read(), |acc, (t, entry)| {
+                                        entry.call(t.arguments(acc))
+                                    }),
+                            ),
+                        ),
                         |acc, (t, entry)| entry.call(t.arguments(acc)),
                     )
                     .output()

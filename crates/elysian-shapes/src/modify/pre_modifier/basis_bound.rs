@@ -1,7 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{expr::Expr, field::Field, modify::Modify},
+    ast::{
+        expr::Expr,
+        modify::{IntoModify, Modify},
+    },
     ir::{
         ast::{Block, Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
         module::{
@@ -160,19 +163,13 @@ pub trait IntoBasisBound {
     fn basis_bound(self, ty: BoundType, bound: Expr) -> Modify;
 }
 
-impl IntoBasisBound for Field {
+impl<T> IntoBasisBound for T
+where
+    T: IntoModify,
+{
     fn basis_bound(self, ty: BoundType, bound: Expr) -> Modify {
-        Modify {
-            pre_modifiers: vec![Box::new(BasisBound { ty, bound })],
-            field: Box::new(self),
-            post_modifiers: Default::default(),
-        }
-    }
-}
-
-impl IntoBasisBound for Modify {
-    fn basis_bound(mut self, ty: BoundType, bound: Expr) -> Modify {
-        self.pre_modifiers.push(Box::new(BasisBound { ty, bound }));
-        self
+        let mut m = self.modify();
+        m.pre_modifiers.push(Box::new(BasisBound { ty, bound }));
+        m
     }
 }

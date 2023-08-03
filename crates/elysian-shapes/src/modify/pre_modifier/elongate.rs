@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{field::Field, modify::Modify},
+    ast::modify::{IntoModify, Modify},
     ir::{
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
@@ -115,20 +115,13 @@ pub trait IntoElongate {
     fn elongate(self, dir: elysian_core::ast::expr::Expr, infinite: bool) -> Modify;
 }
 
-impl IntoElongate for Field {
+impl<T> IntoElongate for T
+where
+    T: IntoModify,
+{
     fn elongate(self, dir: elysian_core::ast::expr::Expr, infinite: bool) -> Modify {
-        Modify {
-            pre_modifiers: vec![Box::new(Elongate { dir, infinite })],
-            field: Box::new(self),
-            post_modifiers: Default::default(),
-        }
-    }
-}
-
-impl IntoElongate for Modify {
-    fn elongate(mut self, dir: elysian_core::ast::expr::Expr, infinite: bool) -> Modify {
-        self.pre_modifiers
-            .push(Box::new(Elongate { dir, infinite }));
-        self
+        let mut m = self.modify();
+        m.pre_modifiers.push(Box::new(Elongate { dir, infinite }));
+        m
     }
 }

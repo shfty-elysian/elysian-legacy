@@ -98,26 +98,29 @@ impl AsIR for Combine {
             .iter()
             .map(|shape| {
                 let entry_point = shape.entry_point(spec);
-                (entry_point.clone(), shape.functions(spec, &entry_point))
+                (
+                    (shape, entry_point.clone()),
+                    shape.functions(spec, &entry_point),
+                )
             })
             .unzip();
 
         let shape_functions: Vec<_> = shape_functions.into_iter().flatten().collect();
 
         let mut iter = shape_entry_points.iter();
-        let base = iter.next().expect("Empty list").clone();
+        let (base, base_entry) = iter.next().expect("Empty list").clone();
 
         let mut block = vec![];
 
         iter.fold(
-            base.call(PropertyIdentifier(CONTEXT).read()),
-            |acc, next| {
-                let next = (**next).clone();
+            base_entry.call(base.arguments(PropertyIdentifier(CONTEXT).read())),
+            |acc, (_, entry)| {
+                let entry = (**entry).clone();
 
                 block.push(elysian_stmt! {
                     let COMBINE_CONTEXT = COMBINE_CONTEXT {
                         LEFT: #acc,
-                        RIGHT: #next(CONTEXT)
+                        RIGHT: #entry(CONTEXT)
                     }
                 });
 

@@ -1,7 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{expr::Expr, field::Field, modify::Modify},
+    ast::{
+        expr::Expr,
+        modify::{IntoModify, Modify},
+    },
     ir::{
         ast::{Block, Identifier, DISTANCE, POSITION_2D, POSITION_3D},
         module::{
@@ -105,20 +108,13 @@ pub trait IntoDistanceBound {
     fn distance_bound(self, ty: BoundType, bound: Expr) -> Modify;
 }
 
-impl IntoDistanceBound for Field {
+impl<T> IntoDistanceBound for T
+where
+    T: IntoModify,
+{
     fn distance_bound(self, ty: BoundType, bound: Expr) -> Modify {
-        Modify {
-            pre_modifiers: Default::default(),
-            field: Box::new(self),
-            post_modifiers: vec![Box::new(DistanceBound { ty, bound })],
-        }
-    }
-}
-
-impl IntoDistanceBound for Modify {
-    fn distance_bound(mut self, ty: BoundType, bound: Expr) -> Modify {
-        self.post_modifiers
-            .push(Box::new(DistanceBound { ty, bound }));
-        self
+        let mut m = self.modify();
+        m.post_modifiers.push(Box::new(DistanceBound { ty, bound }));
+        m
     }
 }

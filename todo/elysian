@@ -362,7 +362,32 @@
 
   DONE: Merged AsModule into AsIR
 
+* Factor out Field
+  * Previously used to lift AsIR into AsModule,
+    no longer necessary now the traits have been merged
+
+  DONE: Field removed, refactored wrapper callsites to use arguments function,
+        refactored Into* traits as blanket over IntoModify
+
 =========================================================================================================
+
+* Improve entrypoint / functions generation for AsIR
+  * Currently relying on certain specializations being deterministic
+    * Composite fields like Capsule use functions_internal
+      as well as entry_point, which would break if
+      the entry_point definition was changed to use Uuid::new_v4
+  * Dynamic UUIDs are necessary for same-named functions
+    with different bodies (i.e. instances of Modify with different inner modifiers)
+  * Need a mechanism that prevents misuse, ideally as strongly-typed as possible
+    * Factor out functions_internal
+    * Create some other mechanism for retrieving spec-filtered entry point
+
+* Generalize Sided combiners
+  * Conditional expression should be customizable
+    * i.e. Able to read from a third field to pick between Left / Right
+    * Enables space partitioning
+      * ex. If conditional field is a plane,
+            will split space into Left / Right fields based on sidedness
 
 * Consider moving unary / binary / ternary ops into shareable enums
   * Would likely need to make generic for compatibility across

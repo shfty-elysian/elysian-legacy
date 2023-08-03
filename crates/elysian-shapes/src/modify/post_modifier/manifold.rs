@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{field::Field, modify::Modify},
+    ast::modify::{IntoModify, Modify},
     ir::{
         ast::{Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM, UV, X},
         module::{
@@ -85,19 +85,13 @@ pub trait IntoManifold {
     fn manifold(self) -> Modify;
 }
 
-impl IntoManifold for Field {
+impl<T> IntoManifold for T
+where
+    T: IntoModify,
+{
     fn manifold(self) -> Modify {
-        Modify {
-            pre_modifiers: Default::default(),
-            field: Box::new(self),
-            post_modifiers: vec![Box::new(Manifold)],
-        }
-    }
-}
-
-impl IntoManifold for Modify {
-    fn manifold(mut self) -> Modify {
-        self.post_modifiers.push(Box::new(Manifold));
-        self
+        let mut m = self.modify();
+        m.post_modifiers.push(Box::new(Manifold));
+        m
     }
 }

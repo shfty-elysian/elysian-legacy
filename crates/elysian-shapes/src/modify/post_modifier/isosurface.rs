@@ -1,12 +1,12 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::{field::Field, modify::Modify},
+    ast::modify::{IntoModify, Modify},
     ir::{
         ast::{Block, Expr, Identifier, DISTANCE, POSITION_2D, POSITION_3D, UV, X},
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            NumericType, PropertyIdentifier, SpecializationData, Type, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+            PropertyIdentifier, SpecializationData, Type, CONTEXT,
         },
     },
     property,
@@ -99,19 +99,13 @@ pub trait IntoIsosurface {
     fn isosurface(self, dist: elysian_core::ast::expr::Expr) -> Modify;
 }
 
-impl IntoIsosurface for Field {
+impl<T> IntoIsosurface for T
+where
+    T: IntoModify,
+{
     fn isosurface(self, dist: elysian_core::ast::expr::Expr) -> Modify {
-        Modify {
-            pre_modifiers: Default::default(),
-            field: Box::new(self),
-            post_modifiers: vec![Box::new(Isosurface { dist })],
-        }
-    }
-}
-
-impl IntoIsosurface for Modify {
-    fn isosurface(mut self, dist: elysian_core::ast::expr::Expr) -> Modify {
-        self.post_modifiers.push(Box::new(Isosurface { dist }));
-        self
+        let mut m = self.modify();
+        m.post_modifiers.push(Box::new(Isosurface { dist }));
+        m
     }
 }

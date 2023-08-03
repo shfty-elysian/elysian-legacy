@@ -2,7 +2,6 @@ use elysian_core::{
     ast::{
         combine::IntoCombine,
         expr::{Expr, IntoLiteral, IntoRead},
-        field::IntoField,
     },
     ir::{
         ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, UV, X, Y, Z},
@@ -23,7 +22,6 @@ use rust_gpu_bridge::glam::Mat4;
 pub fn point() -> DynAsIR {
     Box::new(
         Point
-            .field()
             .gradient_normals()
             .set_post(COLOR.into(), distance_normal_color())
             .aspect(Expr::Read(vec![ASPECT.into()])),
@@ -33,7 +31,6 @@ pub fn point() -> DynAsIR {
 pub fn chebyshev() -> DynAsIR {
     Box::new(
         Chebyshev
-            .field()
             .gradient_normals()
             .set_post(COLOR.into(), distance_normal_color())
             .aspect(Expr::Read(vec![ASPECT.into()])),
@@ -45,7 +42,6 @@ pub fn line() -> DynAsIR {
         Line {
             dir: [1.0, 0.0].literal(),
         }
-        .field()
         .set_post(COLOR.into(), uv_color())
         .aspect(Expr::Read(vec![ASPECT.into()])),
     )
@@ -56,16 +52,9 @@ fn quad() -> DynAsIR {
 
     Box::new(
         [
-            Box::new(
-                Point
-                    .field()
-                    .basis_bound(BoundType::Lower, Expr::Literal([0.0, 0.0].into())),
-            ) as Box<dyn AsIR>,
-            Box::new(
-                Chebyshev
-                    .field()
-                    .distance_bound(BoundType::Upper, Expr::Literal(0.0.into())),
-            ),
+            Box::new(Point.basis_bound(BoundType::Lower, Expr::Literal([0.0, 0.0].into())))
+                as Box<dyn AsIR>,
+            Box::new(Chebyshev.distance_bound(BoundType::Upper, Expr::Literal(0.0.into()))),
         ]
         .combine([
             Box::new(Sided { flip: false }) as DynAsIR,
@@ -90,7 +79,6 @@ pub fn circle() -> DynAsIR {
         Circle {
             radius: 0.5.literal(),
         }
-        .field()
         .set_post(COLOR.into(), uv_color())
         .aspect(Expr::Read(vec![ASPECT.into()])),
     )
@@ -102,7 +90,6 @@ pub fn capsule() -> DynAsIR {
             dir: [1.5, 0.0].literal(),
             radius: 0.5.literal(),
         }
-        .field()
         .set_post(COLOR.into(), uv_color())
         .aspect(Expr::Read(vec![ASPECT.into()])),
     )
@@ -114,7 +101,6 @@ pub fn ring() -> DynAsIR {
             radius: 1.0.literal(),
             width: 0.2.literal(),
         }
-        .field()
         .set_post(COLOR.into(), uv_color())
         .aspect(Expr::Read(vec![ASPECT.into()])),
     )
@@ -180,7 +166,6 @@ pub fn kettle_bell() -> DynAsIR {
             Circle {
                 radius: 1.0.literal(),
             }
-            .field()
             .translate([0.0, -0.5].literal()),
         ),
         Box::new(
@@ -188,7 +173,6 @@ pub fn kettle_bell() -> DynAsIR {
                 radius: 0.9.literal(),
                 width: 0.15.literal(),
             }
-            .field()
             .translate([0.0, 0.25].literal()),
         ),
     ];
@@ -200,7 +184,6 @@ pub fn kettle_bell() -> DynAsIR {
                 dir: [1.5, 0.0].literal(),
                 radius: 0.2.literal(),
             }
-            .field()
             .translate([0.0, -0.5].literal()),
         ),
     ];
@@ -232,18 +215,14 @@ pub fn letter_t() -> DynAsIR {
         }),
     ];
 
-    let shape_a: DynAsIR = Box::new(
-        Line {
-            dir: [1.0, 0.0].literal(),
-        }
-        .field(),
-    );
+    let shape_a: DynAsIR = Box::new(Line {
+        dir: [1.0, 0.0].literal(),
+    });
 
     let shape_b: DynAsIR = Box::new(
         Line {
             dir: [0.0, 1.0].literal(),
         }
-        .field()
         .translate([0.0, -1.2].literal()),
     );
 
@@ -310,7 +289,6 @@ pub fn raymarched() -> DynAsIR {
                 [
                     Box::new(
                         Point
-                            .field()
                             .translate([0.5, 0.5, -2.0].literal())
                             .elongate([0.5, 0.0, 0.0].literal(), false)
                             .isosurface(1.0.literal())
@@ -319,7 +297,6 @@ pub fn raymarched() -> DynAsIR {
                     ) as Box<dyn AsIR>,
                     Box::new(
                         Point
-                            .field()
                             .translate([-0.5, -0.5, -2.5].literal())
                             .elongate([0.5, 0.0, 0.0].literal(), false)
                             .isosurface(1.0.literal())
@@ -328,7 +305,6 @@ pub fn raymarched() -> DynAsIR {
                     ),
                     Box::new(
                         Point
-                            .field()
                             .translate([1.0, -1.5, -3.0].literal())
                             .elongate([0.5, 0.0, 0.0].literal(), false)
                             .isosurface(1.0.literal())
