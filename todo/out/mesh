@@ -1,7 +1,0 @@
-* Discretize via marching cubes, contour fit, etc
-
-* Bake field attributes into mesh attributes
-
-* Output to obj, glTF, etc.
-  * Does a modelling equivalent of the image crate exist?
-
