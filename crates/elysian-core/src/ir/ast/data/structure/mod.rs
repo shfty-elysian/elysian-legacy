@@ -1,6 +1,6 @@
 use rust_gpu_bridge::{
     glam::{Mat2, Mat3, Mat4, Vec2, Vec3, Vec4},
-    Abs, Dot, Length, Max, Min, Mix, Normalize, Sign,
+    Abs, Clamp, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,
 };
 use tracing::instrument;
 
@@ -262,6 +262,25 @@ impl Mix for Struct {
     }
 }
 
+impl Clamp for Struct {
+    fn clamp(self, min: Self, max: Self) -> Self {
+        assert!(self.id == min.id);
+        assert!(self.id == max.id);
+        match self.id.name() {
+            "Vector2" => Vec2::from(self)
+                .clamp(Vec2::from(min), Vec2::from(max))
+                .into(),
+            "Vector3" => Vec3::from(self)
+                .clamp(Vec3::from(min), Vec3::from(max))
+                .into(),
+            "Vector4" => Vec4::from(self)
+                .clamp(Vec4::from(min), Vec4::from(max))
+                .into(),
+            _ => panic!("Can't Mix an arbitrary struct"),
+        }
+    }
+}
+
 impl Neg for Struct {
     type Output = Self;
 
@@ -293,6 +312,17 @@ impl Sign for Struct {
             "Vector3" => Vec3::from(self).sign().into(),
             "Vector4" => Vec4::from(self).sign().into(),
             _ => panic!("Can't Sign an arbitrary struct"),
+        }
+    }
+}
+
+impl Round for Struct {
+    fn round(self) -> Self {
+        match self.id.name() {
+            "Vector2" => Vec2::from(self).round().into(),
+            "Vector3" => Vec3::from(self).round().into(),
+            "Vector4" => Vec4::from(self).round().into(),
+            _ => panic!("Can't Round an arbitrary struct"),
         }
     }
 }

@@ -724,6 +724,7 @@ impl<'a> NagaBuilder<'a> {
             | Expr::Sub(lhs, rhs)
             | Expr::Mul(lhs, rhs)
             | Expr::Div(lhs, rhs)
+            | Expr::Mod(lhs, rhs)
             | Expr::Eq(lhs, rhs)
             | Expr::Ne(lhs, rhs)
             | Expr::Lt(lhs, rhs)
@@ -744,14 +745,29 @@ impl<'a> NagaBuilder<'a> {
                             panic!("{}", invalid(a.name(), b.name()))
                         }
                     }
-                    (ElysianType::Number(..), ElysianType::Struct(s))
-                    | (ElysianType::Struct(s), ElysianType::Number(..)) => match expr {
+                    (ElysianType::Struct(s), ElysianType::Number(n)) => match expr {
                         Expr::Mul(_, _) => match s.name() {
                             "Vector2" | "Vector3" | "Vector4" | "Matrix2" | "Matrix3"
                             | "Matrix4" => (lhs, rhs),
-                            _ => panic!("Invalid Binary Op"),
+                            _ => {
+                                panic!("{}", invalid(n.name(), s.name()))
+                            }
                         },
-                        _ => panic!("Invalid Binary Op"),
+                        _ => {
+                            panic!("{}", invalid(s.name(), n.name()))
+                        }
+                    },
+                    (ElysianType::Number(n), ElysianType::Struct(s)) => match expr {
+                        Expr::Mul(_, _) => match s.name() {
+                            "Vector2" | "Vector3" | "Vector4" | "Matrix2" | "Matrix3"
+                            | "Matrix4" => (lhs, rhs),
+                            _ => {
+                                panic!("{}", invalid(n.name(), s.name()))
+                            }
+                        },
+                        _ => {
+                            panic!("{}", invalid(n.name(), s.name()))
+                        }
                     },
                     (ElysianType::Struct(a), ElysianType::Struct(b)) => match expr {
                         Expr::Add(_, _) => match (a.name(), b.name()) {
@@ -848,13 +864,19 @@ impl<'a> NagaBuilder<'a> {
 
                 expr
             }
-            Expr::Abs(t) | Expr::Sign(t) | Expr::Length(t) | Expr::Acos(t) | Expr::Atan(t) => {
+            Expr::Abs(t)
+            | Expr::Sign(t)
+            | Expr::Round(t)
+            | Expr::Length(t)
+            | Expr::Acos(t)
+            | Expr::Atan(t) => {
                 let arg = self.expr_to_naga(t);
 
                 self.push_expression(Expression::Math {
                     fun: match expr {
                         Expr::Abs(..) => MathFunction::Abs,
                         Expr::Sign(..) => MathFunction::Sign,
+                        Expr::Round(..) => MathFunction::Round,
                         Expr::Length(..) => MathFunction::Length,
                         Expr::Normalize(..) => MathFunction::Normalize,
                         Expr::Acos(..) => MathFunction::Acos,
@@ -913,6 +935,21 @@ impl<'a> NagaBuilder<'a> {
 
                 let expr = self.push_expression(Expression::Math {
                     fun: MathFunction::Mix,
+                    arg,
+                    arg1: Some(arg1),
+                    arg2: Some(arg2),
+                    arg3: None,
+                });
+
+                expr
+            }
+            Expr::Clamp(t, min, max) => {
+                let arg = self.expr_to_naga(t);
+                let arg1 = self.expr_to_naga(min);
+                let arg2 = self.expr_to_naga(max);
+
+                let expr = self.push_expression(Expression::Math {
+                    fun: MathFunction::Clamp,
                     arg,
                     arg1: Some(arg1),
                     arg2: Some(arg2),

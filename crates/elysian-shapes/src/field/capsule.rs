@@ -11,9 +11,9 @@ use elysian_core::{
 };
 use elysian_decl_macros::elysian_function;
 
-use crate::modify::{Isosurface, DIR_2D, DIR_3D, ISOSURFACE};
+use crate::modify::{Isosurface, DIR_2D, DIR_3D};
 
-use super::{Line, LINE, RADIUS};
+use super::{Line, RADIUS};
 
 pub const CAPSULE: FunctionIdentifier = FunctionIdentifier::new("capsule", 14339483921749952476);
 
@@ -62,25 +62,24 @@ impl AsIR for Capsule {
             panic!("No position domain");
         };
 
-        let isosurface = ISOSURFACE.specialize(&spec.filter(Isosurface::domains()));
-        let line = LINE.specialize(&spec.filter(Line::domains()));
-
-        Line {
+        let line = Line {
             dir: self.dir.clone(),
-        }
-        .functions_internal(spec)
-        .into_iter()
-        .chain(
-            Isosurface {
-                dist: self.radius.clone(),
-            }
-            .functions_internal(spec),
-        )
-        .chain(elysian_function! {
-            fn entry_point(dir, RADIUS, CONTEXT) -> CONTEXT {
-                return isosurface(RADIUS, line(dir, CONTEXT));
-            }
-        })
-        .collect()
+        };
+        let (_, line_entry, line_functions) = line.prepare(spec);
+
+        let isosurface = Isosurface {
+            dist: self.radius.clone(),
+        };
+        let (_, isosurface_entry, isosurface_functions) = isosurface.prepare(spec);
+
+        line_functions
+            .into_iter()
+            .chain(isosurface_functions)
+            .chain(elysian_function! {
+                fn entry_point(dir, RADIUS, CONTEXT) -> CONTEXT {
+                    return isosurface_entry(RADIUS, line_entry(dir, CONTEXT));
+                }
+            })
+            .collect()
     }
 }

@@ -13,9 +13,9 @@ use elysian_core::{
 };
 use elysian_decl_macros::elysian_function;
 
-use crate::modify::{Isosurface, ISOSURFACE};
+use crate::modify::Isosurface;
 
-use super::{Point, POINT};
+use super::Point;
 
 pub const CIRCLE: FunctionIdentifier = FunctionIdentifier::new("circle", 15738477621793375359);
 
@@ -57,21 +57,20 @@ impl AsIR for Circle {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let point = POINT.specialize(&spec.filter(Point::domains()));
-        let isosurface = ISOSURFACE.specialize(&spec.filter(Isosurface::domains()));
+        let point = Point;
+        let (_, point_entry, point_functions) = point.prepare(spec);
 
-        Point
-            .functions_internal(spec)
+        let isosurface = Isosurface {
+            dist: self.radius.clone(),
+        };
+        let (_, isosurface_entry, isosurface_functions) = isosurface.prepare(spec);
+
+        point_functions
             .into_iter()
-            .chain(
-                Isosurface {
-                    dist: self.radius.clone(),
-                }
-                .functions_internal(spec),
-            )
+            .chain(isosurface_functions)
             .chain(elysian_function! {
                 fn entry_point(RADIUS, CONTEXT) -> CONTEXT {
-                    return isosurface(RADIUS, point(CONTEXT));
+                    return isosurface_entry(RADIUS, point_entry(CONTEXT));
                 }
             })
             .collect()

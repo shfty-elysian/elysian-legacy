@@ -29,6 +29,7 @@ pub enum Expr {
     Neg(BoxExpr),
     Abs(BoxExpr),
     Sign(BoxExpr),
+    Round(BoxExpr),
     Acos(BoxExpr),
     Atan(BoxExpr),
     Length(BoxExpr),
@@ -37,6 +38,7 @@ pub enum Expr {
     Sub(BoxExpr, BoxExpr),
     Mul(BoxExpr, BoxExpr),
     Div(BoxExpr, BoxExpr),
+    Mod(BoxExpr, BoxExpr),
     Eq(BoxExpr, BoxExpr),
     Ne(BoxExpr, BoxExpr),
     Lt(BoxExpr, BoxExpr),
@@ -48,6 +50,7 @@ pub enum Expr {
     Dot(BoxExpr, BoxExpr),
     Atan2(BoxExpr, BoxExpr),
     Mix(BoxExpr, BoxExpr, BoxExpr),
+    Clamp(BoxExpr, BoxExpr, BoxExpr),
 }
 
 impl IntoIterator for Expr {
@@ -143,23 +146,27 @@ impl From<ElysianExpr> for Expr {
             ElysianExpr::Read(p) => {
                 Expr::Read([PropertyIdentifier(CONTEXT)].into_iter().chain(p).collect())
             }
+            ElysianExpr::Neg(t) => Expr::Neg(t.into()),
+            ElysianExpr::Abs(t) => Expr::Abs(t.into()),
+            ElysianExpr::Sign(t) => Expr::Sign(t.into()),
+            ElysianExpr::Round(t) => Expr::Round(t.into()),
+            ElysianExpr::Length(t) => Expr::Length(t.into()),
+            ElysianExpr::Normalize(t) => Expr::Normalize(t.into()),
             ElysianExpr::Add(lhs, rhs) => Expr::Add(lhs.into(), rhs.into()),
             ElysianExpr::Sub(lhs, rhs) => Expr::Sub(lhs.into(), rhs.into()),
             ElysianExpr::Mul(lhs, rhs) => Expr::Mul(lhs.into(), rhs.into()),
             ElysianExpr::Div(lhs, rhs) => Expr::Div(lhs.into(), rhs.into()),
             ElysianExpr::Min(lhs, rhs) => Expr::Min(lhs.into(), rhs.into()),
             ElysianExpr::Max(lhs, rhs) => Expr::Max(lhs.into(), rhs.into()),
-            ElysianExpr::Mix(lhs, rhs, t) => Expr::Mix(lhs.into(), rhs.into(), t.into()),
             ElysianExpr::Eq(lhs, rhs) => Expr::Eq(lhs.into(), rhs.into()),
             ElysianExpr::Ne(lhs, rhs) => Expr::Ne(lhs.into(), rhs.into()),
             ElysianExpr::Lt(lhs, rhs) => Expr::Lt(lhs.into(), rhs.into()),
             ElysianExpr::Gt(lhs, rhs) => Expr::Gt(lhs.into(), rhs.into()),
-            ElysianExpr::Neg(t) => Expr::Neg(t.into()),
-            ElysianExpr::Abs(t) => Expr::Abs(t.into()),
-            ElysianExpr::Sign(t) => Expr::Sign(t.into()),
-            ElysianExpr::Length(t) => Expr::Length(t.into()),
-            ElysianExpr::Normalize(t) => Expr::Normalize(t.into()),
+            ElysianExpr::And(lhs, rhs) => Expr::And(lhs.into(), rhs.into()),
+            ElysianExpr::Or(lhs, rhs) => Expr::Or(lhs.into(), rhs.into()),
             ElysianExpr::Dot(lhs, rhs) => Expr::Dot(lhs.into(), rhs.into()),
+            ElysianExpr::Mix(lhs, rhs, t) => Expr::Mix(lhs.into(), rhs.into(), t.into()),
+            ElysianExpr::Clamp(t, min, max) => Expr::Clamp(t.into(), min.into(), max.into()),
         }
     }
 }
@@ -201,6 +208,14 @@ impl core::ops::Div for Expr {
 
     fn div(self, rhs: Self) -> Self::Output {
         Div(Box::new(self), Box::new(rhs))
+    }
+}
+
+impl core::ops::Rem for Expr {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        Mod(Box::new(self), Box::new(rhs))
     }
 }
 
@@ -264,6 +279,7 @@ impl Expr {
             Neg(t) => t.ty(function_defs, types),
             Abs(t) => t.ty(function_defs, types),
             Sign(t) => t.ty(function_defs, types),
+            Round(t) => t.ty(function_defs, types),
             Acos(t) => t.ty(function_defs, types),
             Atan(t) => t.ty(function_defs, types),
             Length(t) => match t.ty(function_defs, types) {
@@ -277,10 +293,12 @@ impl Expr {
                 },
             },
             Normalize(t) => t.ty(function_defs, types),
+            Clamp(t, _, _) => t.ty(function_defs, types),
             Add(lhs, rhs)
             | Sub(lhs, rhs)
             | Mul(lhs, rhs)
             | Div(lhs, rhs)
+            | Mod(lhs, rhs)
             | Min(lhs, rhs)
             | Max(lhs, rhs)
             | Eq(lhs, rhs)
@@ -408,6 +426,10 @@ impl Expr {
         Mix(Box::new(self), Box::new(rhs), Box::new(t))
     }
 
+    pub fn clamp(self, min: Expr, max: Expr) -> Expr {
+        Clamp(Box::new(self), Box::new(min), Box::new(max))
+    }
+
     pub fn dot(self, rhs: Expr) -> Expr {
         Dot(Box::new(self), Box::new(rhs))
     }
@@ -422,6 +444,10 @@ impl Expr {
 
     pub fn sign(self) -> Expr {
         Sign(Box::new(self))
+    }
+
+    pub fn round(self) -> Expr {
+        Round(Box::new(self))
     }
 
     pub fn length(self) -> Expr {

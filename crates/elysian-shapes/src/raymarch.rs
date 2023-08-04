@@ -158,7 +158,7 @@ impl AsIR for Raymarch {
         }
 
         let spec_3d = SpecializationData::new_3d();
-        let field_entry_point = self.field.entry_point(spec);
+        let (_, field_entry, field_functions) = self.field.prepare(&spec_3d);
 
         let max_steps = Expr::from(self.max_steps.clone());
         let inv_projection = Expr::from(self.inv_projection.clone());
@@ -186,8 +186,7 @@ impl AsIR for Raymarch {
             }
         };
 
-        self.field
-            .functions(&spec_3d, &field_entry_point)
+        field_functions
             .into_iter()
             .chain([elysian_function! {
                 fn RAYMARCH(mut CONTEXT) -> CONTEXT {
@@ -228,7 +227,7 @@ impl AsIR for Raymarch {
                     loop {
                         let RAY_POS = RAY_FROM_3 + RAY_DIR * T;
                         CONTEXT.POSITION_3D = RAY_POS;
-                        let CANDIDATE = field_entry_point(CONTEXT);
+                        let CANDIDATE = field_entry(CONTEXT);
 
                         if CANDIDATE.DISTANCE < CONTEXT.DISTANCE {
                             CONTEXT = CANDIDATE

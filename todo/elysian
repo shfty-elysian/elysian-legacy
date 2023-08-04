@@ -369,8 +369,6 @@
   DONE: Field removed, refactored wrapper callsites to use arguments function,
         refactored Into* traits as blanket over IntoModify
 
-=========================================================================================================
-
 * Improve entrypoint / functions generation for AsIR
   * Currently relying on certain specializations being deterministic
     * Composite fields like Capsule use functions_internal
@@ -380,7 +378,61 @@
     with different bodies (i.e. instances of Modify with different inner modifiers)
   * Need a mechanism that prevents misuse, ideally as strongly-typed as possible
     * Factor out functions_internal
-    * Create some other mechanism for retrieving spec-filtered entry point
+    * Create some other mechanism for retrieving a spec-filtered entry point
+      that can be passed to functions
+
+  DONE: Implemented a prepare method that returns a filtered spec,
+      and entry point + functions created with said spec
+
+* Investigate position-based instancing
+  * Theory is to partition space into a set of cells using
+    an infinitely repeatable operator (ex. modulus),
+    assign them some unique identifier, and use that
+    identifier to affect future calculations
+    * ex. Use to conditionally pick fields by instance index,
+          modulate position or other parameters, etc.
+  * Would be ideal to make repeatable operator compositional
+  * Flexible and good performance profile,
+    with the caveat that instances are bounded to their cell
+    and cannot overlap
+  * Similar to Inigo Quilez' repetition operators,
+    with the addition of instance index (possibly multidimensional)
+  * Handy for ex. text, since a regular horizontal layout
+    can be encoded via modulus, and instance ID
+    can be used to index into a list of fields that
+    are converted from an &str at codegen time
+
+  DONE: Opted to implement as Repeat w/vector IDs instead of a generalized
+        compositional setup for now; easy enough to introduce
+        new context members to account for operator-specific IDing.
+
+* Fix raymarch capsules
+  * Appear distorted toward the edges
+  * Implies elongate and translate are being applied in the wrong order
+
+  DONE: Elongate and Translate were applied in the wrong order
+
+* Scale operator
+  * Probably best implemented as a wrapper rather than pre / post modifiers
+  * Divide position, multiply distance
+
+  DONE: Implemented as Scale
+
+=========================================================================================================
+
+* Fix interpreter with select shape
+  * Appears to be failing at color / normal access
+    * Perhaps related to color output functions?
+
+* Implement Match statement for AST and IR
+  * Similar to existing if-else chaining, but with an explicit wildcard
+  * Can implement as match in syn, select in naga, etc
+
+* Text-based Hello World
+  * Need to implement a set of uppercase glyph SDFs
+  * Implement a Text primitive that takes a string
+    and a char -> DynAsIR map, lays it out in a grid
+    using repeat, and uses Select to match against ASCII
 
 * Generalize Sided combiners
   * Conditional expression should be customizable
@@ -388,6 +440,27 @@
     * Enables space partitioning
       * ex. If conditional field is a plane,
             will split space into Left / Right fields based on sidedness
+      * Should be able to fold several partitioning SDFs,
+        and apply ascending IDs to allow instancing-like behaviour
+
+* Stronger typing for AsIR composition
+  * Currently, Modify, Combine, etc. don't make any checks against
+    the AsIR implementors they compose
+  * As a result, there's nothing to prevent a user from
+    using Circle as a Modifier or Combinator,
+    or a Modifier or Combinator as a field
+  * Two major facets:
+    * Categorization for Field, Input Modifier, Output Modifier, Combinator
+      * Should be enough to solve the problem at a basic level
+      * Implement each as an opt-in subtrait of AsIR,
+        use inside Box dyn to specify which should be supplied
+    * Dependency checking
+      * Nice to have, but not critical as-is
+      * This touches on lifting functions to context I/O,
+        as the current Context -> Context model
+        does not encode any information about types that are read or written
+      * Would require codifying inputs and outputs as AsIR member functions
+        * Could also use to further generalize FunctionDefinition generation
 
 * Consider moving unary / binary / ternary ops into shareable enums
   * Would likely need to make generic for compatibility across
@@ -401,7 +474,10 @@
 * Expansion functionality for unsupported arithmetic expressions
   * ex. Translating Vector3 / Float into Vector3(Number / Float, ..)
 
-* Setup type specification for backends
+* Support boolean / integer vector types
+  * Needed for things like instance indexing
+
+* Setup numeric precision specification for backends
   * Backends are currently fixed to f32 due to the need to inject literals
   * Backends should have control over the final type
     * ex. naga backend should be able to downcast f64 to f32,
@@ -416,14 +492,7 @@
       * Augment with a new numeric type enum so backends can cast appropriately
 
 * Implement conditional boolean operators
-  * Needs to be its own AsModule to be able to orchestrate execution
-
-* Stronger typing for pre / post / field IR conversion
-  * At minimum, create separate traits to identify a given symbol as each
-    * May be better for Modifier to be a single trait with pre / post methods
-      * Makes it more ergonomic to support pre + post ops like scale
-  * Since the base AST has a Value representation,
-    may be able to reinstate something resembling move semantics?
+  * Needs to be its own AsIR to be able to orchestrate execution
 
 * Error handling pass
   * Replace panics with Result and error types

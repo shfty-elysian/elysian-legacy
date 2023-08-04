@@ -1,9 +1,9 @@
 use std::{
     fmt::Display,
-    ops::{Add, Div, Mul, Neg, Sub},
+    ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
-use rust_gpu_bridge::{Abs, Acos, Atan, Atan2, Max, Min, Mix, Sign};
+use rust_gpu_bridge::{Abs, Acos, Atan, Atan2, Clamp, Max, Min, Mix, Round, Sign};
 
 use crate::ir::ast::Expr;
 
@@ -84,6 +84,19 @@ impl Div<Number> for Number {
     }
 }
 
+impl Rem<Number> for Number {
+    type Output = Number;
+
+    fn rem(self, rhs: Number) -> Self::Output {
+        match (self, rhs) {
+            (Number::UInt(a), Number::UInt(b)) => Number::UInt(a.rem_euclid(b)),
+            (Number::SInt(a), Number::SInt(b)) => Number::SInt(a.rem_euclid(b)),
+            (Number::Float(a), Number::Float(b)) => Number::Float(a.rem_euclid(b)),
+            _ => panic!("Invalid Mod"),
+        }
+    }
+}
+
 impl Add<Struct> for Number {
     type Output = Struct;
 
@@ -139,6 +152,17 @@ impl Mix for Number {
     }
 }
 
+impl Clamp for Number {
+    fn clamp(self, min: Self, max: Self) -> Self {
+        match (self, min, max) {
+            (Number::UInt(t), Number::UInt(min), Number::UInt(max)) => t.clamp(min, max).into(),
+            (Number::SInt(t), Number::SInt(min), Number::SInt(max)) => t.clamp(min, max).into(),
+            (Number::Float(t), Number::Float(min), Number::Float(max)) => t.clamp(min, max).into(),
+            _ => panic!("Invalid Clamp"),
+        }
+    }
+}
+
 impl Neg for Number {
     type Output = Self;
 
@@ -167,6 +191,15 @@ impl Sign for Number {
             Number::SInt(i) => Number::SInt(i.sign()),
             Number::Float(f) => Number::Float(f.sign()),
             _ => panic!("Invalid Sign"),
+        }
+    }
+}
+
+impl Round for Number {
+    fn round(self) -> Self {
+        match self {
+            Number::Float(f) => Number::Float(f.round()),
+            _ => panic!("Invalid Round"),
         }
     }
 }

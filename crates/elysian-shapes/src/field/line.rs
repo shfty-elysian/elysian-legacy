@@ -12,9 +12,9 @@ use elysian_core::{
 };
 use elysian_decl_macros::elysian_function;
 
-use crate::modify::{Elongate, DIR_2D, DIR_3D, ELONGATE};
+use crate::modify::{Elongate, DIR_2D, DIR_3D};
 
-use super::{Point, POINT};
+use super::Point;
 
 pub const LINE: FunctionIdentifier = FunctionIdentifier::new("line", 14339483921749952476);
 
@@ -61,22 +61,21 @@ impl AsIR for Line {
             panic!("No position domain set")
         };
 
-        let point = POINT.specialize(&spec.filter(Point::domains()));
-        let elongate = ELONGATE.specialize(&spec.filter(Elongate::domains()));
+        let point = Point;
+        let (_, point_entry, point_functions) = point.prepare(spec);
 
-        Point
-            .functions_internal(spec)
+        let elongate = Elongate {
+            dir: self.dir.clone(),
+            infinite: false,
+        };
+        let (_, elongate_entry, elongate_functions) = elongate.prepare(spec);
+
+        point_functions
             .into_iter()
-            .chain(
-                Elongate {
-                    dir: self.dir.clone(),
-                    infinite: false,
-                }
-                .functions_internal(spec),
-            )
+            .chain(elongate_functions)
             .chain(elysian_function! {
                 fn entry_point(dir, CONTEXT) -> CONTEXT {
-                    return point(elongate(dir, CONTEXT));
+                    return point_entry(elongate_entry(dir, CONTEXT));
                 }
             })
             .collect()

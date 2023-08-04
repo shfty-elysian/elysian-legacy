@@ -122,6 +122,7 @@ impl SynToElysian {
                     syn::BinOp::Sub(_) => quote!((#left - #right)),
                     syn::BinOp::Mul(_) => quote!((#left * #right)),
                     syn::BinOp::Div(_) => quote!((#left / #right)),
+                    syn::BinOp::Rem(_) => quote!((#left % #right)),
                     syn::BinOp::Eq(_) => quote!(#left.eq(#right)),
                     syn::BinOp::Ne(_) => quote!(#left.ne(#right)),
                     syn::BinOp::Lt(_) => quote!(#left.lt(#right)),
@@ -264,6 +265,7 @@ impl SynToElysian {
                         "sign" => quote!(#receiver.sign()),
                         "acos" => quote!(#receiver.acos()),
                         "atan" => quote!(#receiver.atan()),
+                        "round" => quote!(#receiver.round()),
                         _ => panic!("Unsupported method"),
                     },
                     1 => {
@@ -284,6 +286,7 @@ impl SynToElysian {
 
                         match method.to_string().as_str() {
                             "mix" => quote!(#receiver.mix(#arg0, #arg1)),
+                            "clamp" => quote!(#receiver.clamp(#arg0, #arg1)),
                             _ => panic!("Unsupported method"),
                         }
                     }

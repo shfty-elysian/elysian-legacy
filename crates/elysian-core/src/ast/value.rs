@@ -74,6 +74,12 @@ impl From<f32> for Value {
     }
 }
 
+impl From<f64> for Value {
+    fn from(value: f64) -> Self {
+        Value::Number(value.into())
+    }
+}
+
 impl<T> From<[T; 2]> for Value
 where
     T: Clone,

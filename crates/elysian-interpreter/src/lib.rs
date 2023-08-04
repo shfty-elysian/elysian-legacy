@@ -5,7 +5,9 @@ use elysian_core::ir::{
     ast::{Expr, Identifier, Struct, Value},
     module::{FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT},
 };
-use rust_gpu_bridge::{Abs, Acos, Atan, Atan2, Dot, Length, Max, Min, Mix, Normalize, Sign};
+use rust_gpu_bridge::{
+    Abs, Acos, Atan, Atan2, Clamp, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,
+};
 
 pub struct Interpreter {
     pub context: Struct,
@@ -265,6 +267,11 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
             println!("Sign");
             evaluate_expr(interpreter, op).sign()
         }
+        Expr::Round(op) => {
+            #[cfg(feature = "print")]
+            println!("Round");
+            evaluate_expr(interpreter, op).round()
+        }
         Expr::Acos(op) => {
             #[cfg(feature = "print")]
             println!("Acos");
@@ -304,6 +311,11 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
             #[cfg(feature = "print")]
             println!("Div");
             evaluate_expr(interpreter, lhs) / evaluate_expr(interpreter, rhs)
+        }
+        Expr::Mod(lhs, rhs) => {
+            #[cfg(feature = "print")]
+            println!("Div");
+            evaluate_expr(interpreter, lhs) % evaluate_expr(interpreter, rhs)
         }
         Expr::Eq(lhs, rhs) => {
             #[cfg(feature = "print")]
@@ -352,6 +364,16 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
                 .mix(
                     evaluate_expr(interpreter, rhs),
                     evaluate_expr(interpreter, t),
+                )
+                .into()
+        }
+        Expr::Clamp(t, min, max) => {
+            #[cfg(feature = "print")]
+            println!("Mix");
+            evaluate_expr(interpreter, t)
+                .clamp(
+                    evaluate_expr(interpreter, min),
+                    evaluate_expr(interpreter, max),
                 )
                 .into()
         }

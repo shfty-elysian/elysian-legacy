@@ -1,12 +1,12 @@
 use std::{
     fmt::{Debug, Display},
     hash::{Hash, Hasher},
-    ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Sub},
+    ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Sub},
 };
 
 use rust_gpu_bridge::{
     glam::{Vec2, Vec3, Vec4},
-    Abs, Acos, Atan, Atan2, Dot, Length, Max, Min, Mix, Normalize, Sign,
+    Abs, Acos, Atan, Atan2, Clamp, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,
 };
 
 use crate::ir::module::StructIdentifier;
@@ -112,6 +112,17 @@ impl Div<Value> for Value {
     }
 }
 
+impl Rem<Value> for Value {
+    type Output = Self;
+
+    fn rem(self, rhs: Value) -> Self::Output {
+        match (self, rhs) {
+            (Value::Number(a), Value::Number(b)) => (a % b).into(),
+            _ => panic!("Invalid Mod"),
+        }
+    }
+}
+
 impl BitAnd for Value {
     type Output = Value;
 
@@ -150,6 +161,16 @@ impl Mix for Value {
     }
 }
 
+impl Clamp for Value {
+    fn clamp(self, min: Self, max: Self) -> Self {
+        match (self, min, max) {
+            (Value::Number(t), Value::Number(min), Value::Number(max)) => t.clamp(min, max).into(),
+            (Value::Struct(t), Value::Struct(min), Value::Struct(max)) => t.clamp(min, max).into(),
+            _ => panic!("Invalid Clamp"),
+        }
+    }
+}
+
 impl Neg for Value {
     type Output = Self;
 
@@ -177,6 +198,16 @@ impl Sign for Value {
         match self {
             Value::Number(n) => n.sign().into(),
             Value::Struct(v) => v.sign().into(),
+            _ => panic!("Invalid Sign"),
+        }
+    }
+}
+
+impl Round for Value {
+    fn round(self) -> Self {
+        match self {
+            Value::Number(n) => n.round().into(),
+            Value::Struct(v) => v.round().into(),
             _ => panic!("Invalid Sign"),
         }
     }

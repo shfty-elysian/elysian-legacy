@@ -22,6 +22,7 @@ pub enum Expr {
     Neg(BoxExpr),
     Abs(BoxExpr),
     Sign(BoxExpr),
+    Round(BoxExpr),
     Length(BoxExpr),
     Normalize(BoxExpr),
     Add(BoxExpr, BoxExpr),
@@ -32,10 +33,13 @@ pub enum Expr {
     Ne(BoxExpr, BoxExpr),
     Lt(BoxExpr, BoxExpr),
     Gt(BoxExpr, BoxExpr),
+    And(BoxExpr, BoxExpr),
+    Or(BoxExpr, BoxExpr),
     Min(BoxExpr, BoxExpr),
     Max(BoxExpr, BoxExpr),
     Dot(BoxExpr, BoxExpr),
     Mix(BoxExpr, BoxExpr, BoxExpr),
+    Clamp(BoxExpr, BoxExpr, BoxExpr),
 }
 
 impl std::hash::Hash for Expr {
@@ -76,6 +80,14 @@ impl Expr {
     pub fn gt(self, rhs: Expr) -> Expr {
         Expr::Gt(Box::new(self), Box::new(rhs))
     }
+    
+    pub fn and(self, rhs: Expr) -> Expr {
+        Expr::And(Box::new(self), Box::new(rhs))
+    }
+
+    pub fn or(self, rhs: Expr) -> Expr {
+        Expr::Or(Box::new(self), Box::new(rhs))
+    }
 
     pub fn abs(self) -> Expr {
         Expr::Abs(Box::new(self))
@@ -83,6 +95,10 @@ impl Expr {
 
     pub fn sign(self) -> Expr {
         Expr::Sign(Box::new(self))
+    }
+
+    pub fn round(self) -> Expr {
+        Expr::Round(Box::new(self))
     }
 
     pub fn length(self) -> Expr {
@@ -107,6 +123,10 @@ impl Expr {
 
     pub fn mix(self, rhs: Expr, t: Expr) -> Expr {
         Expr::Mix(Box::new(self), Box::new(rhs), Box::new(t))
+    }
+
+    pub fn clamp(self, min: Expr, max: Expr) -> Expr {
+        Expr::Clamp(Box::new(self), Box::new(min), Box::new(max))
     }
 }
 

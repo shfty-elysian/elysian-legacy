@@ -5,17 +5,17 @@ use elysian_core::{
     ir::{
         ast::Identifier,
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
+            SpecializationData, Type, CONTEXT,
         },
     },
     property,
 };
 use elysian_decl_macros::elysian_function;
 
-use crate::modify::{Isosurface, Manifold, ISOSURFACE, MANIFOLD};
+use crate::modify::{Isosurface, Manifold};
 
-use super::{Circle, CIRCLE, RADIUS};
+use super::{Circle, RADIUS};
 
 pub const RING: FunctionIdentifier = FunctionIdentifier::new("ring", 18972348581943461950);
 
@@ -60,27 +60,28 @@ impl AsIR for Ring {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let isosurface = ISOSURFACE.specialize(&spec.filter(Isosurface::domains()));
-        let manifold = MANIFOLD.specialize(&spec.filter(Manifold::domains()));
-        let circle = CIRCLE.specialize(&spec.filter(Circle::domains()));
+        let isosurface = Isosurface {
+            dist: self.width.clone(),
+        };
+        let (_, isosurface_entry, isosurface_functions) = isosurface.prepare(spec);
 
-        Circle {
+        let manifold = Manifold;
+        let (_, manifold_entry, manifold_functions) = manifold.prepare(spec);
+
+        let circle = Circle {
             radius: self.radius.clone(),
-        }
-        .functions_internal(spec)
-        .into_iter()
-        .chain(Manifold.functions_internal(spec))
-        .chain(
-            Isosurface {
-                dist: self.width.clone(),
-            }
-            .functions_internal(spec),
-        )
-        .chain(elysian_function! {
-            fn entry_point(RADIUS, WIDTH, CONTEXT) -> CONTEXT {
-                return isosurface(WIDTH, manifold(circle(RADIUS, CONTEXT)));
-            }
-        })
-        .collect()
+        };
+        let (_, circle_entry, circle_functions) = circle.prepare(spec);
+
+        circle_functions
+            .into_iter()
+            .chain(manifold_functions)
+            .chain(isosurface_functions)
+            .chain(elysian_function! {
+                fn entry_point(RADIUS, WIDTH, CONTEXT) -> CONTEXT {
+                    return isosurface_entry(WIDTH, manifold_entry(circle_entry(RADIUS, CONTEXT)));
+                }
+            })
+            .collect()
     }
 }

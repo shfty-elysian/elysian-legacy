@@ -9,8 +9,8 @@ use elysian_core::{
     ir::{
         ast::{Number, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
         module::{
-            AsIR, Domains, DomainsDyn, FunctionDefinition, FunctionIdentifier,
-            SpecializationData, CONTEXT,
+            AsIR, Domains, DomainsDyn, FunctionDefinition, FunctionIdentifier, SpecializationData,
+            CONTEXT,
         },
     },
 };
@@ -75,35 +75,29 @@ impl AsIR for CentralDiffGradient {
                 }),
             )
         } else {
-            return self
-                .field
-                .functions_internal(spec)
-                .into_iter()
-                .chain(elysian_function! {
-                    fn entry_point(mut CONTEXT) -> CONTEXT {
-                        return CONTEXT;
-                    }
-                })
-                .collect();
+            return vec![elysian_function! {
+                fn entry_point(mut CONTEXT) -> CONTEXT {
+                    return CONTEXT;
+                }
+            }];
         };
 
         let translate = TRANSLATE.specialize(&spec.filter(Translate::domains()));
 
         let epsilon = self.epsilon.literal();
 
-        let field_entry_point = self.field.entry_point(spec);
+        let (_, field_entry, field_functions) = self.field.prepare(spec);
 
-        self.field
-            .functions(spec, &field_entry_point)
+        field_functions
             .into_iter()
             .chain([elysian_function! {
                 pub fn entry_point(mut CONTEXT) -> CONTEXT {
-                    let CONTEXT = field_entry_point(CONTEXT);
-                    let LEFT = field_entry_point(translate(#vec_x * -#epsilon, CONTEXT));
-                    let RIGHT = field_entry_point(#translate(#vec_x * #epsilon, CONTEXT));
+                    let CONTEXT = field_entry(CONTEXT);
+                    let LEFT = field_entry(translate(#vec_x * -#epsilon, CONTEXT));
+                    let RIGHT = field_entry(#translate(#vec_x * #epsilon, CONTEXT));
                     let X = LEFT.DISTANCE - RIGHT.DISTANCE;
-                    let LEFT = field_entry_point(translate(#vec_y * -#epsilon, CONTEXT));
-                    let RIGHT = field_entry_point(translate(#vec_y * #epsilon, CONTEXT));
+                    let LEFT = field_entry(translate(#vec_y * -#epsilon, CONTEXT));
+                    let RIGHT = field_entry(translate(#vec_y * #epsilon, CONTEXT));
                     let Y = LEFT.DISTANCE - RIGHT.DISTANCE;
                     CONTEXT.gradient = VECTOR2 {
                         X: X,

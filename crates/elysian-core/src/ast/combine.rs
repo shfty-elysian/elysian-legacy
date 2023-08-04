@@ -7,7 +7,7 @@ use crate::ir::{
     ast::{Block, Expr, Identifier, COMBINE_CONTEXT},
     module::{
         AsIR, DynAsIR, FieldDefinition, FunctionDefinition, FunctionIdentifier, HashIR,
-        InputDefinition, IntoRead, PropertyIdentifier, SpecializationData, StructDefinition,
+        InputDefinition, PropertyIdentifier, SpecializationData, StructDefinition,
         StructIdentifier, Type, CONTEXT,
     },
 };
@@ -93,28 +93,40 @@ impl AsIR for Combine {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let (shape_entry_points, shape_functions): (Vec<_>, Vec<_>) = self
+        let prepared_shapes: Vec<_> = self
             .shapes
             .iter()
-            .map(|shape| {
-                let entry_point = shape.entry_point(spec);
-                (
-                    (shape, entry_point.clone()),
-                    shape.functions(spec, &entry_point),
-                )
+            .map(|t| {
+                let (a, b, c) = t.prepare(spec);
+                (t, a, b, c)
             })
-            .unzip();
+            .collect();
 
-        let shape_functions: Vec<_> = shape_functions.into_iter().flatten().collect();
-
-        let mut iter = shape_entry_points.iter();
-        let (base, base_entry) = iter.next().expect("Empty list").clone();
+        let mut iter = prepared_shapes.iter();
+        let (base, _, base_entry, _) = iter.next().expect("Empty list").clone();
 
         let mut block = vec![];
 
+        let combinators: Vec<_> = self
+            .combinator
+            .iter()
+            .map(|t| {
+                let (a, b, c) = t.prepare(spec);
+                (t, a, b, c)
+            })
+            .collect();
+
+        let combinator = combinators.iter().fold(
+            elysian_stmt! { COMBINE_CONTEXT },
+            |acc: Expr, (combinator, _, entry, _)| Expr::Call {
+                function: entry.clone(),
+                args: combinator.arguments(acc),
+            },
+        );
+
         iter.fold(
-            base_entry.call(base.arguments(PropertyIdentifier(CONTEXT).read())),
-            |acc, (_, entry)| {
+            base_entry.call(base.arguments(elysian_stmt! {CONTEXT})),
+            |acc, (_, _, entry, _)| {
                 let entry = (**entry).clone();
 
                 block.push(elysian_stmt! {
@@ -123,14 +135,6 @@ impl AsIR for Combine {
                         RIGHT: #entry(CONTEXT)
                     }
                 });
-
-                let combinator = self.combinator.iter().fold(
-                    elysian_stmt! { COMBINE_CONTEXT },
-                    |acc: Expr, next| Expr::Call {
-                        function: next.entry_point(spec),
-                        args: next.arguments(acc),
-                    },
-                );
 
                 block.extend(elysian_block! {
                     let COMBINE_CONTEXT = #combinator;
@@ -147,10 +151,14 @@ impl AsIR for Combine {
 
         let block = Block(block);
 
-        self.combinator
+        combinators
             .iter()
-            .flat_map(|t| t.functions_internal(spec))
-            .chain(shape_functions)
+            .flat_map(|(_, _, _, functions)| functions.clone())
+            .chain(
+                prepared_shapes
+                    .iter()
+                    .flat_map(|(_, _, _, functions)| functions.clone()),
+            )
             .chain([FunctionDefinition {
                 id: entry_point.clone(),
                 public: true,

@@ -57,10 +57,10 @@ impl AsIR for CrossSection {
         let x_axis = Expr::from(self.x_axis.clone());
         let y_axis = Expr::from(self.y_axis.clone());
 
-        let field_entry_point = self.field.entry_point(spec);
+        let (_, field_entry, field_functions) =
+            self.field.prepare(&SpecializationData::new_3d());
 
-        self.field
-            .functions_internal(&SpecializationData::new_3d())
+        field_functions
             .into_iter()
             .chain([elysian_function! {
                 fn CROSS_SECTION(mut CONTEXT) -> CONTEXT {
@@ -68,7 +68,7 @@ impl AsIR for CrossSection {
                         #x_axis * CONTEXT.POSITION_2D.X
                             + #y_axis * CONTEXT.POSITION_2D.Y;
 
-                    let CONTEXT = field_entry_point(CONTEXT);
+                    let CONTEXT = field_entry(CONTEXT);
                     CONTEXT.GRADIENT_2D = VECTOR2 {
                         X: CONTEXT.GRADIENT_3D.X,
                         Y: CONTEXT.GRADIENT_3D.Y,

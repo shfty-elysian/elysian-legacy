@@ -4,3 +4,4 @@ pub mod cross_section;
 pub mod field;
 pub mod modify;
 pub mod raymarch;
+pub mod scale;

@@ -367,6 +367,43 @@ fn block_to_syn(module: &Module, block: &IrBlock) -> Block {
     }
 }
 
+fn if_to_syn(
+    module: &Module,
+    cond: &elysian_core::ir::ast::Expr,
+    then: &elysian_core::ir::ast::Stmt,
+    otherwise: Option<&elysian_core::ir::ast::Stmt>,
+) -> Expr {
+    Expr::If(ExprIf {
+        attrs: vec![],
+        if_token: Default::default(),
+        cond: Box::new(expr_to_syn(module, cond)),
+        then_branch: Block {
+            brace_token: Default::default(),
+            stmts: vec![stmt_to_syn(module, then)],
+        },
+        else_branch: otherwise.map(|otherwise| {
+            (
+                Default::default(),
+                Box::new(match otherwise {
+                    IrStmt::If {
+                        cond,
+                        then,
+                        otherwise,
+                    } => if_to_syn(module, cond, then, otherwise.as_ref().map(Box::as_ref)),
+                    _ => Expr::Block(ExprBlock {
+                        attrs: vec![],
+                        label: None,
+                        block: Block {
+                            brace_token: Default::default(),
+                            stmts: vec![stmt_to_syn(module, otherwise)],
+                        },
+                    }),
+                }),
+            )
+        }),
+    })
+}
+
 fn stmt_to_syn(module: &Module, stmt: &IrStmt) -> Stmt {
     match stmt {
         IrStmt::Block(block) => Stmt::Expr(
@@ -407,28 +444,7 @@ fn stmt_to_syn(module: &Module, stmt: &IrStmt) -> Stmt {
             then,
             otherwise,
         } => Stmt::Expr(
-            Expr::If(ExprIf {
-                attrs: vec![],
-                if_token: Default::default(),
-                cond: Box::new(expr_to_syn(module, cond)),
-                then_branch: Block {
-                    brace_token: Default::default(),
-                    stmts: vec![stmt_to_syn(module, then)],
-                },
-                else_branch: otherwise.as_ref().map(|otherwise| {
-                    (
-                        Default::default(),
-                        Box::new(Expr::Block(ExprBlock {
-                            attrs: vec![],
-                            label: None,
-                            block: Block {
-                                brace_token: Default::default(),
-                                stmts: vec![stmt_to_syn(module, otherwise)],
-                            },
-                        })),
-                    )
-                }),
-            }),
+            if_to_syn(module, cond, then, otherwise.as_ref().map(Box::as_ref)),
             Default::default(),
         ),
         IrStmt::Loop { stmt } => Stmt::Expr(
@@ -774,6 +790,15 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
                 right: Box::new(expr_to_syn(module, rhs)),
             })),
         }),
+        IrExpr::Mod(lhs, rhs) => Expr::MethodCall(ExprMethodCall {
+            attrs: vec![],
+            receiver: Box::new(expr_to_syn(module, lhs)),
+            dot_token: Default::default(),
+            method: Ident::new("modulo", Span::call_site()),
+            turbofish: Default::default(),
+            paren_token: Default::default(),
+            args: [expr_to_syn(module, rhs)].into_iter().collect(),
+        }),
         IrExpr::Min(lhs, rhs)
         | IrExpr::Max(lhs, rhs)
         | IrExpr::Dot(lhs, rhs)
@@ -803,6 +828,17 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
                 .into_iter()
                 .collect(),
         }),
+        IrExpr::Clamp(t, min, max) => Expr::MethodCall(ExprMethodCall {
+            attrs: vec![],
+            receiver: Box::new(expr_to_syn(module, t)),
+            dot_token: Default::default(),
+            method: Ident::new("clamp", Span::call_site()),
+            turbofish: None,
+            paren_token: Default::default(),
+            args: [expr_to_syn(module, min), expr_to_syn(module, max)]
+                .into_iter()
+                .collect(),
+        }),
         IrExpr::Neg(t) => Expr::Unary(ExprUnary {
             attrs: vec![],
             op: syn::UnOp::Neg(Default::default()),
@@ -810,6 +846,7 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
         }),
         IrExpr::Abs(t)
         | IrExpr::Sign(t)
+        | IrExpr::Round(t)
         | IrExpr::Length(t)
         | IrExpr::Normalize(t)
         | IrExpr::Acos(t)
@@ -821,6 +858,7 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
                 match expr {
                     IrExpr::Abs(_) => "abs",
                     IrExpr::Sign(_) => "sign",
+                    IrExpr::Round(_) => "round",
                     IrExpr::Length(_) => "length",
                     IrExpr::Normalize(_) => "normalize_or_zero",
                     IrExpr::Acos(_) => "acos",

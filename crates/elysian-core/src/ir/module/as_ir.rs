@@ -197,7 +197,7 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
             ),
         };
 
-        let struct_definitions = vec![
+        let mut struct_definitions: Vec<_> = vec![
             VECTOR2_STRUCT.clone(),
             VECTOR3_STRUCT.clone(),
             VECTOR4_STRUCT.clone(),
@@ -210,6 +210,9 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
         .chain(self.structs())
         .collect();
 
+        let mut set = HashSet::new();
+        struct_definitions.retain(|x| set.insert(x.id.clone()));
+
         Module {
             props: types,
             entry_point,
@@ -221,19 +224,14 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
     /// Generate the function identifier used to reference this implementor
     fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier;
 
+    /// Given a SpecializationData, filter it by this implementor's domain list
+    fn filter_spec(&self, spec: &SpecializationData) -> SpecializationData {
+        spec.filter(self.domains_dyn())
+    }
+
     /// Generate a list of arguments used to call this implementor
     fn arguments(&self, input: Expr) -> Vec<Expr> {
         vec![input]
-    }
-
-    /// Filter the provided spec, generate an entry point, and return a list of functions
-    /// NOTE: A given entry point must be generated only once,
-    ///       so this should be considered a utility function for cases where
-    ///       a given entry point does not need to be referenced
-    fn functions_internal(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        let spec = spec.filter(self.domains_dyn());
-        let entry_point = self.entry_point(&spec);
-        self.functions(&spec, &entry_point)
     }
 
     /// Given a spec and entry point, produce a list of function definitions
@@ -246,6 +244,22 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
     /// Produce a list of struct definitions
     fn structs(&self) -> Vec<StructDefinition> {
         vec![]
+    }
+
+    /// Utility for preparing a filtered SpecializationData,
+    /// and using it to produce an entry point and list of functions
+    fn prepare(
+        &self,
+        spec: &SpecializationData,
+    ) -> (
+        SpecializationData,
+        FunctionIdentifier,
+        Vec<FunctionDefinition>,
+    ) {
+        let spec = self.filter_spec(spec);
+        let entry_point = self.entry_point(&spec);
+        let functions = self.functions(&spec, &entry_point);
+        (spec, entry_point, functions)
     }
 }
 
@@ -264,10 +278,6 @@ impl AsIR for DynAsIR {
 
     fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
         (**self).entry_point(spec)
-    }
-
-    fn functions_internal(&self, spec: &SpecializationData) -> Vec<FunctionDefinition> {
-        (**self).functions_internal(spec)
     }
 
     fn functions(
