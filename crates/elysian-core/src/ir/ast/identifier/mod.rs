@@ -2,6 +2,8 @@ use std::borrow::Cow;
 
 use uuid::Uuid;
 
+use crate::ir::module::{FunctionIdentifier, PropertyIdentifier, StructIdentifier};
+
 /// Named unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Identifier {
@@ -68,5 +70,17 @@ impl Identifier {
             name: (self.name.to_string() + "_" + &rhs.name).into(),
             uuid: Uuid::from_u128(self.uuid.as_u128().wrapping_add(rhs.uuid.as_u128())),
         }
+    }
+
+    pub fn property(self) -> PropertyIdentifier {
+        self.into()
+    }
+
+    pub fn function(self) -> FunctionIdentifier {
+        self.into()
+    }
+
+    pub fn structure(self) -> StructIdentifier {
+        self.into()
     }
 }

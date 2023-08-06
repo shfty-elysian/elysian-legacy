@@ -1,106 +1,103 @@
-use elysian_core::ir::module::DynAsIR;
-
-pub fn a() -> DynAsIR {
+pub fn a() -> () {
     todo!()
 }
 
-pub fn b() -> DynAsIR {
+pub fn b() -> () {
     todo!()
 }
 
-pub fn c() -> DynAsIR {
+pub fn c() -> () {
     todo!()
 }
 
-pub fn d() -> DynAsIR {
+pub fn d() -> () {
     todo!()
 }
 
-pub fn e() -> DynAsIR {
+pub fn e() -> () {
     todo!()
 }
 
-pub fn f() -> DynAsIR {
+pub fn f() -> () {
     todo!()
 }
 
-pub fn g() -> DynAsIR {
+pub fn g() -> () {
     todo!()
 }
 
-pub fn h() -> DynAsIR {
+pub fn h() -> () {
     todo!()
 }
 
-pub fn i() -> DynAsIR {
+pub fn i() -> () {
     todo!()
 }
 
-pub fn j() -> DynAsIR {
+pub fn j() -> () {
     todo!()
 }
 
-pub fn k() -> DynAsIR {
+pub fn k() -> () {
     todo!()
 }
 
-pub fn l() -> DynAsIR {
+pub fn l() -> () {
     todo!()
 }
 
-pub fn m() -> DynAsIR {
+pub fn m() -> () {
     todo!()
 }
 
-pub fn n() -> DynAsIR {
+pub fn n() -> () {
     todo!()
 }
 
-pub fn o() -> DynAsIR {
+pub fn o() -> () {
     todo!()
 }
 
-pub fn p() -> DynAsIR {
+pub fn p() -> () {
     todo!()
 }
 
-pub fn q() -> DynAsIR {
+pub fn q() -> () {
     todo!()
 }
 
-pub fn r() -> DynAsIR {
+pub fn r() -> () {
     todo!()
 }
 
-pub fn s() -> DynAsIR {
+pub fn s() -> () {
     todo!()
 }
 
-pub fn t() -> DynAsIR {
+pub fn t() -> () {
     todo!()
 }
 
-pub fn u() -> DynAsIR {
+pub fn u() -> () {
     todo!()
 }
 
-pub fn v() -> DynAsIR {
+pub fn v() -> () {
     todo!()
 }
 
-pub fn w() -> DynAsIR {
+pub fn w() -> () {
     todo!()
 }
 
-pub fn x() -> DynAsIR {
+pub fn x() -> () {
     todo!()
 }
 
-pub fn y() -> DynAsIR {
+pub fn y() -> () {
     todo!()
 }
 
-pub fn z() -> DynAsIR {
+pub fn z() -> () {
     todo!()
 }
-

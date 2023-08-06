@@ -30,8 +30,8 @@ impl Domains for Manifold {
 }
 
 impl AsIR for Manifold {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        MANIFOLD.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        MANIFOLD
     }
 
     fn functions(
@@ -90,8 +90,6 @@ where
     T: IntoModify,
 {
     fn manifold(self) -> Modify {
-        let mut m = self.modify();
-        m.post_modifiers.push(Box::new(Manifold));
-        m
+        self.modify().push_post(Manifold)
     }
 }

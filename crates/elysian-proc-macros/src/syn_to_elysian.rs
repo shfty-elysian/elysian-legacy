@@ -172,14 +172,14 @@ impl SynToElysian {
                     Some((_, otherwise)) => {
                         let otherwise = self.parse_expr(otherwise);
                         let otherwise = quote_crate!(ir::ast::Stmt::Block(#otherwise));
-                        quote!(Some(Box::new(#otherwise)))
+                        quote!(Some(#otherwise.box_stmt()))
                     }
                     None => quote!(None),
                 };
 
                 quote_crate!(ir::ast::Stmt::If {
                     cond: #cond,
-                    then: Box::new(#then),
+                    then: #then.box_stmt(),
                     otherwise: #otherwise,
                 })
             }
@@ -214,7 +214,7 @@ impl SynToElysian {
             SynExpr::Loop(ExprLoop { body, .. }) => {
                 let block = self.parse_block(body);
                 quote_crate!(ir::ast::Stmt::Loop {
-                    stmt: Box::new(Stmt::Block(#block)),
+                    stmt: Stmt::Block(#block).box_stmt(),
                 })
             }
             SynExpr::Paren(ExprParen { expr, .. }) => self.parse_expr(expr),

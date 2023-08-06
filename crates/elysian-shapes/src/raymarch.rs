@@ -4,14 +4,15 @@ use std::{
 };
 
 use elysian_core::{
+    ast::expr::IntoExpr,
     ir::{
         ast::{
             Expr, Identifier, IntoLiteral, Stmt, DISTANCE, MATRIX4, POSITION_2D, POSITION_3D,
             VECTOR3, VECTOR4, W, X, Y, Z,
         },
         module::{
-            AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, NumericType,
-            SpecializationData, StructIdentifier, Type, CONTEXT,
+            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, IntoAsIR,
+            NumericType, SpecializationData, StructIdentifier, Type, CONTEXT,
         },
     },
     property,
@@ -113,10 +114,62 @@ pub fn falloff_k(e: f32, r: f32) -> f32 {
 }
 
 pub struct Raymarch {
-    pub max_steps: elysian_core::ast::expr::Expr,
-    pub march: March,
-    pub inv_projection: elysian_core::ast::expr::Expr,
-    pub field: Box<dyn AsIR>,
+    march: March,
+    max_steps: elysian_core::ast::expr::Expr,
+    inv_projection: elysian_core::ast::expr::Expr,
+    field: DynAsIR,
+}
+
+impl Raymarch {
+    pub fn fixed(
+        step_size: impl IntoExpr,
+        max_steps: impl IntoExpr,
+        inv_projection: impl IntoExpr,
+        field: impl IntoAsIR,
+    ) -> Self {
+        Raymarch {
+            march: March::Fixed {
+                step_size: step_size.expr(),
+            },
+            max_steps: max_steps.expr(),
+            inv_projection: inv_projection.expr(),
+            field: field.as_ir(),
+        }
+    }
+
+    pub fn sphere(
+        epsilon: impl IntoExpr,
+        max_steps: impl IntoExpr,
+        inv_projection: impl IntoExpr,
+        field: impl IntoAsIR,
+    ) -> Self {
+        Raymarch {
+            march: March::Sphere {
+                epsilon: epsilon.expr(),
+            },
+            max_steps: max_steps.expr(),
+            inv_projection: inv_projection.expr(),
+            field: field.as_ir(),
+        }
+    }
+
+    pub fn lipschitz(
+        epsilon: impl IntoExpr,
+        falloff_k: impl IntoExpr,
+        max_steps: impl IntoExpr,
+        inv_projection: impl IntoExpr,
+        field: impl IntoAsIR,
+    ) -> Self {
+        Raymarch {
+            march: March::Lipschitz {
+                epsilon: epsilon.expr(),
+                falloff_k: falloff_k.expr(),
+            },
+            max_steps: max_steps.expr(),
+            inv_projection: inv_projection.expr(),
+            field: field.as_ir(),
+        }
+    }
 }
 
 impl Debug for Raymarch {
@@ -140,8 +193,8 @@ impl DomainsDyn for Raymarch {
 }
 
 impl AsIR for Raymarch {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        RAYMARCH.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        RAYMARCH
     }
 
     fn functions(
@@ -158,7 +211,7 @@ impl AsIR for Raymarch {
         }
 
         let spec_3d = SpecializationData::new_3d();
-        let (_, field_entry, field_functions) = self.field.prepare(&spec_3d);
+        let (_, field_call, field_functions) = self.field.call(&spec_3d, elysian_stmt! { CONTEXT });
 
         let max_steps = Expr::from(self.max_steps.clone());
         let inv_projection = Expr::from(self.inv_projection.clone());
@@ -227,7 +280,7 @@ impl AsIR for Raymarch {
                     loop {
                         let RAY_POS = RAY_FROM_3 + RAY_DIR * T;
                         CONTEXT.POSITION_3D = RAY_POS;
-                        let CANDIDATE = field_entry(CONTEXT);
+                        let CANDIDATE = #field_call;
 
                         if CANDIDATE.DISTANCE < CONTEXT.DISTANCE {
                             CONTEXT = CANDIDATE

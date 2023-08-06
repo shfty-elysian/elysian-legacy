@@ -49,116 +49,128 @@ impl std::hash::Hash for Expr {
 }
 
 impl Expr {
-    pub fn vector2(x: Expr, y: Expr) -> Expr {
-        Expr::Vector2(Box::new(x), Box::new(y))
+    pub fn vector2(x: impl IntoExpr, y: impl IntoExpr) -> Expr {
+        Expr::Vector2(x.box_expr(), y.box_expr())
     }
 
-    pub fn vector3(x: Expr, y: Expr, z: Expr) -> Expr {
-        Expr::Vector3(Box::new(x), Box::new(y), Box::new(z))
+    pub fn vector3(x: impl IntoExpr, y: impl IntoExpr, z: impl IntoExpr) -> Expr {
+        Expr::Vector3(x.box_expr(), y.box_expr(), z.box_expr())
     }
 
-    pub fn vector4(x: Expr, y: Expr, z: Expr, w: Expr) -> Expr {
-        Expr::Vector4(Box::new(x), Box::new(y), Box::new(z), Box::new(w))
+    pub fn vector4(x: impl IntoExpr, y: impl IntoExpr, z: impl IntoExpr, w: impl IntoExpr) -> Expr {
+        Expr::Vector4(x.box_expr(), y.box_expr(), z.box_expr(), w.box_expr())
     }
 
-    pub fn matrix2(x: Expr, y: Expr) -> Expr {
-        Expr::Matrix2(Box::new(x), Box::new(y))
+    pub fn matrix2(x: impl IntoExpr, y: impl IntoExpr) -> Expr {
+        Expr::Matrix2(x.box_expr(), y.box_expr())
     }
 
-    pub fn matrix3(x: Expr, y: Expr, z: Expr) -> Expr {
-        Expr::Matrix3(Box::new(x), Box::new(y), Box::new(z))
+    pub fn matrix3(x: impl IntoExpr, y: impl IntoExpr, z: impl IntoExpr) -> Expr {
+        Expr::Matrix3(x.box_expr(), y.box_expr(), z.box_expr())
     }
 
-    pub fn matrix4(x: Expr, y: Expr, z: Expr, w: Expr) -> Expr {
-        Expr::Matrix4(Box::new(x), Box::new(y), Box::new(z), Box::new(w))
+    pub fn matrix4(x: impl IntoExpr, y: impl IntoExpr, z: impl IntoExpr, w: impl IntoExpr) -> Expr {
+        Expr::Matrix4(x.box_expr(), y.box_expr(), z.box_expr(), w.box_expr())
     }
 
-    pub fn lt(self, rhs: Expr) -> Expr {
-        Expr::Lt(Box::new(self), Box::new(rhs))
+    pub fn lt(self, rhs: impl IntoExpr) -> Expr {
+        Expr::Lt(self.box_expr(), rhs.box_expr())
     }
 
-    pub fn gt(self, rhs: Expr) -> Expr {
-        Expr::Gt(Box::new(self), Box::new(rhs))
-    }
-    
-    pub fn and(self, rhs: Expr) -> Expr {
-        Expr::And(Box::new(self), Box::new(rhs))
+    pub fn gt(self, rhs: impl IntoExpr) -> Expr {
+        Expr::Gt(self.box_expr(), rhs.box_expr())
     }
 
-    pub fn or(self, rhs: Expr) -> Expr {
-        Expr::Or(Box::new(self), Box::new(rhs))
+    pub fn and(self, rhs: impl IntoExpr) -> Expr {
+        Expr::And(self.box_expr(), rhs.box_expr())
+    }
+
+    pub fn or(self, rhs: impl IntoExpr) -> Expr {
+        Expr::Or(self.box_expr(), rhs.box_expr())
     }
 
     pub fn abs(self) -> Expr {
-        Expr::Abs(Box::new(self))
+        Expr::Abs(self.box_expr())
     }
 
     pub fn sign(self) -> Expr {
-        Expr::Sign(Box::new(self))
+        Expr::Sign(self.box_expr())
     }
 
     pub fn round(self) -> Expr {
-        Expr::Round(Box::new(self))
+        Expr::Round(self.box_expr())
     }
 
     pub fn length(self) -> Expr {
-        Expr::Length(Box::new(self))
+        Expr::Length(self.box_expr())
     }
 
     pub fn normalize(self) -> Expr {
-        Expr::Normalize(Box::new(self))
+        Expr::Normalize(self.box_expr())
     }
 
-    pub fn min(self, rhs: Expr) -> Expr {
-        Expr::Min(Box::new(self), Box::new(rhs))
+    pub fn min(self, rhs: impl IntoExpr) -> Expr {
+        Expr::Min(self.box_expr(), rhs.box_expr())
     }
 
-    pub fn max(self, rhs: Expr) -> Expr {
-        Expr::Max(Box::new(self), Box::new(rhs))
+    pub fn max(self, rhs: impl IntoExpr) -> Expr {
+        Expr::Max(self.box_expr(), rhs.box_expr())
     }
 
-    pub fn dot(self, rhs: Expr) -> Expr {
-        Expr::Dot(Box::new(self), Box::new(rhs))
+    pub fn dot(self, rhs: impl IntoExpr) -> Expr {
+        Expr::Dot(self.box_expr(), rhs.box_expr())
     }
 
-    pub fn mix(self, rhs: Expr, t: Expr) -> Expr {
-        Expr::Mix(Box::new(self), Box::new(rhs), Box::new(t))
+    pub fn mix(self, rhs: impl IntoExpr, t: impl IntoExpr) -> Expr {
+        Expr::Mix(self.box_expr(), rhs.box_expr(), t.box_expr())
     }
 
-    pub fn clamp(self, min: Expr, max: Expr) -> Expr {
-        Expr::Clamp(Box::new(self), Box::new(min), Box::new(max))
-    }
-}
-
-impl Add for Expr {
-    type Output = Expr;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Expr::Add(Box::new(self), Box::new(rhs))
+    pub fn clamp(self, min: impl IntoExpr, max: impl IntoExpr) -> Expr {
+        Expr::Clamp(self.box_expr(), min.box_expr(), max.box_expr())
     }
 }
 
-impl Sub for Expr {
+impl<T> Add<T> for Expr
+where
+    T: IntoExpr,
+{
     type Output = Expr;
 
-    fn sub(self, rhs: Self) -> Self::Output {
-        Expr::Sub(Box::new(self), Box::new(rhs))
+    fn add(self, rhs: T) -> Self::Output {
+        Expr::Add(self.box_expr(), rhs.box_expr())
     }
 }
 
-impl Mul for Expr {
+impl<T> Sub<T> for Expr
+where
+    T: IntoExpr,
+{
     type Output = Expr;
 
-    fn mul(self, rhs: Self) -> Self::Output {
-        Expr::Mul(Box::new(self), Box::new(rhs))
+    fn sub(self, rhs: T) -> Self::Output {
+        Expr::Sub(self.box_expr(), rhs.box_expr())
     }
 }
 
-impl Div for Expr {
+impl<T> Mul<T> for Expr
+where
+    T: IntoExpr,
+{
     type Output = Expr;
 
-    fn div(self, rhs: Self) -> Self::Output {
-        Expr::Div(Box::new(self), Box::new(rhs))
+    fn mul(self, rhs: T) -> Self::Output {
+        Expr::Mul(self.box_expr(), rhs.box_expr())
+    }
+}
+
+impl<T> Div<T> for Expr
+where
+    T: IntoExpr,
+{
+    type Output = Expr;
+
+    fn div(self, rhs: T) -> Self::Output {
+        Expr::Div(self.box_expr(), rhs.box_expr())
     }
 }
 
@@ -166,7 +178,7 @@ impl Neg for Expr {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        Expr::Neg(Box::new(self))
+        Expr::Neg(self.box_expr())
     }
 }
 
@@ -193,5 +205,31 @@ where
 {
     fn literal(self) -> Expr {
         Expr::Literal(self.into())
+    }
+}
+
+pub trait IntoExpr {
+    fn expr(self) -> Expr;
+
+    fn box_expr(self) -> BoxExpr
+    where
+        Self: Sized,
+    {
+        Box::new(self.expr())
+    }
+}
+
+impl IntoExpr for Expr {
+    fn expr(self) -> Expr {
+        self
+    }
+}
+
+impl<T> IntoExpr for T
+where
+    T: IntoLiteral,
+{
+    fn expr(self) -> Expr {
+        self.literal()
     }
 }

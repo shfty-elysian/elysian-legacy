@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::modify::Modify,
+    ast::modify::{IntoModify, Modify},
     ir::{
         ast::{GRADIENT_2D, GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z},
         module::{
@@ -31,8 +31,8 @@ impl Domains for GradientNormals {
 }
 
 impl AsIR for GradientNormals {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        GRADIENT_NORMALS.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        GRADIENT_NORMALS
     }
 
     fn functions(
@@ -79,13 +79,9 @@ pub trait IntoGradientNormals {
 
 impl<T> IntoGradientNormals for T
 where
-    T: 'static + AsIR,
+    T: 'static + IntoModify,
 {
     fn gradient_normals(self) -> Modify {
-        Modify {
-            pre_modifiers: Default::default(),
-            field: Box::new(self),
-            post_modifiers: vec![Box::new(GradientNormals)],
-        }
+        self.modify().push_post(GradientNormals)
     }
 }

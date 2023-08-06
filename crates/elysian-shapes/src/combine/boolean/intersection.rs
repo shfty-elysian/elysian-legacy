@@ -16,8 +16,8 @@ pub struct Intersection;
 impl Domains for Intersection {}
 
 impl AsIR for Intersection {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        INTERSECTION.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        INTERSECTION
     }
 
     fn functions(

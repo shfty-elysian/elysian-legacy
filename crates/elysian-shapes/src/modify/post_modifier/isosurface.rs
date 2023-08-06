@@ -1,7 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::modify::{IntoModify, Modify},
+    ast::{
+        expr::IntoExpr,
+        modify::{IntoModify, Modify},
+    },
     ir::{
         ast::{Block, Expr, Identifier, DISTANCE, POSITION_2D, POSITION_3D, UV, X},
         module::{
@@ -23,7 +26,13 @@ property!(DIST, DIST_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
 pub struct Isosurface {
-    pub dist: AstExpr,
+    dist: AstExpr,
+}
+
+impl Isosurface {
+    pub fn new(dist: impl IntoExpr) -> Self {
+        Isosurface { dist: dist.expr() }
+    }
 }
 
 impl Hash for Isosurface {
@@ -45,8 +54,8 @@ impl Domains for Isosurface {
 }
 
 impl AsIR for Isosurface {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        ISOSURFACE.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        ISOSURFACE
     }
 
     fn arguments(&self, input: Expr) -> Vec<Expr> {
@@ -96,16 +105,14 @@ impl AsIR for Isosurface {
 }
 
 pub trait IntoIsosurface {
-    fn isosurface(self, dist: elysian_core::ast::expr::Expr) -> Modify;
+    fn isosurface(self, dist: impl IntoExpr) -> Modify;
 }
 
 impl<T> IntoIsosurface for T
 where
     T: IntoModify,
 {
-    fn isosurface(self, dist: elysian_core::ast::expr::Expr) -> Modify {
-        let mut m = self.modify();
-        m.post_modifiers.push(Box::new(Isosurface { dist }));
-        m
+    fn isosurface(self, dist: impl IntoExpr) -> Modify {
+        self.modify().push_post(Isosurface::new(dist))
     }
 }

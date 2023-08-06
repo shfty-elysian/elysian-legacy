@@ -1,7 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::modify::{IntoModify, Modify},
+    ast::{
+        expr::IntoExpr,
+        modify::{IntoModify, Modify},
+    },
     ir::{
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
@@ -66,13 +69,12 @@ impl Domains for Repeat {
 }
 
 impl AsIR for Repeat {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+    fn entry_point(&self) -> FunctionIdentifier {
         FunctionIdentifier(if self.range.is_none() {
             REPEAT_INFINITE
         } else {
             REPEAT
         })
-        .specialize(spec)
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -117,10 +119,13 @@ impl AsIR for Repeat {
 }
 
 pub trait IntoRepeat {
-    fn repeat(
+    fn repeat_infinite(self, period: impl IntoExpr) -> Modify;
+
+    fn repeat_clamped(
         self,
-        delta: elysian_core::ast::expr::Expr,
-        range: Option<(elysian_core::ast::expr::Expr, elysian_core::ast::expr::Expr)>,
+        period: impl IntoExpr,
+        min: impl IntoExpr,
+        max: impl IntoExpr,
     ) -> Modify;
 }
 
@@ -128,13 +133,22 @@ impl<T> IntoRepeat for T
 where
     T: IntoModify,
 {
-    fn repeat(
+    fn repeat_infinite(self, period: impl IntoExpr) -> Modify {
+        self.modify().push_pre(Repeat {
+            period: period.expr(),
+            range: None,
+        })
+    }
+
+    fn repeat_clamped(
         self,
-        period: elysian_core::ast::expr::Expr,
-        range: Option<(elysian_core::ast::expr::Expr, elysian_core::ast::expr::Expr)>,
+        period: impl IntoExpr,
+        min: impl IntoExpr,
+        max: impl IntoExpr,
     ) -> Modify {
-        let mut m = self.modify();
-        m.pre_modifiers.push(Box::new(Repeat { period, range }));
-        m
+        self.modify().push_pre(Repeat {
+            period: period.expr(),
+            range: Some((min.expr(), max.expr())),
+        })
     }
 }

@@ -10,8 +10,8 @@ use crate::ir::{
     },
     module::{
         AsIR, DomainsDyn, DynAsIR, FieldDefinition, FunctionDefinition, FunctionIdentifier,
-        InputDefinition, IntoRead, PropertyIdentifier, SpecializationData, StructDefinition,
-        CONTEXT,
+        InputDefinition, IntoAsIR, IntoRead, PropertyIdentifier, SpecializationData,
+        StructDefinition, CONTEXT,
     },
 };
 
@@ -79,9 +79,29 @@ pub const CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
 ];
 
 pub struct Modify {
-    pub pre_modifiers: Vec<DynAsIR>,
-    pub field: DynAsIR,
-    pub post_modifiers: Vec<DynAsIR>,
+    pre_modifiers: Vec<DynAsIR>,
+    field: DynAsIR,
+    post_modifiers: Vec<DynAsIR>,
+}
+
+impl Modify {
+    pub fn new(field: impl IntoAsIR) -> Self {
+        Modify {
+            pre_modifiers: Default::default(),
+            field: field.as_ir(),
+            post_modifiers: Default::default(),
+        }
+    }
+
+    pub fn push_pre(mut self, pre_modifier: impl IntoAsIR) -> Self {
+        self.pre_modifiers.push(pre_modifier.as_ir());
+        self
+    }
+
+    pub fn push_post(mut self, post_modifier: impl IntoAsIR) -> Self {
+        self.post_modifiers.push(post_modifier.as_ir());
+        self
+    }
 }
 
 impl Debug for Modify {
@@ -118,8 +138,8 @@ impl DomainsDyn for Modify {
 }
 
 impl AsIR for Modify {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("modify".into()).specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("modify".into())
     }
 
     fn functions(
@@ -127,27 +147,42 @@ impl AsIR for Modify {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let pre_entry_points: Vec<_> = self
+        let pre_modifiers: Vec<_> = self
             .pre_modifiers
             .iter()
-            .map(|t| (t, t.entry_point(spec)))
-            .collect();
-        let field_entry_point = self.field.entry_point(spec);
-        let post_entry_points: Vec<_> = self
-            .post_modifiers
-            .iter()
-            .map(|t| (t, t.entry_point(spec)))
+            .map(|t| {
+                let (_, b, c) = t.prepare(spec);
+                (t, b, c)
+            })
             .collect();
 
-        pre_entry_points
+        let (_, field_entry_point, field_functions) = self.field.prepare(spec);
+
+        let post_modifiers: Vec<_> = self
+            .post_modifiers
             .iter()
-            .flat_map(|(t, entry)| AsIR::functions(*t, spec, entry))
-            .chain(self.field.functions(spec, &field_entry_point))
-            .chain(
-                post_entry_points
-                    .iter()
-                    .flat_map(|(t, entry)| AsIR::functions(*t, spec, entry)),
-            )
+            .map(|t| {
+                let (_, b, c) = t.prepare(spec);
+                (t, b, c)
+            })
+            .collect();
+
+        let pre_functions: Vec<_> = pre_modifiers
+            .iter()
+            .flat_map(|(_, _, c)| c)
+            .cloned()
+            .collect();
+
+        let post_functions: Vec<_> = post_modifiers
+            .iter()
+            .flat_map(|(_, _, c)| c)
+            .cloned()
+            .collect();
+
+        pre_functions
+            .into_iter()
+            .chain(field_functions)
+            .chain(post_functions)
             .chain(FunctionDefinition {
                 id: entry_point.clone(),
                 public: true,
@@ -156,19 +191,18 @@ impl AsIR for Modify {
                     mutable: false,
                 }],
                 output: PropertyIdentifier(CONTEXT),
-                block: post_entry_points
+                block: post_modifiers
                     .iter()
                     .fold(
                         field_entry_point.call(
                             self.field.arguments(
-                                pre_entry_points
-                                    .iter()
-                                    .fold(PropertyIdentifier(CONTEXT).read(), |acc, (t, entry)| {
-                                        entry.call(t.arguments(acc))
-                                    }),
+                                pre_modifiers.iter().fold(
+                                    PropertyIdentifier(CONTEXT).read(),
+                                    |acc, (t, entry, _)| entry.call(t.arguments(acc)),
+                                ),
                             ),
                         ),
-                        |acc, (t, entry)| entry.call(t.arguments(acc)),
+                        |acc, (t, entry, _)| entry.call(t.arguments(acc)),
                     )
                     .output()
                     .block(),

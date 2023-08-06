@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::expr::Expr,
+    ast::expr::{Expr, IntoExpr},
     ir::{
         ast::Identifier,
         module::{
@@ -12,6 +12,7 @@ use elysian_core::{
     property,
 };
 use elysian_decl_macros::elysian_function;
+use elysian_proc_macros::elysian_stmt;
 
 use crate::modify::{Isosurface, Manifold};
 
@@ -24,8 +25,17 @@ property!(WIDTH, WIDTH_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
 pub struct Ring {
-    pub radius: Expr,
-    pub width: Expr,
+    radius: Expr,
+    width: Expr,
+}
+
+impl Ring {
+    pub fn new(radius: impl IntoExpr, width: impl IntoExpr) -> Self {
+        Ring {
+            radius: radius.expr(),
+            width: width.expr(),
+        }
+    }
 }
 
 impl Hash for Ring {
@@ -47,8 +57,8 @@ impl Domains for Ring {
 }
 
 impl AsIR for Ring {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        RING.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        RING
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -60,18 +70,13 @@ impl AsIR for Ring {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let isosurface = Isosurface {
-            dist: self.width.clone(),
-        };
-        let (_, isosurface_entry, isosurface_functions) = isosurface.prepare(spec);
+        let (_, circle_call, circle_functions) =
+            Circle::new(self.radius.clone()).call(spec, elysian_stmt! { CONTEXT });
 
-        let manifold = Manifold;
-        let (_, manifold_entry, manifold_functions) = manifold.prepare(spec);
+        let (_, manifold_call, manifold_functions) = Manifold.call(spec, circle_call);
 
-        let circle = Circle {
-            radius: self.radius.clone(),
-        };
-        let (_, circle_entry, circle_functions) = circle.prepare(spec);
+        let (_, isosurface_call, isosurface_functions) =
+            Isosurface::new(self.width.clone()).call(spec, manifold_call);
 
         circle_functions
             .into_iter()
@@ -79,7 +84,7 @@ impl AsIR for Ring {
             .chain(isosurface_functions)
             .chain(elysian_function! {
                 fn entry_point(RADIUS, WIDTH, CONTEXT) -> CONTEXT {
-                    return isosurface_entry(WIDTH, manifold_entry(circle_entry(RADIUS, CONTEXT)));
+                    return #isosurface_call;
                 }
             })
             .collect()

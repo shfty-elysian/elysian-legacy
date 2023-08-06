@@ -4,7 +4,7 @@ use std::{
 };
 
 use elysian_core::{
-    ast::expr::Expr,
+    ast::expr::{Expr, IntoExpr},
     ir::{
         ast::{DISTANCE, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
         module::{
@@ -13,7 +13,7 @@ use elysian_core::{
     },
 };
 use elysian_decl_macros::elysian_function;
-use elysian_proc_macros::elysian_expr;
+use elysian_proc_macros::{elysian_expr, elysian_stmt};
 
 pub struct Scale {
     pub field: Box<dyn AsIR>,
@@ -46,8 +46,8 @@ impl DomainsDyn for Scale {
 }
 
 impl AsIR for Scale {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("scale".into()).specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("scale".into())
     }
 
     fn functions(
@@ -57,28 +57,29 @@ impl AsIR for Scale {
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let factor = elysian_core::ir::ast::Expr::from(self.factor.clone());
 
-        let (position, factor_vec) = if spec.contains(&POSITION_2D.into()) {
-            (
+        let (position, factor_vec) = match (
+            spec.contains(&POSITION_2D.into()),
+            spec.contains(&POSITION_3D.into()),
+        ) {
+            (true, false) => (
                 POSITION_2D,
                 elysian_expr! { VECTOR2 { X: #factor, Y: #factor }},
-            )
-        } else if spec.contains(&POSITION_3D.into()) {
-            (
+            ),
+            (false, true) => (
                 POSITION_3D,
                 elysian_expr! { VECTOR3 { X: #factor, Y: #factor, Z: #factor }},
-            )
-        } else {
-            panic!("No position domain")
+            ),
+            _ => panic!("Invalid position domain"),
         };
 
-        let (_, field_entry, field_functions) = self.field.prepare(spec);
+        let (_, field_call, field_functions) = self.field.call(spec, elysian_stmt! { CONTEXT });
 
         field_functions
             .into_iter()
             .chain([elysian_function! {
                 pub fn entry_point(mut CONTEXT) -> CONTEXT {
                     CONTEXT.position = CONTEXT.position / #factor_vec;
-                    CONTEXT = #field_entry(CONTEXT);
+                    CONTEXT = #field_call;
                     CONTEXT.DISTANCE = CONTEXT.DISTANCE * #factor;
                     return CONTEXT;
                 }
@@ -92,17 +93,17 @@ impl AsIR for Scale {
 }
 
 pub trait IntoScale {
-    fn scale(self, factor: Expr) -> Scale;
+    fn scale(self, factor: impl IntoExpr) -> Scale;
 }
 
 impl<T> IntoScale for T
 where
     T: 'static + AsIR,
 {
-    fn scale(self, factor: Expr) -> Scale {
+    fn scale(self, factor: impl IntoExpr) -> Scale {
         Scale {
             field: Box::new(self),
-            factor,
+            factor: factor.expr(),
         }
     }
 }

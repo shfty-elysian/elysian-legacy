@@ -110,8 +110,12 @@ impl Stmt {
     pub fn if_else(self, cond: Expr, otherwise: Option<Stmt>) -> Self {
         Stmt::If {
             cond,
-            then: Box::new(self),
-            otherwise: otherwise.map(Box::new),
+            then: self.box_stmt(),
+            otherwise: otherwise.map(Stmt::box_stmt),
         }
+    }
+
+    pub fn box_stmt(self) -> Box<Stmt> {
+        Box::new(self)
     }
 }

@@ -16,14 +16,20 @@ pub const DISPLACE: FunctionIdentifier = FunctionIdentifier::new("displace", 133
 
 #[derive(Debug, Clone, Hash)]
 pub struct Displace {
-    pub prop: PropertyIdentifier,
+    prop: PropertyIdentifier,
+}
+
+impl Displace {
+    pub fn new(prop: impl Into<PropertyIdentifier>) -> Self {
+        Displace { prop: prop.into() }
+    }
 }
 
 impl Domains for Displace {}
 
 impl AsIR for Displace {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier(DISPLACE.0.concat(&self.prop)).specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier(DISPLACE.0.concat(&self.prop))
     }
 
     fn functions(

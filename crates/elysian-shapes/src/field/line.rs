@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::expr::Expr,
+    ast::expr::{Expr, IntoExpr},
     ir::{
         ast::{POSITION_2D, POSITION_3D},
         module::{
@@ -11,6 +11,7 @@ use elysian_core::{
     },
 };
 use elysian_decl_macros::elysian_function;
+use elysian_proc_macros::elysian_stmt;
 
 use crate::modify::{ClampMode, Elongate, DIR_2D, DIR_3D};
 
@@ -36,8 +37,8 @@ impl ToString for LineMode {
 
 #[derive(Debug, Clone)]
 pub struct Line {
-    pub dir: Expr,
-    pub mode: LineMode,
+    dir: Expr,
+    mode: LineMode,
 }
 
 impl Hash for Line {
@@ -45,6 +46,22 @@ impl Hash for Line {
         LINE.uuid().hash(state);
         self.mode.hash(state);
         self.dir.hash(state);
+    }
+}
+
+impl Line {
+    pub fn segment(dir: impl IntoExpr) -> Self {
+        Line {
+            dir: dir.expr(),
+            mode: LineMode::Segment,
+        }
+    }
+
+    pub fn centered(dir: impl IntoExpr) -> Self {
+        Line {
+            dir: dir.expr(),
+            mode: LineMode::Centered,
+        }
     }
 }
 
@@ -58,11 +75,10 @@ impl Domains for Line {
 }
 
 impl AsIR for Line {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+    fn entry_point(&self) -> FunctionIdentifier {
         LINE.concat(&FunctionIdentifier::new_dynamic(
             self.mode.to_string().into(),
         ))
-        .specialize(spec)
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -82,27 +98,24 @@ impl AsIR for Line {
             panic!("No position domain set")
         };
 
-        let point = Point;
-        let (_, point_entry, point_functions) = point.prepare(spec);
-
-        let clamp_neg = match self.mode {
-            LineMode::Centered => ClampMode::Dir,
-            LineMode::Segment => ClampMode::Zero,
-        };
-
-        let elongate = Elongate {
+        let (_, elongate_call, elongate_functions) = (Elongate {
             dir: self.dir.clone(),
-            clamp_neg,
+            clamp_neg: match self.mode {
+                LineMode::Centered => ClampMode::Dir,
+                LineMode::Segment => ClampMode::Zero,
+            },
             clamp_pos: ClampMode::Dir,
-        };
-        let (_, elongate_entry, elongate_functions) = elongate.prepare(spec);
+        })
+        .call(spec, elysian_stmt! { CONTEXT });
+
+        let (_, point_call, point_functions) = Point.call(spec, elongate_call);
 
         point_functions
             .into_iter()
             .chain(elongate_functions)
             .chain(elysian_function! {
                 fn entry_point(dir, CONTEXT) -> CONTEXT {
-                    return point_entry(elongate_entry(dir, CONTEXT));
+                    return #point_call;
                 }
             })
             .collect()

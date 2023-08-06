@@ -175,8 +175,7 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
     fn module(&self, spec: &SpecializationData) -> Module {
         let types: IndexMap<_, _> = properties().clone();
 
-        let entry_point = self.entry_point(spec);
-        let mut functions = self.functions(spec, &entry_point);
+        let (_, entry_point, mut functions) = self.prepare(spec);
 
         let mut set = HashSet::new();
         functions.retain(|x| set.insert(x.id.clone()));
@@ -222,7 +221,7 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
     }
 
     /// Generate the function identifier used to reference this implementor
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier;
+    fn entry_point(&self) -> FunctionIdentifier;
 
     /// Given a SpecializationData, filter it by this implementor's domain list
     fn filter_spec(&self, spec: &SpecializationData) -> SpecializationData {
@@ -248,6 +247,7 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
 
     /// Utility for preparing a filtered SpecializationData,
     /// and using it to produce an entry point and list of functions
+    /// Useful when a function is called multiple times with different arguments.
     fn prepare(
         &self,
         spec: &SpecializationData,
@@ -257,9 +257,21 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
         Vec<FunctionDefinition>,
     ) {
         let spec = self.filter_spec(spec);
-        let entry_point = self.entry_point(&spec);
+        let entry_point = self.entry_point().specialize(&spec);
         let functions = self.functions(&spec, &entry_point);
         (spec, entry_point, functions)
+    }
+
+    /// Utility for prepareing a filtered Specialization data,
+    /// and using it to produce a call statement and list of functions.
+    /// Useful when a function is called with a singular set of arguments.
+    fn call(
+        &self,
+        spec: &SpecializationData,
+        input: Expr,
+    ) -> (SpecializationData, Expr, Vec<FunctionDefinition>) {
+        let (spec, entry, functions) = self.prepare(spec);
+        (spec, entry.call(self.arguments(input)), functions)
     }
 }
 
@@ -276,8 +288,8 @@ impl AsIR for DynAsIR {
         (**self).module(spec)
     }
 
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        (**self).entry_point(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        (**self).entry_point()
     }
 
     fn functions(
@@ -302,3 +314,10 @@ impl HashIR for DynAsIR {
         (**self).hash_ir()
     }
 }
+
+pub trait IntoAsIR: 'static + Sized + AsIR {
+    fn as_ir(self) -> DynAsIR {
+        Box::new(self)
+    }
+}
+impl<T> IntoAsIR for T where T: 'static + Sized + AsIR {}

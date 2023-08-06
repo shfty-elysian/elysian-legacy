@@ -2,7 +2,10 @@ use elysian_core::{
     ast::combine::{LEFT, OUT, RIGHT},
     ir::{
         ast::{COMBINE_CONTEXT, DISTANCE},
-        module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData},
+        module::{
+            AsIR, Domains, DynAsIR, FunctionDefinition, FunctionIdentifier, IntoAsIR,
+            SpecializationData,
+        },
     },
 };
 use elysian_decl_macros::elysian_function;
@@ -12,11 +15,21 @@ pub const UNION: FunctionIdentifier = FunctionIdentifier::new("union", 189436340
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Union;
 
+impl IntoIterator for Union {
+    type Item = DynAsIR;
+
+    type IntoIter = std::iter::Once<DynAsIR>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        std::iter::once(self.as_ir())
+    }
+}
+
 impl Domains for Union {}
 
 impl AsIR for Union {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        UNION.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        UNION
     }
 
     fn functions(

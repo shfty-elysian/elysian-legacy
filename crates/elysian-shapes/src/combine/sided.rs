@@ -15,14 +15,24 @@ pub const SIDED: FunctionIdentifier = FunctionIdentifier::new("sided", 197569034
 // Pick a base context from either the left or right side
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Sided {
-    pub flip: bool,
+    flip: bool,
+}
+
+impl Sided {
+    pub fn left() -> Self {
+        Sided { flip: false }
+    }
+
+    pub fn right() -> Self {
+        Sided { flip: true }
+    }
 }
 
 impl Domains for Sided {}
 
 impl AsIR for Sided {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        SIDED.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        SIDED
     }
 
     fn functions(
@@ -44,14 +54,23 @@ impl AsIR for Sided {
 // Pick the given property from the left if inside, or right if outside
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SidedProp {
-    pub prop: PropertyIdentifier,
-    pub flip: bool,
+    prop: PropertyIdentifier,
+    flip: bool,
+}
+
+impl SidedProp {
+    pub fn new(prop: impl Into<PropertyIdentifier>, flip: bool) -> Self {
+        SidedProp {
+            prop: prop.into(),
+            flip,
+        }
+    }
 }
 
 impl Domains for SidedProp {}
 
 impl AsIR for SidedProp {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
+    fn entry_point(&self) -> FunctionIdentifier {
         (*SIDED).concat(&self.prop).into()
     }
 

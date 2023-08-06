@@ -173,7 +173,7 @@ impl From<ElysianExpr> for Expr {
 
 impl From<Box<ElysianExpr>> for Box<Expr> {
     fn from(value: Box<ElysianExpr>) -> Self {
-        Box::new(Expr::from(*value))
+        Expr::from(*value).box_expr()
     }
 }
 
@@ -183,7 +183,7 @@ impl core::ops::Add for Expr {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Add(Box::new(self), Box::new(rhs))
+        Add(self.box_expr(), rhs.box_expr())
     }
 }
 
@@ -191,7 +191,7 @@ impl core::ops::Sub for Expr {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Sub(Box::new(self), Box::new(rhs))
+        Sub(self.box_expr(), rhs.box_expr())
     }
 }
 
@@ -199,7 +199,7 @@ impl core::ops::Mul for Expr {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Mul(Box::new(self), Box::new(rhs))
+        Mul(self.box_expr(), rhs.box_expr())
     }
 }
 
@@ -207,7 +207,7 @@ impl core::ops::Div for Expr {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        Div(Box::new(self), Box::new(rhs))
+        Div(self.box_expr(), rhs.box_expr())
     }
 }
 
@@ -215,7 +215,7 @@ impl core::ops::Rem for Expr {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {
-        Mod(Box::new(self), Box::new(rhs))
+        Mod(self.box_expr(), rhs.box_expr())
     }
 }
 
@@ -223,7 +223,7 @@ impl core::ops::BitAnd for Expr {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-        And(Box::new(self), Box::new(rhs))
+        And(self.box_expr(), rhs.box_expr())
     }
 }
 
@@ -231,7 +231,7 @@ impl core::ops::BitOr for Expr {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        Or(Box::new(self), Box::new(rhs))
+        Or(self.box_expr(), rhs.box_expr())
     }
 }
 
@@ -239,7 +239,7 @@ impl core::ops::Neg for Expr {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        Neg(Box::new(self))
+        Neg(self.box_expr())
     }
 }
 
@@ -391,83 +391,87 @@ impl Expr {
     }
 
     pub fn eq(self, rhs: Expr) -> Expr {
-        Eq(Box::new(self), Box::new(rhs))
+        Eq(self.box_expr(), rhs.box_expr())
     }
 
     pub fn ne(self, rhs: Expr) -> Expr {
-        Ne(Box::new(self), Box::new(rhs))
+        Ne(self.box_expr(), rhs.box_expr())
     }
 
     pub fn lt(self, rhs: Expr) -> Expr {
-        Lt(Box::new(self), Box::new(rhs))
+        Lt(self.box_expr(), rhs.box_expr())
     }
 
     pub fn gt(self, rhs: Expr) -> Expr {
-        Gt(Box::new(self), Box::new(rhs))
+        Gt(self.box_expr(), rhs.box_expr())
     }
 
     pub fn and(self, rhs: Expr) -> Expr {
-        And(Box::new(self), Box::new(rhs))
+        And(self.box_expr(), rhs.box_expr())
     }
 
     pub fn or(self, rhs: Expr) -> Expr {
-        Or(Box::new(self), Box::new(rhs))
+        Or(self.box_expr(), rhs.box_expr())
     }
 
     pub fn min(self, rhs: Expr) -> Expr {
-        Min(Box::new(self), Box::new(rhs))
+        Min(self.box_expr(), rhs.box_expr())
     }
 
     pub fn max(self, rhs: Expr) -> Expr {
-        Max(Box::new(self), Box::new(rhs))
+        Max(self.box_expr(), rhs.box_expr())
     }
 
     pub fn mix(self, rhs: Expr, t: Expr) -> Expr {
-        Mix(Box::new(self), Box::new(rhs), Box::new(t))
+        Mix(self.box_expr(), rhs.box_expr(), t.box_expr())
     }
 
     pub fn clamp(self, min: Expr, max: Expr) -> Expr {
-        Clamp(Box::new(self), Box::new(min), Box::new(max))
+        Clamp(self.box_expr(), min.box_expr(), max.box_expr())
     }
 
     pub fn dot(self, rhs: Expr) -> Expr {
-        Dot(Box::new(self), Box::new(rhs))
+        Dot(self.box_expr(), rhs.box_expr())
     }
 
     pub fn atan2(self, rhs: Expr) -> Expr {
-        Atan2(Box::new(self), Box::new(rhs))
+        Atan2(self.box_expr(), rhs.box_expr())
     }
 
     pub fn abs(self) -> Expr {
-        Abs(Box::new(self))
+        Abs(self.box_expr())
     }
 
     pub fn sign(self) -> Expr {
-        Sign(Box::new(self))
+        Sign(self.box_expr())
     }
 
     pub fn round(self) -> Expr {
-        Round(Box::new(self))
+        Round(self.box_expr())
     }
 
     pub fn length(self) -> Expr {
-        Length(Box::new(self))
+        Length(self.box_expr())
     }
 
     pub fn normalize(self) -> Expr {
-        Normalize(Box::new(self))
+        Normalize(self.box_expr())
     }
 
     pub fn acos(self) -> Expr {
-        Expr::Acos(Box::new(self))
+        Expr::Acos(self.box_expr())
     }
 
     pub fn atan(self) -> Expr {
-        Expr::Atan(Box::new(self))
+        Expr::Atan(self.box_expr())
     }
 
     pub fn output(self) -> Stmt {
         Stmt::Output(self)
+    }
+
+    pub fn box_expr(self) -> Box<Expr> {
+        Box::new(self)
     }
 }
 

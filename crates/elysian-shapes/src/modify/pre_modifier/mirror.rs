@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::expr::Expr,
+    ast::expr::{Expr, IntoExpr},
     ir::{
         ast::{Block, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D},
         module::{
@@ -60,8 +60,8 @@ impl DomainsDyn for Mirror {
 }
 
 impl AsIR for Mirror {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("basis_mirror".into()).specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("basis_mirror".into())
     }
 
     fn functions(
@@ -69,27 +69,26 @@ impl AsIR for Mirror {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let field_entry_point = self.field.entry_point(spec);
-
-        let position = if spec.contains(&POSITION_2D.into()) {
-            POSITION_2D
-        } else if spec.contains(&POSITION_3D.into()) {
-            POSITION_3D
-        } else {
-            panic!("No position domain")
+        let position = match (
+            spec.contains(&POSITION_2D.into()),
+            spec.contains(&POSITION_3D.into()),
+        ) {
+            (true, false) => POSITION_2D,
+            (false, true) => POSITION_3D,
+            _ => panic!("Invalid position domain"),
         };
 
-        let gradient = if spec.contains(&GRADIENT_2D.into()) {
-            Some(GRADIENT_2D)
-        } else if spec.contains(&GRADIENT_3D.into()) {
-            Some(GRADIENT_3D)
-        } else {
-            None
+        let gradient = match (
+            spec.contains(&GRADIENT_2D.into()),
+            spec.contains(&GRADIENT_3D.into()),
+        ) {
+            (true, false) => Some(GRADIENT_2D),
+            (false, true) => Some(GRADIENT_3D),
+            (true, true) => panic!("Invalid gradient domain"),
+            (false, false) => None,
         };
 
         let mut block = Block::default();
-
-        let field_call = field_entry_point.call(self.field.arguments(elysian_stmt! { CONTEXT }));
 
         block.push(elysian_stmt! {
             let position = CONTEXT.position
@@ -109,6 +108,8 @@ impl AsIR for Mirror {
                 });
             }
         }
+
+        let (_, field_call, field_functions) = self.field.call(spec, elysian_stmt! { CONTEXT });
 
         block.push(elysian_stmt! {
             let CONTEXT = #field_call
@@ -135,8 +136,7 @@ impl AsIR for Mirror {
             return CONTEXT
         });
 
-        self.field
-            .functions(spec, &field_entry_point)
+        field_functions
             .into_iter()
             .chain(FunctionDefinition {
                 id: entry_point.clone(),
@@ -157,17 +157,25 @@ impl AsIR for Mirror {
 }
 
 pub trait IntoMirror {
-    fn mirror(self, mode: MirrorMode) -> Mirror;
+    fn mirror_basis(self, basis: impl IntoExpr) -> Mirror;
+    fn mirror_axis(self, axis: impl IntoExpr) -> Mirror;
 }
 
 impl<T> IntoMirror for T
 where
     T: 'static + AsIR,
 {
-    fn mirror(self, mode: MirrorMode) -> Mirror {
+    fn mirror_basis(self, basis: impl IntoExpr) -> Mirror {
         Mirror {
             field: Box::new(self),
-            mode,
+            mode: MirrorMode::Basis(basis.expr()),
+        }
+    }
+
+    fn mirror_axis(self, axis: impl IntoExpr) -> Mirror {
+        Mirror {
+            field: Box::new(self),
+            mode: MirrorMode::Axis(axis.expr()),
         }
     }
 }

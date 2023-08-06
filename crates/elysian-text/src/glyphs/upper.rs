@@ -1,343 +1,168 @@
-use elysian_core::{
-    ast::{combine::IntoCombine, expr::IntoLiteral},
-    ir::{
-        ast::{DISTANCE, GRADIENT_2D, UV},
-        module::DynAsIR,
-    },
-};
+use elysian_core::ir::module::IntoAsIR;
 use elysian_shapes::{
-    combine::{SmoothUnion, Union},
-    field::{Line, LineMode},
-    modify::{IntoMirror, IntoTranslate, MirrorMode},
+    field::Line,
+    modify::{IntoMirror, IntoTranslate},
 };
 
-pub fn combinator() -> impl IntoIterator<Item = DynAsIR> {
-    [
-        Box::new(Union::default()) as DynAsIR,
-        Box::new(SmoothUnion {
-            prop: DISTANCE.into(),
-            k: 0.4.literal(),
-        }),
-        Box::new(SmoothUnion {
-            prop: GRADIENT_2D.into(),
-            k: 0.4.literal(),
-        }),
-        Box::new(SmoothUnion {
-            prop: UV.into(),
-            k: 0.4.literal(),
-        }),
-    ]
+use super::combinator;
+
+pub fn a() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::segment([0.5, 0.0]).translate([0.0, -0.5]))
+        .push(Line::segment([1.0, -2.25]).translate([0.0, 1.0]))
+        .mirror_basis([1.0, 0.0])
+        .as_ir()
 }
 
-pub fn a() -> DynAsIR {
-    let shape_a = Line {
-        dir: [0.5, 0.0].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([0.0, -0.5].literal());
-
-    let shape_b = Line {
-        dir: [1.0, -2.25].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([0.0, 1.0].literal());
-
-    Box::new(
-        [Box::new(shape_a) as DynAsIR, Box::new(shape_b)]
-            .combine(combinator())
-            .mirror(MirrorMode::Basis([1.0, 0.0].literal())),
-    )
-}
-
-pub fn b() -> DynAsIR {
+pub fn b() -> () {
     todo!()
 }
 
-pub fn c() -> DynAsIR {
+pub fn c() -> () {
     todo!()
 }
 
-pub fn d() -> DynAsIR {
+pub fn d() -> () {
     todo!()
 }
 
-pub fn e() -> DynAsIR {
-    let shape_a = Line {
-        dir: [0.0, 0.8].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([-1.0, 0.0].literal());
-
-    let shape_b = Line {
-        dir: [0.8, 0.0].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([-0.8, 0.0].literal());
-
-    let shape_c = Line {
-        dir: [0.8, 0.0].literal(),
-        mode: LineMode::Centered,
-    }
-    .translate([0.0, 1.0].literal());
-
-    Box::new(
-        [
-            Box::new(shape_a) as DynAsIR,
-            Box::new(shape_b),
-            Box::new(shape_c),
-        ]
-        .combine(combinator())
-        .mirror(MirrorMode::Basis([0.0, 1.0].literal())),
-    )
+pub fn e() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::segment([0.0, 0.8]).translate([-1.0, 0.0]))
+        .push(Line::segment([0.8, 0.0]).translate([-0.8, 0.0]))
+        .push(Line::centered([0.8, 0.0]).translate([0.0, 1.0]))
+        .mirror_basis([0.0, 1.0])
 }
 
-pub fn f() -> DynAsIR {
-    let shape_a = Line {
-        dir: [0.0, 1.0].literal(),
-        mode: LineMode::Centered,
-    }
-    .translate([-1.0, -0.2].literal());
-
-    let shape_b = Line {
-        dir: [0.8, 0.0].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([-0.8, 0.0].literal());
-
-    let shape_c = Line {
-        dir: [0.8, 0.0].literal(),
-        mode: LineMode::Centered,
-    }
-    .translate([0.0, 1.0].literal());
-
-    Box::new(
-        [
-            Box::new(shape_a) as DynAsIR,
-            Box::new(shape_b),
-            Box::new(shape_c),
-        ]
-        .combine(combinator()),
-    )
+pub fn f() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::centered([0.0, 1.0]).translate([-1.0, -0.2]))
+        .push(Line::segment([0.8, 0.0]).translate([-0.8, 0.0]))
+        .push(Line::centered([0.8, 0.0]).translate([0.0, 1.0]))
 }
 
-pub fn g() -> DynAsIR {
+pub fn g() -> () {
     todo!()
 }
 
-pub fn h() -> DynAsIR {
-    let shape_a = Line {
-        dir: [0.0, 1.0].literal(),
-        mode: LineMode::Centered,
-    }
-    .translate([1.0, 0.0].literal());
-
-    let shape_b = Line {
-        dir: [0.8, 0.0].literal(),
-        mode: LineMode::Segment,
-    };
-
-    Box::new(
-        [Box::new(shape_a) as DynAsIR, Box::new(shape_b)]
-            .combine(combinator())
-            .mirror(MirrorMode::Basis([1.0, 0.0].literal())),
-    )
+pub fn h() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::centered([0.0, 1.0]).translate([1.0, 0.0]))
+        .push(Line::segment([0.8, 0.0]))
+        .mirror_basis([1.0, 0.0])
 }
 
-pub fn i() -> DynAsIR {
-    Box::new(Line {
-        dir: [0.0, 1.0].literal(),
-        mode: LineMode::Centered,
-    })
+pub fn i() -> impl IntoAsIR {
+    Line::centered([0.0, 1.0])
 }
 
-pub fn j() -> DynAsIR {
+pub fn j() -> () {
     todo!()
 }
 
-pub fn k() -> DynAsIR {
-    let shape_a = Line {
-        dir: [0.0, 1.0].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([-1.0, 0.0].literal());
-
-    let shape_b = Line {
-        dir: [1.6, 1.0].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([-0.8, 0.0].literal());
-
-    Box::new(
-        [Box::new(shape_a) as DynAsIR, Box::new(shape_b)]
-            .combine(combinator())
-            .mirror(MirrorMode::Basis([0.0, 1.0].literal())),
-    )
+pub fn k() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::segment([0.0, 1.0]).translate([-1.0, 0.0]))
+        .push(Line::segment([1.6, 1.0]).translate([-0.8, 0.0]))
+        .mirror_basis([0.0, 1.0])
 }
 
-pub fn l() -> DynAsIR {
-    let shape_a = Line {
-        dir: [0.0, 1.0].literal(),
-        mode: LineMode::Centered,
-    }
-    .translate([-1.0, 0.0].literal());
-
-    let shape_b = Line {
-        dir: [0.8, 0.0].literal(),
-        mode: LineMode::Centered,
-    }
-    .translate([0.0, -1.2].literal());
-
-    Box::new([Box::new(shape_a) as DynAsIR, Box::new(shape_b)].combine(combinator()))
+pub fn l() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::centered([0.0, 1.0]).translate([-1.0, 0.0]))
+        .push(Line::centered([0.8, 0.0]).translate([0.0, -1.2]))
 }
 
-pub fn m() -> DynAsIR {
-    let shape_a = Line {
-        dir: [0.0, 2.0].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([1.0, -1.0].literal());
-
-    let shape_b = Line {
-        dir: [1.0, 1.0].literal(),
-        mode: LineMode::Segment,
-    };
-
-    Box::new(
-        [Box::new(shape_a) as DynAsIR, Box::new(shape_b)]
-            .combine(combinator())
-            .mirror(MirrorMode::Basis([1.0, 0.0].literal())),
-    )
+pub fn m() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::segment([0.0, 2.0]).translate([1.0, -1.0]))
+        .push(Line::segment([1.0, 1.0]))
+        .mirror_basis([1.0, 0.0])
 }
 
-pub fn n() -> DynAsIR {
-    let shape_a = Line {
-        dir: [0.0, 1.0].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([1.0, 0.0].literal())
-    .mirror(MirrorMode::Basis([1.0, 1.0].literal()));
-
-    let shape_b = Line {
-        dir: [-0.8, 1.0].literal(),
-        mode: LineMode::Centered,
-    };
-
-    Box::new([Box::new(shape_a) as DynAsIR, Box::new(shape_b)].combine(combinator()))
+pub fn n() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(
+            Line::segment([0.0, 1.0])
+                .translate([1.0, 0.0])
+                .mirror_basis([1.0, 1.0]),
+        )
+        .push(Line::centered([-0.8, 1.0]))
 }
 
-pub fn o() -> DynAsIR {
+pub fn o() -> () {
     todo!()
 }
 
-pub fn p() -> DynAsIR {
+pub fn p() -> () {
     todo!()
 }
 
-pub fn q() -> DynAsIR {
+pub fn q() -> () {
     todo!()
 }
 
-pub fn r() -> DynAsIR {
+pub fn r() -> () {
     todo!()
 }
 
-pub fn s() -> DynAsIR {
+pub fn s() -> () {
     todo!()
 }
 
-pub fn t() -> DynAsIR {
-    let shape_a = Line {
-        dir: [1.0, 0.0].literal(),
-        mode: LineMode::Centered,
-    };
-
-    let shape_b = Line {
-        dir: [0.0, 1.0].literal(),
-        mode: LineMode::Centered,
-    }
-    .translate([0.0, -1.2].literal());
-
-    Box::new(
-        [Box::new(shape_a) as DynAsIR, Box::new(shape_b)]
-            .combine(combinator())
-            .translate([0.0, 1.0].literal()),
-    )
+pub fn t() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::centered([1.0, 0.0]))
+        .push(Line::centered([0.0, 1.0]).translate([0.0, -1.2]))
+        .translate([0.0, 1.0])
 }
 
-pub fn u() -> DynAsIR {
+pub fn u() -> () {
     todo!()
 }
 
-pub fn v() -> DynAsIR {
-    Box::new(
-        Line {
-            dir: [1.0, 2.0].literal(),
-            mode: LineMode::Segment,
-        }
-        .translate([0.0, -1.0].literal())
-        .mirror(MirrorMode::Basis([1.0, 0.0].literal())),
-    )
+pub fn v() -> impl IntoAsIR {
+    Line::segment([1.0, 2.0])
+        .translate([0.0, -1.0])
+        .mirror_basis([1.0, 0.0])
 }
 
-pub fn w() -> DynAsIR {
-    let shape_a = Line {
-        dir: [0.5, 2.0].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([0.5, -1.0].literal());
-
-    let shape_b = Line {
-        dir: [0.5, -0.5].literal(),
-        mode: LineMode::Segment,
-    };
-
-    Box::new(
-        [Box::new(shape_a) as DynAsIR, Box::new(shape_b)]
-            .combine(combinator())
-            .mirror(MirrorMode::Basis([1.0, 0.0].literal())),
-    )
+pub fn w() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::segment([0.5, 2.0]).translate([0.5, -1.0]))
+        .push(Line::segment([0.5, -0.5]))
+        .mirror_basis([1.0, 0.0])
 }
 
-pub fn x() -> DynAsIR {
-    Box::new(
-        Line {
-            dir: [0.6, 1.0].literal(),
-            mode: LineMode::Segment,
-        }
-        .mirror(MirrorMode::Basis([1.0, 1.0].literal())),
-    )
+pub fn x() -> impl IntoAsIR {
+    Line::segment([0.6, 1.0]).mirror_basis([1.0, 1.0])
 }
 
-pub fn y() -> DynAsIR {
-    let shape_a = Line {
-        dir: [1.0, 1.0].literal(),
-        mode: LineMode::Segment,
-    };
-
-    let shape_b = Line {
-        dir: [0.0, -1.2].literal(),
-        mode: LineMode::Segment,
-    };
-
-    Box::new(
-        [Box::new(shape_a) as DynAsIR, Box::new(shape_b)]
-            .combine(combinator())
-            .mirror(MirrorMode::Basis([1.0, 0.0].literal())),
-    )
+pub fn y() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::segment([1.0, 1.0]))
+        .push(Line::segment([0.0, -1.2]))
+        .mirror_basis([1.0, 0.0])
 }
 
-pub fn z() -> DynAsIR {
-    let shape_a = Line {
-        dir: [1.0, 0.0].literal(),
-        mode: LineMode::Segment,
-    }
-    .translate([0.0, 1.2].literal())
-    .mirror(MirrorMode::Basis([1.0, 1.0].literal()));
-
-    let shape_b = Line {
-        dir: [1.0, 1.0].literal(),
-        mode: LineMode::Centered,
-    };
-
-    Box::new([Box::new(shape_a) as DynAsIR, Box::new(shape_b)].combine(combinator()))
+pub fn z() -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(
+            Line::segment([1.0, 0.0])
+                .translate([0.0, 1.2])
+                .mirror_basis([1.0, 1.0]),
+        )
+        .push(Line::centered([1.0, 1.0]))
 }

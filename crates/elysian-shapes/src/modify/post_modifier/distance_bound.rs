@@ -2,7 +2,7 @@ use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
     ast::{
-        expr::Expr,
+        expr::{Expr, IntoExpr},
         modify::{IntoModify, Modify},
     },
     ir::{
@@ -53,12 +53,11 @@ impl Domains for DistanceBound {
 }
 
 impl AsIR for DistanceBound {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+    fn entry_point(&self) -> FunctionIdentifier {
         match self.ty {
             BoundType::Lower => DISTANCE_LOWER_BOUND,
             BoundType::Upper => DISTANCE_UPPER_BOUND,
         }
-        .specialize(spec)
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -105,16 +104,17 @@ impl AsIR for DistanceBound {
 }
 
 pub trait IntoDistanceBound {
-    fn distance_bound(self, ty: BoundType, bound: Expr) -> Modify;
+    fn distance_bound(self, ty: BoundType, bound: impl IntoExpr) -> Modify;
 }
 
 impl<T> IntoDistanceBound for T
 where
     T: IntoModify,
 {
-    fn distance_bound(self, ty: BoundType, bound: Expr) -> Modify {
-        let mut m = self.modify();
-        m.post_modifiers.push(Box::new(DistanceBound { ty, bound }));
-        m
+    fn distance_bound(self, ty: BoundType, bound: impl IntoExpr) -> Modify {
+        self.modify().push_post(DistanceBound {
+            ty,
+            bound: bound.expr(),
+        })
     }
 }

@@ -1,12 +1,15 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::modify::{IntoModify, Modify},
+    ast::{
+        expr::IntoExpr,
+        modify::{IntoModify, Modify},
+    },
     ir::{
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
+            SpecializationData, Type, CONTEXT,
         },
     },
     property,
@@ -20,7 +23,7 @@ property!(ASPECT, ASPECT_PROP_DEF, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
 pub struct Aspect {
-    pub aspect: Expr,
+    aspect: Expr,
 }
 
 impl Hash for Aspect {
@@ -37,8 +40,8 @@ impl Domains for Aspect {
 }
 
 impl AsIR for Aspect {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier(ASPECT).specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier(ASPECT)
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -60,16 +63,16 @@ impl AsIR for Aspect {
 }
 
 pub trait IntoAspect {
-    fn aspect(self, delta: elysian_core::ast::expr::Expr) -> Modify;
+    fn aspect(self, delta: impl IntoExpr) -> Modify;
 }
 
 impl<T> IntoAspect for T
 where
     T: IntoModify,
 {
-    fn aspect(self, aspect: elysian_core::ast::expr::Expr) -> Modify {
-        let mut m = self.modify();
-        m.pre_modifiers.push(Box::new(Aspect { aspect }));
-        m
+    fn aspect(self, aspect: impl IntoExpr) -> Modify {
+        self.modify().push_pre(Aspect {
+            aspect: aspect.expr(),
+        })
     }
 }

@@ -43,8 +43,8 @@ impl DomainsDyn for CentralDiffGradient {
 }
 
 impl AsIR for CentralDiffGradient {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("central_diff_gradient".into()).specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("central_diff_gradient".into())
     }
 
     fn functions(
@@ -93,11 +93,11 @@ impl AsIR for CentralDiffGradient {
             .chain([elysian_function! {
                 pub fn entry_point(mut CONTEXT) -> CONTEXT {
                     let CONTEXT = field_entry(CONTEXT);
-                    let LEFT = field_entry(translate(#vec_x * -#epsilon, CONTEXT));
+                    let LEFT = field_entry(#translate(#vec_x * -#epsilon, CONTEXT));
                     let RIGHT = field_entry(#translate(#vec_x * #epsilon, CONTEXT));
                     let X = LEFT.DISTANCE - RIGHT.DISTANCE;
-                    let LEFT = field_entry(translate(#vec_y * -#epsilon, CONTEXT));
-                    let RIGHT = field_entry(translate(#vec_y * #epsilon, CONTEXT));
+                    let LEFT = field_entry(#translate(#vec_y * -#epsilon, CONTEXT));
+                    let RIGHT = field_entry(#translate(#vec_y * #epsilon, CONTEXT));
                     let Y = LEFT.DISTANCE - RIGHT.DISTANCE;
                     CONTEXT.gradient = VECTOR2 {
                         X: X,

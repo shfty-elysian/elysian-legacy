@@ -10,6 +10,7 @@ use elysian_core::ir::{
     },
 };
 use elysian_decl_macros::elysian_function;
+use elysian_proc_macros::elysian_stmt;
 
 pub const CROSS_SECTION: FunctionIdentifier =
     FunctionIdentifier::new("cross_section", 11670715461129592823);
@@ -41,8 +42,8 @@ impl DomainsDyn for CrossSection {
 }
 
 impl AsIR for CrossSection {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        CROSS_SECTION.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        CROSS_SECTION
     }
 
     fn functions(
@@ -57,8 +58,9 @@ impl AsIR for CrossSection {
         let x_axis = Expr::from(self.x_axis.clone());
         let y_axis = Expr::from(self.y_axis.clone());
 
-        let (_, field_entry, field_functions) =
-            self.field.prepare(&SpecializationData::new_3d());
+        let (_, field_call, field_functions) = self
+            .field
+            .call(&SpecializationData::new_3d(), elysian_stmt! { CONTEXT });
 
         field_functions
             .into_iter()
@@ -68,7 +70,7 @@ impl AsIR for CrossSection {
                         #x_axis * CONTEXT.POSITION_2D.X
                             + #y_axis * CONTEXT.POSITION_2D.Y;
 
-                    let CONTEXT = field_entry(CONTEXT);
+                    let CONTEXT = #field_call;
                     CONTEXT.GRADIENT_2D = VECTOR2 {
                         X: CONTEXT.GRADIENT_3D.X,
                         Y: CONTEXT.GRADIENT_3D.Y,

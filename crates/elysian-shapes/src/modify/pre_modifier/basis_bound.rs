@@ -2,7 +2,7 @@ use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
     ast::{
-        expr::Expr,
+        expr::{Expr, IntoExpr},
         modify::{IntoModify, Modify},
     },
     ir::{
@@ -67,12 +67,11 @@ impl Domains for BasisBound {
 }
 
 impl AsIR for BasisBound {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+    fn entry_point(&self) -> FunctionIdentifier {
         match self.ty {
             BoundType::Lower => BASIS_LOWER_BOUND,
             BoundType::Upper => BASIS_UPPER_BOUND,
         }
-        .specialize(spec)
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -84,12 +83,13 @@ impl AsIR for BasisBound {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let (position, bound) = if spec.contains(&POSITION_2D.into()) {
-            (POSITION_2D, BOUND_2D)
-        } else if spec.contains(&POSITION_3D.into()) {
-            (POSITION_3D, BOUND_3D)
-        } else {
-            panic!("No position domain")
+        let (position, bound) = match (
+            spec.contains(&POSITION_2D.into()),
+            spec.contains(&POSITION_3D.into()),
+        ) {
+            (true, false) => (POSITION_2D, BOUND_2D),
+            (false, true) => (POSITION_3D, BOUND_3D),
+            _ => panic!("No position domain"),
         };
 
         let mut block = Block::default();
@@ -160,16 +160,17 @@ impl AsIR for BasisBound {
 }
 
 pub trait IntoBasisBound {
-    fn basis_bound(self, ty: BoundType, bound: Expr) -> Modify;
+    fn basis_bound(self, ty: BoundType, bound: impl IntoExpr) -> Modify;
 }
 
 impl<T> IntoBasisBound for T
 where
     T: IntoModify,
 {
-    fn basis_bound(self, ty: BoundType, bound: Expr) -> Modify {
-        let mut m = self.modify();
-        m.pre_modifiers.push(Box::new(BasisBound { ty, bound }));
-        m
+    fn basis_bound(self, ty: BoundType, bound: impl IntoExpr) -> Modify {
+        self.modify().push_pre(BasisBound {
+            ty,
+            bound: bound.expr(),
+        })
     }
 }

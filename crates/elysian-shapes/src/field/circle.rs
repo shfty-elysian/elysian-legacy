@@ -1,13 +1,14 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
+    ast::expr::IntoExpr,
     ir::{
         ast::Identifier,
-        module::Domains,
         module::{
             AsIR, FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
             SpecializationData, Type, CONTEXT,
         },
+        module::{Domains, IntoRead},
     },
     property,
 };
@@ -24,7 +25,15 @@ property!(RADIUS, RADIUS_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
 pub struct Circle {
-    pub radius: elysian_core::ast::expr::Expr,
+    radius: elysian_core::ast::expr::Expr,
+}
+
+impl Circle {
+    pub fn new(radius: impl IntoExpr) -> Self {
+        Circle {
+            radius: radius.expr(),
+        }
+    }
 }
 
 impl Hash for Circle {
@@ -44,8 +53,8 @@ impl Domains for Circle {
 }
 
 impl AsIR for Circle {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        CIRCLE.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        CIRCLE
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -57,20 +66,17 @@ impl AsIR for Circle {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let point = Point;
-        let (_, point_entry, point_functions) = point.prepare(spec);
+        let (_, point_call, point_functions) = Point.call(spec, PropertyIdentifier(CONTEXT).read());
 
-        let isosurface = Isosurface {
-            dist: self.radius.clone(),
-        };
-        let (_, isosurface_entry, isosurface_functions) = isosurface.prepare(spec);
+        let (_, isosurface_call, isosurface_functions) =
+            Isosurface::new(self.radius.clone()).call(spec, point_call);
 
         point_functions
             .into_iter()
             .chain(isosurface_functions)
             .chain(elysian_function! {
                 fn entry_point(RADIUS, CONTEXT) -> CONTEXT {
-                    return isosurface_entry(RADIUS, point_entry(CONTEXT));
+                    return #isosurface_call;
                 }
             })
             .collect()

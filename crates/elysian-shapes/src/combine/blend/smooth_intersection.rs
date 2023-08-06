@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use elysian_core::{
     ast::{
         combine::{LEFT, OUT, RIGHT},
-        expr::Expr,
+        expr::{Expr, IntoExpr},
     },
     ir::{
         ast::{COMBINE_CONTEXT, DISTANCE, NUM},
@@ -22,15 +22,24 @@ pub const SMOOTH_INTERSECTION: FunctionIdentifier =
 
 #[derive(Debug, Clone, Hash)]
 pub struct SmoothIntersection {
-    pub prop: PropertyIdentifier,
-    pub k: Expr,
+    prop: PropertyIdentifier,
+    k: Expr,
+}
+
+impl SmoothIntersection {
+    pub fn new(prop: impl Into<PropertyIdentifier>, k: impl IntoExpr) -> Self {
+        SmoothIntersection {
+            prop: prop.into(),
+            k: k.expr(),
+        }
+    }
 }
 
 impl Domains for SmoothIntersection {}
 
 impl AsIR for SmoothIntersection {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier(SMOOTH_INTERSECTION.0.concat(&self.prop)).specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier(SMOOTH_INTERSECTION.0.concat(&self.prop))
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {

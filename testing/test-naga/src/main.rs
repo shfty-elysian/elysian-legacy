@@ -1,6 +1,9 @@
 use std::error::Error;
 
-use elysian::{core::ir::module::SpecializationData, shadertoy::module_to_shadertoy};
+use elysian::{
+    core::ir::module::{IntoAsIR, SpecializationData},
+    shadertoy::module_to_shadertoy,
+};
 
 fn main() {
     env_logger::init();
@@ -10,7 +13,11 @@ fn main() {
 fn main_impl() -> Result<(), Box<dyn Error>> {
     println!(
         "{:}",
-        module_to_shadertoy(&test_shapes::test_shape().module(&SpecializationData::new_2d()))?
+        module_to_shadertoy(
+            &test_shapes::test_shape()
+                .as_ir()
+                .module(&SpecializationData::new_2d())
+        )?
     );
     Ok(())
 }

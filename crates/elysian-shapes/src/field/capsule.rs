@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
+use elysian_core::ast::expr::IntoExpr;
 use elysian_core::ir::module::{AsIR, FunctionIdentifier, PropertyIdentifier, CONTEXT};
 use elysian_core::{
     ast::expr::Expr as ElysianExpr,
@@ -10,17 +11,27 @@ use elysian_core::{
     },
 };
 use elysian_decl_macros::elysian_function;
+use elysian_proc_macros::elysian_stmt;
 
 use crate::modify::{Isosurface, DIR_2D, DIR_3D};
 
-use super::{Line, RADIUS, LineMode};
+use super::{Line, RADIUS};
 
 pub const CAPSULE: FunctionIdentifier = FunctionIdentifier::new("capsule", 14339483921749952476);
 
 #[derive(Debug, Clone)]
 pub struct Capsule {
-    pub dir: ElysianExpr,
-    pub radius: ElysianExpr,
+    dir: ElysianExpr,
+    radius: ElysianExpr,
+}
+
+impl Capsule {
+    pub fn new(dir: impl IntoExpr, radius: impl IntoExpr) -> Self {
+        Capsule {
+            dir: dir.expr(),
+            radius: radius.expr(),
+        }
+    }
 }
 
 impl Hash for Capsule {
@@ -41,8 +52,8 @@ impl Domains for Capsule {
 }
 
 impl AsIR for Capsule {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        CAPSULE.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        CAPSULE
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -62,23 +73,18 @@ impl AsIR for Capsule {
             panic!("No position domain");
         };
 
-        let line = Line {
-            dir: self.dir.clone(),
-            mode: LineMode::Centered,
-        };
-        let (_, line_entry, line_functions) = line.prepare(spec);
+        let (_, line_call, line_functions) =
+            Line::centered(self.dir.clone()).call(spec, elysian_stmt! { CONTEXT });
 
-        let isosurface = Isosurface {
-            dist: self.radius.clone(),
-        };
-        let (_, isosurface_entry, isosurface_functions) = isosurface.prepare(spec);
+        let (_, isosurface_call, isosurface_functions) =
+            Isosurface::new(self.radius.clone()).call(spec, line_call);
 
         line_functions
             .into_iter()
             .chain(isosurface_functions)
             .chain(elysian_function! {
                 fn entry_point(dir, RADIUS, CONTEXT) -> CONTEXT {
-                    return isosurface_entry(RADIUS, line_entry(dir, CONTEXT));
+                    return #isosurface_call;
                 }
             })
             .collect()

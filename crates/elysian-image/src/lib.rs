@@ -5,22 +5,20 @@ use tracing::instrument;
 
 use elysian_core::ir::{
     ast::{Number, Struct, Value, COLOR, POSITION_2D, VECTOR2, X, Y},
-    module::{AsIR, SpecializationData, StructIdentifier, CONTEXT},
+    module::{IntoAsIR, SpecializationData, StructIdentifier, CONTEXT},
 };
 use elysian_static::dispatch_shape;
 
 #[instrument]
-pub fn rasterize<T>(
-    shape: &T,
+pub fn rasterize(
+    shape: impl IntoAsIR,
     spec: &SpecializationData,
     width: u32,
     height: u32,
     scale: f32,
-) -> RgbImage
-where
-    T: AsIR,
-{
-    let shape = dispatch_shape(shape, spec);
+) -> RgbImage {
+    let shape = shape.as_ir();
+    let shape = dispatch_shape(&shape, spec);
 
     let indices: Vec<_> = (0..height)
         .into_iter()

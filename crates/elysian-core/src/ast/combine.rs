@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use crate::ir::module::DomainsDyn;
+use crate::ir::module::{DomainsDyn, IntoAsIR};
 use crate::ir::{
     ast::{Block, Expr, Identifier, COMBINE_CONTEXT},
     module::{
@@ -48,9 +48,66 @@ pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition 
     fields: Cow::Borrowed(COMBINE_CONTEXT_STRUCT_FIELDS),
 };
 
+#[derive(Debug)]
+pub struct Combinator(Vec<DynAsIR>);
+
+impl Combinator {
+    pub fn build() -> Self {
+        Combinator(Default::default())
+    }
+
+    pub fn push(mut self, combinator: impl IntoAsIR) -> Self {
+        self.0.push(combinator.as_ir());
+        self
+    }
+
+    pub fn combine(self) -> Combine {
+        Combine {
+            combinator: self.into_iter().collect(),
+            shapes: Default::default(),
+        }
+    }
+}
+
+impl IntoIterator for Combinator {
+    type Item = DynAsIR;
+
+    type IntoIter = std::vec::IntoIter<DynAsIR>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+#[derive(Default)]
 pub struct Combine {
     pub combinator: Vec<DynAsIR>,
     pub shapes: Vec<DynAsIR>,
+}
+
+impl<T> From<T> for Combine
+where
+    T: IntoIterator<Item = DynAsIR>,
+{
+    fn from(value: T) -> Self {
+        value.into_iter().collect()
+    }
+}
+
+impl FromIterator<DynAsIR> for Combine {
+    fn from_iter<T: IntoIterator<Item = DynAsIR>>(iter: T) -> Self {
+        Combine {
+            combinator: iter.into_iter().collect(),
+            ..Default::default()
+        }
+    }
+}
+
+impl Combine {
+    pub fn push(mut self, shape: impl AsIR + 'static) -> Self {
+        self.shapes.push(shape.as_ir());
+        self
+    }
 }
 
 impl Debug for Combine {
@@ -84,8 +141,8 @@ impl DomainsDyn for Combine {
 }
 
 impl AsIR for Combine {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("combine".into()).specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("combine".into())
     }
 
     fn functions(
@@ -174,28 +231,5 @@ impl AsIR for Combine {
 
     fn structs(&self) -> Vec<StructDefinition> {
         vec![COMBINE_CONTEXT_STRUCT.clone()]
-    }
-}
-
-pub trait IntoCombine {
-    fn combine<U>(self, combinator: U) -> Combine
-    where
-        U: IntoIterator<Item = DynAsIR>;
-}
-
-impl<T> IntoCombine for T
-where
-    T: IntoIterator<Item = DynAsIR>,
-{
-    fn combine<V>(self, combinator: V) -> Combine
-    where
-        V: IntoIterator<Item = DynAsIR>,
-    {
-        let shapes: Vec<_> = self.into_iter().collect();
-        assert!(shapes.len() >= 2, "Combine must have at least two shapes");
-        Combine {
-            combinator: combinator.into_iter().collect(),
-            shapes,
-        }
     }
 }

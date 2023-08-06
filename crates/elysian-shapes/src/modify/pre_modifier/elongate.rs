@@ -1,7 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::modify::{IntoModify, Modify},
+    ast::{
+        expr::IntoExpr,
+        modify::{IntoModify, Modify},
+    },
     ir::{
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
@@ -65,7 +68,7 @@ impl Domains for Elongate {
 }
 
 impl AsIR for Elongate {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+    fn entry_point(&self) -> FunctionIdentifier {
         ELONGATE
             .concat(&FunctionIdentifier::new_dynamic(
                 self.clamp_neg.to_string().into(),
@@ -73,7 +76,6 @@ impl AsIR for Elongate {
             .concat(&FunctionIdentifier::new_dynamic(
                 self.clamp_pos.to_string().into(),
             ))
-            .specialize(spec)
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -85,12 +87,13 @@ impl AsIR for Elongate {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let (position, dir) = if spec.contains(&POSITION_2D.into()) {
-            (POSITION_2D, DIR_2D)
-        } else if spec.contains(&POSITION_3D.into()) {
-            (POSITION_3D, DIR_3D)
-        } else {
-            panic!("No position domain");
+        let (position, dir) = match (
+            spec.contains(&POSITION_2D.into()),
+            spec.contains(&POSITION_3D.into()),
+        ) {
+            (true, false) => (POSITION_2D, DIR_2D),
+            (false, true) => (POSITION_3D, DIR_3D),
+            _ => panic!("Invalid position domain"),
         };
 
         let expr = elysian_expr! {
@@ -142,30 +145,18 @@ impl AsIR for Elongate {
 }
 
 pub trait IntoElongate {
-    fn elongate(
-        self,
-        dir: elysian_core::ast::expr::Expr,
-        clamp_neg: ClampMode,
-        clamp_pos: ClampMode,
-    ) -> Modify;
+    fn elongate(self, dir: impl IntoExpr, clamp_neg: ClampMode, clamp_pos: ClampMode) -> Modify;
 }
 
 impl<T> IntoElongate for T
 where
     T: IntoModify,
 {
-    fn elongate(
-        self,
-        dir: elysian_core::ast::expr::Expr,
-        clamp_neg: ClampMode,
-        clamp_pos: ClampMode,
-    ) -> Modify {
-        let mut m = self.modify();
-        m.pre_modifiers.push(Box::new(Elongate {
-            dir,
+    fn elongate(self, dir: impl IntoExpr, clamp_neg: ClampMode, clamp_pos: ClampMode) -> Modify {
+        self.modify().push_pre(Elongate {
+            dir: dir.expr(),
             clamp_neg,
             clamp_pos,
-        }));
-        m
+        })
     }
 }

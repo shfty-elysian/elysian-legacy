@@ -1,7 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::modify::{IntoModify, Modify},
+    ast::{
+        expr::IntoExpr,
+        modify::{IntoModify, Modify},
+    },
     ir::{
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
@@ -50,8 +53,8 @@ impl Domains for Translate {
 }
 
 impl AsIR for Translate {
-    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        TRANSLATE.specialize(spec)
+    fn entry_point(&self) -> FunctionIdentifier {
+        TRANSLATE
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -81,16 +84,16 @@ impl AsIR for Translate {
 }
 
 pub trait IntoTranslate {
-    fn translate(self, delta: elysian_core::ast::expr::Expr) -> Modify;
+    fn translate(self, delta: impl IntoExpr) -> Modify;
 }
 
 impl<T> IntoTranslate for T
 where
     T: IntoModify,
 {
-    fn translate(self, delta: elysian_core::ast::expr::Expr) -> Modify {
-        let mut m = self.modify();
-        m.pre_modifiers.push(Box::new(Translate { delta }));
-        m
+    fn translate(self, delta: impl IntoExpr) -> Modify {
+        self.modify().push_pre(Translate {
+            delta: delta.expr(),
+        })
     }
 }
