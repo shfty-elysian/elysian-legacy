@@ -68,12 +68,12 @@ pub fn ring() -> impl IntoAsIR {
 }
 
 pub fn union() -> impl IntoAsIR {
-    Combine::from(Union::default()).push(circle()).push(line())
+    Combine::from(Union).push(circle()).push(line())
 }
 
 pub fn smooth_union() -> impl IntoAsIR {
     Combinator::build()
-        .push(Union::default())
+        .push(Union)
         .push(SmoothUnion::new(DISTANCE, 0.4))
         .push(SmoothUnion::new(GRADIENT_2D, 0.4))
         .push(SmoothUnion::new(UV, 0.4))
@@ -91,7 +91,7 @@ pub fn kettle_bell() -> impl IntoAsIR {
         .combine()
         .push(
             Combinator::build()
-                .push(Union::default())
+                .push(Union)
                 .push(SmoothUnion::new(DISTANCE, 0.4))
                 .push(SmoothUnion::new(GRADIENT_2D, 0.4))
                 .push(SmoothUnion::new(UV, 0.4))
@@ -106,127 +106,83 @@ pub fn kettle_bell() -> impl IntoAsIR {
 }
 
 pub fn select() -> impl IntoAsIR {
+    let id_x = REPEAT_ID_2D.path().push(X).read();
+    let id_y = REPEAT_ID_2D.path().push(Y).read();
+
     Select::new(point())
         .case(
-            [REPEAT_ID_2D.into(), X.into()]
-                .read()
-                .lt(1.0)
-                .and([REPEAT_ID_2D.into(), Y.into()].read().lt(1.0)),
+            id_x.clone().lt(1.0).and(id_y.clone().lt(1.0)),
             a().set_post(COLOR, distance_color()),
         )
         .case(
-            [REPEAT_ID_2D.into(), X.into()]
-                .read()
-                .lt(2.0)
-                .and([REPEAT_ID_2D.into(), Y.into()].read().lt(1.0)),
+            id_x.clone().lt(2.0).and(id_y.clone().lt(1.0)),
             n().set_post(COLOR, distance_color()),
         )
+        .case(id_x.clone().lt(3.0).and(id_y.clone().lt(1.0)), point())
+        .case(id_x.clone().lt(4.0).and(id_y.clone().lt(1.0)), chebyshev())
+        .case(id_x.clone().lt(5.0).and(id_y.clone().lt(1.0)), raymarched())
         .case(
-            [REPEAT_ID_2D.into(), X.into()]
-                .read()
-                .lt(3.0)
-                .and([REPEAT_ID_2D.into(), Y.into()].read().lt(1.0)),
-            point(),
-        )
-        .case(
-            [REPEAT_ID_2D.into(), X.into()]
-                .read()
-                .lt(4.0)
-                .and([REPEAT_ID_2D.into(), Y.into()].read().lt(1.0)),
-            chebyshev(),
-        )
-        .case(
-            [REPEAT_ID_2D.into(), X.into()]
-                .read()
-                .lt(5.0)
-                .and([REPEAT_ID_2D.into(), Y.into()].read().lt(1.0)),
-            raymarched(),
-        )
-        .case(
-            [REPEAT_ID_2D.into(), X.into()]
-                .read()
-                .lt(1.0)
-                .and([REPEAT_ID_2D.into(), Y.into()].read().lt(2.0)),
+            id_x.clone().lt(1.0).and(id_y.clone().lt(2.0)),
             sigma().set_post(COLOR, distance_color()),
         )
         .case(
-            [REPEAT_ID_2D.into(), X.into()]
-                .read()
-                .lt(2.0)
-                .and([REPEAT_ID_2D.into(), Y.into()].read().lt(2.0)),
+            id_x.clone().lt(2.0).and(id_y.clone().lt(2.0)),
             l().set_post(COLOR, distance_color()),
         )
         .case(
-            [REPEAT_ID_2D.into(), X.into()]
-                .read()
-                .lt(3.0)
-                .and([REPEAT_ID_2D.into(), Y.into()].read().lt(2.0)),
+            id_x.clone().lt(3.0).and(id_y.clone().lt(2.0)),
             y().set_post(COLOR, distance_color()),
         )
         .case(
-            [REPEAT_ID_2D.into(), X.into()]
-                .read()
-                .lt(4.0)
-                .and([REPEAT_ID_2D.into(), Y.into()].read().lt(2.0)),
+            id_x.clone().lt(4.0).and(id_y.clone().lt(2.0)),
             z().set_post(COLOR, distance_color()),
         )
         .case(
-            [REPEAT_ID_2D.into(), X.into()]
-                .read()
-                .lt(5.0)
-                .and([REPEAT_ID_2D.into(), Y.into()].read().lt(2.0)),
+            id_x.clone().lt(5.0).and(id_y.clone().lt(2.0)),
             i().set_post(COLOR, distance_color()),
         )
         .scale(0.35)
-        .aspect(ASPECT.property().read())
+        .aspect(ASPECT.prop().read())
         .repeat_clamped([0.8, 2.0], [0.0, 0.0], [4.0, 2.0])
         .translate([-1.6, -1.0])
 }
 
 pub fn distance_color() -> Expr {
     Expr::vector4(
-        1.0.literal() - DISTANCE.property().read().abs(),
-        1.0.literal() - DISTANCE.property().read().abs(),
-        1.0.literal() - DISTANCE.property().read().abs(),
+        1.0.literal() - DISTANCE.prop().read().abs(),
+        1.0.literal() - DISTANCE.prop().read().abs(),
+        1.0.literal() - DISTANCE.prop().read().abs(),
         1.0.literal(),
     )
 }
 
 pub fn normal_color() -> Expr {
     Expr::vector4(
-        [NORMAL.into(), X.into()].read() * 0.5 + 0.5,
-        [NORMAL.into(), Y.into()].read() * 0.5 + 0.5,
-        [NORMAL.into(), Z.into()].read() * 0.5 + 0.5,
+        NORMAL.path().push(X).read() * 0.5 + 0.5,
+        NORMAL.path().push(Y).read() * 0.5 + 0.5,
+        NORMAL.path().push(Z).read() * 0.5 + 0.5,
         1.0,
     )
 }
 
 pub fn distance_normal_color() -> Expr {
     Expr::vector4(
-        (1.0.literal() - DISTANCE.property().read().abs())
-            * ([NORMAL.into(), X.into()].read() * 0.5 + 0.5),
-        (1.0.literal() - DISTANCE.property().read().abs())
-            * ([NORMAL.into(), Y.into()].read() * 0.5 + 0.5),
-        (1.0.literal() - DISTANCE.property().read().abs())
-            * ([NORMAL.into(), Z.into()].read() * 0.5 + 0.5),
+        (1.0.literal() - DISTANCE.prop().read().abs()) * (NORMAL.path().push(X).read() * 0.5 + 0.5),
+        (1.0.literal() - DISTANCE.prop().read().abs()) * (NORMAL.path().push(Y).read() * 0.5 + 0.5),
+        (1.0.literal() - DISTANCE.prop().read().abs()) * (NORMAL.path().push(Z).read() * 0.5 + 0.5),
         1.0,
     )
 }
 
 pub fn uv_color() -> Expr {
-    Expr::vector4(
-        [UV.into(), X.into()].read(),
-        [UV.into(), Y.into()].read(),
-        0.0,
-        1.0,
-    )
+    Expr::vector4(UV.path().push(X).read(), UV.path().push(Y).read(), 0.0, 1.0)
 }
 
 pub fn repeat_id_color(count: usize) -> Expr {
     let fac = 1.0 / count as f64;
     Expr::vector4(
-        [REPEAT_ID_2D.into(), X.into()].read().abs() * fac,
-        [REPEAT_ID_2D.into(), Y.into()].read().abs() * fac,
+        REPEAT_ID_2D.path().push(X).read().abs() * fac,
+        REPEAT_ID_2D.path().push(Y).read().abs() * fac,
         0.0,
         1.0,
     )
@@ -239,7 +195,7 @@ pub fn raymarched() -> impl IntoAsIR {
         0.0001,
         100u64,
         projection.inverse(),
-        Combine::from(Union::default())
+        Combine::from(Union)
             .push(
                 Point
                     .elongate([0.5, 0.0, 0.0], ClampMode::Dir, ClampMode::Dir)

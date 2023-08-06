@@ -11,7 +11,7 @@ pub mod upper;
 
 pub fn combinator() -> Combinator {
     Combinator::build()
-        .push(Union::default())
+        .push(Union)
         .push(SmoothUnion::new(DISTANCE, 0.4))
         .push(SmoothUnion::new(GRADIENT_2D, 0.4))
         .push(SmoothUnion::new(UV, 0.4))

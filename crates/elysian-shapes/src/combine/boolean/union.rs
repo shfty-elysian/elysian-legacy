@@ -12,7 +12,7 @@ use elysian_decl_macros::elysian_function;
 
 pub const UNION: FunctionIdentifier = FunctionIdentifier::new("union", 1894363406191409858);
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Union;
 
 impl IntoIterator for Union {

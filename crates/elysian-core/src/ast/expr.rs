@@ -9,6 +9,19 @@ use super::value::Value;
 
 pub type BoxExpr = Box<Expr>;
 
+#[derive(Debug, Default, Clone)]
+pub struct Path(Vec<PropertyIdentifier>);
+
+impl Path {
+    pub fn push(mut self, seg: impl Into<PropertyIdentifier>) -> Self {
+        self.0.push(seg.into());
+        self
+    }
+    pub fn read(self) -> Expr {
+        Expr::Read(self.0)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Expr {
     Literal(Value),

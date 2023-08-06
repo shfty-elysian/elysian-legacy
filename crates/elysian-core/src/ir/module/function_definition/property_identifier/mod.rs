@@ -4,7 +4,10 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::ir::ast::{Expr, Identifier, Stmt};
+use crate::{
+    ast::expr::Path,
+    ir::ast::{Expr, Identifier, Stmt},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PropertyIdentifier(pub Identifier);
@@ -26,6 +29,10 @@ impl PropertyIdentifier {
             path: vec![self],
             expr,
         }
+    }
+
+    pub fn path(self) -> Path {
+        Path::default().push(self)
     }
 }
 

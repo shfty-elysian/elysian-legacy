@@ -2,7 +2,10 @@ use std::borrow::Cow;
 
 use uuid::Uuid;
 
-use crate::ir::module::{FunctionIdentifier, PropertyIdentifier, StructIdentifier};
+use crate::{
+    ast::expr::Path,
+    ir::module::{FunctionIdentifier, PropertyIdentifier, StructIdentifier},
+};
 
 /// Named unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -72,8 +75,12 @@ impl Identifier {
         }
     }
 
-    pub fn property(self) -> PropertyIdentifier {
+    pub fn prop(self) -> PropertyIdentifier {
         self.into()
+    }
+
+    pub fn path(self) -> Path {
+        Path::default().push(self.prop())
     }
 
     pub fn function(self) -> FunctionIdentifier {
