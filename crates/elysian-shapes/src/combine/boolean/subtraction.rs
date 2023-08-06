@@ -16,8 +16,8 @@ pub struct Subtraction;
 impl Domains for Subtraction {}
 
 impl AsIR for Subtraction {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        SUBTRACTION
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        SUBTRACTION.specialize(spec)
     }
 
     fn functions(

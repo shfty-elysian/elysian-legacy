@@ -1,9 +1,9 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::modify::Modify,
+    ast::modify::{IntoModify, Modify},
     ir::{
-        ast::Expr,
+        ast::{Expr, Identifier},
         module::{
             AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
             SpecializationData, CONTEXT,
@@ -32,7 +32,7 @@ impl Domains for Set {}
 
 impl AsIR for Set {
     fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier((*SET).concat(&(*self.id))).specialize(spec)
+        FunctionIdentifier(Identifier::new_dynamic("set").concat(&self.id)).specialize(spec)
     }
 
     fn functions(
@@ -62,18 +62,14 @@ where
     T: 'static + AsIR,
 {
     fn set_pre(self, id: PropertyIdentifier, expr: elysian_core::ast::expr::Expr) -> Modify {
-        Modify {
-            pre_modifiers: vec![Box::new(Set { id, expr })],
-            field: Box::new(self),
-            post_modifiers: Default::default(),
-        }
+        let mut m = self.modify();
+        m.pre_modifiers.push(Box::new(Set { id, expr }));
+        m
     }
 
     fn set_post(self, id: PropertyIdentifier, expr: elysian_core::ast::expr::Expr) -> Modify {
-        Modify {
-            pre_modifiers: Default::default(),
-            field: Box::new(self),
-            post_modifiers: vec![Box::new(Set { id, expr })],
-        }
+        let mut m = self.modify();
+        m.post_modifiers.push(Box::new(Set { id, expr }));
+        m
     }
 }

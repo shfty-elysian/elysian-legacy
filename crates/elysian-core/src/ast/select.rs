@@ -1,8 +1,6 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use elysian_proc_macros::elysian_stmt;
-
 use crate::ir::ast::IntoBlock;
 use crate::ir::module::{
     AsIR, DynAsIR, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
@@ -11,20 +9,21 @@ use crate::ir::module::{
 use crate::ir::module::{DomainsDyn, IntoRead};
 
 pub struct Select {
-    pub shapes: Vec<(elysian_core::ast::expr::Expr, DynAsIR)>,
+    pub cases: Vec<(elysian_core::ast::expr::Expr, DynAsIR)>,
+    pub default: DynAsIR,
 }
 
 impl Debug for Select {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Select")
-            .field("shapes", &self.shapes)
+            .field("shapes", &self.cases)
             .finish()
     }
 }
 
 impl Hash for Select {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        for (_, shape) in &self.shapes {
+        for (_, shape) in &self.cases {
             state.write_u64(shape.hash_ir())
         }
     }
@@ -32,16 +31,17 @@ impl Hash for Select {
 
 impl DomainsDyn for Select {
     fn domains_dyn(&self) -> Vec<PropertyIdentifier> {
-        self.shapes
+        self.cases
             .iter()
             .flat_map(|(_, t)| t.domains_dyn())
+            .chain(self.default.domains_dyn())
             .collect()
     }
 }
 
 impl AsIR for Select {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("select")
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("select".into()).specialize(spec)
     }
 
     fn functions(
@@ -50,7 +50,7 @@ impl AsIR for Select {
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
         let prepared_shapes: Vec<(_, _)> = self
-            .shapes
+            .cases
             .iter()
             .map(|(k, v)| {
                 let (a, b, c) = v.prepare(spec);
@@ -58,11 +58,15 @@ impl AsIR for Select {
             })
             .collect();
 
+        let (_, default_entry, default_functions) = self.default.prepare(spec);
+
         let block = prepared_shapes
             .iter()
             .rev()
             .fold(
-                elysian_stmt! { return CONTEXT },
+                default_entry
+                    .call(self.default.arguments(PropertyIdentifier(CONTEXT).read()))
+                    .output(),
                 |acc, (k, (v, _, entry, _))| crate::ir::ast::Stmt::If {
                     cond: (*k).clone().into(),
                     then: Box::new(
@@ -78,6 +82,7 @@ impl AsIR for Select {
         prepared_shapes
             .into_iter()
             .flat_map(|(_, (_, _, _, functions))| functions)
+            .chain(default_functions)
             .chain(FunctionDefinition {
                 id: entry_point.clone(),
                 public: false,
@@ -92,21 +97,25 @@ impl AsIR for Select {
     }
 
     fn structs(&self) -> Vec<crate::ir::module::StructDefinition> {
-        self.shapes.iter().flat_map(|(_, v)| v.structs()).collect()
+        self.cases.iter().flat_map(|(_, v)| v.structs()).collect()
     }
 }
 
-pub trait IntoSelect {
-    fn select(self) -> Select;
+pub trait IntoSelect<U> {
+    fn select(self, default: U) -> Select;
 }
 
-impl<T> IntoSelect for T
+impl<T, U> IntoSelect<U> for T
 where
     T: IntoIterator<Item = (elysian_core::ast::expr::Expr, DynAsIR)>,
+    U: 'static + AsIR,
 {
-    fn select(self) -> Select {
-        let shapes: Vec<(_, _)> = self.into_iter().collect();
-        assert!(shapes.len() >= 1, "Select must have at least one shape");
-        Select { shapes }
+    fn select(self, default: U) -> Select {
+        let cases: Vec<(_, _)> = self.into_iter().collect();
+        assert!(cases.len() >= 1, "Select must have at least one shape");
+        Select {
+            cases,
+            default: Box::new(default),
+        }
     }
 }

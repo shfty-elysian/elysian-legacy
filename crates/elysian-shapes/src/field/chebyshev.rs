@@ -69,6 +69,8 @@ impl AsIR for Chebyshev {
                 }),
                 _ => unreachable!(),
             }
+        } else {
+            panic!("No distance domain");
         };
 
         if let Some(gradient) = gradient {

@@ -118,7 +118,8 @@ impl Rem<Value> for Value {
     fn rem(self, rhs: Value) -> Self::Output {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => (a % b).into(),
-            _ => panic!("Invalid Mod"),
+            (Value::Struct(a), Value::Struct(b)) => (a % b).into(),
+            (a, b) => panic!("Invalid Mod {a:?} % {b:?}"),
         }
     }
 }

@@ -1,0 +1,8 @@
+[package]
+name = "elysian-text"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elysian-core = { path = "../elysian-core" }
+elysian-shapes = { path = "../elysian-shapes" }

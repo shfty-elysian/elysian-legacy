@@ -16,8 +16,6 @@ use elysian_core::ast::expr::Expr;
 use elysian_proc_macros::{elysian_block, elysian_expr};
 
 pub const ELONGATE: FunctionIdentifier = FunctionIdentifier::new("elongate", 1022510703206415324);
-pub const ELONGATE_INFINITE: FunctionIdentifier =
-    FunctionIdentifier::new("elongate_infinite", 1799909959882308009);
 
 pub const DIR_2D: Identifier = Identifier::new("dir_2d", 10994004961423687819);
 property!(DIR_2D, DIR_2D_PROP, Type::Struct(StructIdentifier(VECTOR2)));
@@ -25,21 +23,38 @@ property!(DIR_2D, DIR_2D_PROP, Type::Struct(StructIdentifier(VECTOR2)));
 pub const DIR_3D: Identifier = Identifier::new("dir_3d", 66909101541205811);
 property!(DIR_3D, DIR_3D_PROP, Type::Struct(StructIdentifier(VECTOR3)));
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ClampMode {
+    None,
+    Dir,
+    Zero,
+}
+
+impl ToString for ClampMode {
+    fn to_string(&self) -> String {
+        match self {
+            ClampMode::None => "none",
+            ClampMode::Dir => "dir",
+            ClampMode::Zero => "zero",
+        }
+        .to_string()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Elongate {
     pub dir: Expr,
-    pub infinite: bool,
+    pub clamp_neg: ClampMode,
+    pub clamp_pos: ClampMode,
 }
 
 impl Hash for Elongate {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        if self.infinite {
-            ELONGATE.uuid().hash(state);
-        } else {
-            ELONGATE_INFINITE.uuid().hash(state);
-        }
+        ELONGATE.uuid().hash(state);
+        self.clamp_neg.hash(state);
+        self.clamp_pos.hash(state);
         self.dir.hash(state);
-        self.infinite.hash(state);
+        self.clamp_pos.hash(state);
     }
 }
 
@@ -51,12 +66,14 @@ impl Domains for Elongate {
 
 impl AsIR for Elongate {
     fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        if self.infinite {
-            ELONGATE_INFINITE
-        } else {
-            ELONGATE
-        }
-        .specialize(spec)
+        ELONGATE
+            .concat(&FunctionIdentifier::new_dynamic(
+                self.clamp_neg.to_string().into(),
+            ))
+            .concat(&FunctionIdentifier::new_dynamic(
+                self.clamp_pos.to_string().into(),
+            ))
+            .specialize(spec)
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -80,16 +97,29 @@ impl AsIR for Elongate {
             CONTEXT.position.dot(dir.normalize())
         };
 
-        let block = if self.infinite {
-            elysian_block! {
-                CONTEXT.position = CONTEXT.position - dir.normalize() * #expr;
-                return CONTEXT
-            }
-        } else {
-            elysian_block! {
-                CONTEXT.position = CONTEXT.position - dir.normalize() * #expr.max(-dir.length()).min(dir.length());
-                return CONTEXT
-            }
+        let expr = match self.clamp_neg {
+            ClampMode::None => expr,
+            ClampMode::Dir => elysian_expr! {
+                #expr.max(-dir.length())
+            },
+            ClampMode::Zero => elysian_expr! {
+                #expr.max(0.0)
+            },
+        };
+
+        let expr = match self.clamp_pos {
+            ClampMode::None => expr,
+            ClampMode::Dir => elysian_expr! {
+                #expr.min(dir.length())
+            },
+            ClampMode::Zero => elysian_expr! {
+                #expr.min(0.0)
+            },
+        };
+
+        let block = elysian_block! {
+            CONTEXT.position = CONTEXT.position - dir.normalize() * #expr;
+            return CONTEXT
         };
 
         vec![FunctionDefinition {
@@ -112,16 +142,30 @@ impl AsIR for Elongate {
 }
 
 pub trait IntoElongate {
-    fn elongate(self, dir: elysian_core::ast::expr::Expr, infinite: bool) -> Modify;
+    fn elongate(
+        self,
+        dir: elysian_core::ast::expr::Expr,
+        clamp_neg: ClampMode,
+        clamp_pos: ClampMode,
+    ) -> Modify;
 }
 
 impl<T> IntoElongate for T
 where
     T: IntoModify,
 {
-    fn elongate(self, dir: elysian_core::ast::expr::Expr, infinite: bool) -> Modify {
+    fn elongate(
+        self,
+        dir: elysian_core::ast::expr::Expr,
+        clamp_neg: ClampMode,
+        clamp_pos: ClampMode,
+    ) -> Modify {
         let mut m = self.modify();
-        m.pre_modifiers.push(Box::new(Elongate { dir, infinite }));
+        m.pre_modifiers.push(Box::new(Elongate {
+            dir,
+            clamp_neg,
+            clamp_pos,
+        }));
         m
     }
 }

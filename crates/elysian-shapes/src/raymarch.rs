@@ -140,14 +140,14 @@ impl DomainsDyn for Raymarch {
 }
 
 impl AsIR for Raymarch {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        RAYMARCH
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        RAYMARCH.specialize(spec)
     }
 
     fn functions(
         &self,
         spec: &SpecializationData,
-        _: &FunctionIdentifier,
+        entry_point: &FunctionIdentifier,
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         if !spec.contains(&POSITION_2D.into()) {
             panic!("Raymarch is only compatible with the 2D Position domain");
@@ -189,7 +189,7 @@ impl AsIR for Raymarch {
         field_functions
             .into_iter()
             .chain([elysian_function! {
-                fn RAYMARCH(mut CONTEXT) -> CONTEXT {
+                fn entry_point(mut CONTEXT) -> CONTEXT {
                     let MAX_STEPS = #max_steps;
                     let STEPS = 0u32;
 

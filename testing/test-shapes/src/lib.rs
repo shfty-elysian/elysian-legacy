@@ -11,15 +11,16 @@ use elysian_core::{
 };
 use elysian_shapes::{
     combine::{Displace, Sided, SidedProp, SmoothSubtraction, SmoothUnion, Subtraction, Union},
-    field::{Capsule, Chebyshev, Circle, Line, Point, Ring},
+    field::{Capsule, Chebyshev, Circle, Line, LineMode, Point, Ring},
     modify::{
-        BoundType, IntoAspect, IntoBasisBound, IntoBasisMirror, IntoDistanceBound, IntoElongate,
-        IntoGradientNormals, IntoIsosurface, IntoManifold, IntoRepeat, IntoSet, IntoTranslate,
-        ASPECT, REPEAT_ID_2D,
+        BoundType, ClampMode, IntoAspect, IntoBasisBound, IntoDistanceBound, IntoElongate,
+        IntoGradientNormals, IntoIsosurface, IntoManifold, IntoMirror, IntoRepeat, IntoSet,
+        IntoTranslate, MirrorMode, ASPECT, REPEAT_ID_2D,
     },
     raymarch::{March, Raymarch},
     scale::IntoScale,
 };
+use elysian_text::glyphs::upper::*;
 use rust_gpu_bridge::glam::Mat4;
 
 pub fn point() -> DynAsIR {
@@ -42,6 +43,7 @@ pub fn line() -> DynAsIR {
     Box::new(
         Line {
             dir: [1.0, 0.0].literal(),
+            mode: LineMode::Centered,
         }
         .set_post(COLOR.into(), uv_color()),
     )
@@ -67,7 +69,7 @@ fn quad() -> DynAsIR {
             }),
         ])
         .translate(extent.clone())
-        .basis_mirror()
+        .mirror(MirrorMode::Basis([1.0, 1.0].literal()))
         .gradient_normals()
         .set_post(COLOR.into(), normal_color()),
     )
@@ -194,41 +196,6 @@ pub fn kettle_bell() -> DynAsIR {
     Box::new(shape_d)
 }
 
-pub fn letter_t() -> DynAsIR {
-    let smooth_union: [DynAsIR; 4] = [
-        Box::new(Union::default()),
-        Box::new(SmoothUnion {
-            prop: DISTANCE.into(),
-            k: 0.4.literal(),
-        }),
-        Box::new(SmoothUnion {
-            prop: GRADIENT_2D.into(),
-            k: 0.4.literal(),
-        }),
-        Box::new(SmoothUnion {
-            prop: UV.into(),
-            k: 0.4.literal(),
-        }),
-    ];
-
-    let shape_a: DynAsIR = Box::new(Line {
-        dir: [1.0, 0.0].literal(),
-    });
-
-    let shape_b: DynAsIR = Box::new(
-        Line {
-            dir: [0.0, 1.0].literal(),
-        }
-        .translate([0.0, -1.2].literal()),
-    );
-
-    let combined = [shape_a as DynAsIR, shape_b]
-        .combine(smooth_union)
-        .translate([0.0, 1.0].literal());
-
-    Box::new(combined.set_post(COLOR.into(), distance_color()))
-}
-
 pub fn select() -> DynAsIR {
     Box::new(
         [
@@ -265,35 +232,35 @@ pub fn select() -> DynAsIR {
                     .read()
                     .lt(5.0.literal())
                     .and([REPEAT_ID_2D.into(), Y.into()].read().lt(1.0.literal())),
-                capsule(),
+                Box::new(z().set_post(COLOR.into(), distance_color())),
             ),
             (
                 [REPEAT_ID_2D.into(), X.into()]
                     .read()
                     .lt(1.0.literal())
                     .and([REPEAT_ID_2D.into(), Y.into()].read().lt(2.0.literal())),
-                ring(),
+                Box::new(e().set_post(COLOR.into(), distance_color())),
             ),
             (
                 [REPEAT_ID_2D.into(), X.into()]
                     .read()
                     .lt(2.0.literal())
                     .and([REPEAT_ID_2D.into(), Y.into()].read().lt(2.0.literal())),
-                union(),
+                Box::new(y().set_post(COLOR.into(), distance_color())),
             ),
             (
                 [REPEAT_ID_2D.into(), X.into()]
                     .read()
                     .lt(3.0.literal())
                     .and([REPEAT_ID_2D.into(), Y.into()].read().lt(2.0.literal())),
-                kettle_bell(),
+                Box::new(t().set_post(COLOR.into(), distance_color())),
             ),
             (
                 [REPEAT_ID_2D.into(), X.into()]
                     .read()
                     .lt(4.0.literal())
                     .and([REPEAT_ID_2D.into(), Y.into()].read().lt(2.0.literal())),
-                letter_t(),
+                Box::new(a().set_post(COLOR.into(), distance_color())),
             ),
             (
                 [REPEAT_ID_2D.into(), X.into()]
@@ -303,7 +270,7 @@ pub fn select() -> DynAsIR {
                 raymarched(),
             ),
         ]
-        .select()
+        .select(point())
         .scale(0.35.literal())
         .aspect(PropertyIdentifier(ASPECT).read())
         .repeat(
@@ -346,8 +313,8 @@ pub fn distance_normal_color() -> Expr {
 
 pub fn uv_color() -> Expr {
     Expr::vector4(
-        [PropertyIdentifier(UV), PropertyIdentifier(X)].read(),
-        [PropertyIdentifier(UV), PropertyIdentifier(Y)].read(),
+        [UV.into(), X.into()].read(),
+        [UV.into(), Y.into()].read(),
         0.0.literal(),
         1.0.literal(),
     )
@@ -376,27 +343,27 @@ pub fn raymarched() -> DynAsIR {
             [
                 Box::new(
                     Point
-                        .elongate([0.5, 0.0, 0.0].literal(), false)
+                        .elongate([0.5, 0.0, 0.0].literal(), ClampMode::Dir, ClampMode::Dir)
                         .translate([0.5, 0.5, -2.0].literal())
                         .isosurface(1.0.literal())
                         .manifold()
-                        .isosurface(0.2.literal())
+                        .isosurface(0.2.literal()),
                 ) as Box<dyn AsIR>,
                 Box::new(
                     Point
-                        .elongate([0.5, 0.0, 0.0].literal(), false)
+                        .elongate([0.5, 0.0, 0.0].literal(), ClampMode::Dir, ClampMode::Dir)
                         .translate([-0.5, -0.5, -2.5].literal())
                         .isosurface(1.0.literal())
                         .manifold()
-                        .isosurface(0.2.literal())
+                        .isosurface(0.2.literal()),
                 ),
                 Box::new(
                     Point
-                        .elongate([0.5, 0.0, 0.0].literal(), false)
+                        .elongate([0.5, 0.0, 0.0].literal(), ClampMode::Dir, ClampMode::Dir)
                         .translate([1.0, -1.5, -3.0].literal())
                         .isosurface(1.0.literal())
                         .manifold()
-                        .isosurface(0.2.literal())
+                        .isosurface(0.2.literal()),
                 ),
             ]
             .combine([Box::new(Union::default()) as DynAsIR])
@@ -410,7 +377,7 @@ pub fn test_shape() -> DynAsIR {
     select()
 }
 
-pub fn shapes() -> [(&'static str, DynAsIR); 13] {
+pub fn shapes() -> impl IntoIterator<Item = (&'static str, DynAsIR)> {
     [
         ("point", point()),
         ("chebyshev", chebyshev()),
@@ -422,7 +389,7 @@ pub fn shapes() -> [(&'static str, DynAsIR); 13] {
         ("union", union()),
         ("smooth_union", smooth_union()),
         ("kettle_bell", kettle_bell()),
-        ("letter_t", letter_t()),
+        ("t", t()),
         ("raymarched", raymarched()),
         ("select", select()),
     ]

@@ -12,7 +12,7 @@ use std::{
     collections::BTreeMap,
     fmt::{Debug, Display},
     hash::Hash,
-    ops::{Add, Div, Mul, Neg, Sub},
+    ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
 use super::{
@@ -30,7 +30,7 @@ impl Display for Struct {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{")?;
         for (prop, val) in &self.members {
-            write!(f, "{prop:}: {val:}")?;
+            write!(f, "{:}: {:}, ", prop.name(), val)?;
         }
         write!(f, "}}")?;
         Ok(())
@@ -202,10 +202,48 @@ impl Div<Struct> for Struct {
     fn div(self, rhs: Self) -> Self::Output {
         assert!(self.id == rhs.id);
         match self.id.name() {
-            "Vector2" => (Vec2::from(self) + Vec2::from(rhs)).into(),
-            "Vector3" => (Vec3::from(self) + Vec3::from(rhs)).into(),
-            "Vector4" => (Vec4::from(self) + Vec4::from(rhs)).into(),
+            "Vector2" => (Vec2::from(self) / Vec2::from(rhs)).into(),
+            "Vector3" => (Vec3::from(self) / Vec3::from(rhs)).into(),
+            "Vector4" => (Vec4::from(self) / Vec4::from(rhs)).into(),
             _ => panic!("Can't Div an arbitrary struct"),
+        }
+    }
+}
+
+impl Rem<Struct> for Struct {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        assert!(self.id == rhs.id);
+        match self.id.name() {
+            "Vector2" => {
+                let lhs = Vec2::from(self);
+                let rhs = Vec2::from(rhs);
+                Vec2::new(lhs.x.rem_euclid(rhs.x), lhs.y.rem_euclid(rhs.y))
+            }
+            .into(),
+            "Vector3" => {
+                let lhs = Vec3::from(self);
+                let rhs = Vec3::from(rhs);
+                Vec3::new(
+                    lhs.x.rem_euclid(rhs.x),
+                    lhs.y.rem_euclid(rhs.y),
+                    lhs.z.rem_euclid(rhs.z),
+                )
+            }
+            .into(),
+            "Vector4" => {
+                let lhs = Vec4::from(self);
+                let rhs = Vec4::from(rhs);
+                Vec4::new(
+                    lhs.x.rem_euclid(rhs.x),
+                    lhs.y.rem_euclid(rhs.y),
+                    lhs.z.rem_euclid(rhs.z),
+                    lhs.w.rem_euclid(rhs.w),
+                )
+            }
+            .into(),
+            _ => panic!("Can't Rem an arbitrary struct"),
         }
     }
 }

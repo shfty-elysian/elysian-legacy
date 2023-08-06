@@ -41,8 +41,8 @@ impl DomainsDyn for CrossSection {
 }
 
 impl AsIR for CrossSection {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        CROSS_SECTION
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        CROSS_SECTION.specialize(spec)
     }
 
     fn functions(

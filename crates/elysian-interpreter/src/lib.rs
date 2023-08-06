@@ -62,6 +62,12 @@ pub const INTERPRETER_CONTEXT: Identifier =
 const CALL_CONTEXT: Identifier = Identifier::new("CallContext", 0);
 
 pub fn evaluate_module(mut interpreter: Interpreter, module: &Module) -> Struct {
+    #[cfg(feature = "print")]
+    println!(
+        "{}Module",
+        std::iter::repeat("\n").take(200).collect::<String>()
+    );
+
     interpreter.context = Struct::new(StructIdentifier(INTERPRETER_CONTEXT))
         .set(CONTEXT.into(), Value::Struct(interpreter.context));
     interpreter.functions = module
@@ -111,7 +117,7 @@ pub fn evaluate_stmt(mut interpreter: Interpreter, stmt: &Stmt) -> Interpreter {
                 "Write {} to {}",
                 v.to_string(),
                 path.iter()
-                    .map(|prop| prop.to_string() + &".")
+                    .map(|prop| prop.name().to_string() + &".")
                     .collect::<String>()
             );
 
@@ -140,8 +146,8 @@ pub fn evaluate_stmt(mut interpreter: Interpreter, stmt: &Stmt) -> Interpreter {
             #[cfg(feature = "print")]
             println!("If");
             let Value::Boolean(b) = evaluate_expr(&interpreter, cond) else {
-                    panic!("Invalid IfElse");
-                };
+                panic!("Invalid If");
+            };
 
             if b {
                 evaluate_stmt(interpreter, then)
@@ -186,6 +192,9 @@ pub fn evaluate_block(
     interpreter: Interpreter,
     elysian_core::ir::ast::Block(list): &elysian_core::ir::ast::Block,
 ) -> Interpreter {
+    #[cfg(feature = "print")]
+    println!("Block");
+
     list.iter().fold(interpreter, evaluate_stmt)
 }
 
@@ -223,7 +232,7 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
         }
         Expr::Call { function, args } => {
             #[cfg(feature = "print")]
-            println!("Call {:}", function.name());
+            println!("Call {:}", function.name_unique());
 
             let f = interpreter
                 .functions
@@ -314,17 +323,17 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
         }
         Expr::Mod(lhs, rhs) => {
             #[cfg(feature = "print")]
-            println!("Div");
+            println!("Mod");
             evaluate_expr(interpreter, lhs) % evaluate_expr(interpreter, rhs)
         }
         Expr::Eq(lhs, rhs) => {
             #[cfg(feature = "print")]
-            println!("Lt");
+            println!("Eq");
             (evaluate_expr(interpreter, lhs) == evaluate_expr(interpreter, rhs)).into()
         }
         Expr::Ne(lhs, rhs) => {
             #[cfg(feature = "print")]
-            println!("Lt");
+            println!("Ne");
             (evaluate_expr(interpreter, lhs) != evaluate_expr(interpreter, rhs)).into()
         }
         Expr::Lt(lhs, rhs) => {
@@ -344,7 +353,7 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
         }
         Expr::Or(lhs, rhs) => {
             #[cfg(feature = "print")]
-            println!("And");
+            println!("Or");
             (evaluate_expr(interpreter, lhs) | evaluate_expr(interpreter, rhs)).into()
         }
         Expr::Min(lhs, rhs) => {
@@ -369,7 +378,7 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
         }
         Expr::Clamp(t, min, max) => {
             #[cfg(feature = "print")]
-            println!("Mix");
+            println!("Clamp");
             evaluate_expr(interpreter, t)
                 .clamp(
                     evaluate_expr(interpreter, min),

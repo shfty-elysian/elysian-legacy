@@ -46,8 +46,8 @@ impl DomainsDyn for Scale {
 }
 
 impl AsIR for Scale {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("scale")
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("scale".into()).specialize(spec)
     }
 
     fn functions(

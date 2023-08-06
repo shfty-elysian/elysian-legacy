@@ -21,8 +21,8 @@ pub struct Sided {
 impl Domains for Sided {}
 
 impl AsIR for Sided {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        SIDED
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        SIDED.specialize(spec)
     }
 
     fn functions(

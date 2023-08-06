@@ -15,8 +15,8 @@ pub struct Union;
 impl Domains for Union {}
 
 impl AsIR for Union {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        UNION
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        UNION.specialize(spec)
     }
 
     fn functions(

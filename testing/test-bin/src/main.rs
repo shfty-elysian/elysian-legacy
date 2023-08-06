@@ -11,7 +11,9 @@ fn main() {
     let shape = test_shapes::test_shape();
 
     let start = Instant::now();
-    let image = rasterize(&shape, &SpecializationData::new_2d(), 64, 48, 0.5);
+    let (width, height) = (64, 48);
+    //let (width, height) = (4, 4);
+    let image = rasterize(&shape, &SpecializationData::new_2d(), width, height, 0.5);
     let duration = Instant::now().duration_since(start);
 
     viuer::print(

@@ -84,8 +84,8 @@ impl DomainsDyn for Combine {
 }
 
 impl AsIR for Combine {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("combine")
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("combine".into()).specialize(spec)
     }
 
     fn functions(
@@ -126,13 +126,13 @@ impl AsIR for Combine {
 
         iter.fold(
             base_entry.call(base.arguments(elysian_stmt! {CONTEXT})),
-            |acc, (_, _, entry, _)| {
-                let entry = (**entry).clone();
+            |acc, (t, _, entry, _)| {
+                let entry = entry.call(t.arguments(elysian_stmt! {CONTEXT}));
 
                 block.push(elysian_stmt! {
                     let COMBINE_CONTEXT = COMBINE_CONTEXT {
                         LEFT: #acc,
-                        RIGHT: #entry(CONTEXT)
+                        RIGHT: #entry
                     }
                 });
 

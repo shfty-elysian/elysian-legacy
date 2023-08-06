@@ -13,7 +13,7 @@ use elysian_decl_macros::elysian_function;
 
 use crate::modify::{Isosurface, DIR_2D, DIR_3D};
 
-use super::{Line, RADIUS};
+use super::{Line, RADIUS, LineMode};
 
 pub const CAPSULE: FunctionIdentifier = FunctionIdentifier::new("capsule", 14339483921749952476);
 
@@ -64,6 +64,7 @@ impl AsIR for Capsule {
 
         let line = Line {
             dir: self.dir.clone(),
+            mode: LineMode::Centered,
         };
         let (_, line_entry, line_functions) = line.prepare(spec);
 

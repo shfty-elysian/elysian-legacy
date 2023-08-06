@@ -12,20 +12,38 @@ use elysian_core::{
 };
 use elysian_decl_macros::elysian_function;
 
-use crate::modify::{Elongate, DIR_2D, DIR_3D};
+use crate::modify::{ClampMode, Elongate, DIR_2D, DIR_3D};
 
 use super::Point;
 
 pub const LINE: FunctionIdentifier = FunctionIdentifier::new("line", 14339483921749952476);
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum LineMode {
+    Centered,
+    Segment,
+}
+
+impl ToString for LineMode {
+    fn to_string(&self) -> String {
+        match self {
+            LineMode::Centered => "centered",
+            LineMode::Segment => "segment",
+        }
+        .to_string()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Line {
     pub dir: Expr,
+    pub mode: LineMode,
 }
 
 impl Hash for Line {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         LINE.uuid().hash(state);
+        self.mode.hash(state);
         self.dir.hash(state);
     }
 }
@@ -41,7 +59,10 @@ impl Domains for Line {
 
 impl AsIR for Line {
     fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
-        LINE.specialize(spec)
+        LINE.concat(&FunctionIdentifier::new_dynamic(
+            self.mode.to_string().into(),
+        ))
+        .specialize(spec)
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
@@ -64,9 +85,15 @@ impl AsIR for Line {
         let point = Point;
         let (_, point_entry, point_functions) = point.prepare(spec);
 
+        let clamp_neg = match self.mode {
+            LineMode::Centered => ClampMode::Dir,
+            LineMode::Segment => ClampMode::Zero,
+        };
+
         let elongate = Elongate {
             dir: self.dir.clone(),
-            infinite: false,
+            clamp_neg,
+            clamp_pos: ClampMode::Dir,
         };
         let (_, elongate_entry, elongate_functions) = elongate.prepare(spec);
 

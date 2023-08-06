@@ -19,9 +19,9 @@ impl FunctionIdentifier {
         FunctionIdentifier(Identifier::new(name, uuid))
     }
 
-    pub fn new_dynamic(name: &'static str) -> Self {
+    pub fn new_dynamic(name: Cow<'static, str>) -> Self {
         FunctionIdentifier(Identifier {
-            name: Cow::Borrowed(name),
+            name,
             uuid: Uuid::new_v4(),
         })
     }

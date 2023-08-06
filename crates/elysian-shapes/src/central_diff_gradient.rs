@@ -43,8 +43,8 @@ impl DomainsDyn for CentralDiffGradient {
 }
 
 impl AsIR for CentralDiffGradient {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("central_diff_gradient")
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("central_diff_gradient".into()).specialize(spec)
     }
 
     fn functions(

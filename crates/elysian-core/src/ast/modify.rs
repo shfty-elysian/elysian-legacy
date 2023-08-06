@@ -118,8 +118,8 @@ impl DomainsDyn for Modify {
 }
 
 impl AsIR for Modify {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("modify")
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier::new_dynamic("modify".into()).specialize(spec)
     }
 
     fn functions(

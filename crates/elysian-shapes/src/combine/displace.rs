@@ -22,8 +22,8 @@ pub struct Displace {
 impl Domains for Displace {}
 
 impl AsIR for Displace {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier(DISPLACE.0.concat(&self.prop))
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier(DISPLACE.0.concat(&self.prop)).specialize(spec)
     }
 
     fn functions(

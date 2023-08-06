@@ -29,8 +29,8 @@ pub struct SmoothIntersection {
 impl Domains for SmoothIntersection {}
 
 impl AsIR for SmoothIntersection {
-    fn entry_point(&self, _: &SpecializationData) -> FunctionIdentifier {
-        FunctionIdentifier(SMOOTH_INTERSECTION.0.concat(&self.prop))
+    fn entry_point(&self, spec: &SpecializationData) -> FunctionIdentifier {
+        FunctionIdentifier(SMOOTH_INTERSECTION.0.concat(&self.prop)).specialize(spec)
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
