@@ -2,7 +2,8 @@ use elysian_core::{
     ast::{
         combine::{Combinator, Combine},
         expr::{Expr, IntoExpr, IntoLiteral, IntoRead},
-        select::Select,
+        modify::IntoModify,
+        select::Switch,
     },
     ir::{
         ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, UV, X, Y, Z},
@@ -17,6 +18,7 @@ use elysian_shapes::{
         IntoGradientNormals, IntoIsosurface, IntoManifold, IntoMirror, IntoRepeat, IntoSet,
         IntoTranslate, ASPECT, REPEAT_ID_2D,
     },
+    partition::PARTITION_ID,
     raymarch::Raymarch,
     scale::IntoScale,
 };
@@ -39,7 +41,7 @@ pub fn line() -> impl IntoAsIR {
     Line::centered([1.0, 0.0]).set_post(COLOR, uv_color())
 }
 
-fn quad(extent: impl IntoExpr) -> impl IntoAsIR {
+pub fn quad(extent: impl IntoExpr) -> impl IntoAsIR {
     Combinator::build()
         .push(Sided::left())
         .push(Displace::new(DISTANCE))
@@ -109,7 +111,7 @@ pub fn select() -> impl IntoAsIR {
     let id_x = REPEAT_ID_2D.path().push(X).read();
     let id_y = REPEAT_ID_2D.path().push(Y).read();
 
-    Select::new(point())
+    Switch::new(point())
         .case(
             id_x.clone().lt(1.0).and(id_y.clone().lt(1.0)),
             a().set_post(COLOR, distance_color()),
@@ -178,6 +180,16 @@ pub fn uv_color() -> Expr {
     Expr::vector4(UV.path().push(X).read(), UV.path().push(Y).read(), 0.0, 1.0)
 }
 
+pub fn partition_id_color(count: usize) -> Expr {
+    let fac = 1.0 / count as f64;
+    Expr::vector4(
+        PARTITION_ID.prop().read() * fac,
+        PARTITION_ID.prop().read() * fac,
+        PARTITION_ID.prop().read() * fac,
+        1.0,
+    )
+}
+
 pub fn repeat_id_color(count: usize) -> Expr {
     let fac = 1.0 / count as f64;
     Expr::vector4(
@@ -225,8 +237,60 @@ pub fn raymarched() -> impl IntoAsIR {
     )
 }
 
+pub fn partition() -> impl IntoAsIR {
+    Switch::new(point())
+        .case(
+            PARTITION_ID.prop().read().lt(1.0),
+            a().set_post(COLOR, distance_color()),
+        )
+        .case(
+            PARTITION_ID.prop().read().lt(2.0),
+            k().set_post(COLOR, distance_color()),
+        )
+        .case(
+            PARTITION_ID.prop().read().lt(3.0),
+            l().set_post(COLOR, distance_color()),
+        )
+        .case(
+            PARTITION_ID.prop().read().lt(4.0),
+            w().set_post(COLOR, distance_color()),
+        )
+        .case(
+            PARTITION_ID.prop().read().lt(5.0),
+            x().set_post(COLOR, distance_color()),
+        )
+        .case(
+            PARTITION_ID.prop().read().lt(6.0),
+            z().set_post(COLOR, distance_color()),
+        )
+        .case(
+            PARTITION_ID.prop().read().lt(7.0),
+            y().set_post(COLOR, distance_color()),
+        )
+        .scale(0.35)
+        .modify()
+        .push_pre(
+            [
+                [0.0, 0.0],
+                [-1.5, -0.75],
+                [0.0, -1.5],
+                [1.5, -0.75],
+                [1.5, 0.75],
+                [0.0, 1.5],
+                [-1.5, 0.75],
+            ]
+            .into_iter()
+            .enumerate()
+            .fold(Combine::from(Union), |acc, (i, next)| {
+                acc.push(Point.translate(next).set_pre(PARTITION_ID, i as f32))
+            }),
+        )
+        .set_post(COLOR, distance_color())
+        .aspect(ASPECT.prop().read())
+}
+
 pub fn test_shape() -> impl IntoAsIR {
-    select()
+    partition()
 }
 
 pub fn shapes() -> impl IntoIterator<Item = (&'static str, DynAsIR)> {
@@ -244,5 +308,6 @@ pub fn shapes() -> impl IntoIterator<Item = (&'static str, DynAsIR)> {
         ("t", t().as_ir()),
         ("raymarched", raymarched().as_ir()),
         ("select", select().as_ir()),
+        ("partition", partition().as_ir()),
     ]
 }

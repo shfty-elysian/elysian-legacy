@@ -3,7 +3,10 @@ use std::{fmt::Debug, hash::Hash};
 use elysian_core::{
     ast::expr::{Expr, IntoExpr},
     ir::{
-        ast::{Block, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D},
+        ast::{
+            vector2, vector3, Block, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D,
+            POSITION_3D,
+        },
         module::{
             AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
             PropertyIdentifier, SpecializationData, CONTEXT,
@@ -69,12 +72,12 @@ impl AsIR for Mirror {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let position = match (
+        let (position, one) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
         ) {
-            (true, false) => POSITION_2D,
-            (false, true) => POSITION_3D,
+            (true, false) => (POSITION_2D, vector2([1.0, 1.0]).literal()),
+            (false, true) => (POSITION_3D, vector3([1.0, 1.0, 1.0]).literal()),
             _ => panic!("Invalid position domain"),
         };
 
@@ -98,7 +101,7 @@ impl AsIR for Mirror {
             MirrorMode::Basis(basis) => {
                 let basis = elysian_core::ir::ast::Expr::from(basis.clone());
                 block.push(elysian_stmt! {
-                    CONTEXT.position = CONTEXT.position * (CONTEXT.position.sign() + (1.0 - #basis)).sign()
+                    CONTEXT.position = CONTEXT.position * (CONTEXT.position.sign() + (#one - (#basis * 2.0 - #one))).sign()
                 });
             }
             MirrorMode::Axis(axis) => {
@@ -120,7 +123,7 @@ impl AsIR for Mirror {
                 MirrorMode::Basis(basis) => {
                     let basis = elysian_core::ir::ast::Expr::from(basis.clone());
                     block.push(elysian_stmt! {
-                        CONTEXT.gradient = CONTEXT.gradient * (position.sign() + (1.0 - #basis)).sign()
+                        CONTEXT.gradient = CONTEXT.gradient * (position.sign() + (#one - #basis)).sign()
                     });
                 }
                 MirrorMode::Axis(axis) => {

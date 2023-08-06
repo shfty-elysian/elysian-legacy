@@ -10,8 +10,8 @@ use uuid::Uuid;
 
 use crate::ir::{
     ast::{
-        Block, Expr, Identifier, Property, Stmt, MATRIX2_STRUCT, MATRIX3_STRUCT, MATRIX4_STRUCT,
-        VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT,
+        Block, Expr, Identifier, Property, Stmt, COMBINE_CONTEXT, MATRIX2_STRUCT, MATRIX3_STRUCT,
+        MATRIX4_STRUCT, VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT,
     },
     module::{FieldDefinition, HashIR},
 };
@@ -67,6 +67,8 @@ fn stmt_props(stmt: &Stmt) -> Vec<PropertyIdentifier> {
             let path_props = if let Some(first) = iter.next() {
                 if **first == CONTEXT {
                     iter.cloned().take(1).collect()
+                } else if **first == COMBINE_CONTEXT {
+                    iter.cloned().skip(1).take(1).collect()
                 } else {
                     vec![]
                 }

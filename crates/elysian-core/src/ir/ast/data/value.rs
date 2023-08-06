@@ -514,11 +514,91 @@ impl From<Value> for bool {
     }
 }
 
+impl From<Value> for u8 {
+    fn from(value: Value) -> Self {
+        let Value::Number(Number::UInt(n)) = value else {
+            panic!("Value {value:#?} is not a UInt")
+        };
+
+        n as Self
+    }
+}
+
+impl From<Value> for u16 {
+    fn from(value: Value) -> Self {
+        let Value::Number(Number::UInt(n)) = value else {
+            panic!("Value {value:#?} is not a UInt")
+        };
+
+        n as Self
+    }
+}
+
+impl From<Value> for u32 {
+    fn from(value: Value) -> Self {
+        let Value::Number(Number::UInt(n)) = value else {
+            panic!("Value {value:#?} is not a UInt")
+        };
+
+        n as Self
+    }
+}
+
+impl From<Value> for u64 {
+    fn from(value: Value) -> Self {
+        let Value::Number(Number::UInt(n)) = value else {
+            panic!("Value {value:#?} is not a UInt")
+        };
+
+        n as Self
+    }
+}
+
+impl From<Value> for i8 {
+    fn from(value: Value) -> Self {
+        let Value::Number(Number::UInt(n)) = value else {
+            panic!("Value {value:#?} is not a UInt")
+        };
+
+        n as Self
+    }
+}
+
+impl From<Value> for i16 {
+    fn from(value: Value) -> Self {
+        let Value::Number(Number::UInt(n)) = value else {
+            panic!("Value {value:#?} is not a UInt")
+        };
+
+        n as Self
+    }
+}
+
+impl From<Value> for i32 {
+    fn from(value: Value) -> Self {
+        let Value::Number(Number::UInt(n)) = value else {
+            panic!("Value {value:#?} is not a UInt")
+        };
+
+        n as Self
+    }
+}
+
+impl From<Value> for i64 {
+    fn from(value: Value) -> Self {
+        let Value::Number(Number::UInt(n)) = value else {
+            panic!("Value {value:#?} is not a UInt")
+        };
+
+        n as Self
+    }
+}
+
 impl From<Value> for f32 {
     fn from(value: Value) -> Self {
         let Value::Number(Number::Float(n)) = value else {
-        panic!("Value {value:#?} is not a f32")
-    };
+            panic!("Value {value:#?} is not a Float")
+        };
 
         n as f32
     }
@@ -527,8 +607,8 @@ impl From<Value> for f32 {
 impl From<Value> for f64 {
     fn from(value: Value) -> Self {
         let Value::Number(Number::Float(n)) = value else {
-        panic!("Value is not a f64")
-    };
+            panic!("Value is not a Float")
+        };
 
         n
     }

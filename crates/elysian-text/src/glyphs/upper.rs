@@ -140,7 +140,7 @@ pub fn w() -> impl IntoAsIR {
     combinator()
         .combine()
         .push(Line::segment([0.5, 2.0]).translate([0.5, -1.0]))
-        .push(Line::segment([0.5, -0.5]))
+        .push(Line::segment([0.5, -1.0]))
         .mirror_basis([1.0, 0.0])
 }
 

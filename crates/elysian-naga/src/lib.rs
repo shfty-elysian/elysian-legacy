@@ -765,7 +765,8 @@ impl<'a> NagaBuilder<'a> {
                                 panic!("{}", invalid(n.name(), s.name()))
                             }
                         },
-                        _ => {
+                        op => {
+                            eprintln!("{op:#?}");
                             panic!("{}", invalid(n.name(), s.name()))
                         }
                     },

@@ -98,14 +98,14 @@ impl AsIR for Line {
             panic!("No position domain set")
         };
 
-        let (_, elongate_call, elongate_functions) = (Elongate {
+        let (_, elongate_call, elongate_functions) = Elongate {
             dir: self.dir.clone(),
             clamp_neg: match self.mode {
                 LineMode::Centered => ClampMode::Dir,
                 LineMode::Segment => ClampMode::Zero,
             },
             clamp_pos: ClampMode::Dir,
-        })
+        }
         .call(spec, elysian_stmt! { CONTEXT });
 
         let (_, point_call, point_functions) = Point.call(spec, elongate_call);

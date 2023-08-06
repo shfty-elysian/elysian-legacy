@@ -5,3 +5,4 @@ pub mod field;
 pub mod modify;
 pub mod raymarch;
 pub mod scale;
+pub mod partition;

@@ -12,14 +12,14 @@ use crate::ir::module::{DomainsDyn, IntoRead};
 
 use super::expr::IntoExpr;
 
-pub struct Select {
+pub struct Switch {
     default: DynAsIR,
     cases: Vec<(elysian_core::ast::expr::Expr, DynAsIR)>,
 }
 
-impl Select {
+impl Switch {
     pub fn new(default: impl IntoAsIR) -> Self {
-        Select {
+        Switch {
             default: default.as_ir(),
             cases: Default::default(),
         }
@@ -31,7 +31,7 @@ impl Select {
     }
 }
 
-impl Debug for Select {
+impl Debug for Switch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Select")
             .field("shapes", &self.cases)
@@ -39,7 +39,7 @@ impl Debug for Select {
     }
 }
 
-impl Hash for Select {
+impl Hash for Switch {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for (_, shape) in &self.cases {
             state.write_u64(shape.hash_ir())
@@ -47,7 +47,7 @@ impl Hash for Select {
     }
 }
 
-impl DomainsDyn for Select {
+impl DomainsDyn for Switch {
     fn domains_dyn(&self) -> Vec<PropertyIdentifier> {
         self.cases
             .iter()
@@ -57,7 +57,7 @@ impl DomainsDyn for Select {
     }
 }
 
-impl AsIR for Select {
+impl AsIR for Switch {
     fn entry_point(&self) -> FunctionIdentifier {
         FunctionIdentifier::new_dynamic("select".into())
     }

@@ -211,7 +211,12 @@ impl AsIR for Modify {
     }
 
     fn structs(&self) -> Vec<StructDefinition> {
-        self.field.structs()
+        self.pre_modifiers
+            .iter()
+            .flat_map(|t| t.structs())
+            .chain(self.field.structs())
+            .chain(self.post_modifiers.iter().flat_map(|t| t.structs()))
+            .collect()
     }
 }
 
