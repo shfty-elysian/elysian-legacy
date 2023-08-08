@@ -1,103 +1,132 @@
-pub fn a() -> () {
-    todo!()
+use elysian_core::ir::module::IntoAsIR;
+use elysian_shapes::field::Infinity;
+
+pub fn a() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn b() -> () {
-    todo!()
+pub fn b() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn c() -> () {
-    todo!()
+pub fn c() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn d() -> () {
-    todo!()
+pub fn d() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn e() -> () {
-    todo!()
+pub fn e() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn f() -> () {
-    todo!()
+pub fn f() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn g() -> () {
-    todo!()
+pub fn g() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn h() -> () {
-    todo!()
+pub fn h() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn i() -> () {
-    todo!()
+pub fn i() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn j() -> () {
-    todo!()
+pub fn j() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn k() -> () {
-    todo!()
+pub fn k() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn l() -> () {
-    todo!()
+pub fn l() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn m() -> () {
-    todo!()
+pub fn m() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn n() -> () {
-    todo!()
+pub fn n() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn o() -> () {
-    todo!()
+pub fn o() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn p() -> () {
-    todo!()
+pub fn p() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn q() -> () {
-    todo!()
+pub fn q() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn r() -> () {
-    todo!()
+pub fn r() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn s() -> () {
-    todo!()
+pub fn s() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn t() -> () {
-    todo!()
+pub fn t() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn u() -> () {
-    todo!()
+pub fn u() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn v() -> () {
-    todo!()
+pub fn v() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn w() -> () {
-    todo!()
+pub fn w() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn x() -> () {
-    todo!()
+pub fn x() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn y() -> () {
-    todo!()
+pub fn y() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }
 
-pub fn z() -> () {
-    todo!()
+pub fn z() -> impl IntoAsIR {
+    todo!();
+    Infinity
 }

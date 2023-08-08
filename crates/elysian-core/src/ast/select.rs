@@ -12,14 +12,14 @@ use crate::ir::module::{DomainsDyn, IntoRead};
 
 use super::expr::IntoExpr;
 
-pub struct Switch {
+pub struct Select {
     default: DynAsIR,
     cases: Vec<(elysian_core::ast::expr::Expr, DynAsIR)>,
 }
 
-impl Switch {
+impl Select {
     pub fn new(default: impl IntoAsIR) -> Self {
-        Switch {
+        Select {
             default: default.as_ir(),
             cases: Default::default(),
         }
@@ -31,7 +31,7 @@ impl Switch {
     }
 }
 
-impl Debug for Switch {
+impl Debug for Select {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Select")
             .field("shapes", &self.cases)
@@ -39,15 +39,16 @@ impl Debug for Switch {
     }
 }
 
-impl Hash for Switch {
+impl Hash for Select {
     fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write_u64(self.default.hash_ir());
         for (_, shape) in &self.cases {
             state.write_u64(shape.hash_ir())
         }
     }
 }
 
-impl DomainsDyn for Switch {
+impl DomainsDyn for Select {
     fn domains_dyn(&self) -> Vec<PropertyIdentifier> {
         self.cases
             .iter()
@@ -57,7 +58,7 @@ impl DomainsDyn for Switch {
     }
 }
 
-impl AsIR for Switch {
+impl AsIR for Select {
     fn entry_point(&self) -> FunctionIdentifier {
         FunctionIdentifier::new_dynamic("select".into())
     }
@@ -112,6 +113,10 @@ impl AsIR for Switch {
     }
 
     fn structs(&self) -> Vec<crate::ir::module::StructDefinition> {
-        self.cases.iter().flat_map(|(_, v)| v.structs()).collect()
+        self.cases
+            .iter()
+            .flat_map(|(_, v)| v.structs())
+            .chain(self.default.structs())
+            .collect()
     }
 }

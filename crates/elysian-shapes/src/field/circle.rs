@@ -68,15 +68,15 @@ impl AsIR for Circle {
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let (_, point_call, point_functions) = Point.call(spec, PropertyIdentifier(CONTEXT).read());
 
-        let (_, isosurface_call, isosurface_functions) =
-            Isosurface::new(self.radius.clone()).call(spec, point_call);
+        let (_, isosurface_entry, isosurface_functions) =
+            Isosurface::new(self.radius.clone()).prepare(spec);
 
         point_functions
             .into_iter()
             .chain(isosurface_functions)
             .chain(elysian_function! {
                 fn entry_point(RADIUS, CONTEXT) -> CONTEXT {
-                    return #isosurface_call;
+                    return #isosurface_entry(RADIUS, #point_call);
                 }
             })
             .collect()

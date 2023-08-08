@@ -18,7 +18,8 @@ use elysian_core::{
 use elysian_core::ast::expr::Expr;
 use elysian_proc_macros::{elysian_block, elysian_expr};
 
-pub const ELONGATE: FunctionIdentifier = FunctionIdentifier::new("elongate", 1022510703206415324);
+pub const ELONGATE_AXIS: FunctionIdentifier =
+    FunctionIdentifier::new("elongate_axis", 1022510703206415324);
 
 pub const DIR_2D: Identifier = Identifier::new("dir_2d", 10994004961423687819);
 property!(DIR_2D, DIR_2D_PROP, Type::Struct(StructIdentifier(VECTOR2)));
@@ -45,31 +46,30 @@ impl ToString for ClampMode {
 }
 
 #[derive(Debug, Clone)]
-pub struct Elongate {
+pub struct ElongateAxis {
     pub dir: Expr,
     pub clamp_neg: ClampMode,
     pub clamp_pos: ClampMode,
 }
 
-impl Hash for Elongate {
+impl Hash for ElongateAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        ELONGATE.uuid().hash(state);
-        self.clamp_neg.hash(state);
-        self.clamp_pos.hash(state);
+        ELONGATE_AXIS.uuid().hash(state);
         self.dir.hash(state);
+        self.clamp_neg.hash(state);
         self.clamp_pos.hash(state);
     }
 }
 
-impl Domains for Elongate {
+impl Domains for ElongateAxis {
     fn domains() -> Vec<PropertyIdentifier> {
         vec![POSITION_2D.into(), POSITION_3D.into()]
     }
 }
 
-impl AsIR for Elongate {
+impl AsIR for ElongateAxis {
     fn entry_point(&self) -> FunctionIdentifier {
-        ELONGATE
+        ELONGATE_AXIS
             .concat(&FunctionIdentifier::new_dynamic(
                 self.clamp_neg.to_string().into(),
             ))
@@ -144,16 +144,26 @@ impl AsIR for Elongate {
     }
 }
 
-pub trait IntoElongate {
-    fn elongate(self, dir: impl IntoExpr, clamp_neg: ClampMode, clamp_pos: ClampMode) -> Modify;
+pub trait IntoElongateAxis {
+    fn elongate_axis(
+        self,
+        dir: impl IntoExpr,
+        clamp_neg: ClampMode,
+        clamp_pos: ClampMode,
+    ) -> Modify;
 }
 
-impl<T> IntoElongate for T
+impl<T> IntoElongateAxis for T
 where
     T: IntoModify,
 {
-    fn elongate(self, dir: impl IntoExpr, clamp_neg: ClampMode, clamp_pos: ClampMode) -> Modify {
-        self.modify().push_pre(Elongate {
+    fn elongate_axis(
+        self,
+        dir: impl IntoExpr,
+        clamp_neg: ClampMode,
+        clamp_pos: ClampMode,
+    ) -> Modify {
+        self.modify().push_pre(ElongateAxis {
             dir: dir.expr(),
             clamp_neg,
             clamp_pos,

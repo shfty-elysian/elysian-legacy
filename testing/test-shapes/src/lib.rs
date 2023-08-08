@@ -3,26 +3,26 @@ use elysian_core::{
         combine::{Combinator, Combine},
         expr::{Expr, IntoExpr, IntoLiteral, IntoRead},
         modify::IntoModify,
-        select::Switch,
+        select::Select,
     },
     ir::{
-        ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, UV, X, Y, Z},
+        ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, POSITION_2D, UV, X, Y, Z},
         module::{DynAsIR, IntoAsIR},
     },
 };
 use elysian_shapes::{
     combine::{Displace, Sided, SidedProp, SmoothSubtraction, SmoothUnion, Subtraction, Union},
-    field::{Capsule, Chebyshev, Circle, Line, Point, Ring},
+    field::{Arc, Capsule, Chebyshev, Circle, Infinity, Line, Point, Ring},
     modify::{
-        BoundType, ClampMode, IntoAspect, IntoBasisBound, IntoDistanceBound, IntoElongate,
-        IntoGradientNormals, IntoIsosurface, IntoManifold, IntoMirror, IntoRepeat, IntoSet,
-        IntoTranslate, ASPECT, REPEAT_ID_2D,
+        BoundType, ClampMode, IntoAspect, IntoBasisBound, IntoCartesianToPolar, IntoDistanceBound,
+        IntoElongateAxis, IntoFlipBasis, IntoGradientNormals, IntoIsosurface, IntoManifold,
+        IntoMirror, IntoRepeat, IntoSet, IntoTranslate, ASPECT, REPEAT_ID_2D,
     },
-    partition::PARTITION_ID,
     raymarch::Raymarch,
     scale::IntoScale,
+    voronoi::{voronoi, CELL_ID},
 };
-use elysian_text::glyphs::{greek::sigma, upper::*};
+use elysian_text::glyphs::{greek::sigma, text, Align};
 use rust_gpu_bridge::glam::Mat4;
 
 pub fn point() -> impl IntoAsIR {
@@ -39,20 +39,6 @@ pub fn chebyshev() -> impl IntoAsIR {
 
 pub fn line() -> impl IntoAsIR {
     Line::centered([1.0, 0.0]).set_post(COLOR, uv_color())
-}
-
-pub fn quad(extent: impl IntoExpr) -> impl IntoAsIR {
-    Combinator::build()
-        .push(Sided::left())
-        .push(Displace::new(DISTANCE))
-        .push(SidedProp::new(GRADIENT_2D, false))
-        .combine()
-        .push(Point.basis_bound(BoundType::Lower, [0.0, 0.0]))
-        .push(Chebyshev.distance_bound(BoundType::Upper, 0.0))
-        .translate(extent)
-        .mirror_basis([1.0, 1.0])
-        .gradient_normals()
-        .set_post(COLOR, normal_color())
 }
 
 pub fn circle() -> impl IntoAsIR {
@@ -109,38 +95,43 @@ pub fn kettle_bell() -> impl IntoAsIR {
 
 pub fn select() -> impl IntoAsIR {
     let id_x = REPEAT_ID_2D.path().push(X).read();
-    let id_y = REPEAT_ID_2D.path().push(Y).read();
+    let id_x_lt = |t: f64| id_x.clone().lt(t);
 
-    Switch::new(point())
+    let id_y = REPEAT_ID_2D.path().push(Y).read();
+    let id_y_lt = |t: f64| id_y.clone().lt(t);
+
+    use elysian_text::glyphs::upper::*;
+
+    Select::new(Infinity)
         .case(
-            id_x.clone().lt(1.0).and(id_y.clone().lt(1.0)),
+            id_x_lt(1.0).and(id_y_lt(1.0)),
             a().set_post(COLOR, distance_color()),
         )
         .case(
-            id_x.clone().lt(2.0).and(id_y.clone().lt(1.0)),
+            id_x_lt(2.0).and(id_y_lt(1.0)),
             n().set_post(COLOR, distance_color()),
         )
-        .case(id_x.clone().lt(3.0).and(id_y.clone().lt(1.0)), point())
-        .case(id_x.clone().lt(4.0).and(id_y.clone().lt(1.0)), chebyshev())
-        .case(id_x.clone().lt(5.0).and(id_y.clone().lt(1.0)), raymarched())
+        .case(id_x_lt(3.0).and(id_y_lt(1.0)), point())
+        .case(id_x_lt(4.0).and(id_y_lt(1.0)), chebyshev())
+        .case(id_x_lt(5.0).and(id_y_lt(1.0)), raymarched())
         .case(
-            id_x.clone().lt(1.0).and(id_y.clone().lt(2.0)),
+            id_x_lt(1.0).and(id_y_lt(2.0)),
             sigma().set_post(COLOR, distance_color()),
         )
         .case(
-            id_x.clone().lt(2.0).and(id_y.clone().lt(2.0)),
+            id_x_lt(2.0).and(id_y_lt(2.0)),
             l().set_post(COLOR, distance_color()),
         )
         .case(
-            id_x.clone().lt(3.0).and(id_y.clone().lt(2.0)),
+            id_x_lt(3.0).and(id_y_lt(2.0)),
             y().set_post(COLOR, distance_color()),
         )
         .case(
-            id_x.clone().lt(4.0).and(id_y.clone().lt(2.0)),
+            id_x_lt(4.0).and(id_y_lt(2.0)),
             z().set_post(COLOR, distance_color()),
         )
         .case(
-            id_x.clone().lt(5.0).and(id_y.clone().lt(2.0)),
+            id_x_lt(5.0).and(id_y_lt(2.0)),
             i().set_post(COLOR, distance_color()),
         )
         .scale(0.35)
@@ -151,9 +142,9 @@ pub fn select() -> impl IntoAsIR {
 
 pub fn distance_color() -> Expr {
     Expr::vector4(
-        1.0.literal() - DISTANCE.prop().read().abs(),
-        1.0.literal() - DISTANCE.prop().read().abs(),
-        1.0.literal() - DISTANCE.prop().read().abs(),
+        1.0.literal() - DISTANCE.prop().read() * 50.0,
+        1.0.literal() - DISTANCE.prop().read() * 50.0,
+        1.0.literal() - DISTANCE.prop().read() * 50.0,
         1.0.literal(),
     )
 }
@@ -180,12 +171,12 @@ pub fn uv_color() -> Expr {
     Expr::vector4(UV.path().push(X).read(), UV.path().push(Y).read(), 0.0, 1.0)
 }
 
-pub fn partition_id_color(count: usize) -> Expr {
+pub fn cell_id_color(count: usize) -> Expr {
     let fac = 1.0 / count as f64;
     Expr::vector4(
-        PARTITION_ID.prop().read() * fac,
-        PARTITION_ID.prop().read() * fac,
-        PARTITION_ID.prop().read() * fac,
+        CELL_ID.prop().read() * fac,
+        CELL_ID.prop().read() * fac,
+        CELL_ID.prop().read() * fac,
         1.0,
     )
 }
@@ -210,7 +201,7 @@ pub fn raymarched() -> impl IntoAsIR {
         Combine::from(Union)
             .push(
                 Point
-                    .elongate([0.5, 0.0, 0.0], ClampMode::Dir, ClampMode::Dir)
+                    .elongate_axis([0.5, 0.0, 0.0], ClampMode::Dir, ClampMode::Dir)
                     .translate([0.5, 0.5, -2.0])
                     .isosurface(1.0)
                     .manifold()
@@ -218,7 +209,7 @@ pub fn raymarched() -> impl IntoAsIR {
             )
             .push(
                 Point
-                    .elongate([0.5, 0.0, 0.0], ClampMode::Dir, ClampMode::Dir)
+                    .elongate_axis([0.5, 0.0, 0.0], ClampMode::Dir, ClampMode::Dir)
                     .translate([-0.5, -0.5, -2.5])
                     .isosurface(1.0)
                     .manifold()
@@ -226,7 +217,7 @@ pub fn raymarched() -> impl IntoAsIR {
             )
             .push(
                 Point
-                    .elongate([0.5, 0.0, 0.0], ClampMode::Dir, ClampMode::Dir)
+                    .elongate_axis([0.5, 0.0, 0.0], ClampMode::Dir, ClampMode::Dir)
                     .translate([1.0, -1.5, -3.0])
                     .isosurface(1.0)
                     .manifold()
@@ -238,76 +229,55 @@ pub fn raymarched() -> impl IntoAsIR {
 }
 
 pub fn partition() -> impl IntoAsIR {
-    Switch::new(point())
-        .case(
-            PARTITION_ID.prop().read().lt(1.0),
-            a().set_post(COLOR, distance_color()),
-        )
-        .case(
-            PARTITION_ID.prop().read().lt(2.0),
-            k().set_post(COLOR, distance_color()),
-        )
-        .case(
-            PARTITION_ID.prop().read().lt(3.0),
-            l().set_post(COLOR, distance_color()),
-        )
-        .case(
-            PARTITION_ID.prop().read().lt(4.0),
-            w().set_post(COLOR, distance_color()),
-        )
-        .case(
-            PARTITION_ID.prop().read().lt(5.0),
-            x().set_post(COLOR, distance_color()),
-        )
-        .case(
-            PARTITION_ID.prop().read().lt(6.0),
-            z().set_post(COLOR, distance_color()),
-        )
-        .case(
-            PARTITION_ID.prop().read().lt(7.0),
-            y().set_post(COLOR, distance_color()),
-        )
+    let cell_id = CELL_ID.prop().read();
+    let cell_id_lt = |t: f64| cell_id.clone().lt(t);
+
+    use elysian_text::glyphs::upper::*;
+
+    Select::new(Infinity)
+        .case(cell_id_lt(1.0), h())
+        .case(cell_id_lt(2.0), e())
+        .case(cell_id_lt(3.0), l())
+        .case(cell_id_lt(4.0), l())
+        .case(cell_id_lt(5.0), o())
+        .case(cell_id_lt(6.0), w())
+        .case(cell_id_lt(7.0), o())
+        .case(cell_id_lt(8.0), r())
+        .case(cell_id_lt(9.0), l())
+        .case(cell_id_lt(10.0), d())
+        .case(cell_id_lt(11.0), Infinity)
         .scale(0.35)
         .modify()
-        .push_pre(
-            [
-                [0.0, 0.0],
-                [-1.5, -0.75],
-                [0.0, -1.5],
-                [1.5, -0.75],
-                [1.5, 0.75],
-                [0.0, 1.5],
-                [-1.5, 0.75],
-            ]
-            .into_iter()
-            .enumerate()
-            .fold(Combine::from(Union), |acc, (i, next)| {
-                acc.push(Point.translate(next).set_pre(PARTITION_ID, i as f32))
-            }),
-        )
+        .push_pre(voronoi([
+            [-2.0, 0.5],
+            [-1.0, 1.0],
+            [0.0, 1.5],
+            [1.0, 1.0],
+            [2.0, 0.5],
+            [-2.0, -0.5],
+            [-1.0, -1.0],
+            [0.0, -1.5],
+            [1.0, -1.0],
+            [2.0, -0.5],
+            [0.0, 0.0],
+        ]))
         .set_post(COLOR, distance_color())
         .aspect(ASPECT.prop().read())
 }
 
 pub fn test_shape() -> impl IntoAsIR {
-    partition()
+    text(
+        "SPHINX OF\nBLACK QUARTZ,\nJUDGE MY VOW.",
+        Align::Center,
+        [1.2, 1.2],
+        0.35,
+    )
+    //.isosurface(0.05)
+    .scale(0.4)
+    .set_post(COLOR, distance_color())
+    .aspect(ASPECT.prop().read())
 }
 
 pub fn shapes() -> impl IntoIterator<Item = (&'static str, DynAsIR)> {
-    [
-        ("point", point().as_ir()),
-        ("chebyshev", chebyshev().as_ir()),
-        ("line", line().as_ir()),
-        ("quad", quad([1.0, 0.5]).as_ir()),
-        ("circle", circle().as_ir()),
-        ("capsule", capsule().as_ir()),
-        ("ring", ring().as_ir()),
-        ("union", union().as_ir()),
-        ("smooth_union", smooth_union().as_ir()),
-        ("kettle_bell", kettle_bell().as_ir()),
-        ("t", t().as_ir()),
-        ("raymarched", raymarched().as_ir()),
-        ("select", select().as_ir()),
-        ("partition", partition().as_ir()),
-    ]
+    [("test_shape", test_shape().as_ir())]
 }

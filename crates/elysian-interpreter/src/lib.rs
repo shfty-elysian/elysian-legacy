@@ -6,7 +6,8 @@ use elysian_core::ir::{
     module::{FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT},
 };
 use rust_gpu_bridge::{
-    Abs, Acos, Atan, Atan2, Clamp, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,
+    Abs, Acos, Asin, Atan, Atan2, Clamp, Cos, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,
+    Sin, Tan,
 };
 
 pub struct Interpreter {
@@ -280,6 +281,26 @@ pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Ex
             #[cfg(feature = "print")]
             println!("Round");
             evaluate_expr(interpreter, op).round()
+        }
+        Expr::Sin(op) => {
+            #[cfg(feature = "print")]
+            println!("Sin");
+            evaluate_expr(interpreter, op).sin()
+        }
+        Expr::Cos(op) => {
+            #[cfg(feature = "print")]
+            println!("Cos");
+            evaluate_expr(interpreter, op).cos()
+        }
+        Expr::Tan(op) => {
+            #[cfg(feature = "print")]
+            println!("Tan");
+            evaluate_expr(interpreter, op).tan()
+        }
+        Expr::Asin(op) => {
+            #[cfg(feature = "print")]
+            println!("Asin");
+            evaluate_expr(interpreter, op).asin()
         }
         Expr::Acos(op) => {
             #[cfg(feature = "print")]

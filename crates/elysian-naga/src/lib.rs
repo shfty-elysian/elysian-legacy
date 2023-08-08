@@ -753,8 +753,8 @@ impl<'a> NagaBuilder<'a> {
                                 panic!("{}", invalid(n.name(), s.name()))
                             }
                         },
-                        _ => {
-                            panic!("{}", invalid(s.name(), n.name()))
+                        op => {
+                            panic!("{op:#?} {}", invalid(s.name(), n.name()))
                         }
                     },
                     (ElysianType::Number(n), ElysianType::Struct(s)) => match expr {
@@ -810,6 +810,12 @@ impl<'a> NagaBuilder<'a> {
                             | ("Vector4", "Vector4") => (lhs, rhs),
                             _ => panic!("{}", invalid(a.name(), b.name())),
                         },
+                        Expr::Mod(_, _) => match (a.name(), b.name()) {
+                            ("Vector2", "Vector2")
+                            | ("Vector3", "Vector3")
+                            | ("Vector4", "Vector4") => (lhs, rhs),
+                            _ => panic!("{}", invalid(a.name(), b.name())),
+                        },
                         Expr::Eq(_, _) | Expr::Ne(_, _) | Expr::Lt(_, _) | Expr::Gt(_, _) => {
                             if a == b {
                                 (lhs, rhs)
@@ -831,13 +837,14 @@ impl<'a> NagaBuilder<'a> {
                         Expr::Sub(..) => BinaryOperator::Subtract,
                         Expr::Mul(..) => BinaryOperator::Multiply,
                         Expr::Div(..) => BinaryOperator::Divide,
+                        Expr::Mod(..) => BinaryOperator::Modulo,
                         Expr::Eq(..) => BinaryOperator::Equal,
                         Expr::Ne(..) => BinaryOperator::NotEqual,
                         Expr::Lt(..) => BinaryOperator::Less,
                         Expr::Gt(..) => BinaryOperator::Greater,
                         Expr::And(..) => BinaryOperator::LogicalAnd,
                         Expr::Or(..) => BinaryOperator::LogicalOr,
-                        _ => unreachable!(),
+                        op => unreachable!("{op:#?}"),
                     },
                     left,
                     right,
@@ -869,6 +876,10 @@ impl<'a> NagaBuilder<'a> {
             | Expr::Sign(t)
             | Expr::Round(t)
             | Expr::Length(t)
+            | Expr::Sin(t)
+            | Expr::Cos(t)
+            | Expr::Tan(t)
+            | Expr::Asin(t)
             | Expr::Acos(t)
             | Expr::Atan(t) => {
                 let arg = self.expr_to_naga(t);
@@ -880,6 +891,10 @@ impl<'a> NagaBuilder<'a> {
                         Expr::Round(..) => MathFunction::Round,
                         Expr::Length(..) => MathFunction::Length,
                         Expr::Normalize(..) => MathFunction::Normalize,
+                        Expr::Sin(..) => MathFunction::Sin,
+                        Expr::Cos(..) => MathFunction::Cos,
+                        Expr::Tan(..) => MathFunction::Tan,
+                        Expr::Asin(..) => MathFunction::Asin,
                         Expr::Acos(..) => MathFunction::Acos,
                         Expr::Atan(..) => MathFunction::Atan,
                         _ => unreachable!(),

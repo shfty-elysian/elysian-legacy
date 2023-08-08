@@ -30,6 +30,10 @@ pub enum Expr {
     Abs(BoxExpr),
     Sign(BoxExpr),
     Round(BoxExpr),
+    Sin(BoxExpr),
+    Cos(BoxExpr),
+    Tan(BoxExpr),
+    Asin(BoxExpr),
     Acos(BoxExpr),
     Atan(BoxExpr),
     Length(BoxExpr),
@@ -276,12 +280,8 @@ impl Expr {
                 )
                 .unwrap()
                 .clone(),
-            Neg(t) => t.ty(function_defs, types),
-            Abs(t) => t.ty(function_defs, types),
-            Sign(t) => t.ty(function_defs, types),
-            Round(t) => t.ty(function_defs, types),
-            Acos(t) => t.ty(function_defs, types),
-            Atan(t) => t.ty(function_defs, types),
+            Neg(t) | Abs(t) | Sign(t) | Round(t) | Sin(t) | Cos(t) | Tan(t) | Asin(t) | Acos(t)
+            | Atan(t) => t.ty(function_defs, types),
             Length(t) => match t.ty(function_defs, types) {
                 Type::Boolean => panic!("Invalid Length"),
                 Type::Number(n) => Type::Number(n),
@@ -294,6 +294,7 @@ impl Expr {
             },
             Normalize(t) => t.ty(function_defs, types),
             Clamp(t, _, _) => t.ty(function_defs, types),
+            Dot(_, _) => Type::Number(NumericType::Float),
             Add(lhs, rhs)
             | Sub(lhs, rhs)
             | Mul(lhs, rhs)
@@ -307,7 +308,6 @@ impl Expr {
             | Gt(lhs, rhs)
             | And(lhs, rhs)
             | Or(lhs, rhs)
-            | Dot(lhs, rhs)
             | Atan2(lhs, rhs)
             | Mix(lhs, rhs, ..) => {
                 match (lhs.ty(function_defs, types), rhs.ty(function_defs, types)) {
@@ -361,6 +361,12 @@ impl Expr {
                             ("Vector4", "Vector4") => Type::Struct(a),
                             _ => panic!("Invalid Binary Op"),
                         },
+                        Mod(_, _) => match (a.name(), b.name()) {
+                            ("Vector2", "Vector2") => Type::Struct(a),
+                            ("Vector3", "Vector3") => Type::Struct(a),
+                            ("Vector4", "Vector4") => Type::Struct(a),
+                            _ => panic!("Invalid Binary Op"),
+                        },
                         Lt(_, _)
                         | Gt(_, _)
                         | Eq(_, _)
@@ -382,7 +388,7 @@ impl Expr {
                                 panic!("Invalid Binary Op")
                             }
                         }
-                        _ => unreachable!(),
+                        op => unreachable!("{op:#?}"),
                     },
                     _ => panic!("Invalid Binary Op"),
                 }
@@ -456,6 +462,22 @@ impl Expr {
 
     pub fn normalize(self) -> Expr {
         Normalize(self.box_expr())
+    }
+
+    pub fn sin(self) -> Expr {
+        Expr::Sin(self.box_expr())
+    }
+
+    pub fn cos(self) -> Expr {
+        Expr::Cos(self.box_expr())
+    }
+
+    pub fn tan(self) -> Expr {
+        Expr::Tan(self.box_expr())
+    }
+
+    pub fn asin(self) -> Expr {
+        Expr::Asin(self.box_expr())
     }
 
     pub fn acos(self) -> Expr {

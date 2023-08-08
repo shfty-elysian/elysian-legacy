@@ -849,6 +849,10 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
         | IrExpr::Round(t)
         | IrExpr::Length(t)
         | IrExpr::Normalize(t)
+        | IrExpr::Sin(t)
+        | IrExpr::Cos(t)
+        | IrExpr::Tan(t)
+        | IrExpr::Asin(t)
         | IrExpr::Acos(t)
         | IrExpr::Atan(t) => Expr::MethodCall(ExprMethodCall {
             attrs: vec![],
@@ -861,6 +865,10 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
                     IrExpr::Round(_) => "round",
                     IrExpr::Length(_) => "length",
                     IrExpr::Normalize(_) => "normalize_or_zero",
+                    IrExpr::Sin(_) => "sin",
+                    IrExpr::Cos(_) => "cos",
+                    IrExpr::Tan(_) => "tan",
+                    IrExpr::Asin(_) => "asin",
                     IrExpr::Acos(_) => "acos",
                     IrExpr::Atan(_) => "atan",
                     _ => unreachable!(),

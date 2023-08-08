@@ -18,7 +18,7 @@ use elysian_core::{
 use elysian_core::ast::expr::Expr;
 use elysian_decl_macros::elysian_function;
 
-pub const REPEAT: Identifier = Identifier::new("repeat", 346035631277210970);
+pub const REPEAT_CLAMPED: Identifier = Identifier::new("repeat_clamped", 346035631277210970);
 pub const REPEAT_INFINITE: Identifier = Identifier::new("repeat_infinite", 468741336633754013);
 
 pub const PERIOD_2D: Identifier = Identifier::new("period_2d", 6536292381924824837);
@@ -34,6 +34,18 @@ property!(
     PERIOD_3D_PROP,
     Type::Struct(StructIdentifier(VECTOR3))
 );
+
+pub const MIN_2D: Identifier = Identifier::new("min_2d", 2361871511508665757);
+property!(MIN_2D, MIN_2D_PROP, Type::Struct(StructIdentifier(VECTOR2)));
+
+pub const MIN_3D: Identifier = Identifier::new("min_3d", 8723062023762026);
+property!(MIN_3D, MIN_3D_PROP, Type::Struct(StructIdentifier(VECTOR2)));
+
+pub const MAX_2D: Identifier = Identifier::new("max_2d", 1490794385394722553);
+property!(MAX_2D, MAX_2D_PROP, Type::Struct(StructIdentifier(VECTOR2)));
+
+pub const MAX_3D: Identifier = Identifier::new("max_3d", 998568592829815925);
+property!(MAX_3D, MAX_3D_PROP, Type::Struct(StructIdentifier(VECTOR2)));
 
 pub const REPEAT_ID_2D: Identifier = Identifier::new("repeat_id_2d", 1118017393866660680);
 property!(
@@ -57,7 +69,11 @@ pub struct Repeat {
 
 impl Hash for Repeat {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        REPEAT.uuid().hash(state);
+        if self.range.is_none() {
+            REPEAT_INFINITE.uuid().hash(state);
+        } else {
+            REPEAT_CLAMPED.uuid().hash(state);
+        }
         self.period.hash(state);
     }
 }
@@ -73,12 +89,18 @@ impl AsIR for Repeat {
         FunctionIdentifier(if self.range.is_none() {
             REPEAT_INFINITE
         } else {
-            REPEAT
+            REPEAT_CLAMPED
         })
     }
 
     fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
-        vec![self.period.clone().into(), input]
+        if let Some((min, max)) = self.range.as_ref() {
+            let min = elysian_core::ir::ast::Expr::from(min.clone());
+            let max = elysian_core::ir::ast::Expr::from(max.clone());
+            vec![self.period.clone().into(), min, max, input]
+        } else {
+            vec![self.period.clone().into(), input]
+        }
     }
 
     fn functions(
@@ -86,22 +108,20 @@ impl AsIR for Repeat {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let (position, period, repeat_id) = if spec.contains(&POSITION_2D.into()) {
-            (POSITION_2D, PERIOD_2D, REPEAT_ID_2D)
+        let (position, period, min, max, repeat_id) = if spec.contains(&POSITION_2D.into()) {
+            (POSITION_2D, PERIOD_2D, MIN_2D, MAX_2D, REPEAT_ID_2D)
         } else if spec.contains(&POSITION_3D.into()) {
-            (POSITION_3D, PERIOD_3D, REPEAT_ID_3D)
+            (POSITION_3D, PERIOD_3D, MIN_3D, MAX_3D, REPEAT_ID_3D)
         } else {
             panic!("No position domain")
         };
 
-        vec![if let Some((min, max)) = &self.range {
-            let min = elysian_core::ir::ast::Expr::from(min.clone());
-            let max = elysian_core::ir::ast::Expr::from(max.clone());
+        vec![if self.range.is_some() {
             elysian_function! {
-                fn entry_point(period, mut CONTEXT) -> CONTEXT {
-                    CONTEXT.repeat_id = (CONTEXT.position / period).round().clamp(#min, #max);
+                fn entry_point(period, min, max, mut CONTEXT) -> CONTEXT {
+                    CONTEXT.repeat_id = (CONTEXT.position / period).round().clamp(min, max);
                     CONTEXT.position =
-                        CONTEXT.position - period * (CONTEXT.position / period).round().clamp(#min, #max);
+                        CONTEXT.position - period * (CONTEXT.position / period).round().clamp(min, max);
                     return CONTEXT;
                 }
             }

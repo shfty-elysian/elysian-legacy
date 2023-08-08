@@ -150,6 +150,8 @@ impl AsIR for Combine {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
+        assert!(self.shapes.len() > 1, "Combine must have at least two shapes");
+
         let prepared_shapes: Vec<_> = self
             .shapes
             .iter()

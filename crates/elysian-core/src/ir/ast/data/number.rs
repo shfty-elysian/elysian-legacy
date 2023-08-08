@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
-use rust_gpu_bridge::{Abs, Acos, Atan, Atan2, Clamp, Max, Min, Mix, Round, Sign};
+use rust_gpu_bridge::{Abs, Acos, Asin, Atan, Atan2, Clamp, Cos, Max, Min, Mix, Round, Sign, Tan, Sin};
 
 use crate::ir::ast::Expr;
 
@@ -224,11 +224,38 @@ impl Max for Number {
     }
 }
 
-impl Atan2 for Number {
-    fn atan2(self, rhs: Self) -> Self {
-        match (self, rhs) {
-            (Number::Float(a), Number::Float(b)) => Number::Float(a.atan2(b)),
-            _ => panic!("Invalid Atan2"),
+impl Sin for Number {
+    fn sin(self) -> Self {
+        match self {
+            Number::Float(a) => Number::Float(a.sin()),
+            _ => panic!("Invalid Sin"),
+        }
+    }
+}
+
+impl Cos for Number {
+    fn cos(self) -> Self {
+        match self {
+            Number::Float(a) => Number::Float(a.cos()),
+            _ => panic!("Invalid Cos"),
+        }
+    }
+}
+
+impl Tan for Number {
+    fn tan(self) -> Self {
+        match self {
+            Number::Float(a) => Number::Float(a.tan()),
+            _ => panic!("Invalid Tan"),
+        }
+    }
+}
+
+impl Asin for Number {
+    fn asin(self) -> Self {
+        match self {
+            Number::Float(a) => Number::Float(a.asin()),
+            _ => panic!("Invalid Asin"),
         }
     }
 }
@@ -247,6 +274,15 @@ impl Atan for Number {
         match self {
             Number::Float(a) => Number::Float(a.atan()),
             _ => panic!("Invalid Atan"),
+        }
+    }
+}
+
+impl Atan2 for Number {
+    fn atan2(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (Number::Float(a), Number::Float(b)) => Number::Float(a.atan2(b)),
+            _ => panic!("Invalid Atan2"),
         }
     }
 }

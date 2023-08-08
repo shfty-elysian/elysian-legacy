@@ -4,79 +4,12 @@ use std::{
 };
 
 use crate::ir::{
-    ast::{
-        IntoBlock, COLOR, DISTANCE, ERROR, GRADIENT_2D, GRADIENT_3D, LIGHT, NORMAL, POSITION_2D,
-        POSITION_3D, SUPPORT_2D, SUPPORT_3D, TANGENT_2D, TANGENT_3D, TIME, UV,
-    },
+    ast::IntoBlock,
     module::{
-        AsIR, DomainsDyn, DynAsIR, FieldDefinition, FunctionDefinition, FunctionIdentifier,
-        InputDefinition, IntoAsIR, IntoRead, PropertyIdentifier, SpecializationData,
-        StructDefinition, CONTEXT,
+        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
+        IntoAsIR, IntoRead, PropertyIdentifier, SpecializationData, StructDefinition, CONTEXT,
     },
 };
-
-pub const CONTEXT_STRUCT_FIELDS: &'static [FieldDefinition] = &[
-    FieldDefinition {
-        id: PropertyIdentifier(POSITION_2D),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(POSITION_3D),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(TIME),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(DISTANCE),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(GRADIENT_2D),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(GRADIENT_3D),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(NORMAL),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(UV),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(TANGENT_2D),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(TANGENT_3D),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(COLOR),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(LIGHT),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(SUPPORT_2D),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(SUPPORT_3D),
-        public: true,
-    },
-    FieldDefinition {
-        id: PropertyIdentifier(ERROR),
-        public: true,
-    },
-];
 
 pub struct Modify {
     pre_modifiers: Vec<DynAsIR>,

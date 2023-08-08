@@ -6,7 +6,8 @@ use std::{
 
 use rust_gpu_bridge::{
     glam::{Vec2, Vec3, Vec4},
-    Abs, Acos, Atan, Atan2, Clamp, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,
+    Abs, Acos, Asin, Atan, Atan2, Clamp, Cos, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,
+    Sin, Tan,
 };
 
 use crate::ir::module::StructIdentifier;
@@ -268,11 +269,47 @@ impl Max for Value {
     }
 }
 
+impl Sin for Value {
+    fn sin(self) -> Self {
+        match &self {
+            Value::Number(a) => a.clone().sin().into(),
+            _ => panic!("Invalid Sin {:#?}", self),
+        }
+    }
+}
+
+impl Cos for Value {
+    fn cos(self) -> Self {
+        match &self {
+            Value::Number(a) => a.clone().cos().into(),
+            _ => panic!("Invalid Cos {:#?}", self),
+        }
+    }
+}
+
+impl Tan for Value {
+    fn tan(self) -> Self {
+        match &self {
+            Value::Number(a) => a.clone().tan().into(),
+            _ => panic!("Invalid Tan {:#?}", self),
+        }
+    }
+}
+
+impl Asin for Value {
+    fn asin(self) -> Self {
+        match &self {
+            Value::Number(a) => a.clone().asin().into(),
+            _ => panic!("Invalid Asin {:#?}", self),
+        }
+    }
+}
+
 impl Acos for Value {
     fn acos(self) -> Self {
         match &self {
             Value::Number(a) => a.clone().acos().into(),
-            _ => panic!("Invalid Atan2 {:#?}", self),
+            _ => panic!("Invalid Acos {:#?}", self),
         }
     }
 }

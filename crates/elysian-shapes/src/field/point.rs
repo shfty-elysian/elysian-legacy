@@ -105,7 +105,6 @@ impl AsIR for Point {
                                     Y: CONTEXT.position.Y,
                                 }.length()
                             ).acos() / #pi) * 0.5 + 0.5,
-
                         };
                     });
                 }

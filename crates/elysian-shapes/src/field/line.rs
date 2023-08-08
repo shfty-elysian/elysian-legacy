@@ -13,7 +13,7 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_stmt;
 
-use crate::modify::{ClampMode, Elongate, DIR_2D, DIR_3D};
+use crate::modify::{ClampMode, ElongateAxis, DIR_2D, DIR_3D};
 
 use super::Point;
 
@@ -69,7 +69,7 @@ impl Domains for Line {
     fn domains() -> Vec<PropertyIdentifier> {
         Point::domains()
             .into_iter()
-            .chain(Elongate::domains())
+            .chain(ElongateAxis::domains())
             .collect()
     }
 }
@@ -98,7 +98,7 @@ impl AsIR for Line {
             panic!("No position domain set")
         };
 
-        let (_, elongate_call, elongate_functions) = Elongate {
+        let (_, elongate_call, elongate_functions) = ElongateAxis {
             dir: self.dir.clone(),
             clamp_neg: match self.mode {
                 LineMode::Centered => ClampMode::Dir,
