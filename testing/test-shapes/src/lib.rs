@@ -1,26 +1,28 @@
 use elysian_core::{
     ast::{
         combine::{Combinator, Combine},
-        expr::{Expr, IntoExpr, IntoLiteral, IntoRead},
+        expr::{Expr, IntoLiteral, IntoRead},
+        filter::IntoFilter,
         modify::IntoModify,
         select::Select,
     },
     ir::{
-        ast::{COLOR, DISTANCE, ERROR, GRADIENT_2D, NORMAL, UV, X, Y, Z},
+        ast::{vector2, COLOR, DISTANCE, GRADIENT_2D, UV, X, Y},
         module::{DynAsIR, IntoAsIR},
     },
 };
 use elysian_shapes::{
+    color::{ambient_light_color, directional_light_color, distance_color, normal_color, uv_color},
     combine::{SmoothSubtraction, SmoothUnion, Subtraction, Union},
-    derive_support_vector::SUPPORT_VECTOR_2D,
     field::{Capsule, Chebyshev, Circle, Infinity, Line, Point, Ring},
     modify::{
-        ClampMode, IntoAspect, IntoElongateAxis, IntoGradientNormals, IntoIsosurface, IntoManifold,
-        IntoRepeat, IntoSet, IntoTranslate, ASPECT, REPEAT_ID_2D,
+        IntoAspect, IntoGradientNormals, IntoIsosurface, IntoManifold, IntoRepeat, IntoSet,
+        IntoTranslate, ASPECT, REPEAT_ID_2D,
     },
     quad,
     raymarch::Raymarch,
     scale::IntoScale,
+    uv_map::IntoUvMap,
     voronoi::{voronoi, CELL_ID},
 };
 use elysian_text::glyphs::{greek::sigma, text, Align};
@@ -137,85 +139,6 @@ pub fn select() -> impl IntoAsIR {
         .translate([-1.6, -1.0])
 }
 
-pub fn distance_color(fac: f64) -> Expr {
-    let color = 1.0.literal() - (DISTANCE.prop().read() * fac).clamp(0.0, 1.0);
-    Expr::vector4(color.clone(), color.clone(), color, 1.0.literal())
-}
-
-pub fn normal_color() -> Expr {
-    Expr::vector4(
-        NORMAL.path().push(X).read() * 0.5 + 0.5,
-        NORMAL.path().push(Y).read() * 0.5 + 0.5,
-        NORMAL.path().push(Z).read() * 0.5 + 0.5,
-        1.0,
-    )
-}
-
-pub fn directional_light_color(dir: Expr) -> Expr {
-    Expr::vector4(
-        -NORMAL.path().read().dot(dir.clone()),
-        -NORMAL.path().read().dot(dir.clone()),
-        -NORMAL.path().read().dot(dir),
-        1.0,
-    )
-}
-
-pub fn ambient_light_color(ambient: impl IntoExpr) -> Expr {
-    let ambient = ambient.expr();
-    Expr::vector4(ambient.clone(), ambient.clone(), ambient.clone(), 1.0)
-}
-
-pub fn gradient_color() -> Expr {
-    Expr::vector4(
-        GRADIENT_2D.path().push(X).read() * 0.5 + 0.5,
-        GRADIENT_2D.path().push(Y).read() * 0.5 + 0.5,
-        0.0,
-        1.0,
-    )
-}
-
-pub fn uv_color() -> Expr {
-    Expr::vector4(UV.path().push(X).read(), UV.path().push(Y).read(), 0.0, 1.0)
-}
-
-pub fn cell_id_color(count: usize) -> Expr {
-    let fac = 1.0 / count as f64;
-    Expr::vector4(
-        CELL_ID.prop().read() * fac,
-        CELL_ID.prop().read() * fac,
-        CELL_ID.prop().read() * fac,
-        1.0,
-    )
-}
-
-pub fn repeat_id_color(count: usize) -> Expr {
-    let fac = 1.0 / count as f64;
-    Expr::vector4(
-        REPEAT_ID_2D.path().push(X).read().abs() * fac,
-        REPEAT_ID_2D.path().push(Y).read().abs() * fac,
-        0.0,
-        1.0,
-    )
-}
-
-pub fn support_vector_color() -> Expr {
-    Expr::vector4(
-        SUPPORT_VECTOR_2D.path().push(X).read() * 0.5 + 0.5,
-        SUPPORT_VECTOR_2D.path().push(Y).read() * 0.5 + 0.5,
-        0.0,
-        1.0,
-    )
-}
-
-pub fn error_color() -> Expr {
-    Expr::vector4(
-        ERROR.prop().read().abs(),
-        ERROR.prop().read().min(0.0).abs(),
-        0.0,
-        1.0,
-    )
-}
-
 pub fn raymarched() -> impl IntoAsIR {
     //let projection = Mat4::orthographic_rh(-1.0, 1.0, -1.0, 1.0, 0.0, 10.0);
     let projection = Mat4::perspective_infinite_rh(std::f32::consts::PI * 0.5, 1.0, 0.01);
@@ -224,32 +147,22 @@ pub fn raymarched() -> impl IntoAsIR {
         100u64,
         projection.inverse(),
         Combine::from(Union)
+            .push(Circle::new(1.5).translate([0.5, 0.5, -2.0]))
             .push(
-                Point
-                    .elongate_axis([0.5, 0.0, 0.0], ClampMode::Dir, ClampMode::Dir)
-                    .translate([0.5, 0.5, -2.0])
+                Line::centered([0.5, 0.0, 0.0])
                     .isosurface(1.0)
                     .manifold()
-                    .isosurface(0.2),
+                    .isosurface(0.2)
+                    .translate([-0.5, -0.5, -2.5]),
             )
             .push(
-                Point
-                    .elongate_axis([0.5, 0.0, 0.0], ClampMode::Dir, ClampMode::Dir)
-                    .translate([-0.5, -0.5, -2.5])
+                Line::centered([0.5, 0.0, 0.0])
                     .isosurface(1.0)
                     .manifold()
-                    .isosurface(0.2),
+                    .isosurface(0.2)
+                    .translate([1.0, -1.5, -3.0]),
             )
-            .push(
-                Point
-                    .elongate_axis([0.5, 0.0, 0.0], ClampMode::Dir, ClampMode::Dir)
-                    .translate([1.0, -1.5, -3.0])
-                    .isosurface(1.0)
-                    .manifold()
-                    .isosurface(0.2),
-            )
-            .gradient_normals()
-            .set_post(COLOR, uv_color()),
+            .gradient_normals(),
     )
 }
 
@@ -290,46 +203,51 @@ pub fn partition() -> impl IntoAsIR {
         .aspect(ASPECT.prop().read())
 }
 
-pub fn test_shape() -> impl IntoAsIR {
+pub fn pangram() -> impl IntoAsIR {
     text(
         "SPHINX OF\nBLACK QUARTZ,\nJUDGE MY VOW.",
         Align::Center,
-        [0.8, 1.0],
-        [0.5, 0.5],
+        [0.4, 0.5],
+        [1.0, 1.0],
         Some(
             |field: DynAsIR, cell_size: [f64; 2], total_size: [f64; 2]| {
                 Combine::from(Union)
+                    /*
                     .push(
-                        quad([cell_size[0] * 0.5, cell_size[1] * 0.5])
+                        quad([cell_size[0] * 0.5, cell_size[1] * 0.5], [GRADIENT_2D])
                             .manifold()
                             .set_post(COLOR, [1.0, 0.0, 1.0, 1.0].literal() * distance_color(25.0)),
                     )
                     .push(
-                        quad([total_size[0] * 0.5, total_size[1] * 0.5])
+                        quad([total_size[0] * 0.5, total_size[1] * 0.5], [GRADIENT_2D])
                             .manifold()
                             .set_post(COLOR, [1.0, 1.0, 0.0, 1.0].literal() * distance_color(25.0)),
                     )
-                    .push(
-                        field
-                            .scale(0.5)
-                            .isosurface(0.15)
-                            .gradient_normals()
-                            .set_post(
-                                COLOR,
-                                (ambient_light_color(0.25)
-                                    + directional_light_color(
-                                        [-1.0, -1.0, -1.0].literal().normalize(),
-                                    ))
-                                    * distance_color(100.0),
-                            ),
-                    )
+                    */
+                    .push(field.isosurface(0.15).gradient_normals().set_post(
+                        COLOR,
+                        (ambient_light_color(0.25)
+                            + directional_light_color([-1.0, -1.0, -1.0].literal().normalize()))
+                            * distance_color(100.0),
+                    ))
                     //.push(local_origin())
                     .as_ir()
             },
         ),
     )
-    .scale(0.4)
-    .aspect(ASPECT.prop().read())
+}
+
+pub fn test_shape() -> impl IntoAsIR {
+    raymarched()
+        .set_post(
+            UV,
+            UV.prop().read() * Expr::vector2(2.0, 2.0) - Expr::vector2(1.0, 1.0),
+        )
+        .set_post(UV, UV.prop().read() * Expr::vector2(32.0, 32.0))
+        .uv_map(pangram().filter(COLOR))
+        //.set_post(COLOR, uv_color())
+        .set_post(COLOR, COLOR.prop().read() * distance_color(100.0))
+        .aspect(ASPECT.prop().read())
 }
 
 pub fn shapes() -> impl IntoIterator<Item = (&'static str, DynAsIR)> {

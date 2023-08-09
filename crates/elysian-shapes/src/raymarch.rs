@@ -96,6 +96,7 @@ property!(STEPS, STEPS_PROP, Type::Number(NumericType::UInt));
 pub const MAX_STEPS: Identifier = Identifier::new("max_steps", 1146747975614382616);
 property!(MAX_STEPS, MAX_STEPS_PROP, Type::Number(NumericType::UInt));
 
+#[derive(Debug)]
 pub enum March {
     Fixed {
         step_size: elysian_core::ast::expr::Expr,
@@ -113,6 +114,7 @@ pub fn falloff_k(e: f32, r: f32) -> f32 {
     1.72 * e.abs() / r
 }
 
+#[derive(Debug)]
 pub struct Raymarch {
     march: March,
     max_steps: elysian_core::ast::expr::Expr,
@@ -169,14 +171,6 @@ impl Raymarch {
             inv_projection: inv_projection.expr(),
             field: field.as_ir(),
         }
-    }
-}
-
-impl Debug for Raymarch {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Raymarch")
-            .field("field", &self.field)
-            .finish()
     }
 }
 
