@@ -5,9 +5,7 @@ use std::{
 
 use elysian_core::{
     ir::{
-        ast::{
-            vector2, vector3, Identifier, IntoLiteral, DISTANCE, ERROR, POSITION_2D, POSITION_3D,
-        },
+        ast::{Identifier, DISTANCE, ERROR, POSITION_2D, POSITION_3D},
         module::{
             AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, IntoAsIR,
             SpecializationData, StructIdentifier, Type, CONTEXT,
@@ -60,20 +58,12 @@ impl AsIR for DeriveBoundingError {
     ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
         let entry_point = entry_point.clone();
 
-        let (position, support_vector, zero) = match (
+        let (position, support_vector) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
         ) {
-            (true, false) => (
-                POSITION_2D,
-                SUPPORT_VECTOR_2D,
-                vector2([0.0, 0.0]).literal(),
-            ),
-            (false, true) => (
-                POSITION_3D,
-                SUPPORT_VECTOR_3D,
-                vector3([0.0, 0.0, 0.0]).literal(),
-            ),
+            (true, false) => (POSITION_2D, SUPPORT_VECTOR_2D),
+            (false, true) => (POSITION_3D, SUPPORT_VECTOR_3D),
             _ => panic!("Invalid Position domain"),
         };
 

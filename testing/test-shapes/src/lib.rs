@@ -6,25 +6,20 @@ use elysian_core::{
         select::Select,
     },
     ir::{
-        ast::{COLOR, DISTANCE, ERROR, GRADIENT_2D, NORMAL, POSITION_2D, UV, X, Y, Z},
+        ast::{COLOR, DISTANCE, ERROR, GRADIENT_2D, NORMAL, UV, X, Y, Z},
         module::{DynAsIR, IntoAsIR},
     },
 };
 use elysian_shapes::{
-    combine::{Displace, Sided, SidedProp, SmoothSubtraction, SmoothUnion, Subtraction, Union},
-    derive_bounding_error::IntoDeriveBoundingError,
-    derive_support_vector::{IntoDeriveSupportVector, SUPPORT_VECTOR_2D},
-    elongate_basis::IntoElongateBasis,
-    field::{Arc, Capsule, Chebyshev, Circle, Infinity, Line, Point, Ring},
-    local_origin,
+    combine::{SmoothSubtraction, SmoothUnion, Subtraction, Union},
+    derive_support_vector::SUPPORT_VECTOR_2D,
+    field::{Capsule, Chebyshev, Circle, Infinity, Line, Point, Ring},
     modify::{
-        BoundType, ClampMode, IntoAspect, IntoBasisBound, IntoCartesianToPolar, IntoDistanceBound,
-        IntoElongateAxis, IntoFlipBasis, IntoGradientNormals, IntoIsosurface, IntoManifold,
-        IntoMirror, IntoRepeat, IntoSet, IntoTranslate, ASPECT, REPEAT_ID_2D,
+        ClampMode, IntoAspect, IntoElongateAxis, IntoGradientNormals, IntoIsosurface, IntoManifold,
+        IntoRepeat, IntoSet, IntoTranslate, ASPECT, REPEAT_ID_2D,
     },
     quad,
     raymarch::Raymarch,
-    rotate::IntoRotate,
     scale::IntoScale,
     voronoi::{voronoi, CELL_ID},
 };
@@ -32,15 +27,11 @@ use elysian_text::glyphs::{greek::sigma, text, Align};
 use rust_gpu_bridge::glam::Mat4;
 
 pub fn point() -> impl IntoAsIR {
-    Point
-        .gradient_normals()
-        .set_post(COLOR, distance_normal_color())
+    Point.gradient_normals().set_post(COLOR, normal_color())
 }
 
 pub fn chebyshev() -> impl IntoAsIR {
-    Chebyshev
-        .gradient_normals()
-        .set_post(COLOR, distance_normal_color())
+    Chebyshev.gradient_normals().set_post(COLOR, normal_color())
 }
 
 pub fn line() -> impl IntoAsIR {
@@ -160,20 +151,25 @@ pub fn normal_color() -> Expr {
     )
 }
 
+pub fn directional_light_color(dir: Expr) -> Expr {
+    Expr::vector4(
+        -NORMAL.path().read().dot(dir.clone()),
+        -NORMAL.path().read().dot(dir.clone()),
+        -NORMAL.path().read().dot(dir),
+        1.0,
+    )
+}
+
+pub fn ambient_light_color(ambient: impl IntoExpr) -> Expr {
+    let ambient = ambient.expr();
+    Expr::vector4(ambient.clone(), ambient.clone(), ambient.clone(), 1.0)
+}
+
 pub fn gradient_color() -> Expr {
     Expr::vector4(
         GRADIENT_2D.path().push(X).read() * 0.5 + 0.5,
         GRADIENT_2D.path().push(Y).read() * 0.5 + 0.5,
         0.0,
-        1.0,
-    )
-}
-
-pub fn distance_normal_color() -> Expr {
-    Expr::vector4(
-        (1.0.literal() - DISTANCE.prop().read().abs()) * (NORMAL.path().push(X).read() * 0.5 + 0.5),
-        (1.0.literal() - DISTANCE.prop().read().abs()) * (NORMAL.path().push(Y).read() * 0.5 + 0.5),
-        (1.0.literal() - DISTANCE.prop().read().abs()) * (NORMAL.path().push(Z).read() * 0.5 + 0.5),
         1.0,
     )
 }
@@ -303,33 +299,36 @@ pub fn test_shape() -> impl IntoAsIR {
         Some(
             |field: DynAsIR, cell_size: [f64; 2], total_size: [f64; 2]| {
                 Combine::from(Union)
-                    /*
                     .push(
                         quad([cell_size[0] * 0.5, cell_size[1] * 0.5])
                             .manifold()
-                            .set_post(COLOR, [1.0, 0.0, 1.0, 1.0]),
+                            .set_post(COLOR, [1.0, 0.0, 1.0, 1.0].literal() * distance_color(25.0)),
                     )
-                    */
-                    /*
                     .push(
                         quad([total_size[0] * 0.5, total_size[1] * 0.5])
                             .manifold()
-                            .set_post(COLOR, [1.0, 1.0, 0.0, 1.0]),
+                            .set_post(COLOR, [1.0, 1.0, 0.0, 1.0].literal() * distance_color(25.0)),
                     )
-                    */
-                    .push(field.scale(0.5).set_post(COLOR, [1.0, 1.0, 1.0, 1.0]))
+                    .push(
+                        field
+                            .scale(0.5)
+                            .isosurface(0.15)
+                            .gradient_normals()
+                            .set_post(
+                                COLOR,
+                                (ambient_light_color(0.25)
+                                    + directional_light_color(
+                                        [-1.0, -1.0, -1.0].literal().normalize(),
+                                    ))
+                                    * distance_color(100.0),
+                            ),
+                    )
                     //.push(local_origin())
                     .as_ir()
             },
         ),
     )
-    .isosurface(0.15)
     .scale(0.4)
-    .derive_support_vector()
-    .derive_bounding_error()
-    .set_post(COLOR, gradient_color() * distance_color(100.0))
-    //.set_post(COLOR, error_color() + distance_color(1.0))
-    //.set_post(COLOR, distance_color(1.0))
     .aspect(ASPECT.prop().read())
 }
 

@@ -3,13 +3,12 @@ use std::hash::Hash;
 use elysian_core::{
     ast::expr::{Expr, IntoExpr},
     ir::{
-        ast::{Identifier, DISTANCE, GRADIENT_2D, POSITION_2D, POSITION_3D, VECTOR2, W, X, Y, NUM},
+        ast::{DISTANCE, GRADIENT_2D, NUM, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
-            SpecializationData, Type, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
+            SpecializationData, CONTEXT,
         },
     },
-    property,
 };
 
 use elysian_decl_macros::elysian_function;
