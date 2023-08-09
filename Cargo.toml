@@ -10,7 +10,8 @@ members = [
 ]
 
 [features]
-default = ["static", "image", "shadertoy"]
+default = ["text", "static", "image", "shadertoy"]
+text = ["dep:elysian-text"]
 syn = ["dep:elysian-syn"]
 static = ["syn", "dep:elysian-static"]
 image = ["dep:elysian-image"]
@@ -21,7 +22,9 @@ shadertoy = ["naga", "dep:elysian-shadertoy"]
 elysian-core = { path = "crates/elysian-core" }
 elysian-proc-macros = { path = "crates/elysian-proc-macros" }
 elysian-decl-macros = { path = "crates/elysian-decl-macros" }
+elysian-shapes = { path = "crates/elysian-shapes" }
 
+elysian-text = { path = "crates/elysian-text", optional = true }
 elysian-image = { path = "crates/elysian-image", optional = true }
 elysian-syn = { path = "crates/elysian-syn", optional = true }
 elysian-static = { path = "crates/elysian-static", optional = true }

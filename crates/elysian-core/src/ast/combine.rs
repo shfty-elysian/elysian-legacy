@@ -150,7 +150,7 @@ impl AsIR for Combine {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        assert!(self.shapes.len() > 1, "Combine must have at least two shapes");
+        assert!(self.shapes.len() > 0, "Empty Combine");
 
         let prepared_shapes: Vec<_> = self
             .shapes
@@ -183,30 +183,37 @@ impl AsIR for Combine {
             },
         );
 
-        iter.fold(
-            base_entry.call(base.arguments(elysian_stmt! {CONTEXT})),
-            |acc, (t, _, entry, _)| {
-                let entry = entry.call(t.arguments(elysian_stmt! {CONTEXT}));
+        if prepared_shapes.len() == 1 {
+            let base_call = base_entry.call(base.arguments(elysian_stmt! {CONTEXT}));
+            block.push(elysian_stmt! {
+                return #base_call
+            });
+        } else {
+            iter.fold(
+                base_entry.call(base.arguments(elysian_stmt! {CONTEXT})),
+                |acc, (t, _, entry, _)| {
+                    let entry = entry.call(t.arguments(elysian_stmt! {CONTEXT}));
 
-                block.push(elysian_stmt! {
-                    let COMBINE_CONTEXT = COMBINE_CONTEXT {
-                        LEFT: #acc,
-                        RIGHT: #entry
-                    }
-                });
+                    block.push(elysian_stmt! {
+                        let COMBINE_CONTEXT = COMBINE_CONTEXT {
+                            LEFT: #acc,
+                            RIGHT: #entry
+                        }
+                    });
 
-                block.extend(elysian_block! {
-                    let COMBINE_CONTEXT = #combinator;
-                    let OUT = COMBINE_CONTEXT.OUT;
-                });
+                    block.extend(elysian_block! {
+                        let COMBINE_CONTEXT = #combinator;
+                        let OUT = COMBINE_CONTEXT.OUT;
+                    });
 
-                elysian_stmt! { OUT }
-            },
-        );
+                    elysian_stmt! { OUT }
+                },
+            );
 
-        block.push(elysian_stmt! {
-            return OUT
-        });
+            block.push(elysian_stmt! {
+                return OUT
+            });
+        }
 
         let block = Block(block);
 

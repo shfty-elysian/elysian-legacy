@@ -6,19 +6,25 @@ use elysian_core::{
         select::Select,
     },
     ir::{
-        ast::{COLOR, DISTANCE, GRADIENT_2D, NORMAL, POSITION_2D, UV, X, Y, Z},
+        ast::{COLOR, DISTANCE, ERROR, GRADIENT_2D, NORMAL, POSITION_2D, UV, X, Y, Z},
         module::{DynAsIR, IntoAsIR},
     },
 };
 use elysian_shapes::{
     combine::{Displace, Sided, SidedProp, SmoothSubtraction, SmoothUnion, Subtraction, Union},
+    derive_bounding_error::IntoDeriveBoundingError,
+    derive_support_vector::{IntoDeriveSupportVector, SUPPORT_VECTOR_2D},
+    elongate_basis::IntoElongateBasis,
     field::{Arc, Capsule, Chebyshev, Circle, Infinity, Line, Point, Ring},
+    local_origin,
     modify::{
         BoundType, ClampMode, IntoAspect, IntoBasisBound, IntoCartesianToPolar, IntoDistanceBound,
         IntoElongateAxis, IntoFlipBasis, IntoGradientNormals, IntoIsosurface, IntoManifold,
         IntoMirror, IntoRepeat, IntoSet, IntoTranslate, ASPECT, REPEAT_ID_2D,
     },
+    quad,
     raymarch::Raymarch,
+    rotate::IntoRotate,
     scale::IntoScale,
     voronoi::{voronoi, CELL_ID},
 };
@@ -105,34 +111,34 @@ pub fn select() -> impl IntoAsIR {
     Select::new(Infinity)
         .case(
             id_x_lt(1.0).and(id_y_lt(1.0)),
-            a().set_post(COLOR, distance_color()),
+            a([1.0, 1.0]).set_post(COLOR, distance_color(1.0)),
         )
         .case(
             id_x_lt(2.0).and(id_y_lt(1.0)),
-            n().set_post(COLOR, distance_color()),
+            n([1.0, 1.0]).set_post(COLOR, distance_color(1.0)),
         )
         .case(id_x_lt(3.0).and(id_y_lt(1.0)), point())
         .case(id_x_lt(4.0).and(id_y_lt(1.0)), chebyshev())
         .case(id_x_lt(5.0).and(id_y_lt(1.0)), raymarched())
         .case(
             id_x_lt(1.0).and(id_y_lt(2.0)),
-            sigma().set_post(COLOR, distance_color()),
+            sigma().set_post(COLOR, distance_color(1.0)),
         )
         .case(
             id_x_lt(2.0).and(id_y_lt(2.0)),
-            l().set_post(COLOR, distance_color()),
+            l([1.0, 1.0]).set_post(COLOR, distance_color(1.0)),
         )
         .case(
             id_x_lt(3.0).and(id_y_lt(2.0)),
-            y().set_post(COLOR, distance_color()),
+            y([1.0, 1.0]).set_post(COLOR, distance_color(1.0)),
         )
         .case(
             id_x_lt(4.0).and(id_y_lt(2.0)),
-            z().set_post(COLOR, distance_color()),
+            z([1.0, 1.0]).set_post(COLOR, distance_color(1.0)),
         )
         .case(
             id_x_lt(5.0).and(id_y_lt(2.0)),
-            i().set_post(COLOR, distance_color()),
+            i([1.0, 1.0]).set_post(COLOR, distance_color(1.0)),
         )
         .scale(0.35)
         .aspect(ASPECT.prop().read())
@@ -140,13 +146,9 @@ pub fn select() -> impl IntoAsIR {
         .translate([-1.6, -1.0])
 }
 
-pub fn distance_color() -> Expr {
-    Expr::vector4(
-        1.0.literal() - DISTANCE.prop().read() * 50.0,
-        1.0.literal() - DISTANCE.prop().read() * 50.0,
-        1.0.literal() - DISTANCE.prop().read() * 50.0,
-        1.0.literal(),
-    )
+pub fn distance_color(fac: f64) -> Expr {
+    let color = 1.0.literal() - (DISTANCE.prop().read() * fac).clamp(0.0, 1.0);
+    Expr::vector4(color.clone(), color.clone(), color, 1.0.literal())
 }
 
 pub fn normal_color() -> Expr {
@@ -154,6 +156,15 @@ pub fn normal_color() -> Expr {
         NORMAL.path().push(X).read() * 0.5 + 0.5,
         NORMAL.path().push(Y).read() * 0.5 + 0.5,
         NORMAL.path().push(Z).read() * 0.5 + 0.5,
+        1.0,
+    )
+}
+
+pub fn gradient_color() -> Expr {
+    Expr::vector4(
+        GRADIENT_2D.path().push(X).read() * 0.5 + 0.5,
+        GRADIENT_2D.path().push(Y).read() * 0.5 + 0.5,
+        0.0,
         1.0,
     )
 }
@@ -186,6 +197,24 @@ pub fn repeat_id_color(count: usize) -> Expr {
     Expr::vector4(
         REPEAT_ID_2D.path().push(X).read().abs() * fac,
         REPEAT_ID_2D.path().push(Y).read().abs() * fac,
+        0.0,
+        1.0,
+    )
+}
+
+pub fn support_vector_color() -> Expr {
+    Expr::vector4(
+        SUPPORT_VECTOR_2D.path().push(X).read() * 0.5 + 0.5,
+        SUPPORT_VECTOR_2D.path().push(Y).read() * 0.5 + 0.5,
+        0.0,
+        1.0,
+    )
+}
+
+pub fn error_color() -> Expr {
+    Expr::vector4(
+        ERROR.prop().read().abs(),
+        ERROR.prop().read().min(0.0).abs(),
         0.0,
         1.0,
     )
@@ -235,16 +264,16 @@ pub fn partition() -> impl IntoAsIR {
     use elysian_text::glyphs::upper::*;
 
     Select::new(Infinity)
-        .case(cell_id_lt(1.0), h())
-        .case(cell_id_lt(2.0), e())
-        .case(cell_id_lt(3.0), l())
-        .case(cell_id_lt(4.0), l())
-        .case(cell_id_lt(5.0), o())
-        .case(cell_id_lt(6.0), w())
-        .case(cell_id_lt(7.0), o())
-        .case(cell_id_lt(8.0), r())
-        .case(cell_id_lt(9.0), l())
-        .case(cell_id_lt(10.0), d())
+        .case(cell_id_lt(1.0), h([1.0, 1.0]))
+        .case(cell_id_lt(2.0), e([1.0, 1.0]))
+        .case(cell_id_lt(3.0), l([1.0, 1.0]))
+        .case(cell_id_lt(4.0), l([1.0, 1.0]))
+        .case(cell_id_lt(5.0), o([1.0, 1.0]))
+        .case(cell_id_lt(6.0), w([1.0, 1.0]))
+        .case(cell_id_lt(7.0), o([1.0, 1.0]))
+        .case(cell_id_lt(8.0), r([1.0, 1.0]))
+        .case(cell_id_lt(9.0), l([1.0, 1.0]))
+        .case(cell_id_lt(10.0), d([1.0, 1.0]))
         .case(cell_id_lt(11.0), Infinity)
         .scale(0.35)
         .modify()
@@ -261,7 +290,7 @@ pub fn partition() -> impl IntoAsIR {
             [2.0, -0.5],
             [0.0, 0.0],
         ]))
-        .set_post(COLOR, distance_color())
+        .set_post(COLOR, distance_color(1.0))
         .aspect(ASPECT.prop().read())
 }
 
@@ -269,12 +298,38 @@ pub fn test_shape() -> impl IntoAsIR {
     text(
         "SPHINX OF\nBLACK QUARTZ,\nJUDGE MY VOW.",
         Align::Center,
-        [1.2, 1.2],
-        0.35,
+        [0.8, 1.0],
+        [0.5, 0.5],
+        Some(
+            |field: DynAsIR, cell_size: [f64; 2], total_size: [f64; 2]| {
+                Combine::from(Union)
+                    /*
+                    .push(
+                        quad([cell_size[0] * 0.5, cell_size[1] * 0.5])
+                            .manifold()
+                            .set_post(COLOR, [1.0, 0.0, 1.0, 1.0]),
+                    )
+                    */
+                    /*
+                    .push(
+                        quad([total_size[0] * 0.5, total_size[1] * 0.5])
+                            .manifold()
+                            .set_post(COLOR, [1.0, 1.0, 0.0, 1.0]),
+                    )
+                    */
+                    .push(field.scale(0.5).set_post(COLOR, [1.0, 1.0, 1.0, 1.0]))
+                    //.push(local_origin())
+                    .as_ir()
+            },
+        ),
     )
-    //.isosurface(0.05)
+    .isosurface(0.15)
     .scale(0.4)
-    .set_post(COLOR, distance_color())
+    .derive_support_vector()
+    .derive_bounding_error()
+    .set_post(COLOR, gradient_color() * distance_color(100.0))
+    //.set_post(COLOR, error_color() + distance_color(1.0))
+    //.set_post(COLOR, distance_color(1.0))
     .aspect(ASPECT.prop().read())
 }
 

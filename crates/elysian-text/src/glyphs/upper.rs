@@ -9,149 +9,135 @@ use elysian_core::{
 };
 use elysian_shapes::{
     combine::Union,
-    corner,
     elongate_basis::IntoElongateBasis,
-    field::{Circle, Infinity, Line, Point},
+    field::{Arc, Circle, Line, Point},
     modify::{
-        IntoFlipBasis, IntoIsosurface, IntoManifold, IntoMirror, IntoRepeat, IntoTranslate,
-        REPEAT_ID_2D,
+        ClampMode, IntoElongateAxis, IntoFlipBasis, IntoManifold, IntoMirror, IntoRepeat,
+        IntoTranslate, REPEAT_ID_2D,
     },
+    rotate::IntoRotate,
 };
 
 use super::combinator;
 
-pub fn a() -> impl IntoAsIR {
+pub fn a(cell_size: [f64; 2]) -> impl IntoAsIR {
     combinator()
         .combine()
-        .push(Line::segment([0.66, 0.0]).translate([0.0, -0.5]))
-        .push(Line::segment([1.0, -2.25]).translate([0.0, 1.0]))
+        .push(Line::segment([cell_size[0] * 0.75, 0.0]).translate([0.0, cell_size[1] * -0.5]))
+        .push(Line::segment([cell_size[0], cell_size[1] * -2.0]).translate([0.0, cell_size[1]]))
         .mirror_basis([1.0, 0.0])
         .as_ir()
 }
 
-pub fn b() -> impl IntoAsIR {
+pub fn b(cell_size: [f64; 2]) -> impl IntoAsIR {
+    let radius = cell_size[1] * 0.5;
+
     Combine::from(combinator())
-        .push(Line::segment([0.0, 1.0]).translate([-1.0, 0.0]))
+        .push(Line::segment([0.0, cell_size[1]]).translate([-cell_size[0], 0.0]))
         .push(
-            Select::new(Circle::new(0.5).manifold().translate([0.25, 0.5]))
-                .case(
-                    REPEAT_ID_2D.path().push(X).read().lt(1.0),
-                    Line::segment([1.25, 0.0])
-                        .translate([-1.0, 0.5])
-                        .mirror_basis([0.0, 1.0])
-                        .translate([0.0, 0.5]),
-                )
-                .modify()
-                .push_pre(
-                    Point
-                        .repeat_clamped([1.0, 1.0], [0.0, 0.0], [1.0, 0.0])
-                        .translate([-0.25, 0.0])
-                        .filter(REPEAT_ID_2D),
-                ),
+            Select::new(
+                Circle::new(radius)
+                    .manifold()
+                    .translate([cell_size[0] - radius, cell_size[1] - radius]),
+            )
+            .case(
+                POSITION_2D.path().push(X).read().lt(cell_size[0] - radius),
+                Line::segment([cell_size[0] * 2.0, 0.0])
+                    .translate([-cell_size[0], cell_size[1] * 0.5])
+                    .mirror_basis([0.0, 1.0])
+                    .translate([0.0, cell_size[1] * 0.5]),
+            )
+            .modify(),
         )
         .mirror_basis([0.0, 1.0])
 }
 
-pub fn c() -> impl IntoAsIR {
-    Select::new(Line::segment([0.5, 0.0]).translate([0.0, 1.0]))
-        .case(
-            REPEAT_ID_2D.path().push(X).read().lt(1.0),
-            Circle::new(1.0).manifold().translate([-0.25, 0.0]),
-        )
-        .modify()
-        .push_pre(
-            Point
-                .repeat_clamped([1.0, 1.0], [0.0, 0.0], [1.0, 0.0])
-                .translate([-0.5, 0.0])
-                .filter(REPEAT_ID_2D),
-        )
-        .mirror_basis([0.0, 1.0])
+pub fn c(cell_size: [f64; 2]) -> impl IntoAsIR {
+    j(cell_size).flip_basis([1.0, 1.0]).mirror_basis([0.0, 1.0])
 }
 
-pub fn d() -> impl IntoAsIR {
+pub fn d(cell_size: [f64; 2]) -> impl IntoAsIR {
     let repeat_id = REPEAT_ID_2D.prop();
 
     let repeat_id_x_lt = |t: f64| repeat_id.clone().path().push(X).read().clone().lt(t);
 
-    Select::new(Circle::new(1.0).manifold().translate([0.0, 0.0]))
+    Select::new(o(cell_size))
         .case(
-            repeat_id_x_lt(1.0),
-            Line::segment([0.0, 1.0])
-                .translate([-1.0, 0.0])
-                .mirror_axis([-1.0, -1.0].literal().normalize())
+            repeat_id_x_lt(cell_size[0]),
+            Combine::from(Union)
+                .push(Line::segment([0.0, cell_size[1]]).translate([-cell_size[0], 0.0]))
+                .push(Line::segment([cell_size[0], 0.0]).translate([-cell_size[0], cell_size[1]]))
                 .mirror_basis([0.0, 1.0]),
         )
         .modify()
         .push_pre(
             Point
-                .repeat_clamped([1.0, 1.0], [0.0, 0.0], [1.0, 1.0])
-                .translate([-0.5, 0.0])
+                .repeat_clamped(cell_size, [0.0, 0.0], cell_size)
+                .translate([-cell_size[0] * 0.5, 0.0])
                 .filter(REPEAT_ID_2D),
         )
 }
 
-pub fn e() -> impl IntoAsIR {
+pub fn e(cell_size: [f64; 2]) -> impl IntoAsIR {
     combinator()
         .combine()
-        .push(Line::segment([0.0, 1.0]).translate([-1.0, 0.0]))
-        .push(Line::segment([1.0, 0.0]).translate([-1.0, 0.0]))
-        .push(Line::centered([1.0, 0.0]).translate([0.0, 1.0]))
+        .push(Line::segment([0.0, cell_size[1]]).translate([-cell_size[0], 0.0]))
+        .push(Line::segment([cell_size[0], 0.0]).translate([-cell_size[0], 0.0]))
+        .push(Line::centered([cell_size[0], 0.0]).translate([0.0, cell_size[1]]))
         .mirror_basis([0.0, 1.0])
 }
 
-pub fn f() -> impl IntoAsIR {
+pub fn f(cell_size: [f64; 2]) -> impl IntoAsIR {
     combinator()
         .combine()
-        .push(Line::centered([0.0, 1.0]).translate([-1.0, -0.0]))
-        .push(Line::segment([1.0, 0.0]).translate([-1.0, 0.0]))
-        .push(Line::centered([1.0, 0.0]).translate([0.0, 1.0]))
+        .push(Line::centered([0.0, cell_size[1]]).translate([-cell_size[0], -0.0]))
+        .push(Line::segment([cell_size[0], 0.0]).translate([-cell_size[0], 0.0]))
+        .push(Line::centered([cell_size[0], 0.0]).translate([0.0, cell_size[1]]))
 }
 
-pub fn g() -> impl IntoAsIR {
-    let repeat_id = REPEAT_ID_2D.prop();
-    let repeat_id_x_gt = |t: f64| repeat_id.clone().path().push(X).read().clone().gt(t);
-    let repeat_id_y_gt = |t: f64| repeat_id.clone().path().push(Y).read().clone().gt(t);
-    let repeat_id_y_lt = |t: f64| repeat_id.clone().path().push(Y).read().clone().lt(t);
+pub fn g(cell_size: [f64; 2]) -> impl IntoAsIR {
+    let radius = cell_size[0].min(cell_size[1]);
+    let e = if cell_size[0] < cell_size[1] {
+        [0.0, cell_size[0].max(cell_size[1]) - radius]
+    } else {
+        [cell_size[0].max(cell_size[1]) - radius, 0.0]
+    };
 
-    Select::new(Circle::new(1.0).elongate_basis([0.125, 0.25]).manifold())
-        .case(
-            repeat_id_x_gt(-0.25).and(repeat_id_y_gt(0.0)),
-            Line::centered([1.0, 0.0]).translate([0.0, 1.25]),
+    Combine::from(Union)
+        .push(
+            Arc::new(135.0_f64.to_radians().literal(), radius.literal())
+                .rotate(-22.5_f64.to_radians())
+                .elongate_basis([e[0], 0.0])
+                .translate([0.0, e[1]]),
         )
-        .case(
-            repeat_id_x_gt(-0.25)
-                .and(repeat_id_y_gt(-0.75))
-                .and(repeat_id_y_lt(0.75)),
-            Combine::from(combinator())
-                .push(Line::segment([1.1, 0.0]))
-                .push(Line::segment([0.0, -1.0]).translate([1.1, 0.0])),
+        .push(
+            Arc::new(180.0_f64.to_radians().literal(), radius.literal())
+                .rotate(180.0_f64.to_radians())
+                .elongate_basis([e[0], 0.0])
+                .translate([0.0, -e[1]]),
         )
-        .modify()
-        .push_pre(
-            Point
-                .repeat_clamped([0.25, 0.75], [-0.25, -0.75], [0.25, 0.75])
-                .translate([-0.25, 0.0])
-                .filter(REPEAT_ID_2D),
-        )
+        .push(Line::segment([cell_size[0], 0.0]))
+        .push(Line::centered([0.0, e[1]]).translate([-cell_size[0], 0.0]))
+        .push(Line::segment([0.0, -e[1]]).translate([cell_size[0], 0.0]))
 }
 
-pub fn h() -> impl IntoAsIR {
+pub fn h(cell_size: [f64; 2]) -> impl IntoAsIR {
     combinator()
         .combine()
-        .push(Line::centered([0.0, 1.0]).translate([1.0, 0.0]))
-        .push(Line::segment([1.0, 0.0]))
+        .push(Line::centered([0.0, cell_size[1]]).translate([cell_size[0], 0.0]))
+        .push(Line::segment([cell_size[0], 0.0]))
         .mirror_basis([1.0, 0.0])
 }
 
-pub fn i() -> impl IntoAsIR {
-    Line::centered([0.0, 1.0])
+pub fn i(cell_size: [f64; 2]) -> impl IntoAsIR {
+    Line::centered([0.0, cell_size[1]])
 }
 
-pub fn j() -> impl IntoAsIR {
+pub fn j(cell_size: [f64; 2]) -> impl IntoAsIR {
     Select::new(
         Combine::from(Union)
-            .push(Line::segment([-0.5, 0.0]).translate([0.0, -1.0]))
-            .push(Line::segment([0.0, 1.25]).translate([1.0, 0.0])),
+            .push(Line::segment([-cell_size[0], 0.0]).translate([0.0, -cell_size[1]]))
+            .push(Line::segment([0.0, cell_size[1]]).translate([cell_size[0], 0.0])),
     )
     .case(
         POSITION_2D
@@ -160,195 +146,170 @@ pub fn j() -> impl IntoAsIR {
             .read()
             .gt(0.0)
             .and(POSITION_2D.path().push(Y).read().lt(0.0)),
-        corner().flip_basis([0.0, 1.0]).isosurface(1.0).manifold(),
+        o(cell_size),
     )
-    .translate([-0.25, -0.25])
 }
 
-pub fn k() -> impl IntoAsIR {
+pub fn k(cell_size: [f64; 2]) -> impl IntoAsIR {
     combinator()
         .combine()
-        .push(Line::segment([0.0, 1.0]).translate([-0.7, 0.0]))
-        .push(Line::segment([1.0, 1.0]).translate([-0.5, 0.0]))
+        .push(Line::segment([0.0, cell_size[1]]).translate([-cell_size[0], 0.0]))
+        .push(Line::segment([cell_size[0] * 2.0, cell_size[1]]).translate([-cell_size[0], 0.0]))
         .mirror_basis([0.0, 1.0])
 }
 
-pub fn l() -> impl IntoAsIR {
+pub fn l(cell_size: [f64; 2]) -> impl IntoAsIR {
     combinator()
         .combine()
-        .push(Line::centered([0.0, 1.0]).translate([-1.0, 0.0]))
-        .push(Line::centered([1.0, 0.0]).translate([0.0, -1.0]))
+        .push(Line::centered([0.0, cell_size[1]]).translate([-cell_size[0], 0.0]))
+        .push(Line::centered([cell_size[0], 0.0]).translate([0.0, -cell_size[1]]))
 }
 
-pub fn m() -> impl IntoAsIR {
+pub fn m(cell_size: [f64; 2]) -> impl IntoAsIR {
     combinator()
         .combine()
-        .push(Line::segment([0.0, 2.0]).translate([1.0, -1.0]))
-        .push(Line::segment([1.0, 1.0]))
+        .push(Line::segment([0.0, cell_size[1] * 2.0]).translate([cell_size[0], -cell_size[1]]))
+        .push(Line::segment(cell_size))
         .mirror_basis([1.0, 0.0])
 }
 
-pub fn n() -> impl IntoAsIR {
+pub fn n(cell_size: [f64; 2]) -> impl IntoAsIR {
     combinator()
         .combine()
         .push(
-            Line::segment([0.0, 1.0])
-                .translate([1.0, 0.0])
+            Line::segment([0.0, cell_size[1]])
+                .translate([cell_size[0], 0.0])
                 .mirror_basis([1.0, 1.0]),
         )
-        .push(Line::centered([-1.0, 1.0]))
+        .push(Line::centered([-cell_size[0], cell_size[1]]))
 }
 
-pub fn o() -> impl IntoAsIR {
-    Circle::new(1.0).elongate_basis([0.125, 0.25]).manifold()
+pub fn o(cell_size: [f64; 2]) -> impl IntoAsIR {
+    let diff = cell_size[0].max(cell_size[1]) - cell_size[0].min(cell_size[1]);
+    let (r, e) = if cell_size[0] > cell_size[1] {
+        (cell_size[1], [diff, 0.0])
+    } else {
+        (cell_size[0], [0.0, diff])
+    };
+    Circle::new(r).elongate_basis(e).manifold()
 }
 
-pub fn p() -> impl IntoAsIR {
+pub fn p(cell_size: [f64; 2]) -> impl IntoAsIR {
+    let radius = cell_size[1] * 0.5;
+
     Combine::from(combinator())
-        .push(Line::centered([0.0, 1.0]).translate([-1.0, 0.0]))
+        .push(Line::centered([0.0, cell_size[1]]).translate([-cell_size[0], 0.0]))
         .push(
-            Select::new(Circle::new(0.5).manifold().translate([0.25, 0.5]))
-                .case(
-                    REPEAT_ID_2D.path().push(X).read().lt(1.0),
-                    Line::segment([1.25, 0.0])
-                        .translate([-1.0, 0.5])
-                        .mirror_basis([0.0, 1.0])
-                        .translate([0.0, 0.5]),
-                )
-                .modify()
-                .push_pre(
-                    Point
-                        .repeat_clamped([1.0, 1.0], [0.0, 0.0], [1.0, 0.0])
-                        .translate([-0.25, 0.0])
-                        .filter(REPEAT_ID_2D),
-                ),
+            Select::new(
+                Circle::new(radius)
+                    .manifold()
+                    .translate([cell_size[0] - radius, cell_size[1] - radius]),
+            )
+            .case(
+                POSITION_2D.path().push(X).read().lt(cell_size[0] - radius),
+                Line::segment([cell_size[0] * 2.0, 0.0])
+                    .translate([-cell_size[0], cell_size[1] * 0.5])
+                    .mirror_basis([0.0, 1.0])
+                    .translate([0.0, cell_size[1] * 0.5]),
+            )
+            .modify()
+            .push_pre(
+                Point
+                    .repeat_clamped(cell_size, [0.0, 0.0], [cell_size[0], 0.0])
+                    .translate([cell_size[0] * -0.25, 0.0])
+                    .filter(REPEAT_ID_2D),
+            ),
         )
 }
 
-pub fn q() -> impl IntoAsIR {
+pub fn q(cell_size: [f64; 2]) -> impl IntoAsIR {
+    Combine::from(combinator()).push(o(cell_size)).push(
+        Line::segment([cell_size[0] * 0.5, cell_size[1] * -0.5])
+            .translate([cell_size[0] * 0.5, cell_size[1] * -0.5]),
+    )
+}
+
+pub fn r(cell_size: [f64; 2]) -> impl IntoAsIR {
     Combine::from(combinator())
-        .push(Circle::new(1.0).elongate_basis([0.125, 0.25]).manifold())
-        .push(Line::segment([0.75, -0.75]).translate([0.5, -0.5]))
+        .push(p(cell_size))
+        .push(Line::segment([cell_size[0] * 2.0, -cell_size[1]]).translate([-cell_size[0], 0.0]))
 }
 
-pub fn r() -> impl IntoAsIR {
+pub fn s(cell_size: [f64; 2]) -> impl IntoAsIR {
+    let radius = cell_size[1] * 0.5;
+
+    Select::new(
+        Combine::from(Union)
+            .push(Line::segment([radius, 0.0]).translate([-radius, -cell_size[1]]))
+            .push(
+                Circle::new(radius)
+                    .manifold()
+                    .translate([0.0, cell_size[1] - radius]),
+            ),
+    )
+    .case(
+        POSITION_2D.path().push(X).read().gt(0.0),
+        Combine::from(Union)
+            .push(Line::segment([-radius, 0.0]).translate([radius, cell_size[1]]))
+            .push(
+                Circle::new(radius)
+                    .manifold()
+                    .translate([0.0, -(cell_size[1] - radius)]),
+            ),
+    )
+    .elongate_axis(
+        [(cell_size[0] - 0.5).max(0.0), 0.0],
+        ClampMode::Dir,
+        ClampMode::Dir,
+    )
+}
+
+pub fn t(cell_size: [f64; 2]) -> impl IntoAsIR {
     Combine::from(combinator())
-        .push(Line::centered([0.0, 1.0]).translate([-1.0, 0.0]))
-        .push(Line::segment([1.6, -1.0]).translate([-1.0, 0.0]))
-        .push(
-            Select::new(Circle::new(0.5).manifold().translate([0.25, 0.5]))
-                .case(
-                    REPEAT_ID_2D.path().push(X).read().lt(1.0),
-                    Line::segment([1.25, 0.0])
-                        .translate([-1.0, 0.5])
-                        .mirror_basis([0.0, 1.0])
-                        .translate([0.0, 0.5]),
-                )
-                .modify()
-                .push_pre(
-                    Point
-                        .repeat_clamped([1.0, 1.0], [0.0, 0.0], [1.0, 0.0])
-                        .translate([-0.25, 0.0])
-                        .filter(REPEAT_ID_2D),
-                ),
-        )
+        .push(Line::centered([cell_size[0], 0.0]).translate([0.0, cell_size[1]]))
+        .push(Line::centered([0.0, cell_size[1]]))
 }
 
-pub fn s() -> impl IntoAsIR {
-    let repeat_id = REPEAT_ID_2D.prop();
-
-    let repeat_id_x_lt = |t: f64| repeat_id.clone().path().push(X).read().clone().lt(t);
-    let repeat_id_y_lt = |t: f64| repeat_id.clone().path().push(Y).read().clone().lt(t);
-
-    let repeat_id_x_gt = |t: f64| repeat_id.clone().path().push(X).read().clone().gt(t);
-    let repeat_id_y_gt = |t: f64| repeat_id.clone().path().push(Y).read().clone().gt(t);
-
-    Select::new(Line::centered([1.0, 0.0]))
-        .case(
-            repeat_id_x_lt(1.0).and(repeat_id_y_lt(0.0)),
-            Line::segment([1.5, 0.0]).translate([-1.0, -1.0]),
-        )
-        .case(
-            repeat_id_x_gt(0.0).and(repeat_id_y_lt(1.0)),
-            Circle::new(0.5).manifold().translate([0.5, -0.5]),
-        )
-        .case(
-            repeat_id_x_lt(0.0).and(repeat_id_y_gt(-1.0)),
-            Circle::new(0.5).manifold().translate([-0.5, 0.5]),
-        )
-        .case(
-            repeat_id_x_gt(-1.0).and(repeat_id_y_gt(0.0)),
-            Line::segment([-1.5, 0.0]).translate([1.0, 1.0]),
-        )
-        .modify()
-        .push_pre(
-            Point
-                .repeat_clamped([1.0, 1.0], [-1.0, -1.0], [1.0, 1.0])
-                .filter(REPEAT_ID_2D),
-        )
+pub fn u(cell_size: [f64; 2]) -> impl IntoAsIR {
+    j(cell_size).mirror_basis([1.0, 0.0])
 }
 
-pub fn t() -> impl IntoAsIR {
-    combinator()
-        .combine()
-        .push(Line::centered([1.0, 0.0]))
-        .push(Line::centered([0.0, 1.0]).translate([0.0, -1.0]))
-        .translate([0.0, 1.0])
-}
-
-pub fn u() -> impl IntoAsIR {
-    let repeat_id = REPEAT_ID_2D.prop();
-    let repeat_id_y_gt = |t: f64| repeat_id.clone().path().push(Y).read().clone().gt(t);
-
-    Select::new(Circle::new(1.0).elongate_basis([0.125, 0.25]).manifold())
-        .case(
-            repeat_id_y_gt(0.0),
-            Line::centered([0.0, 1.0])
-                .translate([1.125, 0.0])
-                .mirror_basis([1.0, 0.0]),
-        )
-        .modify()
-        .push_pre(
-            Point
-                .repeat_clamped([1.0, 1.0], [0.0, 0.0], [0.0, 1.0])
-                .translate([0.0, -0.5])
-                .filter(REPEAT_ID_2D),
-        )
-}
-
-pub fn v() -> impl IntoAsIR {
-    Line::segment([1.0, 2.0])
-        .translate([0.0, -1.0])
+pub fn v(cell_size: [f64; 2]) -> impl IntoAsIR {
+    Line::segment([cell_size[0], cell_size[1] * 2.0])
+        .translate([0.0, -cell_size[1]])
         .mirror_basis([1.0, 0.0])
 }
 
-pub fn w() -> impl IntoAsIR {
-    combinator()
-        .combine()
-        .push(Line::segment([0.5, 2.0]).translate([0.5, -1.0]))
-        .push(Line::segment([0.5, -1.0]))
-        .mirror_basis([1.0, 0.0])
-}
-
-pub fn x() -> impl IntoAsIR {
-    Line::segment([0.6, 1.0]).mirror_basis([1.0, 1.0])
-}
-
-pub fn y() -> impl IntoAsIR {
-    combinator()
-        .combine()
-        .push(Line::segment([1.0, 1.0]))
-        .push(Line::segment([0.0, -1.0]))
-        .mirror_basis([1.0, 0.0])
-}
-
-pub fn z() -> impl IntoAsIR {
+pub fn w(cell_size: [f64; 2]) -> impl IntoAsIR {
     combinator()
         .combine()
         .push(
-            Line::segment([0.7, 0.0])
-                .translate([0.0, 1.0])
+            Line::segment([cell_size[0] * 0.5, cell_size[1] * 2.0])
+                .translate([cell_size[0] * 0.5, cell_size[1] * -1.0]),
+        )
+        .push(Line::segment([cell_size[0] * 0.5, cell_size[1] * -1.0]))
+        .mirror_basis([1.0, 0.0])
+}
+
+pub fn x(cell_size: [f64; 2]) -> impl IntoAsIR {
+    Line::segment(cell_size).mirror_basis([1.0, 1.0])
+}
+
+pub fn y(cell_size: [f64; 2]) -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(Line::segment(cell_size))
+        .push(Line::segment([0.0, -cell_size[1]]))
+        .mirror_basis([1.0, 0.0])
+}
+
+pub fn z(cell_size: [f64; 2]) -> impl IntoAsIR {
+    combinator()
+        .combine()
+        .push(
+            Line::segment([cell_size[0], 0.0])
+                .translate([0.0, cell_size[1]])
                 .mirror_basis([1.0, 1.0]),
         )
-        .push(Line::centered([0.7, 1.0]))
+        .push(Line::centered(cell_size))
 }

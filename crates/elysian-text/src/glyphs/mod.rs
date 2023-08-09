@@ -1,14 +1,20 @@
 use elysian_core::{
-    ast::{combine::Combinator, filter::IntoFilter, modify::IntoModify, select::Select},
+    ast::{
+        combine::{Combinator, Combine},
+        filter::IntoFilter,
+        modify::IntoModify,
+        select::Select,
+    },
     ir::{
-        ast::{DISTANCE, GRADIENT_2D, UV, X, Y},
-        module::IntoAsIR,
+        ast::{COLOR, X, Y},
+        module::{DynAsIR, IntoAsIR},
     },
 };
 use elysian_shapes::{
-    combine::{SmoothUnion, Union},
-    field::Infinity,
-    modify::{IntoRepeat, IntoTranslate, REPEAT_ID_2D},
+    combine::Union,
+    field::{Infinity, Point},
+    modify::{IntoIsosurface, IntoManifold, IntoRepeat, IntoSet, IntoTranslate, REPEAT_ID_2D},
+    quad,
     scale::IntoScale,
 };
 
@@ -18,11 +24,10 @@ pub mod punct;
 pub mod upper;
 
 pub fn combinator() -> Combinator {
-    Combinator::build()
-        .push(Union)
+    Combinator::build().push(Union)
 }
 
-pub fn char_field(char: char) -> impl IntoAsIR {
+pub fn char_field(char: char, cell_size: [f64; 2]) -> impl IntoAsIR {
     match char {
         'a' => lower::a().as_ir(),
         'b' => lower::b().as_ir(),
@@ -50,35 +55,35 @@ pub fn char_field(char: char) -> impl IntoAsIR {
         'x' => lower::x().as_ir(),
         'y' => lower::y().as_ir(),
         'z' => lower::z().as_ir(),
-        'A' => upper::a().as_ir(),
-        'B' => upper::b().as_ir(),
-        'C' => upper::c().as_ir(),
-        'D' => upper::d().as_ir(),
-        'E' => upper::e().as_ir(),
-        'F' => upper::f().as_ir(),
-        'G' => upper::g().as_ir(),
-        'H' => upper::h().as_ir(),
-        'I' => upper::i().as_ir(),
-        'J' => upper::j().as_ir(),
-        'K' => upper::k().as_ir(),
-        'L' => upper::l().as_ir(),
-        'M' => upper::m().as_ir(),
-        'N' => upper::n().as_ir(),
-        'O' => upper::o().as_ir(),
-        'P' => upper::p().as_ir(),
-        'Q' => upper::q().as_ir(),
-        'R' => upper::r().as_ir(),
-        'S' => upper::s().as_ir(),
-        'T' => upper::t().as_ir(),
-        'U' => upper::u().as_ir(),
-        'V' => upper::v().as_ir(),
-        'W' => upper::w().as_ir(),
-        'X' => upper::x().as_ir(),
-        'Y' => upper::y().as_ir(),
-        'Z' => upper::z().as_ir(),
-        '.' => punct::period().as_ir(),
-        ',' => punct::comma().as_ir(),
-        '!' => punct::exclamation().as_ir(),
+        'A' => upper::a(cell_size).as_ir(),
+        'B' => upper::b(cell_size).as_ir(),
+        'C' => upper::c(cell_size).as_ir(),
+        'D' => upper::d(cell_size).as_ir(),
+        'E' => upper::e(cell_size).as_ir(),
+        'F' => upper::f(cell_size).as_ir(),
+        'G' => upper::g(cell_size).as_ir(),
+        'H' => upper::h(cell_size).as_ir(),
+        'I' => upper::i(cell_size).as_ir(),
+        'J' => upper::j(cell_size).as_ir(),
+        'K' => upper::k(cell_size).as_ir(),
+        'L' => upper::l(cell_size).as_ir(),
+        'M' => upper::m(cell_size).as_ir(),
+        'N' => upper::n(cell_size).as_ir(),
+        'O' => upper::o(cell_size).as_ir(),
+        'P' => upper::p(cell_size).as_ir(),
+        'Q' => upper::q(cell_size).as_ir(),
+        'R' => upper::r(cell_size).as_ir(),
+        'S' => upper::s(cell_size).as_ir(),
+        'T' => upper::t(cell_size).as_ir(),
+        'U' => upper::u(cell_size).as_ir(),
+        'V' => upper::v(cell_size).as_ir(),
+        'W' => upper::w(cell_size).as_ir(),
+        'X' => upper::x(cell_size).as_ir(),
+        'Y' => upper::y(cell_size).as_ir(),
+        'Z' => upper::z(cell_size).as_ir(),
+        '.' => punct::period(cell_size).as_ir(),
+        ',' => punct::comma(cell_size).as_ir(),
+        '!' => punct::exclamation(cell_size).as_ir(),
         ' ' => punct::space().as_ir(),
         _ => unimplemented!(),
     }
@@ -90,7 +95,15 @@ pub enum Align {
     Right,
 }
 
-pub fn text(text: &str, align: Align, cell_size: [f64; 2], scale: f64) -> impl IntoAsIR {
+pub fn text(
+    text: &str,
+    align: Align,
+    cell_size: [f64; 2],
+    padding: [f64; 2],
+    modifier: Option<impl Fn(DynAsIR, [f64; 2], [f64; 2]) -> DynAsIR>,
+) -> impl IntoAsIR {
+    let total_size = [cell_size[0] + padding[0], cell_size[1] + padding[1]];
+
     let id_x = REPEAT_ID_2D.path().push(X).read();
     let id_x_lt = |t: f64| id_x.clone().lt(t);
 
@@ -118,16 +131,21 @@ pub fn text(text: &str, align: Align, cell_size: [f64; 2], scale: f64) -> impl I
                 .chars()
                 .enumerate()
                 .fold(Select::new(Infinity), |acc, (x, char)| {
-                    let field = char_field(char).scale(scale);
+                    let char_field = char_field(char, cell_size);
+                    let char_field = if let Some(modifier) = modifier.as_ref() {
+                        modifier(char_field.as_ir(), cell_size, total_size)
+                    } else {
+                        char_field.as_ir()
+                    };
                     acc.case(
                         id_x_lt(x as f64 + 1.0),
-                        field.translate([x as f64 * cell_size[0], 0.0]),
+                        char_field.translate([x as f64 * total_size[0], 0.0]),
                     )
                 })
                 .modify()
                 .push_pre(
                     Infinity
-                        .repeat_clamped(cell_size, [0.0, 0.0], [max_x, 0.0])
+                        .repeat_clamped(total_size, [0.0, 0.0], [max_x, 0.0])
                         .filter(REPEAT_ID_2D),
                 );
 
@@ -145,14 +163,17 @@ pub fn text(text: &str, align: Align, cell_size: [f64; 2], scale: f64) -> impl I
 
             acc.case(
                 id_y_lt(y as f64 + 1.0),
-                field.translate([0.0, y as f64 * cell_size[1]]),
+                field.translate([0.0, y as f64 * total_size[1]]),
             )
         })
         .modify()
         .push_pre(
             Infinity
-                .repeat_clamped(cell_size, [0.0, 0.0], [0.0, max_y])
+                .repeat_clamped(total_size, [0.0, 0.0], [0.0, max_y])
                 .filter(REPEAT_ID_2D),
         )
-        .translate([-total_max_x * cell_size[0] * 0.5, -max_y * cell_size[1] * 0.5])
+        .translate([
+            -total_max_x * total_size[0] * 0.5,
+            -max_y * total_size[1] * 0.5,
+        ])
 }

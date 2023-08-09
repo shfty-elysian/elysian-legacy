@@ -4,13 +4,13 @@ use elysian_core::{
     ast::expr::IntoExpr,
     ir::{
         ast::{
-            vector2, vector3, Identifier, IntoLiteral, DISTANCE, POSITION_2D, POSITION_3D,
-            VECTOR2, VECTOR3, X, Y, Z,
+            vector2, vector3, Identifier, IntoLiteral, DISTANCE, POSITION_2D, POSITION_3D, VECTOR2,
+            VECTOR3, X, Y, Z,
         },
         module::{
             AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            IntoAsIR, PropertyIdentifier, SpecializationData, StructDefinition,
-            StructIdentifier, Type, CONTEXT,
+            IntoAsIR, PropertyIdentifier, SpecializationData, StructDefinition, StructIdentifier,
+            Type, CONTEXT,
         },
     },
     property,
@@ -18,9 +18,6 @@ use elysian_core::{
 
 use elysian_core::ast::expr::Expr;
 use elysian_proc_macros::{elysian_block, elysian_expr, elysian_stmt};
-
-pub const ELONGATE_BASIS: FunctionIdentifier =
-    FunctionIdentifier::new("elongate_basis", 4561148871708191176);
 
 pub const EXTENT_2D: Identifier = Identifier::new("extent_2d", 9222786191981609495);
 property!(
@@ -44,7 +41,6 @@ pub struct ElongateBasis {
 
 impl Hash for ElongateBasis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        ELONGATE_BASIS.uuid().hash(state);
         state.write_u64(self.field.hash_ir());
         self.extent.hash(state);
     }
@@ -62,13 +58,10 @@ impl DomainsDyn for ElongateBasis {
 
 impl AsIR for ElongateBasis {
     fn entry_point(&self) -> FunctionIdentifier {
-        ELONGATE_BASIS
+        FunctionIdentifier::new_dynamic("elongate_basis".into())
     }
 
-    fn arguments(
-        &self,
-        input: elysian_core::ir::ast::Expr,
-    ) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
         vec![self.extent.clone().into(), input]
     }
 
@@ -77,7 +70,7 @@ impl AsIR for ElongateBasis {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let (position, dir, zero) = match (
+        let (position, extent, zero) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
         ) {
@@ -88,7 +81,7 @@ impl AsIR for ElongateBasis {
 
         let (_, field_call, field_functions) = self.field.call(spec, elysian_expr! { CONTEXT });
 
-        let extent = elysian_core::ir::ast::Expr::from(self.extent.clone());
+        let extent_expr = elysian_core::ir::ast::Expr::from(self.extent.clone());
 
         let pos_clamped = match &position {
             p if *p == POSITION_2D => elysian_stmt! {
@@ -101,8 +94,8 @@ impl AsIR for ElongateBasis {
         };
 
         let block = elysian_block! {
-            let position = CONTEXT.position.abs() - #extent;
-            CONTEXT.position = position.max(#zero);
+            let position = CONTEXT.position.abs() - #extent_expr;
+            CONTEXT.position = CONTEXT.position.sign() * position.max(#zero);
             CONTEXT = #field_call;
             CONTEXT.DISTANCE = CONTEXT.DISTANCE + #pos_clamped;
             return CONTEXT
@@ -115,7 +108,7 @@ impl AsIR for ElongateBasis {
                 public: false,
                 inputs: vec![
                     InputDefinition {
-                        id: dir.clone().into(),
+                        id: extent.clone().into(),
                         mutable: false,
                     },
                     InputDefinition {
@@ -149,4 +142,3 @@ where
         }
     }
 }
-

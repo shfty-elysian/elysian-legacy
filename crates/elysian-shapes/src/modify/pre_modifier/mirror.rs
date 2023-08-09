@@ -101,7 +101,12 @@ impl AsIR for Mirror {
             MirrorMode::Basis(basis) => {
                 let basis = elysian_core::ir::ast::Expr::from(basis.clone());
                 block.push(elysian_stmt! {
-                    CONTEXT.position = CONTEXT.position * (CONTEXT.position.sign() + (#one - (#basis * 2.0 - #one))).sign()
+                    CONTEXT.position =
+                        CONTEXT.position
+                        * (
+                            CONTEXT.position.sign()
+                            + (#one - (#basis * 2.0 - #one))
+                        ).sign()
                 });
             }
             MirrorMode::Axis(axis) => {
@@ -125,13 +130,18 @@ impl AsIR for Mirror {
                 MirrorMode::Basis(basis) => {
                     let basis = elysian_core::ir::ast::Expr::from(basis.clone());
                     block.push(elysian_stmt! {
-                        CONTEXT.gradient = CONTEXT.gradient * (position.sign() + (#one - #basis)).sign()
+                        CONTEXT.gradient = CONTEXT.gradient * (
+                            position.sign()
+                            + (#one - (#basis * 2.0 - #one))
+                        ).sign()
                     });
                 }
                 MirrorMode::Axis(axis) => {
                     let axis = elysian_core::ir::ast::Expr::from(axis.clone());
                     block.push(elysian_stmt! {
-                        CONTEXT.gradient = CONTEXT.gradient * position.dot(#axis).sign()
+                        if CONTEXT.position.dot(#axis) < 0.0 {
+                            CONTEXT.gradient = CONTEXT.gradient * (2.0 * position.dot(#axis)) * #axis;
+                        }
                     });
                 }
             }

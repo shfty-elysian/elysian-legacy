@@ -94,6 +94,14 @@ impl Expr {
         Expr::Gt(self.box_expr(), rhs.box_expr())
     }
 
+    pub fn eq(self, rhs: impl IntoExpr) -> Expr {
+        Expr::Eq(self.box_expr(), rhs.box_expr())
+    }
+
+    pub fn ne(self, rhs: impl IntoExpr) -> Expr {
+        Expr::Ne(self.box_expr(), rhs.box_expr())
+    }
+
     pub fn and(self, rhs: impl IntoExpr) -> Expr {
         Expr::And(self.box_expr(), rhs.box_expr())
     }

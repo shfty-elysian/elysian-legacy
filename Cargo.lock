@@ -218,8 +218,10 @@ dependencies = [
  "elysian-naga",
  "elysian-proc-macros",
  "elysian-shadertoy",
+ "elysian-shapes",
  "elysian-static",
  "elysian-syn",
+ "elysian-text",
  "rust-gpu-bridge",
 ]
 

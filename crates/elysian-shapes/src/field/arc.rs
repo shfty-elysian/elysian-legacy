@@ -3,7 +3,7 @@ use std::hash::Hash;
 use elysian_core::{
     ast::expr::{Expr, IntoExpr},
     ir::{
-        ast::{Identifier, DISTANCE, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
+        ast::{Identifier, DISTANCE, GRADIENT_2D, POSITION_2D, POSITION_3D, VECTOR2, W, X, Y, NUM},
         module::{
             AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
             SpecializationData, Type, CONTEXT,
@@ -14,16 +14,9 @@ use elysian_core::{
 
 use elysian_decl_macros::elysian_function;
 
-use crate::field::RADIUS;
+use crate::{field::RADIUS, rotate::ANGLE};
 
 pub const ARC: FunctionIdentifier = FunctionIdentifier::new("arc", 257188426632189116);
-
-pub const ANGLE: Identifier = Identifier::new("angle", 1618400179859647938);
-property! {
-    ANGLE,
-    ANGLE_PROP,
-    Type::Number(NumericType::Float)
-}
 
 #[derive(Debug, Clone)]
 pub struct Arc {
@@ -78,18 +71,40 @@ impl AsIR for Arc {
 
         vec![elysian_function! {
             fn entry_point(ANGLE, RADIUS, mut CONTEXT) -> CONTEXT {
+                let ANGLE = ANGLE * 0.5;
+
+                let POSITION_2D = CONTEXT.POSITION_2D;
+
+                let NUM = CONTEXT.POSITION_2D.X.sign();
                 CONTEXT.POSITION_2D.X = CONTEXT.POSITION_2D.X.abs();
+
                 if ANGLE.cos() * CONTEXT.POSITION_2D.X > ANGLE.sin() * CONTEXT.POSITION_2D.Y {
-                    CONTEXT.DISTANCE = (
-                        CONTEXT.POSITION_2D -
+                    let POSITION_2D = CONTEXT.POSITION_2D -
                         VECTOR2 {
                             X: ANGLE.sin(),
                             Y: ANGLE.cos()
-                        } * RADIUS
-                    ).length()
+                        } * RADIUS;
+
+                    let DISTANCE = POSITION_2D.length();
+
+                    CONTEXT.DISTANCE = DISTANCE;
+
+                    CONTEXT.GRADIENT_2D = VECTOR2 {
+                        X: NUM * POSITION_2D.X,
+                        Y: POSITION_2D.Y
+                    } / VECTOR2 {
+                        X: DISTANCE,
+                        Y: DISTANCE,
+                    };
                 } else {
-                    CONTEXT.DISTANCE = (CONTEXT.POSITION_2D.length() - RADIUS).abs()
+                    let DISTANCE = POSITION_2D.length();
+                    CONTEXT.DISTANCE = (DISTANCE - RADIUS).abs();
+                    CONTEXT.GRADIENT_2D =  POSITION_2D / VECTOR2 {
+                        X: DISTANCE,
+                        Y: DISTANCE,
+                    } * (DISTANCE - RADIUS).sign();
                 }
+
                 return CONTEXT
             }
         }]

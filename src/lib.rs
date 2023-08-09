@@ -3,8 +3,17 @@ pub mod core {
 }
 
 pub mod macros {
-    pub use elysian_proc_macros::*;
     pub use elysian_decl_macros::*;
+    pub use elysian_proc_macros::*;
+}
+
+pub mod shapes {
+    pub use elysian_shapes::*;
+}
+
+#[cfg(feature = "text")]
+pub mod text {
+    pub use elysian_text::*;
 }
 
 #[cfg(feature = "syn")]
