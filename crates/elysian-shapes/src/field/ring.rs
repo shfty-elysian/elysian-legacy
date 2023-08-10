@@ -5,7 +5,7 @@ use elysian_core::{
     ir::{
         ast::Identifier,
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
+            AsIR, Domains, FunctionIdentifier, NumericType, PropertyIdentifier,
             SpecializationData, Type, CONTEXT,
         },
     },

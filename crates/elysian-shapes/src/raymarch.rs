@@ -11,8 +11,8 @@ use elysian_core::{
             VECTOR3, VECTOR4, W, X, Y, Z,
         },
         module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, IntoAsIR,
-            NumericType, SpecializationData, StructIdentifier, Type, CONTEXT,
+            AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, NumericType,
+            SpecializationData, StructIdentifier, Type, CONTEXT,
         },
     },
     property,
@@ -277,7 +277,7 @@ impl AsIR for Raymarch {
                         let CANDIDATE = #field_call;
 
                         if CANDIDATE.DISTANCE < CONTEXT.DISTANCE {
-                            CONTEXT = CANDIDATE
+                            CONTEXT = CANDIDATE;
                         }
 
                         STEPS = STEPS + 1u32;

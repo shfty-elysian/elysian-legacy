@@ -1,6 +1,6 @@
 use elysian_core::{
     ast::expr::{Expr, IntoExpr, IntoLiteral, IntoRead},
-    ir::ast::{DISTANCE, ERROR, GRADIENT_2D, NORMAL, UV, X, Y, Z},
+    ir::ast::{DISTANCE, ERROR, GRADIENT_2D, NORMAL, POSITION_2D, POSITION_3D, UV, X, Y, Z},
 };
 
 use crate::{derive_support_vector::SUPPORT_VECTOR_2D, modify::REPEAT_ID_2D, voronoi::CELL_ID};
@@ -44,6 +44,24 @@ pub fn gradient_color() -> Expr {
 
 pub fn uv_color() -> Expr {
     Expr::vector4(UV.path().push(X).read(), UV.path().push(Y).read(), 0.0, 1.0)
+}
+
+pub fn position_2d_color() -> Expr {
+    Expr::vector4(
+        POSITION_2D.path().push(X).read(),
+        POSITION_2D.path().push(Y).read(),
+        0.0,
+        1.0.literal(),
+    )
+}
+
+pub fn position_3d_color() -> Expr {
+    Expr::vector4(
+        POSITION_3D.path().push(X).read(),
+        POSITION_3D.path().push(Y).read(),
+        POSITION_3D.path().push(Z).read(),
+        1.0.literal(),
+    )
 }
 
 pub fn cell_id_color(count: usize) -> Expr {

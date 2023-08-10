@@ -8,7 +8,7 @@ use elysian_core::{
     ir::{
         ast::{DISTANCE, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
         module::{
-            AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT,
+            AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT,
         },
     },
 };

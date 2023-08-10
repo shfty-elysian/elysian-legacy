@@ -1,17 +1,21 @@
+mod arc;
 mod capsule;
 mod chebyshev;
 mod circle;
+mod corner;
 mod infinity;
 mod line;
 mod point;
+mod quad;
 mod ring;
-mod arc;
 
+pub use arc::*;
 pub use capsule::*;
 pub use chebyshev::*;
 pub use circle::*;
+pub use corner::*;
 pub use infinity::*;
 pub use line::*;
 pub use point::*;
+pub use quad::*;
 pub use ring::*;
-pub use arc::*;

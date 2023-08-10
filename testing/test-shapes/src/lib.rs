@@ -7,19 +7,21 @@ use elysian_core::{
         select::Select,
     },
     ir::{
-        ast::{vector2, COLOR, DISTANCE, GRADIENT_2D, UV, X, Y},
+        ast::{vector2, COLOR, DISTANCE, GRADIENT_2D, POSITION_3D, UV, X, Y},
         module::{DynAsIR, IntoAsIR},
     },
 };
 use elysian_shapes::{
-    color::{ambient_light_color, directional_light_color, distance_color, normal_color, uv_color},
-    combine::{SmoothSubtraction, SmoothUnion, Subtraction, Union},
-    field::{Capsule, Chebyshev, Circle, Infinity, Line, Point, Ring},
-    modify::{
-        IntoAspect, IntoGradientNormals, IntoIsosurface, IntoManifold, IntoRepeat, IntoSet,
-        IntoTranslate, ASPECT, REPEAT_ID_2D,
+    color::{
+        ambient_light_color, directional_light_color, distance_color, normal_color,
+        position_3d_color, uv_color,
     },
-    quad,
+    combine::{SmoothSubtraction, SmoothUnion, Subtraction, Union},
+    field::{Capsule, Chebyshev, Circle, Corner, Infinity, Line, Point, Quad, Ring},
+    modify::{
+        BoundType, IntoAspect, IntoDistanceBound, IntoGradientNormals, IntoIsosurface,
+        IntoManifold, IntoRepeat, IntoSet, IntoTranslate, ASPECT, REPEAT_ID_2D,
+    },
     raymarch::Raymarch,
     scale::IntoScale,
     uv_map::IntoUvMap,
@@ -141,28 +143,18 @@ pub fn select() -> impl IntoAsIR {
 
 pub fn raymarched() -> impl IntoAsIR {
     //let projection = Mat4::orthographic_rh(-1.0, 1.0, -1.0, 1.0, 0.0, 10.0);
-    let projection = Mat4::perspective_infinite_rh(std::f32::consts::PI * 0.5, 1.0, 0.01);
+    let projection = Mat4::perspective_infinite_rh(std::f32::consts::PI * 0.25, 1.0, 0.01);
     Raymarch::sphere(
         0.0001,
         100u64,
         projection.inverse(),
         Combine::from(Union)
-            .push(Circle::new(1.5).translate([0.5, 0.5, -2.0]))
+            .push(Circle::new(1.5).translate([0.0, 1.0, -5.0]))
+            .push(Capsule::new([0.5, 0.0, 0.0], 1.2).translate([-2.5, -1.5, -5.0]))
             .push(
-                Line::centered([0.5, 0.0, 0.0])
-                    .isosurface(1.0)
-                    .manifold()
-                    .isosurface(0.2)
-                    .translate([-0.5, -0.5, -2.5]),
-            )
-            .push(
-                Line::centered([0.5, 0.0, 0.0])
-                    .isosurface(1.0)
-                    .manifold()
-                    .isosurface(0.2)
-                    .translate([1.0, -1.5, -3.0]),
-            )
-            .gradient_normals(),
+                Quad::new([1.0, 1.0, 1.0], [GRADIENT_2D, UV])
+                    .translate([2.5, -1.5, -5.0])
+            ),
     )
 }
 
@@ -214,12 +206,12 @@ pub fn pangram() -> impl IntoAsIR {
                 Combine::from(Union)
                     /*
                     .push(
-                        quad([cell_size[0] * 0.5, cell_size[1] * 0.5], [GRADIENT_2D])
+                        Quad::new([cell_size[0], cell_size[1]], [GRADIENT_2D])
                             .manifold()
                             .set_post(COLOR, [1.0, 0.0, 1.0, 1.0].literal() * distance_color(25.0)),
                     )
                     .push(
-                        quad([total_size[0] * 0.5, total_size[1] * 0.5], [GRADIENT_2D])
+                        Quad::new([total_size[0] * 0.5, total_size[1] * 0.5], [GRADIENT_2D])
                             .manifold()
                             .set_post(COLOR, [1.0, 1.0, 0.0, 1.0].literal() * distance_color(25.0)),
                     )
@@ -239,14 +231,12 @@ pub fn pangram() -> impl IntoAsIR {
 
 pub fn test_shape() -> impl IntoAsIR {
     raymarched()
-        .set_post(
-            UV,
-            UV.prop().read() * Expr::vector2(2.0, 2.0) - Expr::vector2(1.0, 1.0),
-        )
-        .set_post(UV, UV.prop().read() * Expr::vector2(32.0, 32.0))
-        .uv_map(pangram().filter(COLOR))
-        //.set_post(COLOR, uv_color())
+        .set_post(UV, UV.prop().read() * Expr::vector2(16.0, 16.0))
+         .uv_map(pangram().filter(COLOR))
+        //.set_post(COLOR, uv_color() * distance_color(5.0))
+        //.set_post(COLOR, position_3d_color())
         .set_post(COLOR, COLOR.prop().read() * distance_color(100.0))
+        //.set_post(COLOR, distance_color(100.0))
         .aspect(ASPECT.prop().read())
 }
 

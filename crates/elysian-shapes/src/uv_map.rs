@@ -8,8 +8,7 @@ use elysian_core::{
     ir::{
         ast::{POSITION_2D, UV},
         module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, IntoAsIR,
-            SpecializationData, CONTEXT,
+            AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, SpecializationData, CONTEXT,
         },
     },
 };

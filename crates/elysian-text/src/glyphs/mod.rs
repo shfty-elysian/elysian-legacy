@@ -14,7 +14,6 @@ use elysian_shapes::{
     combine::Union,
     field::{Infinity, Point},
     modify::{IntoIsosurface, IntoManifold, IntoRepeat, IntoSet, IntoTranslate, REPEAT_ID_2D},
-    quad,
     scale::IntoScale,
 };
 

@@ -5,7 +5,7 @@ use elysian_core::{
     ir::{
         ast::{POSITION_2D, POSITION_3D},
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
+            AsIR, Domains, FunctionIdentifier, PropertyIdentifier,
             SpecializationData, CONTEXT,
         },
     },

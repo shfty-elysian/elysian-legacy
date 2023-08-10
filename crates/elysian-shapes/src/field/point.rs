@@ -98,13 +98,13 @@ impl AsIR for Point {
                 p if *p == POSITION_3D => {
                     block.extend(elysian_block! {
                         CONTEXT.uv = VECTOR2 {
-                            X: 1.0 - (CONTEXT.position.Z.sign() * (
+                            X: (CONTEXT.position.Z.sign() * (
                                 CONTEXT.position.X / VECTOR2 {
                                     X: CONTEXT.position.X,
                                     Y: CONTEXT.position.Z,
                                 }.length()
-                            ).acos() / #pi),
-                            Y: 1.0 - ((CONTEXT.position.Y / CONTEXT.position.length()).acos() / #pi),
+                            ).acos() / #pi) * -2.0 + 1.0,
+                            Y: ((CONTEXT.position.Y / CONTEXT.position.length()).acos() / #pi) * -2.0 + 1.0,
                         };
                     });
                 }

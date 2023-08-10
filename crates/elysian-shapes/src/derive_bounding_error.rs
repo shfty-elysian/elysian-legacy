@@ -7,7 +7,7 @@ use elysian_core::{
     ir::{
         ast::{Identifier, DISTANCE, ERROR, POSITION_2D, POSITION_3D},
         module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, IntoAsIR,
+            AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR,
             SpecializationData, StructIdentifier, Type, CONTEXT,
         },
     },

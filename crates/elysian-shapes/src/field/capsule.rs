@@ -7,7 +7,7 @@ use elysian_core::{
     ast::expr::Expr as ElysianExpr,
     ir::{
         ast::{POSITION_2D, POSITION_3D},
-        module::{Domains, FunctionDefinition, SpecializationData},
+        module::{Domains, SpecializationData},
     },
 };
 use elysian_decl_macros::elysian_function;

@@ -8,7 +8,7 @@ use elysian_core::{
             VECTOR3,
         },
         module::{
-            AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, SpecializationData,
+            AsIR, DomainsDyn, FunctionIdentifier, SpecializationData,
             StructIdentifier, Type, CONTEXT,
         },
     },

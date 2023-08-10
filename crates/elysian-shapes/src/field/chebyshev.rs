@@ -1,10 +1,12 @@
 use std::hash::Hash;
 
 use elysian_core::ir::{
-    ast::{Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y, Z},
+    ast::{
+        Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y, Z,
+    },
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
-        PropertyIdentifier, SpecializationData, CONTEXT,
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
+        SpecializationData, CONTEXT,
     },
 };
 
@@ -29,6 +31,7 @@ impl Domains for Chebyshev {
             DISTANCE.into(),
             GRADIENT_2D.into(),
             GRADIENT_3D.into(),
+            UV.into(),
         ]
     }
 }
@@ -43,12 +46,22 @@ impl AsIR for Chebyshev {
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
     ) -> Vec<FunctionDefinition> {
-        let (position, gradient) = if spec.contains(&POSITION_2D.into()) {
-            (POSITION_2D, Some(GRADIENT_2D))
-        } else if spec.contains(&POSITION_3D.into()) {
-            (POSITION_3D, Some(GRADIENT_3D))
-        } else {
-            panic!("No position domain set")
+        let position = match (
+            spec.contains(&POSITION_2D.into()),
+            spec.contains(&POSITION_3D.into()),
+        ) {
+            (true, false) => POSITION_2D,
+            (false, true) => POSITION_3D,
+            _ => panic!("Invalid Position Domain"),
+        };
+
+        let gradient = match (
+            spec.contains(&GRADIENT_2D.into()),
+            spec.contains(&GRADIENT_3D.into()),
+        ) {
+            (true, false) => Some(GRADIENT_2D),
+            (false, true) => Some(GRADIENT_3D),
+            _ => None,
         };
 
         let distance = spec.contains(&DISTANCE.into());
@@ -91,6 +104,54 @@ impl AsIR for Chebyshev {
                 g if *g == GRADIENT_3D => {}
                 _ => unreachable!(),
             }
+        }
+
+        if spec.contains(&UV.into()) {
+            block.extend(match &position {
+                p if *p == POSITION_2D => {
+                    elysian_block! {
+                        CONTEXT.UV = VECTOR2 {
+                            X: CONTEXT.position.X,
+                            Y: CONTEXT.position.Y,
+                        };
+                    }
+                }
+                p if *p == POSITION_3D => {
+                    elysian_block! {
+                        let mut X = 0.0;
+                        let mut Y = 0.0;
+
+                        if CONTEXT.position.X.abs() <= CONTEXT.position.Y.abs()
+                        && CONTEXT.position.X.abs() <= CONTEXT.position.Z.abs()
+                        {
+                            X = CONTEXT.position.Z;
+                            Y = CONTEXT.position.Y;
+                        }
+                        else {
+                            if CONTEXT.position.Y.abs() <= CONTEXT.position.X.abs()
+                            && CONTEXT.position.Y.abs() <= CONTEXT.position.Z.abs()
+                            {
+                                X = CONTEXT.position.X;
+                                Y = CONTEXT.position.Z;
+                            }
+                            else {
+                                if CONTEXT.position.Z.abs() <= CONTEXT.position.X.abs()
+                                    && CONTEXT.position.Z.abs() <= CONTEXT.position.Y.abs()
+                                {
+                                    X = CONTEXT.position.X;
+                                    Y = CONTEXT.position.Y;
+                                }
+                            }
+                        }
+
+                        CONTEXT.UV = VECTOR2 {
+                            X: X,
+                            Y: Y,
+                        };
+                    }
+                }
+                _ => unreachable!(),
+            })
         }
 
         block.push(elysian_stmt! { return CONTEXT });

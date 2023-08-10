@@ -8,10 +8,7 @@ use elysian_core::{
     ast::combine::{LEFT, RIGHT},
     ir::{
         ast::{Number, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
-        module::{
-            AsIR, Domains, DomainsDyn, FunctionDefinition, FunctionIdentifier, SpecializationData,
-            CONTEXT,
-        },
+        module::{AsIR, Domains, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
     },
 };
 use elysian_decl_macros::elysian_function;

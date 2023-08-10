@@ -8,9 +8,9 @@ use elysian_core::{
             POSITION_3D, VECTOR2, VECTOR3,
         },
         module::{
-            AsIR, Domains, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier,
-            InputDefinition, IntoAsIR, PropertyIdentifier, SpecializationData, StructDefinition,
-            StructIdentifier, Type, CONTEXT,
+            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            IntoAsIR, PropertyIdentifier, SpecializationData, StructDefinition, StructIdentifier,
+            Type, CONTEXT,
         },
     },
     property,
