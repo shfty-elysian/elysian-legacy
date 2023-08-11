@@ -1,21 +1,21 @@
 use elysian_core::{
-    ast::{
-        combine::Combine, expr::IntoLiteral, filter::IntoFilter, modify::IntoModify, select::Select,
-    },
+    ast::expr::IntoLiteral,
     ir::{
         ast::{POSITION_2D, X, Y},
         module::IntoAsIR,
     },
 };
 use elysian_shapes::{
-    combine::Union,
+    combine::{Combine, Union},
     elongate_basis::IntoElongateBasis,
     field::{Arc, Circle, Line, Point},
+    filter::IntoFilter,
     modify::{
-        ClampMode, IntoElongateAxis, IntoFlipBasis, IntoManifold, IntoMirror, IntoRepeat,
-        IntoTranslate, REPEAT_ID_2D,
+        ClampMode, IntoElongateAxis, IntoFlipBasis, IntoManifold, IntoMirror, IntoModify,
+        IntoRepeat, IntoTranslate, REPEAT_ID_2D,
     },
     rotate::IntoRotate,
+    select::Select,
 };
 
 use super::combinator;

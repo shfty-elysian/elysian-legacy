@@ -10,10 +10,12 @@ pub mod derive_bounding_error;
 pub mod derive_support_vector;
 pub mod elongate_basis;
 pub mod field;
+pub mod filter;
 pub mod modify;
 pub mod raymarch;
 pub mod rotate;
 pub mod scale;
+pub mod select;
 pub mod uv_map;
 pub mod voronoi;
 

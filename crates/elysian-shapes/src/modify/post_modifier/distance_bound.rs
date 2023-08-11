@@ -1,10 +1,8 @@
 use std::{fmt::Debug, hash::Hash};
 
+use crate::modify::{IntoModify, Modify};
 use elysian_core::{
-    ast::{
-        expr::{Expr, IntoExpr},
-        modify::{IntoModify, Modify},
-    },
+    ast::expr::{Expr, IntoExpr},
     ir::{
         ast::{Block, Identifier, DISTANCE, POSITION_2D, POSITION_3D},
         module::{

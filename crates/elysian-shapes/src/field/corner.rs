@@ -1,10 +1,8 @@
 use std::hash::Hash;
 
+use crate::combine::{Combinator, COMBINE_CONTEXT_STRUCT};
 use elysian_core::{
-    ast::{
-        combine::{Combinator, COMBINE_CONTEXT_STRUCT},
-        expr::Expr,
-    },
+    ast::expr::Expr,
     ir::{
         ast::{DISTANCE, POSITION_2D, POSITION_3D},
         module::{

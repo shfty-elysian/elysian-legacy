@@ -1,10 +1,8 @@
 use std::fmt::Debug;
 
+use crate::combine::{LEFT, OUT, RIGHT};
 use elysian_core::{
-    ast::{
-        combine::{LEFT, OUT, RIGHT},
-        expr::{Expr, IntoExpr},
-    },
+    ast::expr::{Expr, IntoExpr},
     ir::{
         ast::{COMBINE_CONTEXT, DISTANCE, NUM},
         module::{

@@ -1,5 +1,6 @@
+use crate::combine::Combine;
 use elysian_core::{
-    ast::{combine::Combine, expr::IntoExpr},
+    ast::expr::IntoExpr,
     ir::{
         ast::Identifier,
         module::{IntoAsIR, NumericType, Type},

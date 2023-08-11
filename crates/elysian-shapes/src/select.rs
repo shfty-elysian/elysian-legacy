@@ -1,16 +1,19 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
+use elysian_core::ir::module::StructDefinition;
 use elysian_proc_macros::elysian_stmt;
 
-use crate::ir::ast::IntoBlock;
-use crate::ir::module::{
-    AsIR, DynAsIR, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition, IntoAsIR,
-    PropertyIdentifier, SpecializationData, CONTEXT,
+use elysian_core::{
+    ast::expr::IntoExpr,
+    ir::{
+        ast::IntoBlock,
+        module::{
+            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, HashIR,
+            InputDefinition, IntoAsIR, IntoRead, PropertyIdentifier, SpecializationData, CONTEXT,
+        },
+    },
 };
-use crate::ir::module::{DomainsDyn, IntoRead};
-
-use super::expr::IntoExpr;
 
 pub struct Select {
     default: DynAsIR,
@@ -84,7 +87,7 @@ impl AsIR for Select {
             .iter()
             .rev()
             .fold(default_call.output(), |acc, (k, (v, _, entry, _))| {
-                crate::ir::ast::Stmt::If {
+                elysian_core::ir::ast::Stmt::If {
                     cond: (*k).clone().into(),
                     then: entry
                         .call(v.arguments(PropertyIdentifier(CONTEXT).read()))
@@ -112,7 +115,7 @@ impl AsIR for Select {
             .collect()
     }
 
-    fn structs(&self) -> Vec<crate::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<StructDefinition> {
         self.cases
             .iter()
             .flat_map(|(_, v)| v.structs())

@@ -1,6 +1,6 @@
-use elysian_core::{ast::combine::Combine, ir::module::IntoAsIR};
+use elysian_core::ir::module::IntoAsIR;
 use elysian_shapes::{
-    combine::Union,
+    combine::{Combine, Union},
     field::{Infinity, Line, Point},
     modify::IntoTranslate,
 };

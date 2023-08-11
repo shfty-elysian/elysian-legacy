@@ -1,10 +1,8 @@
 use std::{fmt::Debug, hash::Hash};
 
+use crate::modify::{IntoModify, Modify};
 use elysian_core::{
-    ast::{
-        expr::IntoExpr,
-        modify::{IntoModify, Modify},
-    },
+    ast::expr::{Expr, IntoExpr},
     ir::{
         ast::{Identifier, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
@@ -14,8 +12,6 @@ use elysian_core::{
     },
     property,
 };
-
-use elysian_core::ast::expr::Expr;
 use elysian_decl_macros::elysian_function;
 
 pub const TRANSLATE: FunctionIdentifier = FunctionIdentifier::new("translate", 419357041369711478);

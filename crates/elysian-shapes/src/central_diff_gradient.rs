@@ -3,13 +3,13 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::modify::{Translate, TRANSLATE};
-use elysian_core::{
-    ast::combine::{LEFT, RIGHT},
-    ir::{
-        ast::{Number, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
-        module::{AsIR, Domains, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
-    },
+use crate::{
+    combine::{LEFT, RIGHT},
+    modify::{Translate, TRANSLATE},
+};
+use elysian_core::ir::{
+    ast::{Number, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
+    module::{AsIR, Domains, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
 };
 use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_expr;

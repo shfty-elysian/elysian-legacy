@@ -1,20 +1,16 @@
-use elysian_core::{
-    ast::{
-        combine::{Combinator, Combine},
-        filter::IntoFilter,
-        modify::IntoModify,
-        select::Select,
-    },
-    ir::{
-        ast::{COLOR, X, Y},
-        module::{DynAsIR, IntoAsIR},
-    },
+use elysian_core::ir::{
+    ast::{COLOR, X, Y},
+    module::{DynAsIR, IntoAsIR},
 };
+use elysian_shapes::combine::{Combinator, Combine};
+use elysian_shapes::modify::IntoModify;
 use elysian_shapes::{
     combine::Union,
     field::{Infinity, Point},
+    filter::IntoFilter,
     modify::{IntoIsosurface, IntoManifold, IntoRepeat, IntoSet, IntoTranslate, REPEAT_ID_2D},
     scale::IntoScale,
+    select::Select,
 };
 
 pub mod greek;

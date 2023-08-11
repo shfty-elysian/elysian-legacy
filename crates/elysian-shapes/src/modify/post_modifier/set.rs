@@ -1,10 +1,8 @@
 use std::{fmt::Debug, hash::Hash};
 
+use crate::modify::{IntoModify, Modify};
 use elysian_core::{
-    ast::{
-        expr::IntoExpr,
-        modify::{IntoModify, Modify},
-    },
+    ast::expr::IntoExpr,
     ir::{
         ast::{Expr, Identifier},
         module::{

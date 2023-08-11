@@ -3,13 +3,11 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::{
-    ast::modify::{IntoModify, Modify},
-    ir::{
-        ast::{POSITION_2D, UV},
-        module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, SpecializationData, CONTEXT,
-        },
+use crate::modify::{IntoModify, Modify};
+use elysian_core::ir::{
+    ast::{POSITION_2D, UV},
+    module::{
+        AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, SpecializationData, CONTEXT,
     },
 };
 use elysian_decl_macros::elysian_function;

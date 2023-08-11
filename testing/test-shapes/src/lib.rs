@@ -1,11 +1,5 @@
 use elysian_core::{
-    ast::{
-        combine::{Combinator, Combine},
-        expr::{Expr, IntoLiteral, IntoRead},
-        filter::IntoFilter,
-        modify::IntoModify,
-        select::Select,
-    },
+    ast::expr::{Expr, IntoLiteral, IntoRead},
     ir::{
         ast::{vector2, COLOR, DISTANCE, GRADIENT_2D, POSITION_3D, UV, X, Y},
         module::{DynAsIR, IntoAsIR},
@@ -13,17 +7,20 @@ use elysian_core::{
 };
 use elysian_shapes::{
     color::{
-        ambient_light_color, directional_light_color, distance_color, normal_color,
+        ambient_light_color, directional_light_color, distance_color, gradient_color, normal_color,
         position_3d_color, uv_color,
     },
-    combine::{SmoothSubtraction, SmoothUnion, Subtraction, Union},
+    combine::{Combinator, Combine, Overlay, SmoothSubtraction, SmoothUnion, Subtraction, Union},
     field::{Capsule, Chebyshev, Circle, Corner, Infinity, Line, Point, Quad, Ring},
+    filter::IntoFilter,
     modify::{
         BoundType, IntoAspect, IntoDistanceBound, IntoGradientNormals, IntoIsosurface,
-        IntoManifold, IntoRepeat, IntoSet, IntoTranslate, ASPECT, REPEAT_ID_2D,
+        IntoManifold, IntoMirror, IntoModify, IntoRepeat, IntoSet, IntoTranslate, ASPECT,
+        REPEAT_ID_2D,
     },
     raymarch::Raymarch,
     scale::IntoScale,
+    select::Select,
     uv_map::IntoUvMap,
     voronoi::{voronoi, CELL_ID},
 };
@@ -151,10 +148,7 @@ pub fn raymarched() -> impl IntoAsIR {
         Combine::from(Union)
             .push(Circle::new(1.5).translate([0.0, 1.0, -5.0]))
             .push(Capsule::new([0.5, 0.0, 0.0], 1.2).translate([-2.5, -1.5, -5.0]))
-            .push(
-                Quad::new([1.0, 1.0, 1.0], [GRADIENT_2D, UV])
-                    .translate([2.5, -1.5, -5.0])
-            ),
+            .push(Quad::new([1.0, 1.0, 1.0], [GRADIENT_2D, UV]).translate([2.5, -1.5, -5.0])),
     )
 }
 
@@ -229,13 +223,62 @@ pub fn pangram() -> impl IntoAsIR {
     )
 }
 
+pub fn composite() -> impl IntoAsIR {
+    Combine::from([Box::new(Overlay) as DynAsIR])
+        .push(pangram())
+        .push(
+            raymarched()
+                .set_post(UV, UV.prop().read() * Expr::vector2(16.0, 16.0))
+                .uv_map(pangram().filter(COLOR)),
+        )
+}
+
+pub fn ngon(sides: usize, radius: f64) -> impl IntoAsIR {
+    let sides_f = sides as f64;
+    let angle = -(core::f64::consts::PI / sides_f);
+    let k = sides_f.sqrt();
+    let width = radius * angle.cos();
+
+    let field = Line::centered([width * k, 0.0]).translate([0.0, radius / k]);
+
+    match sides {
+        3 => field
+            .mirror_axis([-angle.cos(), -angle.sin()])
+            .mirror_basis([1.0, 0.0])
+            .as_ir(),
+        4 => field
+            .mirror_axis([-angle.cos(), -angle.sin()])
+            .mirror_basis([1.0, 1.0])
+            .as_ir(),
+        5 => field
+            .mirror_axis([-angle.cos(), -angle.sin()])
+            .mirror_axis([(-angle * 2.0).cos(), (-angle * 2.0).sin()])
+            .mirror_basis([1.0, 0.0])
+            .as_ir(),
+        6 => field
+            .mirror_axis([-angle.cos(), -angle.sin()])
+            .mirror_basis([1.0, 1.0])
+            .as_ir(),
+        7 => field
+            .mirror_axis([-angle.cos(), -angle.sin()])
+            .mirror_axis([-(angle * 2.0).cos(), -(angle * 2.0).sin()])
+            .mirror_axis([-(angle * 3.0).cos(), -(angle * 3.0).sin()])
+            .mirror_basis([1.0, 0.0])
+            .as_ir(),
+        8 => field
+            .mirror_axis([-angle.cos(), -angle.sin()])
+            .mirror_axis([-(angle * 2.0).cos(), -(angle * 2.0).sin()])
+            .mirror_basis([1.0, 1.0])
+            .as_ir(),
+        _ => field.as_ir(),
+    }
+}
+
 pub fn test_shape() -> impl IntoAsIR {
-    raymarched()
-        .set_post(UV, UV.prop().read() * Expr::vector2(16.0, 16.0))
-         .uv_map(pangram().filter(COLOR))
-        //.set_post(COLOR, uv_color() * distance_color(5.0))
+    ngon(5, 1.0)
+        //.set_post(COLOR, /*COLOR.prop().read() **/ distance_color(1.0))
+        .set_post(COLOR, gradient_color() * distance_color(1.0))
         //.set_post(COLOR, position_3d_color())
-        .set_post(COLOR, COLOR.prop().read() * distance_color(100.0))
         //.set_post(COLOR, distance_color(100.0))
         .aspect(ASPECT.prop().read())
 }

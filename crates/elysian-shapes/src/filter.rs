@@ -1,15 +1,19 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
+use elysian_core::ir::module::StructDefinition;
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
-use crate::ir::ast::Identifier;
-use crate::ir::module::DomainsDyn;
-use crate::ir::module::{
-    AsIR, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoAsIR,
-    PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT,
+use elysian_core::{
+    ir::{
+        ast::Identifier,
+        module::{
+            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            IntoAsIR, PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT,
+        },
+    },
+    property,
 };
-use crate::property;
 
 pub const FILTER_CONTEXT: Identifier = Identifier::new("filter_context", 11569410201650399545);
 property!(
@@ -90,7 +94,7 @@ impl AsIR for Filter {
             .collect()
     }
 
-    fn structs(&self) -> Vec<crate::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<StructDefinition> {
         self.field.structs()
     }
 }
@@ -110,4 +114,3 @@ where
         }
     }
 }
-

@@ -1,15 +1,15 @@
 use std::{fmt::Debug, hash::Hash};
 
+use crate::modify::{IntoModify, Modify};
 use elysian_core::{
-    ast::modify::{IntoModify, Modify},
     ir::{
         ast::{
             Identifier, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2,
             VECTOR3,
         },
         module::{
-            AsIR, DomainsDyn, FunctionIdentifier, SpecializationData,
-            StructIdentifier, Type, CONTEXT,
+            AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, StructIdentifier, Type,
+            CONTEXT,
         },
     },
     property,

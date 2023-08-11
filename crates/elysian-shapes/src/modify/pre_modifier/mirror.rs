@@ -139,8 +139,8 @@ impl AsIR for Mirror {
                 MirrorMode::Axis(axis) => {
                     let axis = elysian_core::ir::ast::Expr::from(axis.clone());
                     block.push(elysian_stmt! {
-                        if CONTEXT.position.dot(#axis) < 0.0 {
-                            CONTEXT.gradient = CONTEXT.gradient * (2.0 * position.dot(#axis)) * #axis;
+                        if position.dot(#axis) < 0.0 {
+                            CONTEXT.gradient = CONTEXT.gradient - (2.0 * CONTEXT.gradient.dot(#axis)) * #axis
                         }
                     });
                 }

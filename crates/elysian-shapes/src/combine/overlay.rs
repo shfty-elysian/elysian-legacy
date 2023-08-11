@@ -5,17 +5,17 @@ use elysian_core::ir::{
 };
 use elysian_decl_macros::elysian_function;
 
-pub const SUBTRACTION: FunctionIdentifier =
-    FunctionIdentifier::new("subtraction", 1414822549598552032);
+pub const OVERLAY: FunctionIdentifier = FunctionIdentifier::new("overlay", 566703164678686767);
 
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Subtraction;
+// Pick a base context from either the left or right side
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Overlay;
 
-impl Domains for Subtraction {}
+impl Domains for Overlay {}
 
-impl AsIR for Subtraction {
+impl AsIR for Overlay {
     fn entry_point(&self) -> FunctionIdentifier {
-        SUBTRACTION
+        OVERLAY
     }
 
     fn functions(
@@ -25,15 +25,12 @@ impl AsIR for Subtraction {
     ) -> Vec<FunctionDefinition> {
         vec![elysian_function! {
             fn entry_point(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
-                COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.RIGHT;
-                COMBINE_CONTEXT.OUT.DISTANCE =
-                    -COMBINE_CONTEXT.OUT.DISTANCE;
-
-                if COMBINE_CONTEXT.LEFT.DISTANCE >= COMBINE_CONTEXT.OUT.DISTANCE {
+                if COMBINE_CONTEXT.RIGHT.DISTANCE < 0.0 {
+                    COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.RIGHT;
+                } else {
                     COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.LEFT;
                 }
-
-                return COMBINE_CONTEXT;
+                return COMBINE_CONTEXT
             }
         }]
     }
