@@ -1,3 +1,5 @@
+//! Evaluate Elysian IR at runtime
+
 use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 
 use elysian_core::identifier::Identifier;

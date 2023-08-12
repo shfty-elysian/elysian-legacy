@@ -1,3 +1,5 @@
+//! Declarative macro library
+
 #[macro_export]
 macro_rules! elysian_function_arg {
     ($target:expr => mut $arg:ident, $($next:tt)*) => {

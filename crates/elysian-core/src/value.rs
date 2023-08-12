@@ -4,6 +4,7 @@ use crate::number::Number;
 use std::fmt::Debug;
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Value {
     Number(Number),
     Vector2([Number; 2]),

@@ -1,3 +1,5 @@
+//! Convert Elysian IR into Rust using `syn`
+
 use elysian_core::{identifier::Identifier, property_identifier::PropertyIdentifier};
 use elysian_ir::{
     ast::{

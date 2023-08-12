@@ -11,6 +11,7 @@ use super::value::Value;
 pub type BoxExpr = Box<Expr>;
 
 #[derive(Debug, Default, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Path(Vec<PropertyIdentifier>);
 
 impl Path {

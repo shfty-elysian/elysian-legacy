@@ -1,3 +1,5 @@
+//! Built-in shapes and operators
+
 use elysian_ir::{ast::COLOR, module::IntoAsIR};
 use field::Point;
 use modify::{IntoIsosurface, IntoSet};

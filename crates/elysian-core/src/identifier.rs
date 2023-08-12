@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 /// Named unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Identifier {
     pub name: Cow<'static, str>,
     pub uuid: Uuid,

@@ -8,6 +8,7 @@ use rust_gpu_bridge::{
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Number {
     UInt(u64),
     SInt(i64),

@@ -1,3 +1,5 @@
+//! Precompile shapes into Rust functions via build.rs
+
 use elysian_interpreter::{evaluate_module, Interpreter};
 use elysian_ir::module::SpecializationData;
 use elysian_syn::module_to_string;

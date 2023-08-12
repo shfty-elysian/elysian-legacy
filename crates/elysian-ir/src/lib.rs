@@ -1,3 +1,5 @@
+//! Intermediate representation
+
 extern crate self as elysian_ir;
 pub mod ast;
 pub mod module;

@@ -1,3 +1,5 @@
+//! Shared code and user-facing API primitives
+
 pub use uuid;
 pub mod expr;
 pub mod value;

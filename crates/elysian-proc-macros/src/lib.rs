@@ -1,3 +1,5 @@
+//! Procedural macro library
+
 mod syn_to_elysian;
 
 use proc_macro::{Group, Ident, Punct, TokenStream, TokenTree};

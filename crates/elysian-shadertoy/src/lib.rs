@@ -1,3 +1,5 @@
+//! Convert Elysian IR into Shadertoy syntax via `elysian-naga`
+
 use std::error::Error;
 
 use elysian_ir::module::Module as ElysianModule;

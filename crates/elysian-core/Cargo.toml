@@ -4,10 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = []
-internal = []
+default = ["serde"]
+serde = ["dep:serde", "uuid/serde"]
 
 [dependencies]
 rust-gpu-bridge = { path = "../../../bevy-rust-gpu-project/crates/rust-gpu-bridge", features = ["glam"] }
+
+serde = { version = "1.0.183", features = ["derive"], optional = true }
 
 uuid = { version = "1.4.0", features = ["v4"] }

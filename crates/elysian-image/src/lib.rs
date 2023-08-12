@@ -1,3 +1,5 @@
+//! Rasterize a 2D Elysian field into an image
+
 use elysian_shapes::modify::ASPECT;
 use image::RgbImage;
 use rust_gpu_bridge::glam::Vec4;
