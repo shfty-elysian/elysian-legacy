@@ -9,6 +9,7 @@ pub const INTERSECTION: FunctionIdentifier =
     FunctionIdentifier::new("intersection", 18033822391797795038);
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Intersection;
 
 impl Domains for Intersection {}

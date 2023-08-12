@@ -19,6 +19,7 @@ pub const SMOOTH_INTERSECTION: FunctionIdentifier =
     FunctionIdentifier::new("smooth_intersection", 18033822391797795038);
 
 #[derive(Debug, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct SmoothIntersection {
     prop: PropertyIdentifier,
     k: Expr,

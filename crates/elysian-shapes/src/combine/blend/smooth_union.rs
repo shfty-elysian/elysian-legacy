@@ -19,6 +19,7 @@ pub const SMOOTH_UNION: FunctionIdentifier =
     FunctionIdentifier::new("smooth_union", 1894363406191409858);
 
 #[derive(Debug, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct SmoothUnion {
     prop: PropertyIdentifier,
     k: Expr,

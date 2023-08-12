@@ -9,14 +9,16 @@ use elysian_ir::{
         VECTOR3,
     },
     module::{
-        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-        IntoAsIR, SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
+        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, Prepare,
+        SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
 
 use elysian_core::expr::Expr;
 use elysian_proc_macros::{elysian_block, elysian_stmt};
+
+use crate::shape::{DynShape, IntoShape};
 
 pub const FLIP_2D: Identifier = Identifier::new("flip_2d", 4082005642022253885);
 property!(
@@ -33,9 +35,10 @@ property!(
 );
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct FlipBasis {
     pub basis: Expr,
-    pub field: DynAsIR,
+    pub field: DynShape,
 }
 
 impl Hash for FlipBasis {
@@ -141,12 +144,12 @@ pub trait IntoFlipBasis {
 
 impl<T> IntoFlipBasis for T
 where
-    T: IntoAsIR,
+    T: IntoShape,
 {
     fn flip_basis(self, basis: impl IntoExpr) -> FlipBasis {
         FlipBasis {
             basis: basis.expr(),
-            field: self.as_ir(),
+            field: self.shape(),
         }
     }
 }

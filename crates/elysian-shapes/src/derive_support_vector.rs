@@ -27,6 +27,7 @@ property! {
 }
 
 #[derive(Debug, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct DeriveSupportVector;
 
 impl DomainsDyn for DeriveSupportVector {

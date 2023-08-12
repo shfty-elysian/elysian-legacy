@@ -1,12 +1,12 @@
-use elysian_ir::module::IntoAsIR;
 use elysian_shapes::{
     field::Line,
     modify::{IntoMirror, IntoTranslate},
+    shape::IntoShape,
 };
 
 use super::combinator;
 
-pub fn sigma() -> impl IntoAsIR {
+pub fn sigma() -> impl IntoShape {
     combinator()
         .combine()
         .push(Line::segment([2.0, 0.0]).translate([-1.0, 1.0]))

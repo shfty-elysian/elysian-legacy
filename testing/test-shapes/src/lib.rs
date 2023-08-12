@@ -2,10 +2,7 @@ use elysian_core::{
     expr::{Expr, IntoLiteral, IntoPath, IntoRead},
     property_identifier::IntoPropertyIdentifier,
 };
-use elysian_ir::{
-    ast::{vector2, COLOR, DISTANCE, GRADIENT_2D, POSITION_3D, UV, X, Y},
-    module::{DynAsIR, IntoAsIR},
-};
+use elysian_ir::ast::{vector2, COLOR, DISTANCE, GRADIENT_2D, POSITION_3D, UV, X, Y};
 use elysian_shapes::{
     color::{
         ambient_light_color, directional_light_color, distance_color, gradient_color, normal_color,
@@ -22,43 +19,44 @@ use elysian_shapes::{
     raymarch::Raymarch,
     scale::IntoScale,
     select::Select,
+    shape::{DynShape, IntoShape},
     uv_map::IntoUvMap,
     voronoi::{voronoi, CELL_ID},
 };
 use elysian_text::glyphs::{greek::sigma, text, Align};
 use rust_gpu_bridge::glam::Mat4;
 
-pub fn point() -> impl IntoAsIR {
+pub fn point() -> impl IntoShape {
     Point.gradient_normals().set_post(COLOR, normal_color())
 }
 
-pub fn chebyshev() -> impl IntoAsIR {
+pub fn chebyshev() -> impl IntoShape {
     Chebyshev.gradient_normals().set_post(COLOR, normal_color())
 }
 
-pub fn line() -> impl IntoAsIR {
+pub fn line() -> impl IntoShape {
     Line::centered([1.0, 0.0]).set_post(COLOR, uv_color())
 }
 
-pub fn circle() -> impl IntoAsIR {
+pub fn circle() -> impl IntoShape {
     Circle::new(0.5)
         .gradient_normals()
         .set_post(COLOR, uv_color())
 }
 
-pub fn capsule() -> impl IntoAsIR {
+pub fn capsule() -> impl IntoShape {
     Capsule::new([1.5, 0.0], 0.5).set_post(COLOR, uv_color())
 }
 
-pub fn ring() -> impl IntoAsIR {
+pub fn ring() -> impl IntoShape {
     Ring::new(1.0, 0.2).set_post(COLOR, uv_color())
 }
 
-pub fn union() -> impl IntoAsIR {
+pub fn union() -> impl IntoShape {
     Combine::from(Union).push(circle()).push(line())
 }
 
-pub fn smooth_union() -> impl IntoAsIR {
+pub fn smooth_union() -> impl IntoShape {
     Combinator::build()
         .push(Union)
         .push(SmoothUnion::new(DISTANCE, 0.4))
@@ -69,7 +67,7 @@ pub fn smooth_union() -> impl IntoAsIR {
         .push(line())
 }
 
-pub fn kettle_bell() -> impl IntoAsIR {
+pub fn kettle_bell() -> impl IntoShape {
     Combinator::build()
         .push(Subtraction)
         .push(SmoothSubtraction::new(DISTANCE, 0.4))
@@ -92,7 +90,7 @@ pub fn kettle_bell() -> impl IntoAsIR {
         .set_post(COLOR, uv_color())
 }
 
-pub fn select() -> impl IntoAsIR {
+pub fn select() -> impl IntoShape {
     let id_x = REPEAT_ID_2D.path().push(X).read();
     let id_x_lt = |t: f64| id_x.clone().lt(t);
 
@@ -139,7 +137,7 @@ pub fn select() -> impl IntoAsIR {
         .translate([-1.6, -1.0])
 }
 
-pub fn raymarched() -> impl IntoAsIR {
+pub fn raymarched() -> impl IntoShape {
     //let projection = Mat4::orthographic_rh(-1.0, 1.0, -1.0, 1.0, 0.0, 10.0);
     let projection = Mat4::perspective_infinite_rh(std::f32::consts::PI * 0.25, 1.0, 0.01);
     Raymarch::sphere(
@@ -153,7 +151,7 @@ pub fn raymarched() -> impl IntoAsIR {
     )
 }
 
-pub fn partition() -> impl IntoAsIR {
+pub fn partition() -> impl IntoShape {
     let cell_id = CELL_ID.prop().read();
     let cell_id_lt = |t: f64| cell_id.clone().lt(t);
 
@@ -190,14 +188,14 @@ pub fn partition() -> impl IntoAsIR {
         .aspect(ASPECT.prop().read())
 }
 
-pub fn pangram() -> impl IntoAsIR {
+pub fn pangram() -> impl IntoShape {
     text(
         "SPHINX OF\nBLACK QUARTZ,\nJUDGE MY VOW.",
         Align::Center,
         [0.4, 0.5],
         [1.0, 1.0],
         Some(
-            |field: DynAsIR, cell_size: [f64; 2], total_size: [f64; 2]| {
+            |field: DynShape, cell_size: [f64; 2], total_size: [f64; 2]| {
                 Combine::from(Union)
                     /*
                     .push(
@@ -218,14 +216,14 @@ pub fn pangram() -> impl IntoAsIR {
                             * distance_color(100.0),
                     ))
                     //.push(local_origin())
-                    .as_ir()
+                    .shape()
             },
         ),
     )
 }
 
-pub fn composite() -> impl IntoAsIR {
-    Combine::from([Box::new(Overlay) as DynAsIR])
+pub fn composite() -> impl IntoShape {
+    Combine::from([Box::new(Overlay) as DynShape])
         .push(pangram())
         .push(
             raymarched()
@@ -234,7 +232,7 @@ pub fn composite() -> impl IntoAsIR {
         )
 }
 
-pub fn ngon(sides: usize, radius: f64) -> impl IntoAsIR {
+pub fn ngon(sides: usize, radius: f64) -> impl IntoShape {
     let sides_f = sides as f64;
     let angle = -(core::f64::consts::PI / sides_f);
     let k = sides_f.sqrt();
@@ -246,36 +244,36 @@ pub fn ngon(sides: usize, radius: f64) -> impl IntoAsIR {
         3 => field
             .mirror_axis([-angle.cos(), -angle.sin()])
             .mirror_basis([1.0, 0.0])
-            .as_ir(),
+            .shape(),
         4 => field
             .mirror_axis([-angle.cos(), -angle.sin()])
             .mirror_basis([1.0, 1.0])
-            .as_ir(),
+            .shape(),
         5 => field
             .mirror_axis([-angle.cos(), -angle.sin()])
             .mirror_axis([(-angle * 2.0).cos(), (-angle * 2.0).sin()])
             .mirror_basis([1.0, 0.0])
-            .as_ir(),
+            .shape(),
         6 => field
             .mirror_axis([-angle.cos(), -angle.sin()])
             .mirror_basis([1.0, 1.0])
-            .as_ir(),
+            .shape(),
         7 => field
             .mirror_axis([-angle.cos(), -angle.sin()])
             .mirror_axis([-(angle * 2.0).cos(), -(angle * 2.0).sin()])
             .mirror_axis([-(angle * 3.0).cos(), -(angle * 3.0).sin()])
             .mirror_basis([1.0, 0.0])
-            .as_ir(),
+            .shape(),
         8 => field
             .mirror_axis([-angle.cos(), -angle.sin()])
             .mirror_axis([-(angle * 2.0).cos(), -(angle * 2.0).sin()])
             .mirror_basis([1.0, 1.0])
-            .as_ir(),
-        _ => field.as_ir(),
+            .shape(),
+        _ => field.shape(),
     }
 }
 
-pub fn test_shape() -> impl IntoAsIR {
+pub fn test_shape() -> impl IntoShape {
     ngon(5, 1.0)
         //.set_post(COLOR, /*COLOR.prop().read() **/ distance_color(1.0))
         .set_post(COLOR, gradient_color() * distance_color(1.0))
@@ -284,6 +282,6 @@ pub fn test_shape() -> impl IntoAsIR {
         .aspect(ASPECT.prop().read())
 }
 
-pub fn shapes() -> impl IntoIterator<Item = (&'static str, DynAsIR)> {
-    [("test_shape", test_shape().as_ir())]
+pub fn shapes() -> impl IntoIterator<Item = (&'static str, DynShape)> {
+    [("test_shape", test_shape().shape())]
 }

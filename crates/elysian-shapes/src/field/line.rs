@@ -7,7 +7,7 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D},
-    module::{AsIR, Domains, FunctionIdentifier, SpecializationData, CONTEXT},
+    module::{AsIR, Domains, FunctionIdentifier, Prepare, SpecializationData, CONTEXT},
 };
 use elysian_proc_macros::elysian_stmt;
 
@@ -18,6 +18,7 @@ use super::Point;
 pub const LINE: FunctionIdentifier = FunctionIdentifier::new("line", 14339483921749952476);
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum LineMode {
     Centered,
     Segment,
@@ -34,6 +35,7 @@ impl ToString for LineMode {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Line {
     dir: Expr,
     mode: LineMode,

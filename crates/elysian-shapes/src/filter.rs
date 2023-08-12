@@ -3,16 +3,18 @@ use std::hash::{Hash, Hasher};
 
 use elysian_core::identifier::Identifier;
 use elysian_core::property_identifier::PropertyIdentifier;
-use elysian_ir::module::StructDefinition;
+use elysian_ir::module::{Prepare, StructDefinition};
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 use elysian_ir::{
     module::{
-        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-        IntoAsIR, SpecializationData, StructIdentifier, Type, CONTEXT,
+        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition,
+        SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
+
+use crate::shape::{DynShape, IntoShape};
 
 pub const FILTER_CONTEXT: Identifier = Identifier::new("filter_context", 11569410201650399545);
 property!(
@@ -22,18 +24,19 @@ property!(
 );
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Filter {
-    field: DynAsIR,
+    field: DynShape,
     props: Vec<PropertyIdentifier>,
 }
 
 impl Filter {
     pub fn new(
-        field: impl IntoAsIR,
+        field: impl IntoShape,
         props: impl IntoIterator<Item = impl Into<PropertyIdentifier>>,
     ) -> Self {
         Filter {
-            field: field.as_ir(),
+            field: field.shape(),
             props: props.into_iter().map(Into::into).collect(),
         }
     }
@@ -104,11 +107,11 @@ pub trait IntoFilter {
 
 impl<T> IntoFilter for T
 where
-    T: IntoAsIR,
+    T: IntoShape,
 {
     fn filter(self, props: impl IntoIterator<Item = impl Into<PropertyIdentifier>>) -> Filter {
         Filter {
-            field: self.as_ir(),
+            field: self.shape(),
             props: props.into_iter().map(Into::into).collect(),
         }
     }

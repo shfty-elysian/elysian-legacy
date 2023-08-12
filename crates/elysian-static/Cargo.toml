@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 elysian-core = { path = "../elysian-core" }
 elysian-ir = { path = "../elysian-ir" }
+elysian-shapes = { path = "../elysian-shapes" }
 elysian-syn = { path = "../elysian-syn" }
 elysian-interpreter = { path = "../elysian-interpreter" }
 

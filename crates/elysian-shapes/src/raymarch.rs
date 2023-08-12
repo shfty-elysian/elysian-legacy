@@ -11,12 +11,14 @@ use elysian_ir::{
         X, Y, Z,
     },
     module::{
-        AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, NumericType, SpecializationData,
+        AsIR, DomainsDyn, FunctionIdentifier, NumericType, Prepare, SpecializationData,
         StructIdentifier, Type, CONTEXT,
     },
     property,
 };
 use elysian_proc_macros::elysian_stmt;
+
+use crate::shape::{DynShape, IntoShape};
 
 pub const RAYMARCH: FunctionIdentifier = FunctionIdentifier::new("raymarch", 2862797821569013866);
 
@@ -95,6 +97,7 @@ pub const MAX_STEPS: Identifier = Identifier::new("max_steps", 11467479756143826
 property!(MAX_STEPS, MAX_STEPS_PROP, Type::Number(NumericType::UInt));
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum March {
     Fixed {
         step_size: elysian_core::expr::Expr,
@@ -113,11 +116,12 @@ pub fn falloff_k(e: f32, r: f32) -> f32 {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Raymarch {
     march: March,
     max_steps: elysian_core::expr::Expr,
     inv_projection: elysian_core::expr::Expr,
-    field: DynAsIR,
+    field: DynShape,
 }
 
 impl Raymarch {
@@ -125,7 +129,7 @@ impl Raymarch {
         step_size: impl IntoExpr,
         max_steps: impl IntoExpr,
         inv_projection: impl IntoExpr,
-        field: impl IntoAsIR,
+        field: impl IntoShape,
     ) -> Self {
         Raymarch {
             march: March::Fixed {
@@ -133,7 +137,7 @@ impl Raymarch {
             },
             max_steps: max_steps.expr(),
             inv_projection: inv_projection.expr(),
-            field: field.as_ir(),
+            field: field.shape(),
         }
     }
 
@@ -141,7 +145,7 @@ impl Raymarch {
         epsilon: impl IntoExpr,
         max_steps: impl IntoExpr,
         inv_projection: impl IntoExpr,
-        field: impl IntoAsIR,
+        field: impl IntoShape,
     ) -> Self {
         Raymarch {
             march: March::Sphere {
@@ -149,7 +153,7 @@ impl Raymarch {
             },
             max_steps: max_steps.expr(),
             inv_projection: inv_projection.expr(),
-            field: field.as_ir(),
+            field: field.shape(),
         }
     }
 
@@ -158,7 +162,7 @@ impl Raymarch {
         falloff_k: impl IntoExpr,
         max_steps: impl IntoExpr,
         inv_projection: impl IntoExpr,
-        field: impl IntoAsIR,
+        field: impl IntoShape,
     ) -> Self {
         Raymarch {
             march: March::Lipschitz {
@@ -167,7 +171,7 @@ impl Raymarch {
             },
             max_steps: max_steps.expr(),
             inv_projection: inv_projection.expr(),
-            field: field.as_ir(),
+            field: field.shape(),
         }
     }
 }

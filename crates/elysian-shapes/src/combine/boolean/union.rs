@@ -1,25 +1,26 @@
-use crate::combine::{LEFT, OUT, RIGHT};
+use crate::{
+    combine::{LEFT, OUT, RIGHT},
+    shape::{DynShape, IntoShape},
+};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{COMBINE_CONTEXT, DISTANCE},
-    module::{
-        AsIR, Domains, DynAsIR, FunctionDefinition, FunctionIdentifier, IntoAsIR,
-        SpecializationData,
-    },
+    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData},
 };
 
 pub const UNION: FunctionIdentifier = FunctionIdentifier::new("union", 1894363406191409858);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Union;
 
 impl IntoIterator for Union {
-    type Item = DynAsIR;
+    type Item = DynShape;
 
-    type IntoIter = std::iter::Once<DynAsIR>;
+    type IntoIter = std::iter::Once<DynShape>;
 
     fn into_iter(self) -> Self::IntoIter {
-        std::iter::once(self.as_ir())
+        std::iter::once(self.shape())
     }
 }
 

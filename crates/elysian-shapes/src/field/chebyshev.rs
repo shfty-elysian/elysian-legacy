@@ -16,6 +16,7 @@ use elysian_proc_macros::{elysian_block, elysian_stmt};
 pub const CHEBYSHEV: FunctionIdentifier = FunctionIdentifier::new("chebyshev", 2147444445290820053);
 
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Chebyshev;
 
 impl Hash for Chebyshev {

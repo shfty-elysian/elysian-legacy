@@ -17,6 +17,7 @@ use elysian_proc_macros::{elysian_block, elysian_stmt};
 pub const POINT: FunctionIdentifier = FunctionIdentifier::new("point", 2023836058494613125);
 
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Point;
 
 impl Hash for Point {

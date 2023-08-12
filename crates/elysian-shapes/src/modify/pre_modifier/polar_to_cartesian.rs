@@ -13,6 +13,7 @@ pub const POLAR_TO_CARTESIAN: FunctionIdentifier =
     FunctionIdentifier::new("polar_to_cartesian", 11770202273010537);
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PolarToCartesian;
 
 impl Hash for PolarToCartesian {

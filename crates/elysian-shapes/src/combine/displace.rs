@@ -11,6 +11,7 @@ use elysian_ir::{
 pub const DISPLACE: FunctionIdentifier = FunctionIdentifier::new("displace", 13382542451638139261);
 
 #[derive(Debug, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Displace {
     prop: PropertyIdentifier,
 }

@@ -38,12 +38,14 @@ property!(
 );
 
 #[derive(Debug, Hash, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum BoundType {
     Lower,
     Upper,
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct BasisBound {
     ty: BoundType,
     bound: Expr,

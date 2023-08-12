@@ -7,22 +7,17 @@ use elysian_core::expr::{Expr, IntoExpr};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
-    module::{AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
+    module::{AsIR, DomainsDyn, FunctionIdentifier, Prepare, SpecializationData, CONTEXT},
 };
 use elysian_proc_macros::{elysian_expr, elysian_stmt};
 
-pub struct Scale {
-    pub field: Box<dyn AsIR>,
-    pub factor: Expr,
-}
+use crate::shape::{DynShape, Shape};
 
-impl Debug for Scale {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Scale")
-            .field("field", &self.field)
-            .field("factor", &self.factor)
-            .finish()
-    }
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct Scale {
+    pub field: DynShape,
+    pub factor: Expr,
 }
 
 impl Hash for Scale {
@@ -94,7 +89,7 @@ pub trait IntoScale {
 
 impl<T> IntoScale for T
 where
-    T: 'static + AsIR,
+    T: 'static + Shape,
 {
     fn scale(self, factor: impl IntoExpr) -> Scale {
         Scale {

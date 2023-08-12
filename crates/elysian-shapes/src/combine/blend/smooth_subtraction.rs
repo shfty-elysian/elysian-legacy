@@ -19,6 +19,7 @@ pub const SMOOTH_SUBTRACTION: FunctionIdentifier =
     FunctionIdentifier::new("smooth_subtraction", 1414822549598552032);
 
 #[derive(Debug, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct SmoothSubtraction {
     prop: PropertyIdentifier,
     k: Expr,

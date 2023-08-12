@@ -6,15 +6,17 @@ use std::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{Expr, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
-    module::{AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
+    module::{AsIR, DomainsDyn, FunctionIdentifier, Prepare, SpecializationData, CONTEXT},
 };
 use elysian_proc_macros::elysian_stmt;
+
+use crate::shape::DynShape;
 
 pub const CROSS_SECTION: FunctionIdentifier =
     FunctionIdentifier::new("cross_section", 11670715461129592823);
 
 pub struct CrossSection {
-    pub field: Box<dyn AsIR>,
+    pub field: DynShape,
     pub x_axis: elysian_core::expr::Expr,
     pub y_axis: elysian_core::expr::Expr,
 }

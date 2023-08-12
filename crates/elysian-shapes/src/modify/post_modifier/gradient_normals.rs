@@ -15,6 +15,7 @@ pub const GRADIENT_NORMALS: FunctionIdentifier =
     FunctionIdentifier::new("gradient_normals", 18573716892008865657);
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct GradientNormals;
 
 impl Hash for GradientNormals {

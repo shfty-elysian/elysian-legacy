@@ -2,42 +2,38 @@ use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 use elysian_core::property_identifier::PropertyIdentifier;
-use elysian_ir::module::StructDefinition;
+use elysian_ir::module::{Prepare, StructDefinition};
 use elysian_proc_macros::elysian_stmt;
 
 use elysian_core::expr::IntoExpr;
 use elysian_ir::{
     ast::IntoBlock,
     module::{
-        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
-        IntoAsIR, IntoRead, SpecializationData, CONTEXT,
+        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+        IntoRead, SpecializationData, CONTEXT,
     },
 };
 
+use crate::shape::{DynShape, IntoShape};
+
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Select {
-    default: DynAsIR,
-    cases: Vec<(elysian_core::expr::Expr, DynAsIR)>,
+    default: DynShape,
+    cases: Vec<(elysian_core::expr::Expr, DynShape)>,
 }
 
 impl Select {
-    pub fn new(default: impl IntoAsIR) -> Self {
+    pub fn new(default: impl IntoShape) -> Self {
         Select {
-            default: default.as_ir(),
+            default: default.shape(),
             cases: Default::default(),
         }
     }
 
-    pub fn case(mut self, cond: impl IntoExpr, then: impl IntoAsIR) -> Self {
-        self.cases.push((cond.expr(), then.as_ir()));
+    pub fn case(mut self, cond: impl IntoExpr, then: impl IntoShape) -> Self {
+        self.cases.push((cond.expr(), then.shape()));
         self
-    }
-}
-
-impl Debug for Select {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Select")
-            .field("shapes", &self.cases)
-            .finish()
     }
 }
 

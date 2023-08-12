@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::{modify::{IntoModify, Modify}, shape::{IntoShape, Shape}};
 use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
@@ -13,6 +13,7 @@ use elysian_ir::{
 pub const SET: FunctionIdentifier = FunctionIdentifier::new("set", 1768232690987692666);
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Set {
     id: PropertyIdentifier,
     expr: elysian_core::expr::Expr,
@@ -57,7 +58,7 @@ pub trait IntoSet {
 
 impl<T> IntoSet for T
 where
-    T: 'static + AsIR,
+    T: 'static + Shape,
 {
     fn set_pre(self, id: impl Into<PropertyIdentifier>, expr: impl IntoExpr) -> Modify {
         self.modify().push_pre(Set {

@@ -4,7 +4,9 @@ use crate::combine::{Combinator, COMBINE_CONTEXT_STRUCT};
 use elysian_core::{expr::Expr, property_identifier::PropertyIdentifier};
 use elysian_ir::{
     ast::{DISTANCE, POSITION_2D, POSITION_3D},
-    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},
+    module::{
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, Prepare, SpecializationData, CONTEXT,
+    },
 };
 
 use elysian_decl_macros::elysian_function;
@@ -20,6 +22,7 @@ use super::{Chebyshev, Point};
 pub const CORNER: FunctionIdentifier = FunctionIdentifier::new("corner", 5817708551492744655);
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Corner {
     props: Vec<PropertyIdentifier>,
 }

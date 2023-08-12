@@ -11,6 +11,7 @@ use elysian_decl_macros::elysian_function;
 pub const INFINITY: FunctionIdentifier = FunctionIdentifier::new("infinity", 349698827217118514);
 
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Infinity;
 
 impl Hash for Infinity {

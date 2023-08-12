@@ -11,12 +11,14 @@ use elysian_ir::{
         Z,
     },
     module::{
-        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-        IntoAsIR, SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
+        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, Prepare,
+        SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
 use elysian_proc_macros::{elysian_block, elysian_expr, elysian_stmt};
+
+use crate::shape::{DynShape, IntoShape};
 
 pub const EXTENT_2D: Identifier = Identifier::new("extent_2d", 9222786191981609495);
 property!(
@@ -33,8 +35,9 @@ property!(
 );
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct ElongateBasis {
-    pub field: DynAsIR,
+    pub field: DynShape,
     pub extent: Expr,
 }
 
@@ -132,11 +135,11 @@ pub trait IntoElongateBasis {
 
 impl<T> IntoElongateBasis for T
 where
-    T: IntoAsIR,
+    T: IntoShape,
 {
     fn elongate_basis(self, dir: impl IntoExpr) -> ElongateBasis {
         ElongateBasis {
-            field: self.as_ir(),
+            field: self.shape(),
             extent: dir.expr(),
         }
     }

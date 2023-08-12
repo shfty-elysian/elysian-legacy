@@ -2,10 +2,7 @@ use elysian_core::{
     expr::{IntoLiteral, IntoPath},
     property_identifier::IntoPropertyIdentifier,
 };
-use elysian_ir::{
-    ast::{POSITION_2D, X, Y},
-    module::IntoAsIR,
-};
+use elysian_ir::ast::{POSITION_2D, X, Y};
 use elysian_shapes::{
     combine::{Combine, Union},
     elongate_basis::IntoElongateBasis,
@@ -17,20 +14,21 @@ use elysian_shapes::{
     },
     rotate::IntoRotate,
     select::Select,
+    shape::IntoShape,
 };
 
 use super::combinator;
 
-pub fn a(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn a(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(Line::segment([cell_size[0] * 0.75, 0.0]).translate([0.0, cell_size[1] * -0.5]))
         .push(Line::segment([cell_size[0], cell_size[1] * -2.0]).translate([0.0, cell_size[1]]))
         .mirror_basis([1.0, 0.0])
-        .as_ir()
+        .shape()
 }
 
-pub fn b(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn b(cell_size: [f64; 2]) -> impl IntoShape {
     let radius = cell_size[1] * 0.5;
 
     Combine::from(combinator())
@@ -53,11 +51,11 @@ pub fn b(cell_size: [f64; 2]) -> impl IntoAsIR {
         .mirror_basis([0.0, 1.0])
 }
 
-pub fn c(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn c(cell_size: [f64; 2]) -> impl IntoShape {
     j(cell_size).flip_basis([1.0, 1.0]).mirror_basis([0.0, 1.0])
 }
 
-pub fn d(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn d(cell_size: [f64; 2]) -> impl IntoShape {
     let repeat_id = REPEAT_ID_2D.prop();
 
     let repeat_id_x_lt = |t: f64| repeat_id.clone().path().push(X).read().clone().lt(t);
@@ -79,7 +77,7 @@ pub fn d(cell_size: [f64; 2]) -> impl IntoAsIR {
         )
 }
 
-pub fn e(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn e(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(Line::segment([0.0, cell_size[1]]).translate([-cell_size[0], 0.0]))
@@ -88,7 +86,7 @@ pub fn e(cell_size: [f64; 2]) -> impl IntoAsIR {
         .mirror_basis([0.0, 1.0])
 }
 
-pub fn f(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn f(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(Line::centered([0.0, cell_size[1]]).translate([-cell_size[0], -0.0]))
@@ -96,7 +94,7 @@ pub fn f(cell_size: [f64; 2]) -> impl IntoAsIR {
         .push(Line::centered([cell_size[0], 0.0]).translate([0.0, cell_size[1]]))
 }
 
-pub fn g(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn g(cell_size: [f64; 2]) -> impl IntoShape {
     let radius = cell_size[0].min(cell_size[1]);
     let e = if cell_size[0] < cell_size[1] {
         [0.0, cell_size[0].max(cell_size[1]) - radius]
@@ -122,7 +120,7 @@ pub fn g(cell_size: [f64; 2]) -> impl IntoAsIR {
         .push(Line::segment([0.0, -e[1]]).translate([cell_size[0], 0.0]))
 }
 
-pub fn h(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn h(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(Line::centered([0.0, cell_size[1]]).translate([cell_size[0], 0.0]))
@@ -130,11 +128,11 @@ pub fn h(cell_size: [f64; 2]) -> impl IntoAsIR {
         .mirror_basis([1.0, 0.0])
 }
 
-pub fn i(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn i(cell_size: [f64; 2]) -> impl IntoShape {
     Line::centered([0.0, cell_size[1]])
 }
 
-pub fn j(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn j(cell_size: [f64; 2]) -> impl IntoShape {
     Select::new(
         Combine::from(Union)
             .push(Line::segment([-cell_size[0], 0.0]).translate([0.0, -cell_size[1]]))
@@ -151,7 +149,7 @@ pub fn j(cell_size: [f64; 2]) -> impl IntoAsIR {
     )
 }
 
-pub fn k(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn k(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(Line::segment([0.0, cell_size[1]]).translate([-cell_size[0], 0.0]))
@@ -159,14 +157,14 @@ pub fn k(cell_size: [f64; 2]) -> impl IntoAsIR {
         .mirror_basis([0.0, 1.0])
 }
 
-pub fn l(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn l(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(Line::centered([0.0, cell_size[1]]).translate([-cell_size[0], 0.0]))
         .push(Line::centered([cell_size[0], 0.0]).translate([0.0, -cell_size[1]]))
 }
 
-pub fn m(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn m(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(Line::segment([0.0, cell_size[1] * 2.0]).translate([cell_size[0], -cell_size[1]]))
@@ -174,7 +172,7 @@ pub fn m(cell_size: [f64; 2]) -> impl IntoAsIR {
         .mirror_basis([1.0, 0.0])
 }
 
-pub fn n(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn n(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(
@@ -185,7 +183,7 @@ pub fn n(cell_size: [f64; 2]) -> impl IntoAsIR {
         .push(Line::centered([-cell_size[0], cell_size[1]]))
 }
 
-pub fn o(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn o(cell_size: [f64; 2]) -> impl IntoShape {
     let diff = cell_size[0].max(cell_size[1]) - cell_size[0].min(cell_size[1]);
     let (r, e) = if cell_size[0] > cell_size[1] {
         (cell_size[1], [diff, 0.0])
@@ -195,7 +193,7 @@ pub fn o(cell_size: [f64; 2]) -> impl IntoAsIR {
     Circle::new(r).elongate_basis(e).manifold()
 }
 
-pub fn p(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn p(cell_size: [f64; 2]) -> impl IntoShape {
     let radius = cell_size[1] * 0.5;
 
     Combine::from(combinator())
@@ -223,20 +221,20 @@ pub fn p(cell_size: [f64; 2]) -> impl IntoAsIR {
         )
 }
 
-pub fn q(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn q(cell_size: [f64; 2]) -> impl IntoShape {
     Combine::from(combinator()).push(o(cell_size)).push(
         Line::segment([cell_size[0] * 0.5, cell_size[1] * -0.5])
             .translate([cell_size[0] * 0.5, cell_size[1] * -0.5]),
     )
 }
 
-pub fn r(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn r(cell_size: [f64; 2]) -> impl IntoShape {
     Combine::from(combinator())
         .push(p(cell_size))
         .push(Line::segment([cell_size[0] * 2.0, -cell_size[1]]).translate([-cell_size[0], 0.0]))
 }
 
-pub fn s(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn s(cell_size: [f64; 2]) -> impl IntoShape {
     let radius = cell_size[1] * 0.5;
 
     Select::new(
@@ -265,23 +263,23 @@ pub fn s(cell_size: [f64; 2]) -> impl IntoAsIR {
     )
 }
 
-pub fn t(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn t(cell_size: [f64; 2]) -> impl IntoShape {
     Combine::from(combinator())
         .push(Line::centered([cell_size[0], 0.0]).translate([0.0, cell_size[1]]))
         .push(Line::centered([0.0, cell_size[1]]))
 }
 
-pub fn u(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn u(cell_size: [f64; 2]) -> impl IntoShape {
     j(cell_size).mirror_basis([1.0, 0.0])
 }
 
-pub fn v(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn v(cell_size: [f64; 2]) -> impl IntoShape {
     Line::segment([cell_size[0], cell_size[1] * 2.0])
         .translate([0.0, -cell_size[1]])
         .mirror_basis([1.0, 0.0])
 }
 
-pub fn w(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn w(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(
@@ -292,11 +290,11 @@ pub fn w(cell_size: [f64; 2]) -> impl IntoAsIR {
         .mirror_basis([1.0, 0.0])
 }
 
-pub fn x(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn x(cell_size: [f64; 2]) -> impl IntoShape {
     Line::segment(cell_size).mirror_basis([1.0, 1.0])
 }
 
-pub fn y(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn y(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(Line::segment(cell_size))
@@ -304,7 +302,7 @@ pub fn y(cell_size: [f64; 2]) -> impl IntoAsIR {
         .mirror_basis([1.0, 0.0])
 }
 
-pub fn z(cell_size: [f64; 2]) -> impl IntoAsIR {
+pub fn z(cell_size: [f64; 2]) -> impl IntoShape {
     combinator()
         .combine()
         .push(

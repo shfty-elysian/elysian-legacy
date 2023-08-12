@@ -7,7 +7,9 @@ use elysian_core::{
 };
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
-    module::{AsIR, Domains, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT},
+    module::{
+        AsIR, Domains, FunctionIdentifier, NumericType, Prepare, SpecializationData, Type, CONTEXT,
+    },
     property,
 };
 use elysian_proc_macros::elysian_stmt;
@@ -22,6 +24,7 @@ pub const WIDTH: Identifier = Identifier::new("width", 2742125101201765597);
 property!(WIDTH, WIDTH_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Ring {
     radius: Expr,
     width: Expr,

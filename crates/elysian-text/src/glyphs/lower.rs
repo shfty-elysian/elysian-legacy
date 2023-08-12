@@ -1,132 +1,131 @@
-use elysian_ir::module::IntoAsIR;
-use elysian_shapes::field::Infinity;
+use elysian_shapes::{field::Infinity, shape::IntoShape};
 
-pub fn a() -> impl IntoAsIR {
+pub fn a() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn b() -> impl IntoAsIR {
+pub fn b() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn c() -> impl IntoAsIR {
+pub fn c() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn d() -> impl IntoAsIR {
+pub fn d() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn e() -> impl IntoAsIR {
+pub fn e() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn f() -> impl IntoAsIR {
+pub fn f() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn g() -> impl IntoAsIR {
+pub fn g() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn h() -> impl IntoAsIR {
+pub fn h() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn i() -> impl IntoAsIR {
+pub fn i() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn j() -> impl IntoAsIR {
+pub fn j() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn k() -> impl IntoAsIR {
+pub fn k() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn l() -> impl IntoAsIR {
+pub fn l() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn m() -> impl IntoAsIR {
+pub fn m() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn n() -> impl IntoAsIR {
+pub fn n() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn o() -> impl IntoAsIR {
+pub fn o() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn p() -> impl IntoAsIR {
+pub fn p() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn q() -> impl IntoAsIR {
+pub fn q() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn r() -> impl IntoAsIR {
+pub fn r() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn s() -> impl IntoAsIR {
+pub fn s() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn t() -> impl IntoAsIR {
+pub fn t() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn u() -> impl IntoAsIR {
+pub fn u() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn v() -> impl IntoAsIR {
+pub fn v() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn w() -> impl IntoAsIR {
+pub fn w() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn x() -> impl IntoAsIR {
+pub fn x() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn y() -> impl IntoAsIR {
+pub fn y() -> impl IntoShape {
     todo!();
     Infinity
 }
 
-pub fn z() -> impl IntoAsIR {
+pub fn z() -> impl IntoShape {
     todo!();
     Infinity
 }

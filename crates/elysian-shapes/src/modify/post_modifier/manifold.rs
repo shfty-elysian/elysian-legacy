@@ -14,6 +14,7 @@ use elysian_proc_macros::{elysian_block, elysian_stmt};
 pub const MANIFOLD: FunctionIdentifier = FunctionIdentifier::new("manifold", 7861274791729269697);
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Manifold;
 
 impl Hash for Manifold {

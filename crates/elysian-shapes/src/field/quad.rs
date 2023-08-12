@@ -7,7 +7,7 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y, Z},
-    module::{AsIR, Domains, FunctionIdentifier, CONTEXT},
+    module::{AsIR, Domains, FunctionIdentifier, Prepare, CONTEXT},
 };
 use elysian_proc_macros::elysian_expr;
 
@@ -16,6 +16,7 @@ use crate::modify::{IntoMirror, IntoTranslate};
 use super::Corner;
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Quad {
     extent: Expr,
     props: Vec<PropertyIdentifier>,

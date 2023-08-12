@@ -30,6 +30,7 @@ pub const BOUND: Identifier = Identifier::new("bound", 906044067471398839);
 property!(BOUND, BOUND_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct DistanceBound {
     ty: BoundType,
     bound: Expr,

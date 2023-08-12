@@ -9,17 +9,20 @@ use elysian_ir::{
         vector2, vector3, Block, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
     },
     module::{
-        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
+        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, Prepare,
         SpecializationData, CONTEXT,
     },
 };
 
 use elysian_proc_macros::elysian_stmt;
 
+use crate::shape::{DynShape, Shape};
+
 pub const BASIS_MIRROR: FunctionIdentifier =
     FunctionIdentifier::new("basis_mirror", 2763069141557531361);
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum MirrorMode {
     Basis(Expr),
     Axis(Expr),
@@ -36,8 +39,9 @@ impl ToString for MirrorMode {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Mirror {
-    field: DynAsIR,
+    field: DynShape,
     mode: MirrorMode,
 }
 
@@ -178,7 +182,7 @@ pub trait IntoMirror {
 
 impl<T> IntoMirror for T
 where
-    T: 'static + AsIR,
+    T: 'static + Shape,
 {
     fn mirror_basis(self, basis: impl IntoExpr) -> Mirror {
         Mirror {

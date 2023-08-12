@@ -13,33 +13,36 @@ use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::IntoBlock,
     module::{
-        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-        IntoAsIR, IntoRead, SpecializationData, StructDefinition, CONTEXT,
+        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead,
+        Prepare, SpecializationData, StructDefinition, CONTEXT,
     },
 };
 
+use crate::shape::{DynShape, IntoShape, Shape};
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Modify {
-    pre_modifiers: Vec<DynAsIR>,
-    field: DynAsIR,
-    post_modifiers: Vec<DynAsIR>,
+    pre_modifiers: Vec<DynShape>,
+    field: DynShape,
+    post_modifiers: Vec<DynShape>,
 }
 
 impl Modify {
-    pub fn new(field: impl IntoAsIR) -> Self {
+    pub fn new(field: impl IntoShape) -> Self {
         Modify {
             pre_modifiers: Default::default(),
-            field: field.as_ir(),
+            field: field.shape(),
             post_modifiers: Default::default(),
         }
     }
 
-    pub fn push_pre(mut self, pre_modifier: impl IntoAsIR) -> Self {
-        self.pre_modifiers.push(pre_modifier.as_ir());
+    pub fn push_pre(mut self, pre_modifier: impl IntoShape) -> Self {
+        self.pre_modifiers.push(pre_modifier.shape());
         self
     }
 
-    pub fn push_post(mut self, post_modifier: impl IntoAsIR) -> Self {
-        self.post_modifiers.push(post_modifier.as_ir());
+    pub fn push_post(mut self, post_modifier: impl IntoShape) -> Self {
+        self.post_modifiers.push(post_modifier.shape());
         self
     }
 }
@@ -160,7 +163,7 @@ impl AsIR for Modify {
     }
 }
 
-pub trait IntoModify: 'static + Sized + AsIR {
+pub trait IntoModify: 'static + Sized + Shape {
     fn modify(self) -> Modify {
         Modify {
             pre_modifiers: Default::default(),
@@ -170,4 +173,4 @@ pub trait IntoModify: 'static + Sized + AsIR {
     }
 }
 
-impl<T> IntoModify for T where T: 'static + Sized + AsIR {}
+impl<T> IntoModify for T where T: 'static + Sized + Shape {}

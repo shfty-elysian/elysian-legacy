@@ -1,7 +1,8 @@
 //! Precompile shapes into Rust functions via build.rs
 
 use elysian_interpreter::{evaluate_module, Interpreter};
-use elysian_ir::module::SpecializationData;
+use elysian_ir::module::{AsModule, SpecializationData};
+use elysian_shapes::shape::DynShape;
 use elysian_syn::module_to_string;
 
 use std::{collections::BTreeMap, sync::OnceLock};
@@ -48,7 +49,7 @@ pub fn static_shapes_map() -> &'static BTreeMap<ShapeHash, ShapeFn> {
 }
 
 /// Build.rs static shape registrar
-pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, Box<dyn AsIR>)>>(
+pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, DynShape)>>(
     t: T,
     spec: &SpecializationData,
 ) {

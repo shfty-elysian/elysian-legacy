@@ -33,6 +33,7 @@ property!(
 );
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Translate {
     pub delta: Expr,
 }

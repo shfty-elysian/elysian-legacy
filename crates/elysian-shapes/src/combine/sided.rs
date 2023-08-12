@@ -10,6 +10,7 @@ pub const SIDED: FunctionIdentifier = FunctionIdentifier::new("sided", 197569034
 
 // Pick a base context from either the left or right side
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Sided {
     flip: bool,
 }
@@ -49,6 +50,7 @@ impl AsIR for Sided {
 
 // Pick the given property from the left if inside, or right if outside
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct SidedProp {
     prop: PropertyIdentifier,
     flip: bool,

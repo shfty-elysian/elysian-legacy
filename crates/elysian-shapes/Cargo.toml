@@ -3,10 +3,18 @@ name = "elysian-shapes"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+serde = ["dep:serde", "dep:typetag"]
+
 [dependencies]
 elysian-core = { path = "../elysian-core" }
 elysian-ir = { path = "../elysian-ir" }
 elysian-proc-macros = { path = "../elysian-proc-macros", features = ["internal"] }
 elysian-decl-macros = { path = "../elysian-decl-macros" }
+
+serde = { version = "1.0.183", features = ["derive"], optional = true }
+typetag = { version = "0.2.12", optional = true }
+
 indexmap = "2.0.0"
 linkme = "0.3.13"

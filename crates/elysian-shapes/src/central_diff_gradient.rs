@@ -6,26 +6,20 @@ use std::{
 use crate::{
     combine::{LEFT, RIGHT},
     modify::{Translate, TRANSLATE},
+    shape::DynShape,
 };
 use elysian_core::number::Number;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
-    module::{AsIR, Domains, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
+    module::{AsIR, Domains, DomainsDyn, FunctionIdentifier, Prepare, SpecializationData, CONTEXT},
 };
 use elysian_proc_macros::elysian_expr;
 
+#[derive(Debug)]
 pub struct CentralDiffGradient {
-    pub field: Box<dyn AsIR>,
+    pub field: DynShape,
     pub epsilon: Number,
-}
-
-impl Debug for CentralDiffGradient {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("CentralDiffGradient")
-            .field("field", &self.field)
-            .finish()
-    }
 }
 
 impl Hash for CentralDiffGradient {

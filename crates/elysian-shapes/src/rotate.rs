@@ -11,18 +11,22 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{GRADIENT_2D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
     module::{
-        AsIR, DomainsDyn, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT,
+        AsIR, DomainsDyn, FunctionIdentifier, NumericType, Prepare, SpecializationData, Type,
+        CONTEXT,
     },
     property,
 };
 use elysian_proc_macros::elysian_stmt;
 
+use crate::shape::{DynShape, Shape};
+
 pub const ANGLE: Identifier = Identifier::new("angle", 17396665761465842676);
 property!(ANGLE, ANGLE_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Rotate {
-    pub field: Box<dyn AsIR>,
+    pub field: DynShape,
     pub angle: Expr,
 }
 
@@ -97,7 +101,7 @@ pub trait IntoRotate {
 
 impl<T> IntoRotate for T
 where
-    T: 'static + AsIR,
+    T: 'static + Shape,
 {
     fn rotate(self, angle: impl IntoExpr) -> Rotate {
         Rotate {

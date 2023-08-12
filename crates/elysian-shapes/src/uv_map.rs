@@ -3,25 +3,27 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::modify::{IntoModify, Modify};
+use crate::{
+    modify::{IntoModify, Modify},
+    shape::{DynShape, IntoShape},
+};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, UV},
-    module::{
-        AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, SpecializationData, CONTEXT,
-    },
+    module::{AsIR, DomainsDyn, FunctionIdentifier, Prepare, SpecializationData, CONTEXT},
 };
 use elysian_proc_macros::elysian_stmt;
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct UvMap {
-    field: DynAsIR,
+    field: DynShape,
 }
 
 impl UvMap {
-    pub fn new(field: impl IntoAsIR) -> Self {
+    pub fn new(field: impl IntoShape) -> Self {
         UvMap {
-            field: field.as_ir(),
+            field: field.shape(),
         }
     }
 }
@@ -72,16 +74,16 @@ impl AsIR for UvMap {
 }
 
 pub trait IntoUvMap {
-    fn uv_map(self, field: impl IntoAsIR) -> Modify;
+    fn uv_map(self, field: impl IntoShape) -> Modify;
 }
 
 impl<T> IntoUvMap for T
 where
     T: IntoModify,
 {
-    fn uv_map(self, field: impl IntoAsIR) -> Modify {
+    fn uv_map(self, field: impl IntoShape) -> Modify {
         self.modify().push_post(UvMap {
-            field: field.as_ir(),
+            field: field.shape(),
         })
     }
 }

@@ -8,14 +8,17 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, ERROR, POSITION_2D, POSITION_3D},
     module::{
-        AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, SpecializationData,
-        StructIdentifier, Type, CONTEXT,
+        AsIR, DomainsDyn, FunctionIdentifier, Prepare, SpecializationData, StructIdentifier, Type,
+        CONTEXT,
     },
     property,
 };
 use elysian_proc_macros::elysian_expr;
 
-use crate::derive_support_vector::{SUPPORT_VECTOR_2D, SUPPORT_VECTOR_3D};
+use crate::{
+    derive_support_vector::{SUPPORT_VECTOR_2D, SUPPORT_VECTOR_3D},
+    shape::{DynShape, IntoShape},
+};
 
 pub const DERIVE_CONTEXT: Identifier = Identifier::new("derive_context", 9284830371501785757);
 property!(
@@ -26,7 +29,7 @@ property!(
 
 #[derive(Debug)]
 pub struct DeriveBoundingError {
-    pub field: DynAsIR,
+    pub field: DynShape,
 }
 
 impl Hash for DeriveBoundingError {
@@ -102,11 +105,11 @@ pub trait IntoDeriveBoundingError {
 
 impl<T> IntoDeriveBoundingError for T
 where
-    T: IntoAsIR,
+    T: IntoShape,
 {
     fn derive_bounding_error(self) -> DeriveBoundingError {
         DeriveBoundingError {
-            field: self.as_ir(),
+            field: self.shape(),
         }
     }
 }

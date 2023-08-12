@@ -1,8 +1,9 @@
 use std::error::Error;
 
 use elysian::{
-    ir::module::{IntoAsIR, SpecializationData},
+    ir::module::{AsModule, SpecializationData},
     shadertoy::module_to_shadertoy,
+    shapes::shape::IntoShape,
 };
 
 fn main() {
@@ -15,7 +16,7 @@ fn main_impl() -> Result<(), Box<dyn Error>> {
         "{:}",
         module_to_shadertoy(
             &test_shapes::test_shape()
-                .as_ir()
+                .shape()
                 .module(&SpecializationData::new_2d())
         )?
     );

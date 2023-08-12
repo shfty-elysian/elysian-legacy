@@ -9,6 +9,7 @@ pub use boolean::*;
 pub use displace::*;
 use elysian_core::identifier::Identifier;
 use elysian_core::property_identifier::PropertyIdentifier;
+use elysian_ir::module::Prepare;
 pub use overlay::*;
 pub use overlay::*;
 pub use sided::*;
@@ -20,13 +21,14 @@ use std::hash::{Hash, Hasher};
 use elysian_ir::{
     ast::{Block, Expr, COMBINE_CONTEXT},
     module::{
-        AsIR, DomainsDyn, DynAsIR, FieldDefinition, FunctionDefinition, FunctionIdentifier, HashIR,
-        InputDefinition, IntoAsIR, SpecializationData, StructDefinition, StructIdentifier, Type,
-        CONTEXT,
+        AsIR, DomainsDyn, FieldDefinition, FunctionDefinition, FunctionIdentifier, HashIR,
+        InputDefinition, SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
 use elysian_proc_macros::{elysian_block, elysian_stmt};
+
+use crate::shape::{DynShape, IntoShape};
 
 pub const LEFT: Identifier = Identifier::new("left", 635254731934742132);
 property!(LEFT, LEFT_PROP_DEF, Type::Struct(StructIdentifier(CONTEXT)));
@@ -63,15 +65,15 @@ pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition 
 };
 
 #[derive(Debug)]
-pub struct Combinator(Vec<DynAsIR>);
+pub struct Combinator(Vec<DynShape>);
 
 impl Combinator {
     pub fn build() -> Self {
         Combinator(Default::default())
     }
 
-    pub fn push(mut self, combinator: impl IntoAsIR) -> Self {
-        self.0.push(combinator.as_ir());
+    pub fn push(mut self, combinator: impl IntoShape) -> Self {
+        self.0.push(combinator.shape());
         self
     }
 
@@ -84,9 +86,9 @@ impl Combinator {
 }
 
 impl IntoIterator for Combinator {
-    type Item = DynAsIR;
+    type Item = DynShape;
 
-    type IntoIter = std::vec::IntoIter<DynAsIR>;
+    type IntoIter = std::vec::IntoIter<DynShape>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -94,22 +96,23 @@ impl IntoIterator for Combinator {
 }
 
 #[derive(Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Combine {
-    pub combinator: Vec<DynAsIR>,
-    pub shapes: Vec<DynAsIR>,
+    pub combinator: Vec<DynShape>,
+    pub shapes: Vec<DynShape>,
 }
 
 impl<T> From<T> for Combine
 where
-    T: IntoIterator<Item = DynAsIR>,
+    T: IntoIterator<Item = DynShape>,
 {
     fn from(value: T) -> Self {
         value.into_iter().collect()
     }
 }
 
-impl FromIterator<DynAsIR> for Combine {
-    fn from_iter<T: IntoIterator<Item = DynAsIR>>(iter: T) -> Self {
+impl FromIterator<DynShape> for Combine {
+    fn from_iter<T: IntoIterator<Item = DynShape>>(iter: T) -> Self {
         Combine {
             combinator: iter.into_iter().collect(),
             ..Default::default()
@@ -118,8 +121,8 @@ impl FromIterator<DynAsIR> for Combine {
 }
 
 impl Combine {
-    pub fn push(mut self, shape: impl AsIR + 'static) -> Self {
-        self.shapes.push(shape.as_ir());
+    pub fn push(mut self, shape: impl IntoShape + 'static) -> Self {
+        self.shapes.push(shape.shape());
         self
     }
 }

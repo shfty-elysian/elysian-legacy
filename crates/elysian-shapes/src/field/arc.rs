@@ -16,6 +16,7 @@ use crate::{field::RADIUS, rotate::ANGLE};
 pub const ARC: FunctionIdentifier = FunctionIdentifier::new("arc", 257188426632189116);
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Arc {
     angle: Expr,
     radius: Expr,

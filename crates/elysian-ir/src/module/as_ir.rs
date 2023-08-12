@@ -173,6 +173,64 @@ pub const SAFE_NORMALIZE_4: FunctionIdentifier =
 
 /// A type that can be converted into Elysian IR
 pub trait AsIR: Debug + HashIR + DomainsDyn {
+    /// Generate the function identifier used to reference this implementor
+    fn entry_point(&self) -> FunctionIdentifier;
+
+    /// Generate a list of arguments used to call this implementor
+    fn arguments(&self, input: Expr) -> Vec<Expr> {
+        vec![input]
+    }
+
+    /// Given a spec and entry point, produce a list of function definitions
+    fn functions(
+        &self,
+        spec: &SpecializationData,
+        entry_point: &FunctionIdentifier,
+    ) -> Vec<FunctionDefinition>;
+
+    /// Produce a list of struct definitions
+    fn structs(&self) -> Vec<StructDefinition> {
+        vec![]
+    }
+}
+
+pub trait Prepare: AsIR {
+    /// Utility for preparing a filtered SpecializationData,
+    /// and using it to produce an entry point and list of functions
+    /// Useful when a function is called multiple times with different arguments.
+    fn prepare(
+        &self,
+        spec: &SpecializationData,
+    ) -> (
+        SpecializationData,
+        FunctionIdentifier,
+        Vec<FunctionDefinition>,
+    ) {
+        let spec = {
+            let ref this = self;
+            spec.filter(this.domains_dyn())
+        };
+        let entry_point = self.entry_point().specialize(&spec);
+        let functions = self.functions(&spec, &entry_point);
+        (spec, entry_point, functions)
+    }
+
+    /// Utility for prepareing a filtered Specialization data,
+    /// and using it to produce a call statement and list of functions.
+    /// Useful when a function is called with a singular set of arguments.
+    fn call(
+        &self,
+        spec: &SpecializationData,
+        input: Expr,
+    ) -> (SpecializationData, Expr, Vec<FunctionDefinition>) {
+        let (spec, entry, functions) = self.prepare(spec);
+        (spec, entry.call(self.arguments(input)), functions)
+    }
+}
+
+impl<T> Prepare for T where T: AsIR + ?Sized {}
+
+pub trait AsModule: AsIR {
     /// Generate a Module from this implementor
     fn module(&self, spec: &SpecializationData) -> Module {
         let types: IndexMap<_, _> = properties().clone();
@@ -221,105 +279,6 @@ pub trait AsIR: Debug + HashIR + DomainsDyn {
             function_definitions: functions,
         }
     }
-
-    /// Generate the function identifier used to reference this implementor
-    fn entry_point(&self) -> FunctionIdentifier;
-
-    /// Given a SpecializationData, filter it by this implementor's domain list
-    fn filter_spec(&self, spec: &SpecializationData) -> SpecializationData {
-        spec.filter(self.domains_dyn())
-    }
-
-    /// Generate a list of arguments used to call this implementor
-    fn arguments(&self, input: Expr) -> Vec<Expr> {
-        vec![input]
-    }
-
-    /// Given a spec and entry point, produce a list of function definitions
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition>;
-
-    /// Produce a list of struct definitions
-    fn structs(&self) -> Vec<StructDefinition> {
-        vec![]
-    }
-
-    /// Utility for preparing a filtered SpecializationData,
-    /// and using it to produce an entry point and list of functions
-    /// Useful when a function is called multiple times with different arguments.
-    fn prepare(
-        &self,
-        spec: &SpecializationData,
-    ) -> (
-        SpecializationData,
-        FunctionIdentifier,
-        Vec<FunctionDefinition>,
-    ) {
-        let spec = self.filter_spec(spec);
-        let entry_point = self.entry_point().specialize(&spec);
-        let functions = self.functions(&spec, &entry_point);
-        (spec, entry_point, functions)
-    }
-
-    /// Utility for prepareing a filtered Specialization data,
-    /// and using it to produce a call statement and list of functions.
-    /// Useful when a function is called with a singular set of arguments.
-    fn call(
-        &self,
-        spec: &SpecializationData,
-        input: Expr,
-    ) -> (SpecializationData, Expr, Vec<FunctionDefinition>) {
-        let (spec, entry, functions) = self.prepare(spec);
-        (spec, entry.call(self.arguments(input)), functions)
-    }
 }
 
-pub type DynAsIR = Box<dyn AsIR>;
-
-impl DomainsDyn for DynAsIR {
-    fn domains_dyn(&self) -> Vec<PropertyIdentifier> {
-        (**self).domains_dyn()
-    }
-}
-
-impl AsIR for DynAsIR {
-    fn module(&self, spec: &SpecializationData) -> Module {
-        (**self).module(spec)
-    }
-
-    fn entry_point(&self) -> FunctionIdentifier {
-        (**self).entry_point()
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
-        (**self).functions(spec, entry_point)
-    }
-
-    fn structs(&self) -> Vec<StructDefinition> {
-        (**self).structs()
-    }
-
-    fn arguments(&self, input: Expr) -> Vec<Expr> {
-        (**self).arguments(input)
-    }
-}
-
-impl HashIR for DynAsIR {
-    fn hash_ir(&self) -> u64 {
-        (**self).hash_ir()
-    }
-}
-
-pub trait IntoAsIR: 'static + Sized + AsIR {
-    fn as_ir(self) -> DynAsIR {
-        Box::new(self)
-    }
-}
-impl<T> IntoAsIR for T where T: 'static + Sized + AsIR {}
+impl<T> AsModule for T where T: AsIR + ?Sized {}

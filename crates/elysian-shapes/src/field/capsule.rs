@@ -8,7 +8,7 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D},
-    module::{AsIR, Domains, FunctionIdentifier, SpecializationData, CONTEXT},
+    module::{AsIR, Domains, FunctionIdentifier, SpecializationData, CONTEXT, Prepare},
 };
 use elysian_proc_macros::elysian_stmt;
 
@@ -19,6 +19,7 @@ use super::{Line, RADIUS};
 pub const CAPSULE: FunctionIdentifier = FunctionIdentifier::new("capsule", 14339483921749952476);
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Capsule {
     dir: ElysianExpr,
     radius: ElysianExpr,

@@ -9,6 +9,7 @@ pub const OVERLAY: FunctionIdentifier = FunctionIdentifier::new("overlay", 56670
 
 // Pick a base context from either the left or right side
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Overlay;
 
 impl Domains for Overlay {}

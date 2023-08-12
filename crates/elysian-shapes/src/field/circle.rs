@@ -6,7 +6,7 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     module::{AsIR, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT},
-    module::{Domains, IntoRead},
+    module::{Domains, IntoRead, Prepare},
     property,
 };
 
@@ -20,6 +20,7 @@ pub const RADIUS: Identifier = Identifier::new("radius", 213754678517975478);
 property!(RADIUS, RADIUS_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Circle {
     radius: elysian_core::expr::Expr,
 }

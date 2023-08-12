@@ -9,6 +9,7 @@ pub const SUBTRACTION: FunctionIdentifier =
     FunctionIdentifier::new("subtraction", 1414822549598552032);
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Subtraction;
 
 impl Domains for Subtraction {}

@@ -1,4 +1,4 @@
-//! Shared code and user-facing API primitives
+//! Low-level shared primitives
 
 pub use uuid;
 pub mod expr;
