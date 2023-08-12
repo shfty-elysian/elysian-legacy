@@ -4,12 +4,14 @@ use std::{
 };
 
 use elysian_core::{
-    ast::expr::{Expr, IntoExpr},
+    ast::{
+        expr::{Expr, IntoExpr},
+        identifier::Identifier,
+    },
     ir::{
-        ast::{Identifier, GRADIENT_2D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
+        ast::{GRADIENT_2D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
         module::{
-            AsIR, DomainsDyn, FunctionIdentifier, NumericType,
-            SpecializationData, Type, CONTEXT,
+            AsIR, DomainsDyn, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT,
         },
     },
     property,
@@ -33,7 +35,7 @@ impl Hash for Rotate {
 }
 
 impl DomainsDyn for Rotate {
-    fn domains_dyn(&self) -> Vec<elysian_core::ir::module::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
         self.field
             .domains_dyn()
             .into_iter()

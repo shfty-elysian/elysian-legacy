@@ -3,9 +3,9 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::ir::{
-    ast::{Block, Expr},
-    module::PropertyIdentifier,
+use crate::{
+    ast::property_identifier::PropertyIdentifier,
+    ir::ast::{Block, Expr},
 };
 
 /// Statement consuming the result of an expression

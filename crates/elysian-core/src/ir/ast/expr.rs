@@ -1,15 +1,14 @@
 use std::fmt::Debug;
 
 use crate::{
-    ast::expr::Expr as ElysianExpr,
+    ast::{expr::Expr as ElysianExpr, property_identifier::PropertyIdentifier},
     ir::{
         ast::{
             Value, W_AXIS_4, X_AXIS_2, X_AXIS_3, X_AXIS_4, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z_AXIS_3,
             Z_AXIS_4,
         },
         module::{
-            FunctionDefinition, FunctionIdentifier, NumericType, PropertyIdentifier,
-            StructIdentifier, Type, CONTEXT,
+            FunctionDefinition, FunctionIdentifier, NumericType, StructIdentifier, Type, CONTEXT,
         },
     },
 };
@@ -257,9 +256,9 @@ impl Expr {
             Literal(v) => match v {
                 Value::Boolean(_) => Type::Boolean,
                 Value::Number(n) => Type::Number(match n {
-                    super::Number::UInt(_) => NumericType::UInt,
-                    super::Number::SInt(_) => NumericType::SInt,
-                    super::Number::Float(_) => NumericType::Float,
+                    crate::ast::number::Number::UInt(_) => NumericType::UInt,
+                    crate::ast::number::Number::SInt(_) => NumericType::SInt,
+                    crate::ast::number::Number::Float(_) => NumericType::Float,
                 }),
                 Value::Struct(s) => Type::Struct(s.id.clone()),
             },

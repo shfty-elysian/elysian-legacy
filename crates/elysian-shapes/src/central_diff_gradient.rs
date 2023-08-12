@@ -7,9 +7,12 @@ use crate::{
     combine::{LEFT, RIGHT},
     modify::{Translate, TRANSLATE},
 };
-use elysian_core::ir::{
-    ast::{Number, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
-    module::{AsIR, Domains, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
+use elysian_core::{
+    ast::number::Number,
+    ir::{
+        ast::{IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
+        module::{AsIR, Domains, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
+    },
 };
 use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_expr;
@@ -34,7 +37,7 @@ impl Hash for CentralDiffGradient {
 }
 
 impl DomainsDyn for CentralDiffGradient {
-    fn domains_dyn(&self) -> Vec<elysian_core::ir::module::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
         self.field.domains_dyn()
     }
 }

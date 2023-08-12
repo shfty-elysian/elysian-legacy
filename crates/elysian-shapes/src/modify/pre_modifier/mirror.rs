@@ -1,7 +1,10 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::expr::{Expr, IntoExpr},
+    ast::{
+        expr::{Expr, IntoExpr},
+        property_identifier::PropertyIdentifier,
+    },
     ir::{
         ast::{
             vector2, vector3, Block, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D,
@@ -9,7 +12,7 @@ use elysian_core::{
         },
         module::{
             AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            PropertyIdentifier, SpecializationData, CONTEXT,
+            SpecializationData, CONTEXT,
         },
     },
 };

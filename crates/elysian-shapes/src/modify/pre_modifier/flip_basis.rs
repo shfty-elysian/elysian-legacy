@@ -1,16 +1,15 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::expr::IntoExpr,
+    ast::{expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier},
     ir::{
         ast::{
-            vector2, vector3, Identifier, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D,
-            POSITION_3D, VECTOR2, VECTOR3,
+            vector2, vector3, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
+            VECTOR2, VECTOR3,
         },
         module::{
             AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            IntoAsIR, PropertyIdentifier, SpecializationData, StructDefinition, StructIdentifier,
-            Type, CONTEXT,
+            IntoAsIR, SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
         },
     },
     property,

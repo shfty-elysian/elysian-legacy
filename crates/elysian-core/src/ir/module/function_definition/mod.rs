@@ -1,11 +1,11 @@
 use std::hash::{Hash, Hasher};
 
-use crate::ir::ast::{Block, Expr, Stmt};
+use crate::{
+    ast::property_identifier::PropertyIdentifier,
+    ir::ast::{Block, Expr, Stmt},
+};
 
 use super::SpecializationData;
-
-mod property_identifier;
-pub use property_identifier::*;
 
 pub trait IntoRead {
     fn read(self) -> Expr;

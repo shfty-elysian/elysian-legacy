@@ -187,13 +187,13 @@ impl SynToElysian {
                 syn::Lit::Int(i) => match i.suffix() {
                     "" | "u" | "u8" | "u16" | "u32" | "u64" => {
                         let i: u64 = i.base10_parse().expect("Failed to parse UInt");
-                        let num = quote_crate!(ir::ast::Number::UInt(#i));
+                        let num = quote_crate!(ast::number::Number::UInt(#i));
                         let val = quote_crate!(ir::ast::Value::Number(#num));
                         quote_crate!(ir::ast::Expr::Literal(#val))
                     }
                     "i" | "i8" | "i16" | "i32" | "i64" => {
                         let i: i64 = i.base10_parse().expect("Failed to parse SInt");
-                        let num = quote_crate!(ir::ast::Number::SInt(#i));
+                        let num = quote_crate!(ast::number::Number::SInt(#i));
                         let val = quote_crate!(ir::ast::Value::Number(#num));
                         quote_crate!(ir::ast::Expr::Literal(#val))
                     }
@@ -201,7 +201,7 @@ impl SynToElysian {
                 },
                 syn::Lit::Float(f) => {
                     let f: f64 = f.base10_parse::<f64>().expect("Failed to parse float");
-                    let num = quote_crate!(ir::ast::Number::Float(#f));
+                    let num = quote_crate!(ast::number::Number::Float(#f));
                     let val = quote_crate!(ir::ast::Value::Number(#num));
                     quote_crate!(ir::ast::Expr::Literal(#val))
                 }

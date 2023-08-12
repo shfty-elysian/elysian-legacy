@@ -1,12 +1,14 @@
 use std::hash::Hash;
 
 use elysian_core::{
-    ast::expr::{Expr, IntoExpr},
+    ast::{
+        expr::{Expr, IntoExpr},
+        property_identifier::PropertyIdentifier,
+    },
     ir::{
         ast::{DISTANCE, GRADIENT_2D, NUM, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
-            SpecializationData, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT,
         },
     },
 };

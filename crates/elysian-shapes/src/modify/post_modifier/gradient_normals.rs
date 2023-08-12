@@ -1,11 +1,14 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::ir::{
-    ast::{GRADIENT_2D, GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z},
-    module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, PropertyIdentifier,
-        SpecializationData, CONTEXT,
+use elysian_core::{
+    ast::property_identifier::PropertyIdentifier,
+    ir::{
+        ast::{GRADIENT_2D, GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z},
+        module::{
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            SpecializationData, CONTEXT,
+        },
     },
 };
 use elysian_proc_macros::elysian_block;

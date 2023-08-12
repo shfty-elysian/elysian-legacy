@@ -2,7 +2,8 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use elysian_core::ast::expr::IntoExpr;
-use elysian_core::ir::module::{AsIR, FunctionIdentifier, PropertyIdentifier, CONTEXT};
+use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_core::ir::module::{AsIR, FunctionIdentifier, CONTEXT};
 use elysian_core::{
     ast::expr::Expr as ElysianExpr,
     ir::{

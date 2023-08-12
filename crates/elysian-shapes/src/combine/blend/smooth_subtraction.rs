@@ -2,12 +2,15 @@ use std::fmt::Debug;
 
 use crate::combine::{LEFT, OUT, RIGHT};
 use elysian_core::{
-    ast::expr::{Expr, IntoExpr},
+    ast::{
+        expr::{Expr, IntoExpr},
+        property_identifier::PropertyIdentifier,
+    },
     ir::{
         ast::{COMBINE_CONTEXT, DISTANCE, NUM},
         module::{
             AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            PropertyIdentifier, SpecializationData,
+            SpecializationData,
         },
     },
 };

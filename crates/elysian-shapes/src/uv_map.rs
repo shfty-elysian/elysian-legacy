@@ -33,7 +33,7 @@ impl Hash for UvMap {
 }
 
 impl DomainsDyn for UvMap {
-    fn domains_dyn(&self) -> Vec<elysian_core::ir::module::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
         self.field.domains_dyn()
     }
 }

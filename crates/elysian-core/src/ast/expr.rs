@@ -3,7 +3,8 @@ use std::{
     ops::{Add, Div, Mul, Neg, Sub},
 };
 
-use crate::ir::module::PropertyIdentifier;
+use crate::ast::identifier::Identifier;
+use crate::ast::property_identifier::PropertyIdentifier;
 
 use super::value::Value;
 
@@ -252,5 +253,15 @@ where
 {
     fn expr(self) -> Expr {
         self.literal()
+    }
+}
+
+pub trait IntoPath {
+    fn path(&self) -> Path;
+}
+
+impl IntoPath for Identifier {
+    fn path(&self) -> Path {
+        Path::default().push(PropertyIdentifier::from(self.clone()))
     }
 }

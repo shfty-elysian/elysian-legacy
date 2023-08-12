@@ -7,7 +7,7 @@ use std::{
 
 use uuid::Uuid;
 
-use crate::ir::ast::{Expr, Identifier};
+use crate::{ast::identifier::Identifier, ir::ast::Expr};
 
 use super::SpecializationData;
 
@@ -81,5 +81,15 @@ impl From<Identifier> for FunctionIdentifier {
 impl From<FunctionIdentifier> for Identifier {
     fn from(value: FunctionIdentifier) -> Self {
         value.0
+    }
+}
+
+pub trait IntoFunctionIdentifier {
+    fn function(self) -> FunctionIdentifier;
+}
+
+impl IntoFunctionIdentifier for Identifier {
+    fn function(self) -> FunctionIdentifier {
+        self.into()
     }
 }

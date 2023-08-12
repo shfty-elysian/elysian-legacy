@@ -1,5 +1,8 @@
 use elysian_core::{
-    ast::expr::{Expr, IntoLiteral, IntoRead},
+    ast::{
+        expr::{Expr, IntoLiteral, IntoPath, IntoRead},
+        property_identifier::IntoPropertyIdentifier,
+    },
     ir::{
         ast::{vector2, COLOR, DISTANCE, GRADIENT_2D, POSITION_3D, UV, X, Y},
         module::{DynAsIR, IntoAsIR},

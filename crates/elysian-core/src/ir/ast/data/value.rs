@@ -10,10 +10,10 @@ use rust_gpu_bridge::{
     Sin, Tan,
 };
 
-use crate::ir::module::StructIdentifier;
+use crate::{ast::number::Number, ir::module::StructIdentifier};
 
 use super::{
-    Number, Struct, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
+    Struct, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
     X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
 };
 
@@ -687,5 +687,21 @@ impl From<Value> for Vec4 {
             s.get(&Z.into()).into(),
             s.get(&W.into()).into(),
         )
+    }
+}
+
+impl From<Number> for Value {
+    fn from(value: Number) -> Self {
+        Value::Number(value)
+    }
+}
+
+impl From<Value> for Number {
+    fn from(value: Value) -> Self {
+        let Value::Number(n) = value else {
+            panic!("Value {value:#?} is not a Number")
+        };
+
+        n
     }
 }

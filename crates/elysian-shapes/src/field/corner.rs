@@ -2,12 +2,11 @@ use std::hash::Hash;
 
 use crate::combine::{Combinator, COMBINE_CONTEXT_STRUCT};
 use elysian_core::{
-    ast::expr::Expr,
+    ast::{expr::Expr, property_identifier::PropertyIdentifier},
     ir::{
         ast::{DISTANCE, POSITION_2D, POSITION_3D},
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
-            SpecializationData, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT,
         },
     },
 };

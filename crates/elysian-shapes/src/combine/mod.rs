@@ -7,6 +7,8 @@ mod sided;
 pub use blend::*;
 pub use boolean::*;
 pub use displace::*;
+use elysian_core::ast::identifier::Identifier;
+use elysian_core::ast::property_identifier::PropertyIdentifier;
 pub use overlay::*;
 pub use overlay::*;
 pub use sided::*;
@@ -17,11 +19,10 @@ use std::hash::{Hash, Hasher};
 
 use elysian_core::ir::module::{DomainsDyn, IntoAsIR};
 use elysian_core::ir::{
-    ast::{Block, Expr, Identifier, COMBINE_CONTEXT},
+    ast::{Block, Expr, COMBINE_CONTEXT},
     module::{
         AsIR, DynAsIR, FieldDefinition, FunctionDefinition, FunctionIdentifier, HashIR,
-        InputDefinition, PropertyIdentifier, SpecializationData, StructDefinition,
-        StructIdentifier, Type, CONTEXT,
+        InputDefinition, SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
     },
 };
 use elysian_core::property;

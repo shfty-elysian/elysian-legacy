@@ -1,10 +1,13 @@
 use std::hash::{Hash, Hasher};
 
 use elysian_core::{
-    ast::expr::{Expr, IntoExpr},
+    ast::{
+        expr::{Expr, IntoExpr},
+        property_identifier::PropertyIdentifier,
+    },
     ir::{
         ast::{POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y, Z},
-        module::{AsIR, Domains, FunctionIdentifier, PropertyIdentifier, CONTEXT},
+        module::{AsIR, Domains, FunctionIdentifier, CONTEXT},
     },
 };
 use elysian_decl_macros::elysian_function;

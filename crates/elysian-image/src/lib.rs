@@ -3,9 +3,12 @@ use image::RgbImage;
 use rust_gpu_bridge::glam::Vec4;
 use tracing::instrument;
 
-use elysian_core::ir::{
-    ast::{Number, Struct, Value, COLOR, POSITION_2D, VECTOR2, X, Y},
-    module::{IntoAsIR, SpecializationData, StructIdentifier, CONTEXT},
+use elysian_core::{
+    ast::number::Number,
+    ir::{
+        ast::{Struct, Value, COLOR, POSITION_2D, VECTOR2, X, Y},
+        module::{IntoAsIR, SpecializationData, StructIdentifier, CONTEXT},
+    },
 };
 use elysian_static::dispatch_shape;
 

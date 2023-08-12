@@ -1,5 +1,8 @@
 use elysian_core::{
-    ast::expr::IntoLiteral,
+    ast::{
+        expr::{IntoLiteral, IntoPath},
+        property_identifier::IntoPropertyIdentifier,
+    },
     ir::{
         ast::{POSITION_2D, X, Y},
         module::IntoAsIR,

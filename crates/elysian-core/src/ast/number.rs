@@ -3,11 +3,9 @@ use std::{
     ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
-use rust_gpu_bridge::{Abs, Acos, Asin, Atan, Atan2, Clamp, Cos, Max, Min, Mix, Round, Sign, Tan, Sin};
-
-use crate::ir::ast::Expr;
-
-use super::{Struct, Value};
+use rust_gpu_bridge::{
+    Abs, Acos, Asin, Atan, Atan2, Clamp, Cos, Max, Min, Mix, Round, Sign, Sin, Tan,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum Number {
@@ -23,12 +21,6 @@ impl Display for Number {
             Number::SInt(n) => write!(f, "{n:}"),
             Number::Float(n) => write!(f, "{n:}"),
         }
-    }
-}
-
-impl Number {
-    pub fn literal(self) -> Expr {
-        Expr::Literal(Value::Number(self))
     }
 }
 
@@ -94,50 +86,6 @@ impl Rem<Number> for Number {
             (Number::Float(a), Number::Float(b)) => Number::Float(a.rem_euclid(b)),
             _ => panic!("Invalid Mod"),
         }
-    }
-}
-
-impl Add<Struct> for Number {
-    type Output = Struct;
-
-    fn add(self, mut rhs: Struct) -> Self::Output {
-        for (_, value) in rhs.members.iter_mut() {
-            *value = Value::from(self.clone()) + value.clone();
-        }
-        rhs
-    }
-}
-
-impl Sub<Struct> for Number {
-    type Output = Struct;
-
-    fn sub(self, mut rhs: Struct) -> Self::Output {
-        for (_, value) in rhs.members.iter_mut() {
-            *value = Value::from(self.clone()) - value.clone();
-        }
-        rhs
-    }
-}
-
-impl Mul<Struct> for Number {
-    type Output = Struct;
-
-    fn mul(self, mut rhs: Struct) -> Self::Output {
-        for (_, value) in rhs.members.iter_mut() {
-            *value = Value::from(self.clone()) * value.clone();
-        }
-        rhs
-    }
-}
-
-impl Div<Struct> for Number {
-    type Output = Struct;
-
-    fn div(self, mut rhs: Struct) -> Self::Output {
-        for (_, value) in rhs.members.iter_mut() {
-            *value = Value::from(self.clone()) / value.clone();
-        }
-        rhs
     }
 }
 
@@ -284,22 +232,6 @@ impl Atan2 for Number {
             (Number::Float(a), Number::Float(b)) => Number::Float(a.atan2(b)),
             _ => panic!("Invalid Atan2"),
         }
-    }
-}
-
-impl From<Number> for Value {
-    fn from(value: Number) -> Self {
-        Value::Number(value)
-    }
-}
-
-impl From<Value> for Number {
-    fn from(value: Value) -> Self {
-        let Value::Number(n) = value else {
-            panic!("Value {value:#?} is not a Number")
-        };
-
-        n
     }
 }
 

@@ -4,11 +4,11 @@ use std::{
 };
 
 use elysian_core::{
-    ast::expr::IntoExpr,
+    ast::{expr::IntoExpr, identifier::Identifier},
     ir::{
         ast::{
-            Expr, Identifier, IntoLiteral, Stmt, DISTANCE, MATRIX4, POSITION_2D, POSITION_3D,
-            VECTOR3, VECTOR4, W, X, Y, Z,
+            Expr, IntoLiteral, Stmt, DISTANCE, MATRIX4, POSITION_2D, POSITION_3D, VECTOR3, VECTOR4,
+            W, X, Y, Z,
         },
         module::{
             AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, NumericType,
@@ -181,7 +181,7 @@ impl Hash for Raymarch {
 }
 
 impl DomainsDyn for Raymarch {
-    fn domains_dyn(&self) -> Vec<elysian_core::ir::module::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
         self.field.domains_dyn()
     }
 }

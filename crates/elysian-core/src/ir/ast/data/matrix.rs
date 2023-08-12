@@ -1,10 +1,8 @@
 use std::borrow::Cow;
 
 use crate::{
-    ir::{
-        ast::Identifier,
-        module::{FieldDefinition, PropertyIdentifier, StructDefinition, StructIdentifier, Type},
-    },
+    ast::{identifier::Identifier, property_identifier::PropertyIdentifier},
+    ir::module::{FieldDefinition, StructDefinition, StructIdentifier, Type},
     property,
 };
 

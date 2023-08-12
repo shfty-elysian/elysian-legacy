@@ -5,9 +5,7 @@ use std::{
 
 use elysian_core::ir::{
     ast::{Expr, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
-    module::{
-        AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT,
-    },
+    module::{AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
 };
 use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_stmt;
@@ -36,7 +34,7 @@ impl Hash for CrossSection {
 }
 
 impl DomainsDyn for CrossSection {
-    fn domains_dyn(&self) -> Vec<elysian_core::ir::module::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
         self.field.domains_dyn()
     }
 }

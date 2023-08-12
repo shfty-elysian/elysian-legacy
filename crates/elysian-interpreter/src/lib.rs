@@ -1,9 +1,12 @@
 use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 
-use elysian_core::ir::{
-    ast::Stmt::{self, *},
-    ast::{Expr, Identifier, Struct, Value},
-    module::{FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT},
+use elysian_core::{
+    ast::identifier::Identifier,
+    ir::{
+        ast::Stmt::{self, *},
+        ast::{Expr, Struct, Value},
+        module::{FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT},
+    },
 };
 use rust_gpu_bridge::{
     Abs, Acos, Asin, Atan, Atan2, Clamp, Cos, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,

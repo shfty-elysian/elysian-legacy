@@ -4,9 +4,9 @@ use rust_gpu_bridge::{
 };
 use tracing::instrument;
 
-use crate::ir::{
-    ast::Value,
-    module::{PropertyIdentifier, StructIdentifier},
+use crate::{
+    ast::{number::Number, property_identifier::PropertyIdentifier},
+    ir::{ast::Value, module::StructIdentifier},
 };
 use std::{
     collections::BTreeMap,
@@ -16,8 +16,8 @@ use std::{
 };
 
 use super::{
-    Number, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
-    X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
+    MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2, X_AXIS_3,
+    X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
 };
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
@@ -515,5 +515,49 @@ impl From<Mat4> for Struct {
             .set(Y_AXIS_4.into(), value.y_axis.into())
             .set(Z_AXIS_4.into(), value.z_axis.into())
             .set(W_AXIS_4.into(), value.w_axis.into())
+    }
+}
+
+impl Add<Struct> for Number {
+    type Output = Struct;
+
+    fn add(self, mut rhs: Struct) -> Self::Output {
+        for (_, value) in rhs.members.iter_mut() {
+            *value = Value::from(self.clone()) + value.clone();
+        }
+        rhs
+    }
+}
+
+impl Sub<Struct> for Number {
+    type Output = Struct;
+
+    fn sub(self, mut rhs: Struct) -> Self::Output {
+        for (_, value) in rhs.members.iter_mut() {
+            *value = Value::from(self.clone()) - value.clone();
+        }
+        rhs
+    }
+}
+
+impl Mul<Struct> for Number {
+    type Output = Struct;
+
+    fn mul(self, mut rhs: Struct) -> Self::Output {
+        for (_, value) in rhs.members.iter_mut() {
+            *value = Value::from(self.clone()) * value.clone();
+        }
+        rhs
+    }
+}
+
+impl Div<Struct> for Number {
+    type Output = Struct;
+
+    fn div(self, mut rhs: Struct) -> Self::Output {
+        for (_, value) in rhs.members.iter_mut() {
+            *value = Value::from(self.clone()) / value.clone();
+        }
+        rhs
     }
 }

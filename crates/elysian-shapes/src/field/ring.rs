@@ -1,13 +1,13 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::expr::{Expr, IntoExpr},
-    ir::{
-        ast::Identifier,
-        module::{
-            AsIR, Domains, FunctionIdentifier, NumericType, PropertyIdentifier,
-            SpecializationData, Type, CONTEXT,
-        },
+    ast::{
+        expr::{Expr, IntoExpr},
+        identifier::Identifier,
+        property_identifier::PropertyIdentifier,
+    },
+    ir::module::{
+        AsIR, Domains, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT,
     },
     property,
 };

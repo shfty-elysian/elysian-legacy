@@ -4,11 +4,12 @@ use std::{
 };
 
 use elysian_core::{
+    ast::identifier::Identifier,
     ir::{
-        ast::{Identifier, DISTANCE, ERROR, POSITION_2D, POSITION_3D},
+        ast::{DISTANCE, ERROR, POSITION_2D, POSITION_3D},
         module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR,
-            SpecializationData, StructIdentifier, Type, CONTEXT,
+            AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, SpecializationData,
+            StructIdentifier, Type, CONTEXT,
         },
     },
     property,
@@ -37,7 +38,7 @@ impl Hash for DeriveBoundingError {
 }
 
 impl DomainsDyn for DeriveBoundingError {
-    fn domains_dyn(&self) -> Vec<elysian_core::ir::module::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
         self.field
             .domains_dyn()
             .into_iter()

@@ -2,12 +2,11 @@ use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
 use elysian_core::{
-    ast::expr::IntoExpr,
+    ast::{expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier},
     ir::{
-        ast::{Expr, Identifier},
+        ast::Expr,
         module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
-            SpecializationData, CONTEXT,
+            AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT,
         },
     },
 };

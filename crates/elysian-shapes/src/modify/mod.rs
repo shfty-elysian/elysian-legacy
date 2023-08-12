@@ -9,11 +9,14 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::ir::{
-    ast::IntoBlock,
-    module::{
-        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-        IntoAsIR, IntoRead, PropertyIdentifier, SpecializationData, StructDefinition, CONTEXT,
+use elysian_core::{
+    ast::property_identifier::PropertyIdentifier,
+    ir::{
+        ast::IntoBlock,
+        module::{
+            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
+            IntoAsIR, IntoRead, SpecializationData, StructDefinition, CONTEXT,
+        },
     },
 };
 

@@ -16,6 +16,8 @@ pub use ty::*;
 
 use indexmap::IndexMap;
 
+use crate::ast::property_identifier::PropertyIdentifier;
+
 #[derive(Debug)]
 pub struct Module {
     pub props: IndexMap<PropertyIdentifier, Type>,

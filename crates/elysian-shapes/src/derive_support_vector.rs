@@ -2,11 +2,9 @@ use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
 use elysian_core::{
+    ast::identifier::Identifier,
     ir::{
-        ast::{
-            Identifier, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2,
-            VECTOR3,
-        },
+        ast::{DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
         module::{
             AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, StructIdentifier, Type,
             CONTEXT,
@@ -35,7 +33,7 @@ property! {
 pub struct DeriveSupportVector;
 
 impl DomainsDyn for DeriveSupportVector {
-    fn domains_dyn(&self) -> Vec<elysian_core::ir::module::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
         vec![
             POSITION_2D.into(),
             POSITION_3D.into(),

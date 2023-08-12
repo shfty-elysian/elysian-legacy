@@ -1,4 +1,4 @@
-use super::PropertyIdentifier;
+use crate::ast::property_identifier::PropertyIdentifier;
 
 pub trait Domains {
     fn domains() -> Vec<PropertyIdentifier> {
@@ -18,4 +18,3 @@ where
         T::domains()
     }
 }
-

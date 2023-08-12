@@ -1,6 +1,3 @@
-mod number;
-pub use number::*;
-
 mod vector;
 pub use vector::*;
 

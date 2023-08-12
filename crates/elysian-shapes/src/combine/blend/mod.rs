@@ -1,8 +1,6 @@
 use elysian_core::{
-    ir::{
-        ast::Identifier,
-        module::{NumericType, Type},
-    },
+    ast::identifier::Identifier,
+    ir::module::{NumericType, Type},
     property,
 };
 

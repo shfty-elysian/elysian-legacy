@@ -1,16 +1,15 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
+use elysian_core::ast::identifier::Identifier;
+use elysian_core::ast::property_identifier::PropertyIdentifier;
 use elysian_core::ir::module::StructDefinition;
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 use elysian_core::{
-    ir::{
-        ast::Identifier,
-        module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            IntoAsIR, PropertyIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT,
-        },
+    ir::module::{
+        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
+        IntoAsIR, SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
 };

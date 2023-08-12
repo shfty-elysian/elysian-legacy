@@ -1,9 +1,9 @@
 use crate::combine::{LEFT, OUT, RIGHT};
-use elysian_core::ir::{
-    ast::{COMBINE_CONTEXT, DISTANCE},
-    module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, PropertyIdentifier,
-        SpecializationData,
+use elysian_core::{
+    ast::property_identifier::PropertyIdentifier,
+    ir::{
+        ast::{COMBINE_CONTEXT, DISTANCE},
+        module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData},
     },
 };
 use elysian_decl_macros::elysian_function;

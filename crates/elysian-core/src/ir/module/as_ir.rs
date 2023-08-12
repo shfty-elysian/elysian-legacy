@@ -8,17 +8,20 @@ use std::{
 use indexmap::{IndexMap, IndexSet};
 use uuid::Uuid;
 
-use crate::ir::{
-    ast::{
-        Block, Expr, Identifier, Property, Stmt, COMBINE_CONTEXT, MATRIX2_STRUCT, MATRIX3_STRUCT,
-        MATRIX4_STRUCT, VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT,
+use crate::{
+    ast::{identifier::Identifier, property_identifier::PropertyIdentifier},
+    ir::{
+        ast::{
+            Block, Expr, Property, Stmt, COMBINE_CONTEXT, MATRIX2_STRUCT, MATRIX3_STRUCT,
+            MATRIX4_STRUCT, VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT,
+        },
+        module::{FieldDefinition, HashIR},
     },
-    module::{FieldDefinition, HashIR},
 };
 
 use super::{
-    DomainsDyn, FunctionDefinition, FunctionIdentifier, Module, PropertyIdentifier,
-    SpecializationData, StructDefinition, StructIdentifier, Type,
+    DomainsDyn, FunctionDefinition, FunctionIdentifier, Module, SpecializationData,
+    StructDefinition, StructIdentifier, Type,
 };
 
 fn expr_props(expr: &Expr) -> Vec<PropertyIdentifier> {
@@ -109,7 +112,7 @@ macro_rules! property {
     ($id:ident, $prop:ident, $ty:expr) => {
         #[linkme::distributed_slice(elysian_core::ir::module::PROPERTIES)]
         static $prop: elysian_core::ir::ast::Property = elysian_core::ir::ast::Property {
-            id: elysian_core::ir::module::PropertyIdentifier($id),
+            id: elysian_core::ast::property_identifier::PropertyIdentifier($id),
             ty: $ty,
         };
     };

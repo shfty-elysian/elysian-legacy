@@ -1,13 +1,13 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    ast::expr::{Expr, IntoExpr},
+    ast::{
+        expr::{Expr, IntoExpr},
+        property_identifier::PropertyIdentifier,
+    },
     ir::{
         ast::{POSITION_2D, POSITION_3D},
-        module::{
-            AsIR, Domains, FunctionIdentifier, PropertyIdentifier,
-            SpecializationData, CONTEXT,
-        },
+        module::{AsIR, Domains, FunctionIdentifier, SpecializationData, CONTEXT},
     },
 };
 use elysian_decl_macros::elysian_function;

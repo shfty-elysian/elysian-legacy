@@ -1,6 +1,9 @@
 use std::collections::BTreeSet;
 
-use crate::ir::ast::{Identifier, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV};
+use crate::{
+    ast::identifier::Identifier,
+    ir::ast::{DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV},
+};
 
 use super::PropertyIdentifier;
 

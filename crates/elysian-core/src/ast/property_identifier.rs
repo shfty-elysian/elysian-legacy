@@ -4,10 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::{
-    ast::expr::Path,
-    ir::ast::{Expr, Identifier, Stmt},
-};
+use crate::ast::identifier::Identifier;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PropertyIdentifier(pub Identifier);
@@ -15,24 +12,6 @@ pub struct PropertyIdentifier(pub Identifier);
 impl PropertyIdentifier {
     pub const fn new(name: &'static str, uuid: u128) -> Self {
         PropertyIdentifier(Identifier::new(name, uuid))
-    }
-
-    pub fn bind(&self, expr: Expr) -> Stmt {
-        Stmt::Bind {
-            prop: self.clone(),
-            expr,
-        }
-    }
-
-    pub fn write(self, expr: Expr) -> Stmt {
-        Stmt::Write {
-            path: vec![self],
-            expr,
-        }
-    }
-
-    pub fn path(self) -> Path {
-        Path::default().push(self)
     }
 }
 
@@ -75,5 +54,15 @@ impl From<Identifier> for PropertyIdentifier {
 impl From<PropertyIdentifier> for Identifier {
     fn from(value: PropertyIdentifier) -> Self {
         value.0
+    }
+}
+
+pub trait IntoPropertyIdentifier {
+    fn prop(self) -> PropertyIdentifier;
+}
+
+impl IntoPropertyIdentifier for Identifier {
+    fn prop(self) -> PropertyIdentifier {
+        self.into()
     }
 }

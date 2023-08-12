@@ -1,11 +1,14 @@
-use elysian_core::ir::{
-    ast::{
-        Expr, Number, Stmt, Struct, Value, COLOR, MATRIX2, MATRIX3, MATRIX4, POSITION_2D, VECTOR2,
-        VECTOR3, VECTOR4,
-    },
-    module::{
-        FunctionDefinition, Module as ElysianModule, NumericType, PropertyIdentifier,
-        Type as ElysianType, CONTEXT, SAFE_NORMALIZE_2, SAFE_NORMALIZE_3, SAFE_NORMALIZE_4,
+use elysian_core::{
+    ast::{number::Number, property_identifier::PropertyIdentifier},
+    ir::{
+        ast::{
+            Expr, Stmt, Struct, Value, COLOR, MATRIX2, MATRIX3, MATRIX4, POSITION_2D, VECTOR2,
+            VECTOR3, VECTOR4,
+        },
+        module::{
+            FunctionDefinition, Module as ElysianModule, NumericType, Type as ElysianType, CONTEXT,
+            SAFE_NORMALIZE_2, SAFE_NORMALIZE_3, SAFE_NORMALIZE_4,
+        },
     },
 };
 use elysian_decl_macros::elysian_function;

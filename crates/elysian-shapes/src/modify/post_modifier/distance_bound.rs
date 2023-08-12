@@ -2,12 +2,16 @@ use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
 use elysian_core::{
-    ast::expr::{Expr, IntoExpr},
+    ast::{
+        expr::{Expr, IntoExpr},
+        identifier::Identifier,
+        property_identifier::PropertyIdentifier,
+    },
     ir::{
-        ast::{Block, Identifier, DISTANCE, POSITION_2D, POSITION_3D},
+        ast::{Block, DISTANCE, POSITION_2D, POSITION_3D},
         module::{
             AsIR, FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
-            PropertyIdentifier, SpecializationData, Type, CONTEXT,
+            SpecializationData, Type, CONTEXT,
         },
         module::{Domains, HashIR},
     },

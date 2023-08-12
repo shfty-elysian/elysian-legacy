@@ -2,11 +2,6 @@ use std::borrow::Cow;
 
 use uuid::Uuid;
 
-use crate::{
-    ast::expr::Path,
-    ir::module::{FunctionIdentifier, PropertyIdentifier, StructIdentifier},
-};
-
 /// Named unique identifier
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Identifier {
@@ -73,21 +68,5 @@ impl Identifier {
             name: (self.name.to_string() + "_" + &rhs.name).into(),
             uuid: Uuid::from_u128(self.uuid.as_u128().wrapping_add(rhs.uuid.as_u128())),
         }
-    }
-
-    pub fn prop(self) -> PropertyIdentifier {
-        self.into()
-    }
-
-    pub fn path(self) -> Path {
-        Path::default().push(self.prop())
-    }
-
-    pub fn function(self) -> FunctionIdentifier {
-        self.into()
-    }
-
-    pub fn structure(self) -> StructIdentifier {
-        self.into()
     }
 }
