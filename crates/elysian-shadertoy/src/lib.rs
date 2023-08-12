@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use elysian_core::ir::module::Module as ElysianModule;
+use elysian_ir::module::Module as ElysianModule;
 use elysian_naga::NagaBuilder;
 use naga::{
     back::glsl::{Options, PipelineOptions, WriterFlags},

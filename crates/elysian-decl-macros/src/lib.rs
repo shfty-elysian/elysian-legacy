@@ -2,7 +2,7 @@
 macro_rules! elysian_function_arg {
     ($target:expr => mut $arg:ident, $($next:tt)*) => {
         $crate::elysian_function_arg!(
-            $target.chain([elysian_core::ir::module::InputDefinition {
+            $target.chain([elysian_ir::module::InputDefinition {
                 id: $arg.clone().into(),
                 mutable: true,
             }]) => $($next)*
@@ -10,19 +10,19 @@ macro_rules! elysian_function_arg {
     };
     ($target:expr => $arg:ident, $($next:tt)*) => {
         $crate::elysian_function_arg!(
-        $target.chain([elysian_core::ir::module::InputDefinition {
+        $target.chain([elysian_ir::module::InputDefinition {
             id: $arg.clone().into(),
             mutable: false,
         }]) => $($next)*)
     };
     ($target:expr => mut $arg:ident) => {
-        $target.chain([elysian_core::ir::module::InputDefinition {
+        $target.chain([elysian_ir::module::InputDefinition {
             id: $arg.clone().into(),
             mutable: true,
         }])
     };
     ($target:expr => $arg:ident) => {
-        $target.chain([elysian_core::ir::module::InputDefinition {
+        $target.chain([elysian_ir::module::InputDefinition {
             id: $arg.clone().into(),
             mutable: false,
         }])
@@ -39,7 +39,7 @@ macro_rules! elysian_function_args {
 #[macro_export]
 macro_rules! elysian_function_inner {
     ($pub:tt | $ident:ident | [$($args:tt)*] | $ret:ident | $body:tt) => {
-        elysian_core::ir::module::FunctionDefinition {
+        elysian_ir::module::FunctionDefinition {
             id: $ident.clone(),
             public: $pub,
             inputs: $crate::elysian_function_args!([].into_iter() => $($args)*),

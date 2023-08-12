@@ -20,6 +20,7 @@ shadertoy = ["naga", "dep:elysian-shadertoy"]
 
 [dependencies]
 elysian-core = { path = "crates/elysian-core" }
+elysian-ir = { path = "crates/elysian-ir" }
 elysian-proc-macros = { path = "crates/elysian-proc-macros" }
 elysian-decl-macros = { path = "crates/elysian-decl-macros" }
 elysian-shapes = { path = "crates/elysian-shapes" }

@@ -2,17 +2,15 @@ use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 use elysian_core::ast::property_identifier::PropertyIdentifier;
-use elysian_core::ir::module::StructDefinition;
+use elysian_ir::module::StructDefinition;
 use elysian_proc_macros::elysian_stmt;
 
-use elysian_core::{
-    ast::expr::IntoExpr,
-    ir::{
-        ast::IntoBlock,
-        module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, HashIR,
-            InputDefinition, IntoAsIR, IntoRead, SpecializationData, CONTEXT,
-        },
+use elysian_core::ast::expr::IntoExpr;
+use elysian_ir::{
+    ast::IntoBlock,
+    module::{
+        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+        IntoAsIR, IntoRead, SpecializationData, CONTEXT,
     },
 };
 
@@ -88,7 +86,7 @@ impl AsIR for Select {
             .iter()
             .rev()
             .fold(default_call.output(), |acc, (k, (v, _, entry, _))| {
-                elysian_core::ir::ast::Stmt::If {
+                elysian_ir::ast::Stmt::If {
                     cond: (*k).clone().into(),
                     then: entry
                         .call(v.arguments(PropertyIdentifier(CONTEXT).read()))

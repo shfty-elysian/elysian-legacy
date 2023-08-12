@@ -3,8 +3,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::ast::{identifier::Identifier, property_identifier::PropertyIdentifier};
-use crate::ir::ast::Expr;
+use crate::ast::Expr;
+use elysian_core::ast::{identifier::Identifier, property_identifier::PropertyIdentifier};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StructIdentifier(pub Identifier);

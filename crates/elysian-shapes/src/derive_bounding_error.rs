@@ -3,18 +3,16 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::{
-    ast::identifier::Identifier,
-    ir::{
-        ast::{DISTANCE, ERROR, POSITION_2D, POSITION_3D},
-        module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, SpecializationData,
-            StructIdentifier, Type, CONTEXT,
-        },
+use elysian_core::ast::identifier::Identifier;
+use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    ast::{DISTANCE, ERROR, POSITION_2D, POSITION_3D},
+    module::{
+        AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, SpecializationData,
+        StructIdentifier, Type, CONTEXT,
     },
     property,
 };
-use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_expr;
 
 use crate::derive_support_vector::{SUPPORT_VECTOR_2D, SUPPORT_VECTOR_3D};
@@ -56,7 +54,7 @@ impl AsIR for DeriveBoundingError {
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
         let entry_point = entry_point.clone();
 
         let (position, support_vector) = match (
@@ -93,7 +91,7 @@ impl AsIR for DeriveBoundingError {
             .collect()
     }
 
-    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
         self.field.structs()
     }
 }

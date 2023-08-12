@@ -3,20 +3,18 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::{
-    ast::{
-        expr::{Expr, IntoExpr},
-        identifier::Identifier,
-    },
-    ir::{
-        ast::{GRADIENT_2D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
-        module::{
-            AsIR, DomainsDyn, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT,
-        },
+use elysian_core::ast::{
+    expr::{Expr, IntoExpr},
+    identifier::Identifier,
+};
+use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    ast::{GRADIENT_2D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
+    module::{
+        AsIR, DomainsDyn, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT,
     },
     property,
 };
-use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_stmt;
 
 pub const ANGLE: Identifier = Identifier::new("angle", 17396665761465842676);
@@ -49,7 +47,7 @@ impl AsIR for Rotate {
         FunctionIdentifier::new_dynamic("rotate".into())
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         vec![self.angle.clone().into(), input]
     }
 
@@ -57,7 +55,7 @@ impl AsIR for Rotate {
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
         assert!(
             spec.contains(&POSITION_2D.into()),
             "Rotate currently requires the 2D Position domain"
@@ -88,7 +86,7 @@ impl AsIR for Rotate {
             .collect()
     }
 
-    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
         self.field.structs()
     }
 }

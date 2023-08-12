@@ -1,8 +1,6 @@
 use std::time::Instant;
 
-use elysian::{
-    core::ir::module::SpecializationData, image::rasterize, r#static::include_static_shapes,
-};
+use elysian::{image::rasterize, ir::module::SpecializationData, r#static::include_static_shapes};
 use viuer::Config;
 
 include_static_shapes!();

@@ -1,12 +1,12 @@
 use crate::combine::{LEFT, OUT, RIGHT};
-use elysian_core::ir::{
+use elysian_decl_macros::elysian_function;
+use elysian_ir::{
     ast::{COMBINE_CONTEXT, DISTANCE},
     module::{
         AsIR, Domains, DynAsIR, FunctionDefinition, FunctionIdentifier, IntoAsIR,
         SpecializationData,
     },
 };
-use elysian_decl_macros::elysian_function;
 
 pub const UNION: FunctionIdentifier = FunctionIdentifier::new("union", 1894363406191409858);
 

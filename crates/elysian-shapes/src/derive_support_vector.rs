@@ -1,18 +1,15 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::{
-    ast::identifier::Identifier,
-    ir::{
-        ast::{DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
-        module::{
-            AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, StructIdentifier, Type,
-            CONTEXT,
-        },
+use elysian_core::ast::identifier::Identifier;
+use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    ast::{DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
+    module::{
+        AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
-use elysian_decl_macros::elysian_function;
 
 pub const SUPPORT_VECTOR_2D: Identifier =
     Identifier::new("support_vector_2d", 10984286761467088554);
@@ -52,7 +49,7 @@ impl AsIR for DeriveSupportVector {
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
         let entry_point = entry_point.clone();
 
         let support_vector = match (

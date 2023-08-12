@@ -1,4 +1,4 @@
-use crate::ast::property_identifier::PropertyIdentifier;
+use elysian_core::ast::property_identifier::PropertyIdentifier;
 
 pub trait Domains {
     fn domains() -> Vec<PropertyIdentifier> {

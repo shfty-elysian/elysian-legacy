@@ -1,16 +1,16 @@
 use std::{fmt::Debug, hash::Hash};
 
-use elysian_core::{
-    ast::{expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier},
-    ir::{
-        ast::{
-            vector2, vector3, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
-            VECTOR2, VECTOR3,
-        },
-        module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            IntoAsIR, SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
-        },
+use elysian_core::ast::{
+    expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
+};
+use elysian_ir::{
+    ast::{
+        vector2, vector3, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2,
+        VECTOR3,
+    },
+    module::{
+        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
+        IntoAsIR, SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
@@ -65,7 +65,7 @@ impl AsIR for FlipBasis {
         FunctionIdentifier::new_dynamic("flip_basis".into())
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         vec![self.basis.clone().into(), input]
     }
 

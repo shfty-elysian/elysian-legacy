@@ -8,7 +8,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::ir::ast::Stmt;
+use crate::ast::Stmt;
 
 /// List of statements
 pub struct Block(pub Vec<Stmt>);
@@ -75,7 +75,7 @@ pub trait ComposeBlocks: IntoIterator<Item = Stmt> {
 }
 
 pub fn into_block_stmt<I: IntoIterator<Item = Stmt>>(t: I) -> Stmt {
-    Stmt::Block(crate::ir::ast::Block(t.into_iter().collect()))
+    Stmt::Block(crate::ast::Block(t.into_iter().collect()))
 }
 
 impl<T> ComposeBlocks for T

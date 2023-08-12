@@ -1,9 +1,7 @@
 use std::hash::{Hash, Hasher};
 
-use crate::{
-    ast::property_identifier::PropertyIdentifier,
-    ir::ast::{Block, Expr, Stmt},
-};
+use crate::ast::{Block, Expr, Stmt};
+use elysian_core::ast::property_identifier::PropertyIdentifier;
 
 use super::SpecializationData;
 

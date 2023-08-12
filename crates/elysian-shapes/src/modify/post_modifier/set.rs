@@ -1,16 +1,14 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::{
-    ast::{expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier},
-    ir::{
-        ast::Expr,
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT,
-        },
-    },
+use elysian_core::ast::{
+    expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
 use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    ast::Expr,
+    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},
+};
 
 pub const SET: FunctionIdentifier = FunctionIdentifier::new("set", 1768232690987692666);
 

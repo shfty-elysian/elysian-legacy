@@ -17,15 +17,15 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use elysian_core::ir::module::{DomainsDyn, IntoAsIR};
-use elysian_core::ir::{
+use elysian_ir::{
     ast::{Block, Expr, COMBINE_CONTEXT},
     module::{
-        AsIR, DynAsIR, FieldDefinition, FunctionDefinition, FunctionIdentifier, HashIR,
-        InputDefinition, SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
+        AsIR, DomainsDyn, DynAsIR, FieldDefinition, FunctionDefinition, FunctionIdentifier, HashIR,
+        InputDefinition, IntoAsIR, SpecializationData, StructDefinition, StructIdentifier, Type,
+        CONTEXT,
     },
+    property,
 };
-use elysian_core::property;
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 pub const LEFT: Identifier = Identifier::new("left", 635254731934742132);

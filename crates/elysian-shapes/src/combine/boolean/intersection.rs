@@ -1,9 +1,9 @@
 use crate::combine::{LEFT, OUT, RIGHT};
-use elysian_core::ir::{
+use elysian_decl_macros::elysian_function;
+use elysian_ir::{
     ast::{COMBINE_CONTEXT, DISTANCE},
     module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData},
 };
-use elysian_decl_macros::elysian_function;
 
 pub const INTERSECTION: FunctionIdentifier =
     FunctionIdentifier::new("intersection", 18033822391797795038);

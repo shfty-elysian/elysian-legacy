@@ -1,10 +1,10 @@
-use elysian_core::ir::module::SpecializationData;
 use elysian_interpreter::{evaluate_module, Interpreter};
+use elysian_ir::module::SpecializationData;
 use elysian_syn::module_to_string;
 
 use std::{collections::BTreeMap, sync::OnceLock};
 
-use elysian_core::ir::{ast::Struct, module::AsIR};
+use elysian_ir::{ast::Struct, module::AsIR};
 
 pub type ShapeHash = u64;
 pub type ShapeFn = fn(Struct) -> Struct;

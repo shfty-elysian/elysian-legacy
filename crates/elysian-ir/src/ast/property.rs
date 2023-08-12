@@ -1,16 +1,16 @@
 use std::fmt::Display;
 
 use crate::{
-    ast::{identifier::Identifier, property_identifier::PropertyIdentifier},
-    ir::module::{NumericType, StructIdentifier, Type},
+    module::{NumericType, StructIdentifier, Type},
     property,
 };
+use elysian_core::ast::{identifier::Identifier, property_identifier::PropertyIdentifier};
 
 use super::{VECTOR2, VECTOR3, VECTOR4};
 
 pub const POSITION_2D: Identifier = Identifier::new("position_2d", 19300293251480055481);
-#[linkme::distributed_slice(elysian_core::ir::module::PROPERTIES)]
-static POSITION_2D_PROP: elysian_core::ir::ast::Property = elysian_core::ir::ast::Property {
+#[linkme::distributed_slice(crate::module::PROPERTIES)]
+static POSITION_2D_PROP: crate::ast::Property = crate::ast::Property {
     id: PropertyIdentifier(POSITION_2D),
     ty: (Type::Struct(StructIdentifier(VECTOR2))),
 };

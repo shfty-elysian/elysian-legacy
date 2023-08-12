@@ -1,5 +1,5 @@
 use elysian::{
-    core::ir::module::SpecializationData,
+    ir::module::SpecializationData,
     syn::{module_to_syn, prettyplease},
 };
 

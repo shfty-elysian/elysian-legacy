@@ -1,17 +1,14 @@
 use std::fmt::Debug;
 
 use crate::combine::{LEFT, OUT, RIGHT};
-use elysian_core::{
-    ast::{
-        expr::{Expr, IntoExpr},
-        property_identifier::PropertyIdentifier,
-    },
-    ir::{
-        ast::{COMBINE_CONTEXT, DISTANCE, NUM},
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            SpecializationData,
-        },
+use elysian_core::ast::{
+    expr::{Expr, IntoExpr},
+    property_identifier::PropertyIdentifier,
+};
+use elysian_ir::{
+    ast::{COMBINE_CONTEXT, DISTANCE, NUM},
+    module::{
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData,
     },
 };
 use elysian_proc_macros::{elysian_block, elysian_stmt};
@@ -43,7 +40,7 @@ impl AsIR for SmoothIntersection {
         FunctionIdentifier(SMOOTH_INTERSECTION.0.concat(&self.prop))
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         vec![self.k.clone().into(), input]
     }
 

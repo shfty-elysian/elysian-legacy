@@ -1,16 +1,14 @@
 use std::hash::{Hash, Hasher};
 
-use elysian_core::{
-    ast::{
-        expr::{Expr, IntoExpr},
-        property_identifier::PropertyIdentifier,
-    },
-    ir::{
-        ast::{POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y, Z},
-        module::{AsIR, Domains, FunctionIdentifier, CONTEXT},
-    },
+use elysian_core::ast::{
+    expr::{Expr, IntoExpr},
+    property_identifier::PropertyIdentifier,
 };
 use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    ast::{POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y, Z},
+    module::{AsIR, Domains, FunctionIdentifier, CONTEXT},
+};
 use elysian_proc_macros::elysian_expr;
 
 use crate::modify::{IntoMirror, IntoTranslate};
@@ -49,15 +47,15 @@ impl Domains for Quad {
 }
 
 impl AsIR for Quad {
-    fn entry_point(&self) -> elysian_core::ir::module::FunctionIdentifier {
+    fn entry_point(&self) -> elysian_ir::module::FunctionIdentifier {
         FunctionIdentifier::new_dynamic("quad".into())
     }
 
     fn functions(
         &self,
-        spec: &elysian_core::ir::module::SpecializationData,
-        entry_point: &elysian_core::ir::module::FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+        spec: &elysian_ir::module::SpecializationData,
+        entry_point: &elysian_ir::module::FunctionIdentifier,
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
         let one = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -118,7 +116,7 @@ impl AsIR for Quad {
             .collect()
     }
 
-    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
         Corner::new(self.props.clone()).structs()
     }
 }

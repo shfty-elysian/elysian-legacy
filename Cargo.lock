@@ -215,6 +215,7 @@ dependencies = [
  "elysian-core",
  "elysian-decl-macros",
  "elysian-image",
+ "elysian-ir",
  "elysian-naga",
  "elysian-proc-macros",
  "elysian-shadertoy",
@@ -229,12 +230,7 @@ dependencies = [
 name = "elysian-core"
 version = "0.1.0"
 dependencies = [
- "elysian-decl-macros",
- "elysian-proc-macros",
- "indexmap 2.0.0",
- "linkme",
  "rust-gpu-bridge",
- "tracing",
  "uuid",
 ]
 
@@ -247,6 +243,7 @@ name = "elysian-image"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-ir",
  "elysian-shapes",
  "elysian-static",
  "image",
@@ -261,6 +258,20 @@ name = "elysian-interpreter"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-ir",
+ "rust-gpu-bridge",
+ "tracing",
+]
+
+[[package]]
+name = "elysian-ir"
+version = "0.1.0"
+dependencies = [
+ "elysian-core",
+ "elysian-decl-macros",
+ "elysian-proc-macros",
+ "indexmap 2.0.0",
+ "linkme",
  "rust-gpu-bridge",
  "tracing",
 ]
@@ -271,6 +282,7 @@ version = "0.1.0"
 dependencies = [
  "elysian-core",
  "elysian-decl-macros",
+ "elysian-ir",
  "elysian-proc-macros",
  "elysian-shapes",
  "indexmap 2.0.0",
@@ -291,6 +303,7 @@ name = "elysian-shadertoy"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-ir",
  "elysian-naga",
  "naga",
 ]
@@ -301,6 +314,7 @@ version = "0.1.0"
 dependencies = [
  "elysian-core",
  "elysian-decl-macros",
+ "elysian-ir",
  "elysian-proc-macros",
  "indexmap 2.0.0",
  "linkme",
@@ -312,6 +326,7 @@ version = "0.1.0"
 dependencies = [
  "elysian-core",
  "elysian-interpreter",
+ "elysian-ir",
  "elysian-syn",
  "linkme",
 ]
@@ -322,6 +337,7 @@ version = "0.1.0"
 dependencies = [
  "elysian-core",
  "elysian-interpreter",
+ "elysian-ir",
  "elysian-proc-macros",
  "prettyplease",
  "proc-macro2",
@@ -335,6 +351,7 @@ name = "elysian-text"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-ir",
  "elysian-shapes",
 ]
 
@@ -1102,6 +1119,7 @@ version = "0.1.0"
 dependencies = [
  "elysian",
  "elysian-core",
+ "elysian-ir",
  "elysian-static",
  "linkme",
  "rust-gpu-bridge",
@@ -1125,6 +1143,7 @@ name = "test-shapes"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-ir",
  "elysian-proc-macros",
  "elysian-shapes",
  "elysian-text",

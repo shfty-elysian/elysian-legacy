@@ -3,10 +3,8 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::{
-    ast::property_identifier::PropertyIdentifier,
-    ir::ast::{Block, Expr},
-};
+use crate::ast::{Block, Expr};
+use elysian_core::ast::property_identifier::PropertyIdentifier;
 
 /// Statement consuming the result of an expression
 pub enum Stmt {

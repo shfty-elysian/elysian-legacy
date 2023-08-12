@@ -1,12 +1,10 @@
 use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 
-use elysian_core::{
-    ast::identifier::Identifier,
-    ir::{
-        ast::Stmt::{self, *},
-        ast::{Expr, Struct, Value},
-        module::{FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT},
-    },
+use elysian_core::ast::identifier::Identifier;
+use elysian_ir::{
+    ast::Stmt::{self, *},
+    ast::{Expr, Struct, Value},
+    module::{FunctionDefinition, FunctionIdentifier, Module, StructIdentifier, CONTEXT},
 };
 use rust_gpu_bridge::{
     Abs, Acos, Asin, Atan, Atan2, Clamp, Cos, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,
@@ -194,7 +192,7 @@ pub fn evaluate_stmt(mut interpreter: Interpreter, stmt: &Stmt) -> Interpreter {
 
 pub fn evaluate_block(
     interpreter: Interpreter,
-    elysian_core::ir::ast::Block(list): &elysian_core::ir::ast::Block,
+    elysian_ir::ast::Block(list): &elysian_ir::ast::Block,
 ) -> Interpreter {
     #[cfg(feature = "print")]
     println!("Block");
@@ -202,7 +200,7 @@ pub fn evaluate_block(
     list.iter().fold(interpreter, evaluate_stmt)
 }
 
-pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_core::ir::ast::Expr) -> Value {
+pub fn evaluate_expr(interpreter: &Interpreter, expr: &elysian_ir::ast::Expr) -> Value {
     match expr {
         Expr::Literal(l) => {
             #[cfg(feature = "print")]

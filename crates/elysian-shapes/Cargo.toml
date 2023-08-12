@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 elysian-core = { path = "../elysian-core" }
+elysian-ir = { path = "../elysian-ir" }
 elysian-proc-macros = { path = "../elysian-proc-macros", features = ["internal"] }
 elysian-decl-macros = { path = "../elysian-decl-macros" }
 indexmap = "2.0.0"

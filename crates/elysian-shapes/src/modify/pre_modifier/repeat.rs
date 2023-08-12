@@ -1,14 +1,14 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::{
-    ast::{expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier},
-    ir::{
-        ast::{POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData,
-            StructIdentifier, Type, CONTEXT,
-        },
+use elysian_core::ast::{
+    expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
+};
+use elysian_ir::{
+    ast::{POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
+    module::{
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData,
+        StructIdentifier, Type, CONTEXT,
     },
     property,
 };
@@ -91,10 +91,10 @@ impl AsIR for Repeat {
         })
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         if let Some((min, max)) = self.range.as_ref() {
-            let min = elysian_core::ir::ast::Expr::from(min.clone());
-            let max = elysian_core::ir::ast::Expr::from(max.clone());
+            let min = elysian_ir::ast::Expr::from(min.clone());
+            let max = elysian_ir::ast::Expr::from(max.clone());
             vec![self.period.clone().into(), min, max, input]
         } else {
             vec![self.period.clone().into(), input]

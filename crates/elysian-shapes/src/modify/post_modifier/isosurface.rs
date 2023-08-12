@@ -1,14 +1,14 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::{
-    ast::{expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier},
-    ir::{
-        ast::{Block, Expr, DISTANCE, POSITION_2D, POSITION_3D, UV, X},
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
-            SpecializationData, Type, CONTEXT,
-        },
+use elysian_core::ast::{
+    expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
+};
+use elysian_ir::{
+    ast::{Block, Expr, DISTANCE, POSITION_2D, POSITION_3D, UV, X},
+    module::{
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+        SpecializationData, Type, CONTEXT,
     },
     property,
 };

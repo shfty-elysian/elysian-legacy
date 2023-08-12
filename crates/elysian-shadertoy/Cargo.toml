@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 elysian-core = { path = "../elysian-core" }
+elysian-ir = { path = "../elysian-ir" }
 elysian-naga = { path = "../elysian-naga" }
 
 naga = { version = "0.13.0", features = ["glsl-out", "validate"] }

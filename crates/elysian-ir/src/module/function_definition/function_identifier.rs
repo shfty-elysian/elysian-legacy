@@ -5,9 +5,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use uuid::Uuid;
-
-use crate::{ast::identifier::Identifier, ir::ast::Expr};
+use crate::ast::Expr;
+use elysian_core::{ast::identifier::Identifier, uuid::Uuid};
 
 use super::SpecializationData;
 

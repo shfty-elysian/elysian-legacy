@@ -4,13 +4,13 @@ use std::{
 };
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::ir::{
+use elysian_decl_macros::elysian_function;
+use elysian_ir::{
     ast::{POSITION_2D, UV},
     module::{
         AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, SpecializationData, CONTEXT,
     },
 };
-use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_stmt;
 
 #[derive(Debug)]
@@ -47,7 +47,7 @@ impl AsIR for UvMap {
         &self,
         _: &SpecializationData,
         entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
         let spec_map = SpecializationData::new_2d();
         let (_, field_call, field_functions) =
             self.field.call(&spec_map, elysian_stmt! { CONTEXT });
@@ -66,7 +66,7 @@ impl AsIR for UvMap {
             .collect()
     }
 
-    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
         self.field.structs()
     }
 }

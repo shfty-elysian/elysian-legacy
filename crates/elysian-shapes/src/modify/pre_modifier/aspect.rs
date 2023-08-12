@@ -1,14 +1,14 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::{
-    ast::{expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier},
-    ir::{
-        ast::{POSITION_2D, POSITION_3D, VECTOR2, X, Y},
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType, SpecializationData,
-            Type, CONTEXT,
-        },
+use elysian_core::ast::{
+    expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
+};
+use elysian_ir::{
+    ast::{POSITION_2D, POSITION_3D, VECTOR2, X, Y},
+    module::{
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType, SpecializationData,
+        Type, CONTEXT,
     },
     property,
 };
@@ -42,7 +42,7 @@ impl AsIR for Aspect {
         FunctionIdentifier(ASPECT)
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         vec![self.aspect.clone().into(), input]
     }
 

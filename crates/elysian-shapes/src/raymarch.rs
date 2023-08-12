@@ -3,21 +3,19 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::{
-    ast::{expr::IntoExpr, identifier::Identifier},
-    ir::{
-        ast::{
-            Expr, IntoLiteral, Stmt, DISTANCE, MATRIX4, POSITION_2D, POSITION_3D, VECTOR3, VECTOR4,
-            W, X, Y, Z,
-        },
-        module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, NumericType,
-            SpecializationData, StructIdentifier, Type, CONTEXT,
-        },
+use elysian_core::ast::{expr::IntoExpr, identifier::Identifier};
+use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    ast::{
+        Expr, IntoLiteral, Stmt, DISTANCE, MATRIX4, POSITION_2D, POSITION_3D, VECTOR3, VECTOR4, W,
+        X, Y, Z,
+    },
+    module::{
+        AsIR, DomainsDyn, DynAsIR, FunctionIdentifier, IntoAsIR, NumericType, SpecializationData,
+        StructIdentifier, Type, CONTEXT,
     },
     property,
 };
-use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_stmt;
 
 pub const RAYMARCH: FunctionIdentifier = FunctionIdentifier::new("raymarch", 2862797821569013866);
@@ -195,7 +193,7 @@ impl AsIR for Raymarch {
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
         if !spec.contains(&POSITION_2D.into()) {
             panic!("Raymarch is only compatible with the 2D Position domain");
         }
@@ -299,7 +297,7 @@ impl AsIR for Raymarch {
             .collect()
     }
 
-    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
         self.field.structs()
     }
 }

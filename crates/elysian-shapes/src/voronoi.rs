@@ -1,7 +1,7 @@
 use crate::combine::Combine;
-use elysian_core::{
-    ast::{expr::IntoExpr, identifier::Identifier},
-    ir::module::{IntoAsIR, NumericType, Type},
+use elysian_core::ast::{expr::IntoExpr, identifier::Identifier};
+use elysian_ir::{
+    module::{IntoAsIR, NumericType, Type},
     property,
 };
 

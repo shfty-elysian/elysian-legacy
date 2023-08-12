@@ -1,18 +1,16 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::{
-    ast::{
-        expr::{Expr, IntoExpr},
-        identifier::Identifier,
-        property_identifier::PropertyIdentifier,
-    },
-    ir::{
-        ast::{Block, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
-            SpecializationData, StructIdentifier, Type, CONTEXT,
-        },
+use elysian_core::ast::{
+    expr::{Expr, IntoExpr},
+    identifier::Identifier,
+    property_identifier::PropertyIdentifier,
+};
+use elysian_ir::{
+    ast::{Block, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
+    module::{
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+        SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
@@ -76,7 +74,7 @@ impl AsIR for BasisBound {
         }
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         vec![self.bound.clone().into(), input]
     }
 

@@ -2,6 +2,10 @@ pub mod core {
     pub use elysian_core::*;
 }
 
+pub mod ir {
+    pub use elysian_ir::*;
+}
+
 pub mod macros {
     pub use elysian_decl_macros::*;
     pub use elysian_proc_macros::*;

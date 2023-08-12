@@ -1,12 +1,10 @@
-use elysian_core::{
-    ast::{identifier::Identifier, property_identifier::PropertyIdentifier},
-    ir::{
-        ast::{
-            MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
-            X_AXIS_3, X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
-        },
-        module::{Module, NumericType, SpecializationData, StructIdentifier, CONTEXT},
+use elysian_core::ast::{identifier::Identifier, property_identifier::PropertyIdentifier};
+use elysian_ir::{
+    ast::{
+        MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2, X_AXIS_3,
+        X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
     },
+    module::{Module, NumericType, SpecializationData, StructIdentifier, CONTEXT},
 };
 pub use prettyplease;
 
@@ -20,20 +18,20 @@ use syn::{
     PathSegment, ReturnType, Signature, Stmt, Type, TypePath, Visibility,
 };
 
-use elysian_core::ir::{
+use elysian_ir::{
     ast::{Block as IrBlock, Expr as IrExpr, Stmt as IrStmt},
     module::AsIR,
 };
 
-pub fn type_to_syn(ty: &elysian_core::ir::module::Type) -> TokenStream {
+pub fn type_to_syn(ty: &elysian_ir::module::Type) -> TokenStream {
     match ty {
-        elysian_core::ir::module::Type::Boolean => quote!(Type::Boolean),
-        elysian_core::ir::module::Type::Number(n) => match n {
+        elysian_ir::module::Type::Boolean => quote!(Type::Boolean),
+        elysian_ir::module::Type::Number(n) => match n {
             NumericType::UInt => quote!(Type::Number(NumericType::UInt)),
             NumericType::SInt => quote!(Type::Number(NumericType::SInt)),
             NumericType::Float => quote!(Type::Number(NumericType::Float)),
         },
-        elysian_core::ir::module::Type::Struct(s) => match s.name() {
+        elysian_ir::module::Type::Struct(s) => match s.name() {
             "Vector2" => quote!(Type::Struct(VECTOR2)),
             "Vector3" => quote!(Type::Struct(VECTOR3)),
             "Vector4" => quote!(Type::Struct(VECTOR4)),
@@ -45,11 +43,11 @@ pub fn type_to_syn(ty: &elysian_core::ir::module::Type) -> TokenStream {
     }
 }
 
-pub fn type_to_value(ty: &elysian_core::ir::module::Type) -> TokenStream {
+pub fn type_to_value(ty: &elysian_ir::module::Type) -> TokenStream {
     match ty {
-        elysian_core::ir::module::Type::Boolean => quote!(Value::Boolean),
-        elysian_core::ir::module::Type::Number(_) => quote!(Value::Number),
-        elysian_core::ir::module::Type::Struct(_) => unimplemented!(),
+        elysian_ir::module::Type::Boolean => quote!(Value::Boolean),
+        elysian_ir::module::Type::Number(_) => quote!(Value::Number),
+        elysian_ir::module::Type::Struct(_) => unimplemented!(),
     }
 }
 
@@ -90,12 +88,12 @@ where
         use elysian::{
             core::{
                 ast::property_identifier::PropertyIdentifier,
-                ir::{
-                    ast::{
-                        Struct,
-                    },
-                    module::{CONTEXT, StructIdentifier},
+            },
+            ir::{
+                ast::{
+                    Struct,
                 },
+                module::{CONTEXT, StructIdentifier},
             },
             r#static::StaticShape,
         };
@@ -371,9 +369,9 @@ fn block_to_syn(module: &Module, block: &IrBlock) -> Block {
 
 fn if_to_syn(
     module: &Module,
-    cond: &elysian_core::ir::ast::Expr,
-    then: &elysian_core::ir::ast::Stmt,
-    otherwise: Option<&elysian_core::ir::ast::Stmt>,
+    cond: &elysian_ir::ast::Expr,
+    then: &elysian_ir::ast::Stmt,
+    otherwise: Option<&elysian_ir::ast::Stmt>,
 ) -> Expr {
     Expr::If(ExprIf {
         attrs: vec![],
@@ -483,15 +481,15 @@ fn stmt_to_syn(module: &Module, stmt: &IrStmt) -> Stmt {
 
 fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
     match expr {
-        elysian_core::ir::ast::Expr::Literal(v) => match v {
-            elysian_core::ir::ast::Value::Boolean(b) => Expr::Lit(ExprLit {
+        elysian_ir::ast::Expr::Literal(v) => match v {
+            elysian_ir::ast::Value::Boolean(b) => Expr::Lit(ExprLit {
                 attrs: vec![],
                 lit: Lit::Bool(LitBool {
                     value: *b,
                     span: Span::call_site(),
                 }),
             }),
-            elysian_core::ir::ast::Value::Number(n) => Expr::Lit(ExprLit {
+            elysian_ir::ast::Value::Number(n) => Expr::Lit(ExprLit {
                 attrs: vec![],
                 lit: match n {
                     elysian_core::ast::number::Number::UInt(n) => {
@@ -508,7 +506,7 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
                     }
                 },
             }),
-            elysian_core::ir::ast::Value::Struct(s) => expr_to_syn(
+            elysian_ir::ast::Value::Struct(s) => expr_to_syn(
                 module,
                 &IrExpr::Struct(
                     s.id.clone(),

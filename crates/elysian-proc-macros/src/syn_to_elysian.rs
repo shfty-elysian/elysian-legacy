@@ -22,16 +22,30 @@ impl SynToElysian {
 }
 
 #[cfg(feature = "internal")]
-macro_rules ! quote_crate {
+macro_rules ! quote_core {
     ($($p:tt)*) => {
         quote!(elysian_core::$($p)*)
     }
 }
 
 #[cfg(not(feature = "internal"))]
-macro_rules ! quote_crate {
+macro_rules ! quote_core {
     ($($p:tt)*) => {
         quote!(elysian::core::$($p)*)
+    }
+}
+
+#[cfg(feature = "internal")]
+macro_rules ! quote_ir {
+    ($($p:tt)*) => {
+        quote!(elysian_ir::$($p)*)
+    }
+}
+
+#[cfg(not(feature = "internal"))]
+macro_rules ! quote_ir {
+    ($($p:tt)*) => {
+        quote!(elysian::ir::$($p)*)
     }
 }
 
@@ -61,7 +75,7 @@ impl SynToElysian {
             .map(|stmt| self.parse_stmt(stmt))
             .collect();
 
-        quote_crate!(ir::ast::Block([#(#stmts),*].into_iter().collect()))
+        quote_ir!(ast::Block([#(#stmts),*].into_iter().collect()))
     }
 
     pub fn parse_stmt(&self, stmt: &SynStmt) -> TokenStream {
@@ -83,7 +97,7 @@ impl SynToElysian {
                         .expr,
                 );
 
-                quote_crate!(ir::ast::Stmt::Bind { prop: #prop, expr: #expr })
+                quote_ir!(ast::Stmt::Bind { prop: #prop, expr: #expr })
             }
             SynStmt::Expr(expr, _) => self.parse_expr(expr),
             t => unimplemented!("read_stmt: {t:#?}"),
@@ -98,15 +112,15 @@ impl SynToElysian {
                 let path = self.expr_path_inner(left);
 
                 if self.passthrough_idents.contains(&path[0]) {
-                    quote_crate! {
-                        ir::ast::Stmt::Write {
+                    quote_ir! {
+                        ast::Stmt::Write {
                             path: (#(#path.clone()),*).clone(),
                             expr: #expr,
                         }
                     }
                 } else {
-                    quote_crate! {
-                        ir::ast::Stmt::Write {
+                    quote_ir! {
+                        ast::Stmt::Write {
                             path: [#(#path.clone().into()),*].into_iter().collect(),
                             expr: #expr,
                         }
@@ -135,7 +149,7 @@ impl SynToElysian {
                 }
             }
             SynExpr::Block(ExprBlock { block, .. }) => self.parse_block(block),
-            SynExpr::Break(_) => quote_crate!(ir::ast::Stmt::Break),
+            SynExpr::Break(_) => quote_ir!(ast::Stmt::Break),
             SynExpr::Call(ExprCall { func, args, .. }) => {
                 let args: Vec<_> = args.into_iter().map(|arg| self.parse_expr(arg)).collect();
                 let function = match &**func {
@@ -146,7 +160,7 @@ impl SynToElysian {
                     t => unimplemented!("SynExpr::Call: {t:#?}"),
                 };
 
-                quote_crate!(ir::ast::Expr::Call { function: #function, args: [#(#args),*].into_iter().collect() })
+                quote_ir!(ast::Expr::Call { function: #function, args: [#(#args),*].into_iter().collect() })
             }
             SynExpr::Field(_) | SynExpr::Path(_) => {
                 let path = self.expr_path_inner(expr);
@@ -154,7 +168,7 @@ impl SynToElysian {
                 if self.passthrough_idents.contains(&path[0]) {
                     quote!((#(#path),*).clone())
                 } else {
-                    quote_crate!(ir::ast::Expr::Read([#(#path.clone().into()),*].into_iter().collect()))
+                    quote_ir!(ast::Expr::Read([#(#path.clone().into()),*].into_iter().collect()))
                 }
             }
             SynExpr::If(ExprIf {
@@ -166,18 +180,18 @@ impl SynToElysian {
                 let cond = self.parse_expr(cond);
 
                 let then = self.parse_block(then_branch);
-                let then = quote_crate!(ir::ast::Stmt::Block(#then));
+                let then = quote_ir!(ast::Stmt::Block(#then));
 
                 let otherwise = match else_branch {
                     Some((_, otherwise)) => {
                         let otherwise = self.parse_expr(otherwise);
-                        let otherwise = quote_crate!(ir::ast::Stmt::Block(#otherwise));
+                        let otherwise = quote_ir!(ast::Stmt::Block(#otherwise));
                         quote!(Some(#otherwise.box_stmt()))
                     }
                     None => quote!(None),
                 };
 
-                quote_crate!(ir::ast::Stmt::If {
+                quote_ir!(ast::Stmt::If {
                     cond: #cond,
                     then: #then.box_stmt(),
                     otherwise: #otherwise,
@@ -187,45 +201,45 @@ impl SynToElysian {
                 syn::Lit::Int(i) => match i.suffix() {
                     "" | "u" | "u8" | "u16" | "u32" | "u64" => {
                         let i: u64 = i.base10_parse().expect("Failed to parse UInt");
-                        let num = quote_crate!(ast::number::Number::UInt(#i));
-                        let val = quote_crate!(ir::ast::Value::Number(#num));
-                        quote_crate!(ir::ast::Expr::Literal(#val))
+                        let num = quote_core!(ast::number::Number::UInt(#i));
+                        let val = quote_ir!(ast::Value::Number(#num));
+                        quote_ir!(ast::Expr::Literal(#val))
                     }
                     "i" | "i8" | "i16" | "i32" | "i64" => {
                         let i: i64 = i.base10_parse().expect("Failed to parse SInt");
-                        let num = quote_crate!(ast::number::Number::SInt(#i));
-                        let val = quote_crate!(ir::ast::Value::Number(#num));
-                        quote_crate!(ir::ast::Expr::Literal(#val))
+                        let num = quote_core!(ast::number::Number::SInt(#i));
+                        let val = quote_ir!(ast::Value::Number(#num));
+                        quote_ir!(ast::Expr::Literal(#val))
                     }
                     _ => panic!("Unrecognized suffix"),
                 },
                 syn::Lit::Float(f) => {
                     let f: f64 = f.base10_parse::<f64>().expect("Failed to parse float");
-                    let num = quote_crate!(ast::number::Number::Float(#f));
-                    let val = quote_crate!(ir::ast::Value::Number(#num));
-                    quote_crate!(ir::ast::Expr::Literal(#val))
+                    let num = quote_core!(ast::number::Number::Float(#f));
+                    let val = quote_ir!(ast::Value::Number(#num));
+                    quote_ir!(ast::Expr::Literal(#val))
                 }
                 syn::Lit::Bool(b) => {
                     let b = b.value;
-                    quote_crate!(ir::ast::Expr::Literal(Value::Boolean(#b)))
+                    quote_ir!(ast::Expr::Literal(Value::Boolean(#b)))
                 }
                 t => unimplemented!("SynExpr::Lit: {t:#?}"),
             },
             SynExpr::Loop(ExprLoop { body, .. }) => {
                 let block = self.parse_block(body);
-                quote_crate!(ir::ast::Stmt::Loop {
+                quote_ir!(ast::Stmt::Loop {
                     stmt: Stmt::Block(#block).box_stmt(),
                 })
             }
             SynExpr::Paren(ExprParen { expr, .. }) => self.parse_expr(expr),
             SynExpr::Return(ExprReturn { expr, .. }) => {
                 let expr = self.parse_expr(expr.as_ref().expect("No expression for return"));
-                quote_crate!(ir::ast::Stmt::Output(#expr))
+                quote_ir!(ast::Stmt::Output(#expr))
             }
             SynExpr::Struct(ExprStruct { path, fields, .. }) => {
                 let ident = path.get_ident().expect("Struct path is not an ident");
 
-                let structure = quote_crate!(ir::module::StructIdentifier(#ident.clone()));
+                let structure = quote_ir!(module::StructIdentifier(#ident.clone()));
 
                 let (keys, values): (Vec<_>, Vec<_>) = fields
                     .into_iter()
@@ -240,7 +254,7 @@ impl SynToElysian {
                     })
                     .unzip();
 
-                quote_crate!(ir::ast::Expr::Struct(#structure, [#((#keys, #values)),*].into_iter().collect()))
+                quote_ir!(ast::Expr::Struct(#structure, [#((#keys, #values)),*].into_iter().collect()))
             }
             SynExpr::Unary(u) => match u.op {
                 syn::UnOp::Neg(_) => {

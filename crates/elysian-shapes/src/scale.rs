@@ -3,14 +3,12 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::{
-    ast::expr::{Expr, IntoExpr},
-    ir::{
-        ast::{DISTANCE, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
-        module::{AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
-    },
-};
+use elysian_core::ast::expr::{Expr, IntoExpr};
 use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    ast::{DISTANCE, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
+    module::{AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
+};
 use elysian_proc_macros::{elysian_expr, elysian_stmt};
 
 pub struct Scale {
@@ -52,8 +50,8 @@ impl AsIR for Scale {
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
-        let factor = elysian_core::ir::ast::Expr::from(self.factor.clone());
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
+        let factor = elysian_ir::ast::Expr::from(self.factor.clone());
 
         let (position, factor_vec) = match (
             spec.contains(&POSITION_2D.into()),
@@ -85,7 +83,7 @@ impl AsIR for Scale {
             .collect()
     }
 
-    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
         self.field.structs()
     }
 }

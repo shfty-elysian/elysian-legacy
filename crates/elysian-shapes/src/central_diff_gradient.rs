@@ -7,14 +7,12 @@ use crate::{
     combine::{LEFT, RIGHT},
     modify::{Translate, TRANSLATE},
 };
-use elysian_core::{
-    ast::number::Number,
-    ir::{
-        ast::{IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
-        module::{AsIR, Domains, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
-    },
-};
+use elysian_core::ast::number::Number;
 use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    ast::{IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
+    module::{AsIR, Domains, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
+};
 use elysian_proc_macros::elysian_expr;
 
 pub struct CentralDiffGradient {
@@ -51,7 +49,7 @@ impl AsIR for CentralDiffGradient {
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
         let entry_point = entry_point.clone();
 
         let (gradient, vec_x, vec_y) = if spec.contains(&GRADIENT_2D.into()) {
@@ -109,7 +107,7 @@ impl AsIR for CentralDiffGradient {
             .collect()
     }
 
-    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
         self.field.structs()
     }
 }

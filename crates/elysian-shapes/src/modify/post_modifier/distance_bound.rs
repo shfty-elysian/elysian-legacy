@@ -1,20 +1,18 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::{
-    ast::{
-        expr::{Expr, IntoExpr},
-        identifier::Identifier,
-        property_identifier::PropertyIdentifier,
+use elysian_core::ast::{
+    expr::{Expr, IntoExpr},
+    identifier::Identifier,
+    property_identifier::PropertyIdentifier,
+};
+use elysian_ir::{
+    ast::{Block, DISTANCE, POSITION_2D, POSITION_3D},
+    module::{
+        AsIR, FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+        SpecializationData, Type, CONTEXT,
     },
-    ir::{
-        ast::{Block, DISTANCE, POSITION_2D, POSITION_3D},
-        module::{
-            AsIR, FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
-            SpecializationData, Type, CONTEXT,
-        },
-        module::{Domains, HashIR},
-    },
+    module::{Domains, HashIR},
     property,
 };
 
@@ -62,7 +60,7 @@ impl AsIR for DistanceBound {
         }
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         vec![self.bound.clone().into(), input]
     }
 

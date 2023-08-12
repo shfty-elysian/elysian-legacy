@@ -1,17 +1,15 @@
-use elysian_core::{
-    ast::{number::Number, property_identifier::PropertyIdentifier},
-    ir::{
-        ast::{
-            Expr, Stmt, Struct, Value, COLOR, MATRIX2, MATRIX3, MATRIX4, POSITION_2D, VECTOR2,
-            VECTOR3, VECTOR4,
-        },
-        module::{
-            FunctionDefinition, Module as ElysianModule, NumericType, Type as ElysianType, CONTEXT,
-            SAFE_NORMALIZE_2, SAFE_NORMALIZE_3, SAFE_NORMALIZE_4,
-        },
+use elysian_core::ast::{number::Number, property_identifier::PropertyIdentifier};
+use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    ast::{
+        Expr, Stmt, Struct, Value, COLOR, MATRIX2, MATRIX3, MATRIX4, POSITION_2D, VECTOR2, VECTOR3,
+        VECTOR4,
+    },
+    module::{
+        FunctionDefinition, Module as ElysianModule, NumericType, Type as ElysianType, CONTEXT,
+        SAFE_NORMALIZE_2, SAFE_NORMALIZE_3, SAFE_NORMALIZE_4,
     },
 };
-use elysian_decl_macros::elysian_function;
 use elysian_shapes::modify::ASPECT;
 use indexmap::IndexMap;
 use naga::{
@@ -381,7 +379,7 @@ impl<'a> NagaBuilder<'a> {
         (local, pointer)
     }
 
-    fn get_input_type(&self, id: &PropertyIdentifier) -> &elysian_core::ir::module::Type {
+    fn get_input_type(&self, id: &PropertyIdentifier) -> &elysian_ir::module::Type {
         #[cfg(feature = "print")]
         println!("get_input_type");
 

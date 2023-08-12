@@ -3,11 +3,11 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::ir::{
+use elysian_decl_macros::elysian_function;
+use elysian_ir::{
     ast::{Expr, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
     module::{AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, CONTEXT},
 };
-use elysian_decl_macros::elysian_function;
 use elysian_proc_macros::elysian_stmt;
 
 pub const CROSS_SECTION: FunctionIdentifier =
@@ -48,7 +48,7 @@ impl AsIR for CrossSection {
         &self,
         spec: &SpecializationData,
         _: &FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
         if !spec.contains(&POSITION_2D.into()) {
             panic!("CrossSection is only compatible with the 2D position domain");
         }
@@ -79,7 +79,7 @@ impl AsIR for CrossSection {
             .collect()
     }
 
-    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
         self.field.structs()
     }
 }

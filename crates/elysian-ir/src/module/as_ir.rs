@@ -5,18 +5,18 @@ use std::{
     sync::OnceLock,
 };
 
+use elysian_core::{
+    ast::{identifier::Identifier, property_identifier::PropertyIdentifier},
+    uuid::Uuid,
+};
 use indexmap::{IndexMap, IndexSet};
-use uuid::Uuid;
 
 use crate::{
-    ast::{identifier::Identifier, property_identifier::PropertyIdentifier},
-    ir::{
-        ast::{
-            Block, Expr, Property, Stmt, COMBINE_CONTEXT, MATRIX2_STRUCT, MATRIX3_STRUCT,
-            MATRIX4_STRUCT, VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT,
-        },
-        module::{FieldDefinition, HashIR},
+    ast::{
+        Block, Expr, Property, Stmt, COMBINE_CONTEXT, MATRIX2_STRUCT, MATRIX3_STRUCT,
+        MATRIX4_STRUCT, VECTOR2_STRUCT, VECTOR3_STRUCT, VECTOR4_STRUCT,
     },
+    module::{FieldDefinition, HashIR},
 };
 
 use super::{
@@ -110,8 +110,8 @@ fn block_props(block: &Block) -> Vec<PropertyIdentifier> {
 #[macro_export]
 macro_rules! property {
     ($id:ident, $prop:ident, $ty:expr) => {
-        #[linkme::distributed_slice(elysian_core::ir::module::PROPERTIES)]
-        static $prop: elysian_core::ir::ast::Property = elysian_core::ir::ast::Property {
+        #[linkme::distributed_slice($crate::module::PROPERTIES)]
+        static $prop: $crate::ast::Property = $crate::ast::Property {
             id: elysian_core::ast::property_identifier::PropertyIdentifier($id),
             ty: $ty,
         };

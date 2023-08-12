@@ -1,19 +1,16 @@
 use std::{fmt::Debug, hash::Hash};
 
-use elysian_core::{
+use elysian_core::ast::{
+    expr::{Expr, IntoExpr},
+    property_identifier::PropertyIdentifier,
+};
+use elysian_ir::{
     ast::{
-        expr::{Expr, IntoExpr},
-        property_identifier::PropertyIdentifier,
+        vector2, vector3, Block, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
     },
-    ir::{
-        ast::{
-            vector2, vector3, Block, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D,
-            POSITION_3D,
-        },
-        module::{
-            AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            SpecializationData, CONTEXT,
-        },
+    module::{
+        AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
+        SpecializationData, CONTEXT,
     },
 };
 
@@ -102,7 +99,7 @@ impl AsIR for Mirror {
 
         match &self.mode {
             MirrorMode::Basis(basis) => {
-                let basis = elysian_core::ir::ast::Expr::from(basis.clone());
+                let basis = elysian_ir::ast::Expr::from(basis.clone());
                 block.push(elysian_stmt! {
                     CONTEXT.position =
                         CONTEXT.position
@@ -113,7 +110,7 @@ impl AsIR for Mirror {
                 });
             }
             MirrorMode::Axis(axis) => {
-                let axis = elysian_core::ir::ast::Expr::from(axis.clone());
+                let axis = elysian_ir::ast::Expr::from(axis.clone());
                 block.push(elysian_stmt! {
                     if CONTEXT.position.dot(#axis) < 0.0 {
                         CONTEXT.position = CONTEXT.position - (2.0 * CONTEXT.position.dot(#axis)) * #axis
@@ -131,7 +128,7 @@ impl AsIR for Mirror {
         if let Some(gradient) = gradient {
             match &self.mode {
                 MirrorMode::Basis(basis) => {
-                    let basis = elysian_core::ir::ast::Expr::from(basis.clone());
+                    let basis = elysian_ir::ast::Expr::from(basis.clone());
                     block.push(elysian_stmt! {
                         CONTEXT.gradient = CONTEXT.gradient * (
                             position.sign()
@@ -140,7 +137,7 @@ impl AsIR for Mirror {
                     });
                 }
                 MirrorMode::Axis(axis) => {
-                    let axis = elysian_core::ir::ast::Expr::from(axis.clone());
+                    let axis = elysian_ir::ast::Expr::from(axis.clone());
                     block.push(elysian_stmt! {
                         if position.dot(#axis) < 0.0 {
                             CONTEXT.gradient = CONTEXT.gradient - (2.0 * CONTEXT.gradient.dot(#axis)) * #axis
@@ -169,7 +166,7 @@ impl AsIR for Mirror {
             .collect()
     }
 
-    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
         self.field.structs()
     }
 }

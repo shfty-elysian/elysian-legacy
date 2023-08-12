@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 elysian-core = { path = "../../crates/elysian-core" }
+elysian-ir = { path = "../../crates/elysian-ir" }
 elysian-shapes = { path = "../../crates/elysian-shapes" }
 elysian-text = { path = "../../crates/elysian-text" }
 elysian-proc-macros = { path = "../../crates/elysian-proc-macros" }

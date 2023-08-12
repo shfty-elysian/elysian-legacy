@@ -1,17 +1,15 @@
 use std::fmt::Debug;
 
 use crate::{
-    ast::{expr::Expr as ElysianExpr, property_identifier::PropertyIdentifier},
-    ir::{
-        ast::{
-            Value, W_AXIS_4, X_AXIS_2, X_AXIS_3, X_AXIS_4, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z_AXIS_3,
-            Z_AXIS_4,
-        },
-        module::{
-            FunctionDefinition, FunctionIdentifier, NumericType, StructIdentifier, Type, CONTEXT,
-        },
+    ast::{
+        Value, W_AXIS_4, X_AXIS_2, X_AXIS_3, X_AXIS_4, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z_AXIS_3,
+        Z_AXIS_4,
+    },
+    module::{
+        FunctionDefinition, FunctionIdentifier, NumericType, StructIdentifier, Type, CONTEXT,
     },
 };
+use elysian_core::ast::{expr::Expr as ElysianExpr, property_identifier::PropertyIdentifier};
 
 use super::{stmt::Stmt, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, X, Y, Z};
 
@@ -256,9 +254,9 @@ impl Expr {
             Literal(v) => match v {
                 Value::Boolean(_) => Type::Boolean,
                 Value::Number(n) => Type::Number(match n {
-                    crate::ast::number::Number::UInt(_) => NumericType::UInt,
-                    crate::ast::number::Number::SInt(_) => NumericType::SInt,
-                    crate::ast::number::Number::Float(_) => NumericType::Float,
+                    elysian_core::ast::number::Number::UInt(_) => NumericType::UInt,
+                    elysian_core::ast::number::Number::SInt(_) => NumericType::SInt,
+                    elysian_core::ast::number::Number::Float(_) => NumericType::Float,
                 }),
                 Value::Struct(s) => Type::Struct(s.id.clone()),
             },

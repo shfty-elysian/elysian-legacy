@@ -1,4 +1,4 @@
-use elysian_core::ir::module::IntoAsIR;
+use elysian_ir::module::IntoAsIR;
 use elysian_shapes::field::Infinity;
 
 pub fn a() -> impl IntoAsIR {

@@ -1,13 +1,9 @@
 use std::hash::Hash;
 
-use elysian_core::{
-    ast::property_identifier::PropertyIdentifier,
-    ir::{
-        ast::{IntoLiteral, DISTANCE},
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT,
-        },
-    },
+use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_ir::{
+    ast::{IntoLiteral, DISTANCE},
+    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},
 };
 
 use elysian_decl_macros::elysian_function;

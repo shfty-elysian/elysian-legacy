@@ -1,16 +1,13 @@
 use std::hash::Hash;
 
-use elysian_core::{
-    ast::property_identifier::PropertyIdentifier,
-    ir::{
-        ast::{
-            Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y,
-            Z,
-        },
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            SpecializationData, CONTEXT,
-        },
+use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_ir::{
+    ast::{
+        Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y, Z,
+    },
+    module::{
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData,
+        CONTEXT,
     },
 };
 

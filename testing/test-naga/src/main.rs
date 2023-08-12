@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use elysian::{
-    core::ir::module::{IntoAsIR, SpecializationData},
+    ir::module::{IntoAsIR, SpecializationData},
     shadertoy::module_to_shadertoy,
 };
 

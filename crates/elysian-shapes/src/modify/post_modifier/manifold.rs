@@ -1,13 +1,14 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::{ir::{
+use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_ir::{
     ast::{Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM, UV, X},
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, 
-        SpecializationData, CONTEXT,
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData,
+        CONTEXT,
     },
-}, ast::property_identifier::PropertyIdentifier};
+};
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 pub const MANIFOLD: FunctionIdentifier = FunctionIdentifier::new("manifold", 7861274791729269697);

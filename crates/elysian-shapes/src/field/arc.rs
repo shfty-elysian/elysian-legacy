@@ -1,16 +1,12 @@
 use std::hash::Hash;
 
-use elysian_core::{
-    ast::{
-        expr::{Expr, IntoExpr},
-        property_identifier::PropertyIdentifier,
-    },
-    ir::{
-        ast::{DISTANCE, GRADIENT_2D, NUM, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT,
-        },
-    },
+use elysian_core::ast::{
+    expr::{Expr, IntoExpr},
+    property_identifier::PropertyIdentifier,
+};
+use elysian_ir::{
+    ast::{DISTANCE, GRADIENT_2D, NUM, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
+    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},
 };
 
 use elysian_decl_macros::elysian_function;
@@ -51,7 +47,7 @@ impl AsIR for Arc {
         ARC
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         vec![self.angle.clone().into(), self.radius.clone().into(), input]
     }
 

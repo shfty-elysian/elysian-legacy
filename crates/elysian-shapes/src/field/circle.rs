@@ -1,14 +1,14 @@
 use std::{fmt::Debug, hash::Hash};
 
-use elysian_core::{
-    ast::{expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier},
-    ir::{
-        module::{AsIR, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT},
-        module::{Domains, IntoRead},
-    },
-    property,
+use elysian_core::ast::{
+    expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
 use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    module::{AsIR, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT},
+    module::{Domains, IntoRead},
+    property,
+};
 
 use crate::modify::Isosurface;
 
@@ -53,7 +53,7 @@ impl AsIR for Circle {
         CIRCLE
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         vec![self.radius.clone().into(), input]
     }
 
@@ -61,7 +61,7 @@ impl AsIR for Circle {
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
         let (_, point_call, point_functions) = Point.call(spec, PropertyIdentifier(CONTEXT).read());
 
         let (_, isosurface_entry, isosurface_functions) =

@@ -1,17 +1,14 @@
 use std::fmt::Debug;
 
 use crate::combine::{LEFT, OUT, RIGHT};
-use elysian_core::{
-    ast::{
-        expr::{Expr, IntoExpr},
-        property_identifier::PropertyIdentifier,
-    },
-    ir::{
-        ast::{COMBINE_CONTEXT, DISTANCE, NUM},
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition,
-            SpecializationData,
-        },
+use elysian_core::ast::{
+    expr::{Expr, IntoExpr},
+    property_identifier::PropertyIdentifier,
+};
+use elysian_ir::{
+    ast::{COMBINE_CONTEXT, DISTANCE, NUM},
+    module::{
+        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData,
     },
 };
 
@@ -43,7 +40,7 @@ impl AsIR for SmoothUnion {
         FunctionIdentifier(SMOOTH_UNION.0.concat(&self.prop))
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         vec![self.k.clone().into(), input]
     }
 

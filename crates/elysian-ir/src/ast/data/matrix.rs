@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 
 use crate::{
-    ast::{identifier::Identifier, property_identifier::PropertyIdentifier},
-    ir::module::{FieldDefinition, StructDefinition, StructIdentifier, Type},
+    module::{FieldDefinition, StructDefinition, StructIdentifier, Type},
     property,
 };
+use elysian_core::ast::{identifier::Identifier, property_identifier::PropertyIdentifier};
 
 use super::{VECTOR2, VECTOR3, VECTOR4};
 

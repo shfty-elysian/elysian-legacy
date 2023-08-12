@@ -1,4 +1,4 @@
-use crate::ir::ast::{Block, Stmt};
+use crate::ast::{Block, Stmt};
 
 pub trait IntoBlock: IntoIterator<Item = Stmt> {
     fn block(self) -> Block;

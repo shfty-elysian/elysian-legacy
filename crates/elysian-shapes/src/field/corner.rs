@@ -1,14 +1,10 @@
 use std::hash::Hash;
 
 use crate::combine::{Combinator, COMBINE_CONTEXT_STRUCT};
-use elysian_core::{
-    ast::{expr::Expr, property_identifier::PropertyIdentifier},
-    ir::{
-        ast::{DISTANCE, POSITION_2D, POSITION_3D},
-        module::{
-            AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT,
-        },
-    },
+use elysian_core::ast::{expr::Expr, property_identifier::PropertyIdentifier};
+use elysian_ir::{
+    ast::{DISTANCE, POSITION_2D, POSITION_3D},
+    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},
 };
 
 use elysian_decl_macros::elysian_function;
@@ -96,7 +92,7 @@ impl AsIR for Corner {
             .collect()
     }
 
-    fn structs(&self) -> Vec<elysian_core::ir::module::StructDefinition> {
+    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
         vec![COMBINE_CONTEXT_STRUCT.clone()]
     }
 }

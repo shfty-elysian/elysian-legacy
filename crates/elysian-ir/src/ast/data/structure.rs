@@ -4,10 +4,8 @@ use rust_gpu_bridge::{
 };
 use tracing::instrument;
 
-use crate::{
-    ast::{number::Number, property_identifier::PropertyIdentifier},
-    ir::{ast::Value, module::StructIdentifier},
-};
+use crate::{ast::Value, module::StructIdentifier};
+use elysian_core::ast::{number::Number, property_identifier::PropertyIdentifier};
 use std::{
     collections::BTreeMap,
     fmt::{Debug, Display},

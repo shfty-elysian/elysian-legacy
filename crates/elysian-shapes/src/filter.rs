@@ -3,11 +3,11 @@ use std::hash::{Hash, Hasher};
 
 use elysian_core::ast::identifier::Identifier;
 use elysian_core::ast::property_identifier::PropertyIdentifier;
-use elysian_core::ir::module::StructDefinition;
+use elysian_ir::module::StructDefinition;
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
-use elysian_core::{
-    ir::module::{
+use elysian_ir::{
+    module::{
         AsIR, DomainsDyn, DynAsIR, FunctionDefinition, FunctionIdentifier, InputDefinition,
         IntoAsIR, SpecializationData, StructIdentifier, Type, CONTEXT,
     },

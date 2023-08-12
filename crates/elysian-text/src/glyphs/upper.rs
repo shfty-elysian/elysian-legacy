@@ -1,12 +1,10 @@
-use elysian_core::{
-    ast::{
-        expr::{IntoLiteral, IntoPath},
-        property_identifier::IntoPropertyIdentifier,
-    },
-    ir::{
-        ast::{POSITION_2D, X, Y},
-        module::IntoAsIR,
-    },
+use elysian_core::ast::{
+    expr::{IntoLiteral, IntoPath},
+    property_identifier::IntoPropertyIdentifier,
+};
+use elysian_ir::{
+    ast::{POSITION_2D, X, Y},
+    module::IntoAsIR,
 };
 use elysian_shapes::{
     combine::{Combine, Union},

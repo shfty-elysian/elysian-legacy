@@ -1,17 +1,15 @@
 use std::{fmt::Debug, hash::Hash};
 
-use elysian_core::{
-    ast::{
-        expr::{Expr, IntoExpr},
-        identifier::Identifier,
-        property_identifier::PropertyIdentifier,
-    },
-    ir::module::{
-        AsIR, Domains, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT,
-    },
-    property,
+use elysian_core::ast::{
+    expr::{Expr, IntoExpr},
+    identifier::Identifier,
+    property_identifier::PropertyIdentifier,
 };
 use elysian_decl_macros::elysian_function;
+use elysian_ir::{
+    module::{AsIR, Domains, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT},
+    property,
+};
 use elysian_proc_macros::elysian_stmt;
 
 use crate::modify::{Isosurface, Manifold};
@@ -61,7 +59,7 @@ impl AsIR for Ring {
         RING
     }
 
-    fn arguments(&self, input: elysian_core::ir::ast::Expr) -> Vec<elysian_core::ir::ast::Expr> {
+    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
         vec![self.radius.clone().into(), self.width.clone().into(), input]
     }
 
@@ -69,7 +67,7 @@ impl AsIR for Ring {
         &self,
         spec: &SpecializationData,
         entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_core::ir::module::FunctionDefinition> {
+    ) -> Vec<elysian_ir::module::FunctionDefinition> {
         let (_, circle_call, circle_functions) =
             Circle::new(self.radius.clone()).call(spec, elysian_stmt! { CONTEXT });
 

@@ -1,9 +1,9 @@
-use elysian_core::{
-    ast::{
-        expr::{Expr, IntoExpr, IntoLiteral, IntoPath, IntoRead},
-        property_identifier::IntoPropertyIdentifier,
-    },
-    ir::ast::{DISTANCE, ERROR, GRADIENT_2D, NORMAL, POSITION_2D, POSITION_3D, UV, X, Y, Z},
+use elysian_core::ast::{
+    expr::{Expr, IntoExpr, IntoLiteral, IntoPath, IntoRead},
+    property_identifier::IntoPropertyIdentifier,
+};
+use elysian_ir::ast::{
+    DISTANCE, ERROR, GRADIENT_2D, NORMAL, POSITION_2D, POSITION_3D, UV, X, Y, Z,
 };
 
 use crate::{derive_support_vector::SUPPORT_VECTOR_2D, modify::REPEAT_ID_2D, voronoi::CELL_ID};

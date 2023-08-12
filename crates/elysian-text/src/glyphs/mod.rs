@@ -1,7 +1,8 @@
-use elysian_core::{ir::{
+use elysian_core::ast::expr::IntoPath;
+use elysian_ir::{
     ast::{COLOR, X, Y},
     module::{DynAsIR, IntoAsIR},
-}, ast::expr::IntoPath};
+};
 use elysian_shapes::combine::{Combinator, Combine};
 use elysian_shapes::modify::IntoModify;
 use elysian_shapes::{

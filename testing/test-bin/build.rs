@@ -1,4 +1,4 @@
-use elysian_core::ir::module::SpecializationData;
+use elysian_ir::module::SpecializationData;
 use elysian_static::static_shapes;
 
 fn main() {
