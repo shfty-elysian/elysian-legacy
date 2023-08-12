@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use crate::combine::{Combinator, COMBINE_CONTEXT_STRUCT};
+use crate::combine::{CombineBuilder, COMBINE_CONTEXT_STRUCT};
 use elysian_core::{expr::Expr, property_identifier::PropertyIdentifier};
 use elysian_ir::{
     ast::{DISTANCE, POSITION_2D, POSITION_3D},
@@ -69,7 +69,7 @@ impl AsIR for Corner {
             _ => panic!("Invalid position domain"),
         };
 
-        let combinator = Combinator::build()
+        let combinator = CombineBuilder::build()
             .push(Sided::left())
             .push(Displace::new(DISTANCE));
 

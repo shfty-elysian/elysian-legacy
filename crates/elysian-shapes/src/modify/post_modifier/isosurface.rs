@@ -23,7 +23,7 @@ pub const DIST: Identifier = Identifier::new("dist", 463524741302033362);
 property!(DIST, DIST_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Isosurface {
     dist: AstExpr,
 }
@@ -103,6 +103,7 @@ impl AsIR for Isosurface {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serialize)]
 impl PostModifier for Isosurface {}
 
 pub trait IntoIsosurface {

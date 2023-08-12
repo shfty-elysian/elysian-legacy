@@ -38,14 +38,14 @@ property!(
 );
 
 #[derive(Debug, Hash, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum BoundType {
     Lower,
     Upper,
 }
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BasisBound {
     ty: BoundType,
     bound: Expr,
@@ -161,6 +161,7 @@ impl AsIR for BasisBound {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PreModifier for BasisBound {}
 
 pub trait IntoBasisBound {

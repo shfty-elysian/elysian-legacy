@@ -81,6 +81,7 @@ impl AsIR for Manifold {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serialize)]
 impl PostModifier for Manifold {}
 
 pub trait IntoManifold {

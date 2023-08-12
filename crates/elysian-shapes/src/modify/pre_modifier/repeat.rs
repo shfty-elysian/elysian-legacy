@@ -60,7 +60,7 @@ property!(
 );
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Repeat {
     pub period: Expr,
     pub range: Option<(Expr, Expr)>,
@@ -137,6 +137,7 @@ impl AsIR for Repeat {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PreModifier for Repeat {}
 
 pub trait IntoRepeat {

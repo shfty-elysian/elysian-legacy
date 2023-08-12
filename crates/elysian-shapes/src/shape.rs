@@ -5,11 +5,11 @@ use elysian_ir::{
 };
 
 #[cfg_attr(feature = "serde", typetag::serialize(tag = "type"))]
-pub trait Shape: AsIR {}
+pub trait Shape: AsIR + typetag::Serialize + typetag::Deserialize {}
 
 #[cfg(feature = "serde")]
 #[cfg_attr(feature = "serde", typetag::serialize)]
-impl<T> Shape for T where T: AsIR + serde::Serialize {}
+impl<T> Shape for T where T: AsIR + typetag::Serialize {}
 
 #[cfg(not(feature = "serde"))]
 impl<T> Shape for T where T: AsIR {}
@@ -50,10 +50,10 @@ impl AsIR for Box<dyn Shape> {
     }
 }
 
-pub trait IntoShape: 'static + Sized + AsIR {
+pub trait IntoShape: 'static + Sized + Shape {
     fn shape(self) -> DynShape {
         Box::new(self)
     }
 }
 
-impl<T> IntoShape for T where T: 'static + Sized + AsIR {}
+impl<T> IntoShape for T where T: 'static + Sized + Shape {}

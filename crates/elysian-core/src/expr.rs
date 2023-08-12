@@ -25,7 +25,7 @@ impl Path {
 }
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Expr {
     Literal(Value),
     Vector2(BoxExpr, BoxExpr),

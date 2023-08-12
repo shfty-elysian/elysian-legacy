@@ -20,7 +20,7 @@ pub const ASPECT: Identifier = Identifier::new("aspect", 346035631277210970);
 property!(ASPECT, ASPECT_PROP_DEF, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Aspect {
     aspect: Expr,
 }
@@ -61,6 +61,7 @@ impl AsIR for Aspect {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PreModifier for Aspect {}
 
 pub trait IntoAspect {

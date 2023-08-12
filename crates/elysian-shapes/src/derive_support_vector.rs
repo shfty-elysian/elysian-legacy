@@ -27,7 +27,7 @@ property! {
 }
 
 #[derive(Debug, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DeriveSupportVector;
 
 impl DomainsDyn for DeriveSupportVector {
@@ -80,6 +80,7 @@ impl AsIR for DeriveSupportVector {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serialize)]
 impl PostModifier for DeriveSupportVector {}
 
 pub trait IntoDeriveSupportVector {

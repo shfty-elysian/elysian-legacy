@@ -76,6 +76,7 @@ impl AsIR for CartesianToPolar {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PreModifier for CartesianToPolar {}
 
 pub trait IntoCartesianToPolar {

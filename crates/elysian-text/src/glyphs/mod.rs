@@ -12,7 +12,7 @@ use elysian_shapes::{
     select::Select,
 };
 use elysian_shapes::{
-    combine::{Combinator, Combine},
+    combine::{CombineBuilder, Combine},
     shape::IntoShape,
 };
 
@@ -21,8 +21,8 @@ pub mod lower;
 pub mod punct;
 pub mod upper;
 
-pub fn combinator() -> Combinator {
-    Combinator::build().push(Union)
+pub fn combinator() -> CombineBuilder {
+    CombineBuilder::build().push(Union)
 }
 
 pub fn char_field(char: char, cell_size: [f64; 2]) -> impl IntoShape {

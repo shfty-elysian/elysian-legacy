@@ -55,8 +55,8 @@ impl AsIR for CrossSection {
             panic!("CrossSection is only compatible with the 2D position domain");
         }
 
-        let x_axis = Expr::from(self.x_axis.clone());
-        let y_axis = Expr::from(self.y_axis.clone());
+        let x_axis: Expr = self.x_axis.clone().into();
+        let y_axis: Expr = self.y_axis.clone().into();
 
         let (_, field_call, field_functions) = self
             .field

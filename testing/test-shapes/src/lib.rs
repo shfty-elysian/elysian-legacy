@@ -8,7 +8,7 @@ use elysian_shapes::{
         ambient_light_color, directional_light_color, distance_color, gradient_color, normal_color,
         position_3d_color, uv_color,
     },
-    combine::{Combinator, Combine, Overlay, SmoothSubtraction, SmoothUnion, Subtraction, Union},
+    combine::{CombineBuilder, Combine, Overlay, SmoothSubtraction, SmoothUnion, Subtraction, Union},
     field::{Capsule, Chebyshev, Circle, Corner, Infinity, Line, Point, Quad, Ring},
     filter::IntoFilter,
     modify::{
@@ -57,7 +57,7 @@ pub fn union() -> impl IntoShape {
 }
 
 pub fn smooth_union() -> impl IntoShape {
-    Combinator::build()
+    CombineBuilder::build()
         .push(Union)
         .push(SmoothUnion::new(DISTANCE, 0.4))
         .push(SmoothUnion::new(GRADIENT_2D, 0.4))
@@ -68,14 +68,14 @@ pub fn smooth_union() -> impl IntoShape {
 }
 
 pub fn kettle_bell() -> impl IntoShape {
-    Combinator::build()
+    CombineBuilder::build()
         .push(Subtraction)
         .push(SmoothSubtraction::new(DISTANCE, 0.4))
         .push(SmoothSubtraction::new(GRADIENT_2D, 0.4))
         .push(SmoothSubtraction::new(UV, 0.4))
         .combine()
         .push(
-            Combinator::build()
+            CombineBuilder::build()
                 .push(Union)
                 .push(SmoothUnion::new(DISTANCE, 0.4))
                 .push(SmoothUnion::new(GRADIENT_2D, 0.4))

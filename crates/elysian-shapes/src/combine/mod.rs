@@ -1,11 +1,13 @@
 mod blend;
 mod boolean;
+mod builder;
 mod displace;
 mod overlay;
 mod sided;
 
 pub use blend::*;
 pub use boolean::*;
+pub use builder::*;
 pub use displace::*;
 use elysian_core::identifier::Identifier;
 use elysian_core::property_identifier::PropertyIdentifier;
@@ -63,37 +65,6 @@ pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition 
     public: false,
     fields: Cow::Borrowed(COMBINE_CONTEXT_STRUCT_FIELDS),
 };
-
-#[derive(Debug)]
-pub struct Combinator(Vec<DynShape>);
-
-impl Combinator {
-    pub fn build() -> Self {
-        Combinator(Default::default())
-    }
-
-    pub fn push(mut self, combinator: impl IntoShape) -> Self {
-        self.0.push(combinator.shape());
-        self
-    }
-
-    pub fn combine(self) -> Combine {
-        Combine {
-            combinator: self.into_iter().collect(),
-            shapes: Default::default(),
-        }
-    }
-}
-
-impl IntoIterator for Combinator {
-    type Item = DynShape;
-
-    type IntoIter = std::vec::IntoIter<DynShape>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
 
 #[derive(Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]

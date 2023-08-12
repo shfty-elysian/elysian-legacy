@@ -15,7 +15,7 @@ pub const GRADIENT_NORMALS: FunctionIdentifier =
     FunctionIdentifier::new("gradient_normals", 18573716892008865657);
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GradientNormals;
 
 impl Hash for GradientNormals {
@@ -73,6 +73,7 @@ impl AsIR for GradientNormals {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serialize)]
 impl PostModifier for GradientNormals {}
 
 pub trait IntoGradientNormals {

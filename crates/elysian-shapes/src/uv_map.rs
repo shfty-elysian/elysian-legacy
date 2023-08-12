@@ -73,6 +73,7 @@ impl AsIR for UvMap {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serialize)]
 impl PostModifier for UvMap {}
 
 pub trait IntoUvMap {

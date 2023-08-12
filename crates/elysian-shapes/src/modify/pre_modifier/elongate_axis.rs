@@ -26,7 +26,7 @@ pub const DIR_3D: Identifier = Identifier::new("dir_3d", 66909101541205811);
 property!(DIR_3D, DIR_3D_PROP, Type::Struct(StructIdentifier(VECTOR3)));
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ClampMode {
     None,
     Dir,
@@ -45,7 +45,7 @@ impl ToString for ClampMode {
 }
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ElongateAxis {
     pub dir: Expr,
     pub clamp_neg: ClampMode,
@@ -144,6 +144,7 @@ impl AsIR for ElongateAxis {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PreModifier for ElongateAxis {}
 
 pub trait IntoElongateAxis {

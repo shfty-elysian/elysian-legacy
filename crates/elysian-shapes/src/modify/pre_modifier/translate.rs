@@ -33,7 +33,7 @@ property!(
 );
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Translate {
     pub delta: Expr,
 }
@@ -82,6 +82,7 @@ impl AsIR for Translate {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PreModifier for Translate {}
 
 pub trait IntoTranslate {

@@ -20,6 +20,7 @@ use elysian_ir::{
 
 use crate::shape::{DynShape, IntoShape, Shape};
 
+#[cfg_attr(feature = "serde", typetag::serde(tag = "type"))]
 pub trait PreModifier: AsIR {}
 
 pub trait IntoPreModifier: 'static + Sized + PreModifier {
@@ -30,6 +31,7 @@ pub trait IntoPreModifier: 'static + Sized + PreModifier {
 
 impl<T> IntoPreModifier for T where T: 'static + PreModifier {}
 
+#[cfg_attr(feature = "serde", typetag::serialize(tag = "type"))]
 pub trait PostModifier: AsIR {}
 
 pub trait IntoPostModifier: 'static + Sized + PostModifier {

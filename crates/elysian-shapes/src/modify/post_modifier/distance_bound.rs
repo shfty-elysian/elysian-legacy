@@ -30,7 +30,7 @@ pub const BOUND: Identifier = Identifier::new("bound", 906044067471398839);
 property!(BOUND, BOUND_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DistanceBound {
     ty: BoundType,
     bound: Expr,
@@ -104,6 +104,7 @@ impl AsIR for DistanceBound {
     }
 }
 
+#[cfg_attr(feature = "serde", typetag::serialize)]
 impl PostModifier for DistanceBound {}
 
 pub trait IntoDistanceBound {
