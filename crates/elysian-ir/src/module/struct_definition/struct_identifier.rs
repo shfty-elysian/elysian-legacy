@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::ast::Expr;
-use elysian_core::ast::{identifier::Identifier, property_identifier::PropertyIdentifier};
+use elysian_core::{identifier::Identifier, property_identifier::PropertyIdentifier};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StructIdentifier(pub Identifier);

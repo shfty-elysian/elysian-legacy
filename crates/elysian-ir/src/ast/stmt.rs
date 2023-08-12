@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::ast::{Block, Expr};
-use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_core::property_identifier::PropertyIdentifier;
 
 /// Statement consuming the result of an expression
 pub enum Stmt {

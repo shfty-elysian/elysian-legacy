@@ -1,9 +1,12 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::ast::{
-    expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
+use elysian_core::{
+    expr::{Expr, IntoExpr},
+    identifier::Identifier,
+    property_identifier::PropertyIdentifier,
 };
+use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, VECTOR2, X, Y},
     module::{
@@ -12,9 +15,6 @@ use elysian_ir::{
     },
     property,
 };
-
-use elysian_core::ast::expr::Expr;
-use elysian_decl_macros::elysian_function;
 
 pub const ASPECT: Identifier = Identifier::new("aspect", 346035631277210970);
 property!(ASPECT, ASPECT_PROP_DEF, Type::Number(NumericType::Float));

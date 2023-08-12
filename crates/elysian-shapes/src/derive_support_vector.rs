@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::ast::identifier::Identifier;
+use elysian_core::identifier::Identifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
@@ -30,7 +30,7 @@ property! {
 pub struct DeriveSupportVector;
 
 impl DomainsDyn for DeriveSupportVector {
-    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::property_identifier::PropertyIdentifier> {
         vec![
             POSITION_2D.into(),
             POSITION_3D.into(),

@@ -1,4 +1,4 @@
-use elysian_core::ast::{
+use elysian_core::{
     expr::{IntoLiteral, IntoPath},
     property_identifier::IntoPropertyIdentifier,
 };

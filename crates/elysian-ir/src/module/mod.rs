@@ -16,7 +16,7 @@ pub use ty::*;
 
 use indexmap::IndexMap;
 
-use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_core::property_identifier::PropertyIdentifier;
 
 #[derive(Debug)]
 pub struct Module {

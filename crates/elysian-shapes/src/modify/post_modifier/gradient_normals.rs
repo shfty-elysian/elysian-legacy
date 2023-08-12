@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::{GRADIENT_2D, GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z},
     module::{

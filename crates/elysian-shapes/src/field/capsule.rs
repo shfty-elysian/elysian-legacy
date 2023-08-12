@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use elysian_core::ast::{
+use elysian_core::{
     expr::{Expr as ElysianExpr, IntoExpr},
     property_identifier::PropertyIdentifier,
 };

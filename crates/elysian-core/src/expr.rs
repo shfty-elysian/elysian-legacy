@@ -3,8 +3,8 @@ use std::{
     ops::{Add, Div, Mul, Neg, Sub},
 };
 
-use crate::ast::identifier::Identifier;
-use crate::ast::property_identifier::PropertyIdentifier;
+use crate::identifier::Identifier;
+use crate::property_identifier::PropertyIdentifier;
 
 use super::value::Value;
 

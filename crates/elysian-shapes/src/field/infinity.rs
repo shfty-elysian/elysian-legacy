@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::{IntoLiteral, DISTANCE},
     module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},

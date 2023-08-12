@@ -11,7 +11,7 @@ use rust_gpu_bridge::{
 };
 
 use crate::module::StructIdentifier;
-use elysian_core::ast::number::Number;
+use elysian_core::number::Number;
 
 use super::{
     Struct, MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2,
@@ -522,22 +522,22 @@ impl Hash for Value {
     }
 }
 
-impl From<elysian_core::ast::value::Value> for Value {
-    fn from(value: elysian_core::ast::value::Value) -> Self {
+impl From<elysian_core::value::Value> for Value {
+    fn from(value: elysian_core::value::Value) -> Self {
         match value {
-            elysian_core::ast::value::Value::Number(n) => Value::Number(n),
-            elysian_core::ast::value::Value::Vector2(v) => vector2(v),
-            elysian_core::ast::value::Value::Vector3(v) => vector3(v),
-            elysian_core::ast::value::Value::Vector4(v) => vector4(v),
-            elysian_core::ast::value::Value::Matrix2(m) => matrix2(m),
-            elysian_core::ast::value::Value::Matrix3(m) => matrix3(m),
-            elysian_core::ast::value::Value::Matrix4(m) => matrix4(m),
+            elysian_core::value::Value::Number(n) => Value::Number(n),
+            elysian_core::value::Value::Vector2(v) => vector2(v),
+            elysian_core::value::Value::Vector3(v) => vector3(v),
+            elysian_core::value::Value::Vector4(v) => vector4(v),
+            elysian_core::value::Value::Matrix2(m) => matrix2(m),
+            elysian_core::value::Value::Matrix3(m) => matrix3(m),
+            elysian_core::value::Value::Matrix4(m) => matrix4(m),
         }
     }
 }
 
-impl From<Box<elysian_core::ast::value::Value>> for Box<Value> {
-    fn from(value: Box<elysian_core::ast::value::Value>) -> Self {
+impl From<Box<elysian_core::value::Value>> for Box<Value> {
+    fn from(value: Box<elysian_core::value::Value>) -> Self {
         Box::new(Value::from(*value))
     }
 }

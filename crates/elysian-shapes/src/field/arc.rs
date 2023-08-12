@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use elysian_core::ast::{
+use elysian_core::{
     expr::{Expr, IntoExpr},
     property_identifier::PropertyIdentifier,
 };

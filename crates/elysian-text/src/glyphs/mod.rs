@@ -1,4 +1,4 @@
-use elysian_core::ast::expr::IntoPath;
+use elysian_core::expr::IntoPath;
 use elysian_ir::{
     ast::{COLOR, X, Y},
     module::{DynAsIR, IntoAsIR},

@@ -1,4 +1,4 @@
-use elysian_core::ast::{number::Number, property_identifier::PropertyIdentifier};
+use elysian_core::{number::Number, property_identifier::PropertyIdentifier};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{

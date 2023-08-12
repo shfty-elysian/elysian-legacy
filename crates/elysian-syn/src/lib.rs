@@ -1,4 +1,4 @@
-use elysian_core::ast::{identifier::Identifier, property_identifier::PropertyIdentifier};
+use elysian_core::{identifier::Identifier, property_identifier::PropertyIdentifier};
 use elysian_ir::{
     ast::{
         MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2, X_AXIS_3,
@@ -86,9 +86,7 @@ where
 
     items.push(parse_quote! {
         use elysian::{
-            core::{
-                ast::property_identifier::PropertyIdentifier,
-            },
+            core::property_identifier::PropertyIdentifier,
             ir::{
                 ast::{
                     Struct,
@@ -492,15 +490,15 @@ fn expr_to_syn(module: &Module, expr: &IrExpr) -> Expr {
             elysian_ir::ast::Value::Number(n) => Expr::Lit(ExprLit {
                 attrs: vec![],
                 lit: match n {
-                    elysian_core::ast::number::Number::UInt(n) => {
+                    elysian_core::number::Number::UInt(n) => {
                         let n = *n as u32;
                         Lit::Int(LitInt::new(&(n.to_string() + &"u32"), Span::call_site()))
                     }
-                    elysian_core::ast::number::Number::SInt(n) => {
+                    elysian_core::number::Number::SInt(n) => {
                         let n = *n as i32;
                         Lit::Int(LitInt::new(&(n.to_string() + &"i32"), Span::call_site()))
                     }
-                    elysian_core::ast::number::Number::Float(n) => {
+                    elysian_core::number::Number::Float(n) => {
                         let n = *n as f32;
                         Lit::Float(LitFloat::new(&(n.to_string() + &"f32"), Span::call_site()))
                     }

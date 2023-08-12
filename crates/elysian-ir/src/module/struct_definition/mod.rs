@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_core::property_identifier::PropertyIdentifier;
 
 mod struct_identifier;
 pub use struct_identifier::*;

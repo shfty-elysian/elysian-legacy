@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use crate::combine::{LEFT, OUT, RIGHT};
-use elysian_core::ast::{
+use elysian_core::{
     expr::{Expr, IntoExpr},
     property_identifier::PropertyIdentifier,
 };

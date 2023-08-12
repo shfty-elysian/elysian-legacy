@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use elysian_core::ast::identifier::Identifier;
-use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_core::identifier::Identifier;
+use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::module::StructDefinition;
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 

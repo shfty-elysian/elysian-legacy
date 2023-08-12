@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::ast::Expr;
-use elysian_core::{ast::identifier::Identifier, uuid::Uuid};
+use elysian_core::{identifier::Identifier, uuid::Uuid};
 
 use super::SpecializationData;
 

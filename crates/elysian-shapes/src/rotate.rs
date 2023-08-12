@@ -3,7 +3,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::ast::{
+use elysian_core::{
     expr::{Expr, IntoExpr},
     identifier::Identifier,
 };
@@ -33,7 +33,7 @@ impl Hash for Rotate {
 }
 
 impl DomainsDyn for Rotate {
-    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::property_identifier::PropertyIdentifier> {
         self.field
             .domains_dyn()
             .into_iter()

@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use elysian_core::ast::{
+use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
 use elysian_ir::{
@@ -15,7 +15,7 @@ use elysian_ir::{
     property,
 };
 
-use elysian_core::ast::expr::Expr;
+use elysian_core::expr::Expr;
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 pub const FLIP_2D: Identifier = Identifier::new("flip_2d", 4082005642022253885);

@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use elysian_core::ast::{
+use elysian_core::{
     expr::{Expr, IntoExpr},
     identifier::Identifier,
     property_identifier::PropertyIdentifier,

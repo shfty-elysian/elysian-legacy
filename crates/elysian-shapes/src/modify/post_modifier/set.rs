@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::ast::{
+use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
 use elysian_decl_macros::elysian_function;
@@ -15,7 +15,7 @@ pub const SET: FunctionIdentifier = FunctionIdentifier::new("set", 1768232690987
 #[derive(Debug, Clone)]
 pub struct Set {
     id: PropertyIdentifier,
-    expr: elysian_core::ast::expr::Expr,
+    expr: elysian_core::expr::Expr,
 }
 
 impl Hash for Set {

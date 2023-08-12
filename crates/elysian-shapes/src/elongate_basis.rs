@@ -1,7 +1,9 @@
 use std::{fmt::Debug, hash::Hash};
 
-use elysian_core::ast::{
-    expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
+use elysian_core::{
+    expr::{Expr, IntoExpr},
+    identifier::Identifier,
+    property_identifier::PropertyIdentifier,
 };
 use elysian_ir::{
     ast::{
@@ -14,8 +16,6 @@ use elysian_ir::{
     },
     property,
 };
-
-use elysian_core::ast::expr::Expr;
 use elysian_proc_macros::{elysian_block, elysian_expr, elysian_stmt};
 
 pub const EXTENT_2D: Identifier = Identifier::new("extent_2d", 9222786191981609495);

@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::ast::{
+use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
 use elysian_ir::{
@@ -13,7 +13,7 @@ use elysian_ir::{
     property,
 };
 
-use elysian_core::ast::expr::Expr as AstExpr;
+use elysian_core::expr::Expr as AstExpr;
 use elysian_proc_macros::elysian_stmt;
 
 pub const ISOSURFACE: FunctionIdentifier =

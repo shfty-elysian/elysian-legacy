@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::ast::{
+use elysian_core::{
     expr::{Expr, IntoExpr},
     identifier::Identifier,
     property_identifier::PropertyIdentifier,

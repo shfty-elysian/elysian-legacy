@@ -4,7 +4,7 @@ use crate::{
     module::{FieldDefinition, StructDefinition, StructIdentifier, Type},
     property,
 };
-use elysian_core::ast::{identifier::Identifier, property_identifier::PropertyIdentifier};
+use elysian_core::{identifier::Identifier, property_identifier::PropertyIdentifier};
 
 use super::{VECTOR2, VECTOR3, VECTOR4};
 

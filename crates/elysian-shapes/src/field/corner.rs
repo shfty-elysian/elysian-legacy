@@ -1,7 +1,7 @@
 use std::hash::Hash;
 
 use crate::combine::{Combinator, COMBINE_CONTEXT_STRUCT};
-use elysian_core::ast::{expr::Expr, property_identifier::PropertyIdentifier};
+use elysian_core::{expr::Expr, property_identifier::PropertyIdentifier};
 use elysian_ir::{
     ast::{DISTANCE, POSITION_2D, POSITION_3D},
     module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},

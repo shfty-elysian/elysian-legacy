@@ -3,7 +3,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::ast::expr::{Expr, IntoExpr};
+use elysian_core::expr::{Expr, IntoExpr};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
@@ -32,7 +32,7 @@ impl Hash for Scale {
 }
 
 impl DomainsDyn for Scale {
-    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::property_identifier::PropertyIdentifier> {
         self.field
             .domains_dyn()
             .into_iter()

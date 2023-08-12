@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, fmt::Debug, hash::Hasher};
 
-use elysian_core::ast::identifier::Identifier;
+use elysian_core::identifier::Identifier;
 use elysian_ir::{
     ast::Stmt::{self, *},
     ast::{Expr, Struct, Value},

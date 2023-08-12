@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use elysian_core::ast::{
+use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
 use elysian_decl_macros::elysian_function;
@@ -21,7 +21,7 @@ property!(RADIUS, RADIUS_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
 pub struct Circle {
-    radius: elysian_core::ast::expr::Expr,
+    radius: elysian_core::expr::Expr,
 }
 
 impl Circle {

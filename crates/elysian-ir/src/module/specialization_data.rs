@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use crate::ast::{DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV};
-use elysian_core::ast::{identifier::Identifier, property_identifier::PropertyIdentifier};
+use elysian_core::{identifier::Identifier, property_identifier::PropertyIdentifier};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SpecializationData {

@@ -3,7 +3,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::ast::{expr::IntoExpr, identifier::Identifier};
+use elysian_core::{expr::IntoExpr, identifier::Identifier};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{
@@ -97,14 +97,14 @@ property!(MAX_STEPS, MAX_STEPS_PROP, Type::Number(NumericType::UInt));
 #[derive(Debug)]
 pub enum March {
     Fixed {
-        step_size: elysian_core::ast::expr::Expr,
+        step_size: elysian_core::expr::Expr,
     },
     Sphere {
-        epsilon: elysian_core::ast::expr::Expr,
+        epsilon: elysian_core::expr::Expr,
     },
     Lipschitz {
-        epsilon: elysian_core::ast::expr::Expr,
-        falloff_k: elysian_core::ast::expr::Expr,
+        epsilon: elysian_core::expr::Expr,
+        falloff_k: elysian_core::expr::Expr,
     },
 }
 
@@ -115,8 +115,8 @@ pub fn falloff_k(e: f32, r: f32) -> f32 {
 #[derive(Debug)]
 pub struct Raymarch {
     march: March,
-    max_steps: elysian_core::ast::expr::Expr,
-    inv_projection: elysian_core::ast::expr::Expr,
+    max_steps: elysian_core::expr::Expr,
+    inv_projection: elysian_core::expr::Expr,
     field: DynAsIR,
 }
 
@@ -179,7 +179,7 @@ impl Hash for Raymarch {
 }
 
 impl DomainsDyn for Raymarch {
-    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::property_identifier::PropertyIdentifier> {
         self.field.domains_dyn()
     }
 }

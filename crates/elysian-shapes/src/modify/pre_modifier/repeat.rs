@@ -1,7 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::modify::{IntoModify, Modify};
-use elysian_core::ast::{
+use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
 use elysian_ir::{
@@ -13,7 +13,7 @@ use elysian_ir::{
     property,
 };
 
-use elysian_core::ast::expr::Expr;
+use elysian_core::expr::Expr;
 use elysian_decl_macros::elysian_function;
 
 pub const REPEAT_CLAMPED: Identifier = Identifier::new("repeat_clamped", 346035631277210970);

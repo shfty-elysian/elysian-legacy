@@ -3,7 +3,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use elysian_core::ast::identifier::Identifier;
+use elysian_core::identifier::Identifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, ERROR, POSITION_2D, POSITION_3D},
@@ -36,7 +36,7 @@ impl Hash for DeriveBoundingError {
 }
 
 impl DomainsDyn for DeriveBoundingError {
-    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::property_identifier::PropertyIdentifier> {
         self.field
             .domains_dyn()
             .into_iter()

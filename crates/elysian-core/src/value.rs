@@ -1,6 +1,6 @@
 use rust_gpu_bridge::glam::Mat4;
 
-use crate::ast::number::Number;
+use crate::number::Number;
 use std::fmt::Debug;
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]

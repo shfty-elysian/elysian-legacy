@@ -1,5 +1,5 @@
 use crate::combine::{LEFT, OUT, RIGHT};
-use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{COMBINE_CONTEXT, DISTANCE},

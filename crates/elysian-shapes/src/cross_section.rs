@@ -15,8 +15,8 @@ pub const CROSS_SECTION: FunctionIdentifier =
 
 pub struct CrossSection {
     pub field: Box<dyn AsIR>,
-    pub x_axis: elysian_core::ast::expr::Expr,
-    pub y_axis: elysian_core::ast::expr::Expr,
+    pub x_axis: elysian_core::expr::Expr,
+    pub y_axis: elysian_core::expr::Expr,
 }
 
 impl Debug for CrossSection {
@@ -34,7 +34,7 @@ impl Hash for CrossSection {
 }
 
 impl DomainsDyn for CrossSection {
-    fn domains_dyn(&self) -> Vec<elysian_core::ast::property_identifier::PropertyIdentifier> {
+    fn domains_dyn(&self) -> Vec<elysian_core::property_identifier::PropertyIdentifier> {
         self.field.domains_dyn()
     }
 }

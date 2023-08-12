@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::{
         Block, IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV,

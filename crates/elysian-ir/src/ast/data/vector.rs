@@ -4,7 +4,7 @@ use crate::{
     module::{FieldDefinition, NumericType, StructDefinition, StructIdentifier, Type},
     property,
 };
-use elysian_core::ast::{identifier::Identifier, property_identifier::PropertyIdentifier};
+use elysian_core::{identifier::Identifier, property_identifier::PropertyIdentifier};
 
 pub const X: Identifier = Identifier::new("x", 0);
 property!(X, X_PROP, Type::Number(NumericType::Float));

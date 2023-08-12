@@ -1,11 +1,11 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use elysian_core::ast::property_identifier::PropertyIdentifier;
+use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::module::StructDefinition;
 use elysian_proc_macros::elysian_stmt;
 
-use elysian_core::ast::expr::IntoExpr;
+use elysian_core::expr::IntoExpr;
 use elysian_ir::{
     ast::IntoBlock,
     module::{
@@ -16,7 +16,7 @@ use elysian_ir::{
 
 pub struct Select {
     default: DynAsIR,
-    cases: Vec<(elysian_core::ast::expr::Expr, DynAsIR)>,
+    cases: Vec<(elysian_core::expr::Expr, DynAsIR)>,
 }
 
 impl Select {

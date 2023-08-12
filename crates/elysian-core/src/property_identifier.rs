@@ -4,7 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::ast::identifier::Identifier;
+use crate::identifier::Identifier;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PropertyIdentifier(pub Identifier);

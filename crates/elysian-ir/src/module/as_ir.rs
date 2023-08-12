@@ -5,10 +5,7 @@ use std::{
     sync::OnceLock,
 };
 
-use elysian_core::{
-    ast::{identifier::Identifier, property_identifier::PropertyIdentifier},
-    uuid::Uuid,
-};
+use elysian_core::{identifier::Identifier, property_identifier::PropertyIdentifier, uuid::Uuid};
 use indexmap::{IndexMap, IndexSet};
 
 use crate::{
@@ -112,7 +109,7 @@ macro_rules! property {
     ($id:ident, $prop:ident, $ty:expr) => {
         #[linkme::distributed_slice($crate::module::PROPERTIES)]
         static $prop: $crate::ast::Property = $crate::ast::Property {
-            id: elysian_core::ast::property_identifier::PropertyIdentifier($id),
+            id: elysian_core::property_identifier::PropertyIdentifier($id),
             ty: $ty,
         };
     };
