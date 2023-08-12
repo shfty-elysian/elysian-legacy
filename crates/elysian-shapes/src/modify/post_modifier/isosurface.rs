@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::modify::{IntoModify, Modify, PostModifier};
 use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
@@ -102,6 +102,8 @@ impl AsIR for Isosurface {
         }]
     }
 }
+
+impl PostModifier for Isosurface {}
 
 pub trait IntoIsosurface {
     fn isosurface(self, dist: impl IntoExpr) -> Modify;

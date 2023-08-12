@@ -21,7 +21,7 @@ use elysian_shapes::{
     select::Select,
     shape::{DynShape, IntoShape},
     uv_map::IntoUvMap,
-    voronoi::{voronoi, CELL_ID},
+    voronoi::{voronoi, CELL_ID}, prepass::IntoPrepass,
 };
 use elysian_text::glyphs::{greek::sigma, text, Align};
 use rust_gpu_bridge::glam::Mat4;
@@ -170,8 +170,7 @@ pub fn partition() -> impl IntoShape {
         .case(cell_id_lt(10.0), d([1.0, 1.0]))
         .case(cell_id_lt(11.0), Infinity)
         .scale(0.35)
-        .modify()
-        .push_pre(voronoi([
+        .prepass(voronoi([
             [-2.0, 0.5],
             [-1.0, 1.0],
             [0.0, 1.5],
@@ -274,7 +273,8 @@ pub fn ngon(sides: usize, radius: f64) -> impl IntoShape {
 }
 
 pub fn test_shape() -> impl IntoShape {
-    ngon(5, 1.0)
+    //ngon(5, 1.0)
+    pangram()
         //.set_post(COLOR, /*COLOR.prop().read() **/ distance_color(1.0))
         .set_post(COLOR, gradient_color() * distance_color(1.0))
         //.set_post(COLOR, position_3d_color())

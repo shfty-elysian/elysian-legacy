@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::modify::{IntoModify, Modify, PreModifier};
 use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
@@ -70,6 +70,8 @@ impl AsIR for PolarToCartesian {
         }]
     }
 }
+
+impl PreModifier for PolarToCartesian {}
 
 pub trait IntoPolarToCartesian {
     fn polar_to_cartesian(self) -> Modify;

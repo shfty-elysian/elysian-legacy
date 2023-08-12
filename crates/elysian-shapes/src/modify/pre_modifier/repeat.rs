@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::modify::{IntoModify, Modify, PreModifier};
 use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
@@ -136,6 +136,8 @@ impl AsIR for Repeat {
         }]
     }
 }
+
+impl PreModifier for Repeat {}
 
 pub trait IntoRepeat {
     fn repeat_infinite(self, period: impl IntoExpr) -> Modify;

@@ -10,6 +10,7 @@ pub mod elongate_basis;
 pub mod field;
 pub mod filter;
 pub mod modify;
+pub mod prepass;
 pub mod raymarch;
 pub mod rotate;
 pub mod scale;

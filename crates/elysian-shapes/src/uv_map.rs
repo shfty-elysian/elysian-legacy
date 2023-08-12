@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    modify::{IntoModify, Modify},
+    modify::{IntoModify, Modify, PostModifier},
     shape::{DynShape, IntoShape},
 };
 use elysian_decl_macros::elysian_function;
@@ -72,6 +72,8 @@ impl AsIR for UvMap {
         self.field.structs()
     }
 }
+
+impl PostModifier for UvMap {}
 
 pub trait IntoUvMap {
     fn uv_map(self, field: impl IntoShape) -> Modify;

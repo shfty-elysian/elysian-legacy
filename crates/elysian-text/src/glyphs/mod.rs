@@ -1,6 +1,7 @@
 use elysian_core::expr::IntoPath;
 use elysian_ir::ast::{COLOR, X, Y};
 use elysian_shapes::modify::IntoModify;
+use elysian_shapes::prepass::IntoPrepass;
 use elysian_shapes::shape::DynShape;
 use elysian_shapes::{
     combine::Union,
@@ -139,23 +140,25 @@ pub fn text(
                         char_field.translate([x as f64 * total_size[0], 0.0]),
                     )
                 })
-                .modify()
-                .push_pre(
+                .prepass(
                     Infinity
                         .repeat_clamped(total_size, [0.0, 0.0], [max_x, 0.0])
                         .filter(REPEAT_ID_2D),
-                );
+                )
+                .shape();
 
             let field = match align {
                 Align::Left => field,
-                Align::Center | Align::Right => field.translate([
-                    match align {
-                        Align::Center => (total_max_x - max_x) * 0.5,
-                        Align::Right => total_max_x - max_x,
-                        _ => unreachable!(),
-                    },
-                    0.0,
-                ]),
+                Align::Center | Align::Right => field
+                    .translate([
+                        match align {
+                            Align::Center => (total_max_x - max_x) * 0.5,
+                            Align::Right => total_max_x - max_x,
+                            _ => unreachable!(),
+                        },
+                        0.0,
+                    ])
+                    .shape(),
             };
 
             acc.case(
@@ -163,8 +166,7 @@ pub fn text(
                 field.translate([0.0, y as f64 * total_size[1]]),
             )
         })
-        .modify()
-        .push_pre(
+        .prepass(
             Infinity
                 .repeat_clamped(total_size, [0.0, 0.0], [0.0, max_y])
                 .filter(REPEAT_ID_2D),

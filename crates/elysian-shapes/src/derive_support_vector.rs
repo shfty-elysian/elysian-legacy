@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::modify::{IntoModify, Modify, PostModifier};
 use elysian_core::identifier::Identifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
@@ -79,6 +79,8 @@ impl AsIR for DeriveSupportVector {
         }]
     }
 }
+
+impl PostModifier for DeriveSupportVector {}
 
 pub trait IntoDeriveSupportVector {
     fn derive_support_vector(self) -> Modify;

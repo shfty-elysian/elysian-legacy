@@ -12,6 +12,7 @@ use elysian_shapes::{
         ClampMode, IntoElongateAxis, IntoFlipBasis, IntoManifold, IntoMirror, IntoModify,
         IntoRepeat, IntoTranslate, REPEAT_ID_2D,
     },
+    prepass::IntoPrepass,
     rotate::IntoRotate,
     select::Select,
     shape::IntoShape,
@@ -69,7 +70,7 @@ pub fn d(cell_size: [f64; 2]) -> impl IntoShape {
                 .mirror_basis([0.0, 1.0]),
         )
         .modify()
-        .push_pre(
+        .prepass(
             Point
                 .repeat_clamped(cell_size, [0.0, 0.0], cell_size)
                 .translate([-cell_size[0] * 0.5, 0.0])
@@ -211,8 +212,7 @@ pub fn p(cell_size: [f64; 2]) -> impl IntoShape {
                     .mirror_basis([0.0, 1.0])
                     .translate([0.0, cell_size[1] * 0.5]),
             )
-            .modify()
-            .push_pre(
+            .prepass(
                 Point
                     .repeat_clamped(cell_size, [0.0, 0.0], [cell_size[0], 0.0])
                     .translate([cell_size[0] * -0.25, 0.0])

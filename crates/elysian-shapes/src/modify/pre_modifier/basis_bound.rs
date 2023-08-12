@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::modify::{IntoModify, Modify, PreModifier};
 use elysian_core::{
     expr::{Expr, IntoExpr},
     identifier::Identifier,
@@ -160,6 +160,8 @@ impl AsIR for BasisBound {
         }]
     }
 }
+
+impl PreModifier for BasisBound {}
 
 pub trait IntoBasisBound {
     fn basis_bound(self, ty: BoundType, bound: impl IntoExpr) -> Modify;

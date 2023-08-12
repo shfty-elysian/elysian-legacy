@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::modify::{IntoModify, Modify, PostModifier};
 use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::{Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM, UV, X},
@@ -80,6 +80,8 @@ impl AsIR for Manifold {
         }]
     }
 }
+
+impl PostModifier for Manifold {}
 
 pub trait IntoManifold {
     fn manifold(self) -> Modify;

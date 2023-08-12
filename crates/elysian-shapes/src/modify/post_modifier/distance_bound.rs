@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::modify::{IntoModify, Modify, PostModifier};
 use elysian_core::{
     expr::{Expr, IntoExpr},
     identifier::Identifier,
@@ -103,6 +103,8 @@ impl AsIR for DistanceBound {
         }]
     }
 }
+
+impl PostModifier for DistanceBound {}
 
 pub trait IntoDistanceBound {
     fn distance_bound(self, ty: BoundType, bound: impl IntoExpr) -> Modify;

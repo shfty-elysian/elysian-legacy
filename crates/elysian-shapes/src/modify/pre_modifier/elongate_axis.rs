@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::modify::{IntoModify, Modify, PreModifier};
 use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
@@ -143,6 +143,8 @@ impl AsIR for ElongateAxis {
         }]
     }
 }
+
+impl PreModifier for ElongateAxis {}
 
 pub trait IntoElongateAxis {
     fn elongate_axis(

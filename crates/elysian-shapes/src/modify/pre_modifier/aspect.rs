@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::modify::{IntoModify, Modify, PreModifier};
 use elysian_core::{
     expr::{Expr, IntoExpr},
     identifier::Identifier,
@@ -60,6 +60,8 @@ impl AsIR for Aspect {
         }]
     }
 }
+
+impl PreModifier for Aspect {}
 
 pub trait IntoAspect {
     fn aspect(self, delta: impl IntoExpr) -> Modify;

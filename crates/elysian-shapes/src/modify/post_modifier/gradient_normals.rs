@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::modify::{IntoModify, Modify};
+use crate::modify::{IntoModify, Modify, PostModifier};
 use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::{GRADIENT_2D, GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z},
@@ -72,6 +72,8 @@ impl AsIR for GradientNormals {
         }]
     }
 }
+
+impl PostModifier for GradientNormals {}
 
 pub trait IntoGradientNormals {
     fn gradient_normals(self) -> Modify;

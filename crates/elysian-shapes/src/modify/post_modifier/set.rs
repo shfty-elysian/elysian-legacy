@@ -1,6 +1,9 @@
 use std::{fmt::Debug, hash::Hash};
 
-use crate::{modify::{IntoModify, Modify}, shape::{IntoShape, Shape}};
+use crate::{
+    modify::{IntoModify, Modify, PreModifier, PostModifier},
+    shape::{IntoShape, Shape},
+};
 use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
@@ -50,6 +53,9 @@ impl AsIR for Set {
         }]
     }
 }
+
+impl PreModifier for Set {}
+impl PostModifier for Set {}
 
 pub trait IntoSet {
     fn set_pre(self, id: impl Into<PropertyIdentifier>, expr: impl IntoExpr) -> Modify;

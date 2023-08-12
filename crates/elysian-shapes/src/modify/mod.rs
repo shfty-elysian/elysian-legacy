@@ -20,11 +20,32 @@ use elysian_ir::{
 
 use crate::shape::{DynShape, IntoShape, Shape};
 
+pub trait PreModifier: AsIR {}
+
+pub trait IntoPreModifier: 'static + Sized + PreModifier {
+    fn pre_modifier(self) -> Box<dyn PreModifier> {
+        Box::new(self)
+    }
+}
+
+impl<T> IntoPreModifier for T where T: 'static + PreModifier {}
+
+pub trait PostModifier: AsIR {}
+
+pub trait IntoPostModifier: 'static + Sized + PostModifier {
+    fn post_modifier(self) -> Box<dyn PostModifier> {
+        Box::new(self)
+    }
+}
+
+impl<T> IntoPostModifier for T where T: 'static + PostModifier {}
+
+#[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Modify {
-    pre_modifiers: Vec<DynShape>,
+    pre_modifiers: Vec<Box<dyn PreModifier>>,
     field: DynShape,
-    post_modifiers: Vec<DynShape>,
+    post_modifiers: Vec<Box<dyn PostModifier>>,
 }
 
 impl Modify {
@@ -36,24 +57,14 @@ impl Modify {
         }
     }
 
-    pub fn push_pre(mut self, pre_modifier: impl IntoShape) -> Self {
-        self.pre_modifiers.push(pre_modifier.shape());
+    pub fn push_pre(mut self, modifier: impl IntoPreModifier) -> Self {
+        self.pre_modifiers.push(modifier.pre_modifier());
         self
     }
 
-    pub fn push_post(mut self, post_modifier: impl IntoShape) -> Self {
-        self.post_modifiers.push(post_modifier.shape());
+    pub fn push_post(mut self, post_modifier: impl IntoPostModifier) -> Self {
+        self.post_modifiers.push(post_modifier.post_modifier());
         self
-    }
-}
-
-impl Debug for Modify {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Modify")
-            .field("pre_modifiers", &self.pre_modifiers)
-            .field("field", &self.field)
-            .field("post_modifiers", &self.post_modifiers)
-            .finish()
     }
 }
 
