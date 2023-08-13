@@ -35,5 +35,5 @@ impl AsModule for Intersection {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Combinator for Intersection {}

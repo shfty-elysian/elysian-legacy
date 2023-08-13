@@ -88,5 +88,5 @@ impl AsModule for SmoothUnion {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Combinator for SmoothUnion {}

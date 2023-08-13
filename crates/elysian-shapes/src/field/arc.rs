@@ -11,7 +11,7 @@ use elysian_ir::{
 
 use elysian_decl_macros::elysian_function;
 
-use crate::{field::RADIUS, rotate::ANGLE, shape::Shape};
+use crate::{field::RADIUS, shape::Shape, wrap::rotate::ANGLE};
 
 pub const ARC: FunctionIdentifier = FunctionIdentifier::new("arc", 257188426632189116);
 
@@ -102,5 +102,5 @@ impl AsModule for Arc {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Shape for Arc {}

@@ -36,5 +36,5 @@ impl AsModule for Subtraction {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Combinator for Subtraction {}

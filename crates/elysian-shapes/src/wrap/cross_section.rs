@@ -6,17 +6,15 @@ use std::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{Expr, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
-    module::{
-        AsModule, DomainsDyn, FunctionIdentifier, ErasedHash, Module, SpecializationData, CONTEXT,
-    },
+    module::{DomainsDyn, ErasedHash, FunctionIdentifier, Module, SpecializationData, CONTEXT},
 };
-use elysian_proc_macros::elysian_stmt;
 
-use crate::shape::DynShape;
+use crate::{shape::DynShape, wrap::Wrapper};
 
 pub const CROSS_SECTION: FunctionIdentifier =
     FunctionIdentifier::new("cross_section", 11670715461129592823);
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CrossSection {
     pub field: DynShape,
     pub x_axis: elysian_core::expr::Expr,
@@ -43,8 +41,9 @@ impl DomainsDyn for CrossSection {
     }
 }
 
-impl AsModule for CrossSection {
-    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+#[cfg_attr(feature = "serde", typetag::serde)]
+impl Wrapper for CrossSection {
+    fn module(&self, spec: &SpecializationData, field_call: Expr) -> elysian_ir::module::Module {
         if !spec.contains(&POSITION_2D.into()) {
             panic!("CrossSection is only compatible with the 2D position domain");
         }
@@ -52,10 +51,7 @@ impl AsModule for CrossSection {
         let x_axis: Expr = self.x_axis.clone().into();
         let y_axis: Expr = self.y_axis.clone().into();
 
-        let field_module = self.field.module(&SpecializationData::new_3d());
-        let field_call = field_module.call(elysian_stmt! { CONTEXT });
-
-        field_module.concat(Module::new(
+        Module::new(
             self,
             spec,
             elysian_function! {
@@ -72,6 +68,6 @@ impl AsModule for CrossSection {
                     return CONTEXT;
                 }
             },
-        ))
+        )
     }
 }

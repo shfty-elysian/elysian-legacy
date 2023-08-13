@@ -1164,7 +1164,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-bin"
+name = "test-de"
+version = "0.1.0"
+dependencies = [
+ "elysian-shapes",
+ "ron",
+ "serde",
+]
+
+[[package]]
+name = "test-image"
 version = "0.1.0"
 dependencies = [
  "elysian",
@@ -1175,15 +1184,6 @@ dependencies = [
  "rust-gpu-bridge",
  "test-shapes",
  "viuer",
-]
-
-[[package]]
-name = "test-de"
-version = "0.1.0"
-dependencies = [
- "elysian-shapes",
- "ron",
- "serde",
 ]
 
 [[package]]

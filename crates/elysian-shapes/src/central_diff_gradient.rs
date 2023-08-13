@@ -13,7 +13,7 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
     module::{
-        AsModule, Domains, DomainsDyn, FunctionIdentifier, ErasedHash, Module, SpecializationData,
+        AsModule, Domains, DomainsDyn, ErasedHash, FunctionIdentifier, Module, SpecializationData,
         CONTEXT,
     },
 };

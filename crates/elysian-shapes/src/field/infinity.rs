@@ -50,5 +50,5 @@ impl AsModule for Infinity {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Shape for Infinity {}

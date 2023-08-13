@@ -2,11 +2,11 @@ use elysian_core::expr::IntoPath;
 use elysian_ir::ast::{X, Y};
 use elysian_shapes::prepass::IntoPrepass;
 use elysian_shapes::shape::DynShape;
+use elysian_shapes::wrap::filter::IntoFilter;
 use elysian_shapes::{combine::CombineBuilder, shape::IntoShape};
 use elysian_shapes::{
     combine::Union,
     field::Infinity,
-    filter::IntoFilter,
     modify::{IntoRepeat, IntoTranslate, REPEAT_ID_2D},
     select::Select,
 };

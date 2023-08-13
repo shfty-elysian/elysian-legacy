@@ -127,7 +127,7 @@ impl AsModule for FlipBasis {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Shape for FlipBasis {}
 
 pub trait IntoFlipBasis {

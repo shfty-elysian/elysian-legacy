@@ -11,14 +11,17 @@ use elysian_ir::{
         Z,
     },
     module::{
-        AsModule, DomainsDyn, ErasedHash, FunctionDefinition, FunctionIdentifier, InputDefinition,
-        Module, SpecializationData, StructIdentifier, Type, CONTEXT,
+        DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, Module,
+        SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
-use elysian_proc_macros::{elysian_block, elysian_expr, elysian_stmt};
+use elysian_proc_macros::{elysian_block, elysian_stmt};
 
-use crate::shape::{DynShape, IntoShape, Shape};
+use crate::{
+    shape::IntoShape,
+    wrap::{Wrap, Wrapper},
+};
 
 pub const EXTENT_2D: Identifier = Identifier::new("extent_2d", 9222786191981609495);
 property!(
@@ -34,32 +37,25 @@ property!(
     Type::Struct(StructIdentifier(VECTOR3))
 );
 
-#[derive(Debug)]
+#[derive(Debug, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ElongateBasis {
-    pub field: DynShape,
     pub extent: Expr,
-}
-
-impl Hash for ElongateBasis {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        state.write_u64(self.field.erased_hash());
-        self.extent.hash(state);
-    }
 }
 
 impl DomainsDyn for ElongateBasis {
     fn domains_dyn(&self) -> Vec<PropertyIdentifier> {
-        self.field
-            .domains_dyn()
-            .into_iter()
-            .chain([POSITION_2D.into(), POSITION_3D.into()])
-            .collect()
+        vec![POSITION_2D.into(), POSITION_3D.into()]
     }
 }
 
-impl AsModule for ElongateBasis {
-    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+#[cfg_attr(feature = "serde", typetag::serde)]
+impl Wrapper for ElongateBasis {
+    fn module(
+        &self,
+        spec: &SpecializationData,
+        field_call: elysian_ir::ast::Expr,
+    ) -> elysian_ir::module::Module {
         let (position, extent, zero) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -68,9 +64,6 @@ impl AsModule for ElongateBasis {
             (false, true) => (POSITION_3D, EXTENT_3D, vector3([0.0, 0.0, 0.0]).literal()),
             _ => panic!("Invalid position domain"),
         };
-
-        let field_module = self.field.module(spec);
-        let field_call = field_module.call(elysian_expr! { CONTEXT });
 
         let extent_expr = elysian_ir::ast::Expr::from(self.extent.clone());
 
@@ -92,47 +85,39 @@ impl AsModule for ElongateBasis {
             return CONTEXT
         };
 
-        field_module.concat(
-            Module::new(
-                self,
-                spec,
-                FunctionDefinition {
-                    id: FunctionIdentifier::new_dynamic("elongate_basis".into()),
-                    public: false,
-                    inputs: vec![
-                        InputDefinition {
-                            id: extent.clone().into(),
-                            mutable: false,
-                        },
-                        InputDefinition {
-                            id: CONTEXT.into(),
-                            mutable: true,
-                        },
-                    ],
-                    output: CONTEXT.into(),
-                    block,
-                },
-            )
-            .with_args([self.extent.clone().into()]),
+        Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: FunctionIdentifier::new_dynamic("elongate_basis".into()),
+                public: false,
+                inputs: vec![
+                    InputDefinition {
+                        id: extent.clone().into(),
+                        mutable: false,
+                    },
+                    InputDefinition {
+                        id: CONTEXT.into(),
+                        mutable: true,
+                    },
+                ],
+                output: CONTEXT.into(),
+                block,
+            },
         )
+        .with_args([self.extent.clone().into()])
     }
 }
 
-#[typetag::serde]
-impl Shape for ElongateBasis {}
-
 pub trait IntoElongateBasis {
-    fn elongate_basis(self, dir: impl IntoExpr) -> ElongateBasis;
+    fn elongate_basis(self, dir: impl IntoExpr) -> Wrap;
 }
 
 impl<T> IntoElongateBasis for T
 where
     T: IntoShape,
 {
-    fn elongate_basis(self, dir: impl IntoExpr) -> ElongateBasis {
-        ElongateBasis {
-            field: self.shape(),
-            extent: dir.expr(),
-        }
+    fn elongate_basis(self, dir: impl IntoExpr) -> Wrap {
+        Wrap::new(ElongateBasis { extent: dir.expr() }, self)
     }
 }

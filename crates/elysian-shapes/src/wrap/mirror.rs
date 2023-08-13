@@ -9,19 +9,22 @@ use elysian_ir::{
         vector2, vector3, Block, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
     },
     module::{
-        AsModule, DomainsDyn, ErasedHash, FunctionDefinition, FunctionIdentifier, InputDefinition,
-        Module, SpecializationData, CONTEXT,
+        DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, Module,
+        SpecializationData, CONTEXT,
     },
 };
 
 use elysian_proc_macros::elysian_stmt;
 
-use crate::shape::{DynShape, Shape};
+use crate::{
+    shape::Shape,
+    wrap::{Wrap, Wrapper},
+};
 
 pub const BASIS_MIRROR: FunctionIdentifier =
     FunctionIdentifier::new("basis_mirror", 2763069141557531361);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MirrorMode {
     Basis(Expr),
@@ -38,18 +41,10 @@ impl ToString for MirrorMode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mirror {
-    field: DynShape,
     mode: MirrorMode,
-}
-
-impl Hash for Mirror {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        BASIS_MIRROR.uuid().hash(state);
-        state.write_u64(self.field.erased_hash());
-    }
 }
 
 impl DomainsDyn for Mirror {
@@ -60,14 +55,16 @@ impl DomainsDyn for Mirror {
             GRADIENT_2D.into(),
             GRADIENT_3D.into(),
         ]
-        .into_iter()
-        .chain(self.field.domains_dyn())
-        .collect()
     }
 }
 
-impl AsModule for Mirror {
-    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+#[cfg_attr(feature = "serde", typetag::serde)]
+impl Wrapper for Mirror {
+    fn module(
+        &self,
+        spec: &SpecializationData,
+        field_call: elysian_ir::ast::Expr,
+    ) -> elysian_ir::module::Module {
         let (position, one) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -115,9 +112,6 @@ impl AsModule for Mirror {
             }
         }
 
-        let field_module = self.field.module(spec);
-        let field_call = field_module.call(elysian_stmt! { CONTEXT });
-
         block.push(elysian_stmt! {
             let CONTEXT = #field_call
         });
@@ -148,7 +142,7 @@ impl AsModule for Mirror {
             return CONTEXT
         });
 
-        field_module.concat(Module::new(
+        Module::new(
             self,
             spec,
             FunctionDefinition {
@@ -161,33 +155,34 @@ impl AsModule for Mirror {
                 output: CONTEXT.into(),
                 block,
             },
-        ))
+        )
     }
 }
 
-#[typetag::serde]
-impl Shape for Mirror {}
-
 pub trait IntoMirror {
-    fn mirror_basis(self, basis: impl IntoExpr) -> Mirror;
-    fn mirror_axis(self, axis: impl IntoExpr) -> Mirror;
+    fn mirror_basis(self, basis: impl IntoExpr) -> Wrap;
+    fn mirror_axis(self, axis: impl IntoExpr) -> Wrap;
 }
 
 impl<T> IntoMirror for T
 where
     T: 'static + Shape,
 {
-    fn mirror_basis(self, basis: impl IntoExpr) -> Mirror {
-        Mirror {
-            field: Box::new(self),
-            mode: MirrorMode::Basis(basis.expr()),
-        }
+    fn mirror_basis(self, basis: impl IntoExpr) -> Wrap {
+        Wrap::new(
+            Mirror {
+                mode: MirrorMode::Basis(basis.expr()),
+            },
+            self,
+        )
     }
 
-    fn mirror_axis(self, axis: impl IntoExpr) -> Mirror {
-        Mirror {
-            field: Box::new(self),
-            mode: MirrorMode::Axis(axis.expr()),
-        }
+    fn mirror_axis(self, axis: impl IntoExpr) -> Wrap {
+        Wrap::new(
+            Mirror {
+                mode: MirrorMode::Axis(axis.expr()),
+            },
+            self,
+        )
     }
 }

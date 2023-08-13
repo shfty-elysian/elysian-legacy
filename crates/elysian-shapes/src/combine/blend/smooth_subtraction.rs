@@ -86,5 +86,5 @@ impl AsModule for SmoothSubtraction {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Combinator for SmoothSubtraction {}

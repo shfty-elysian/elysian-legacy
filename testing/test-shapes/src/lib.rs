@@ -16,18 +16,16 @@ use elysian_shapes::{
         Union,
     },
     field::{Capsule, Chebyshev, Circle, Infinity, Line, Point, Quad, Ring},
-    filter::IntoFilter,
-    mirror::IntoMirror,
     modify::{
         IntoAspect, IntoGradientNormals, IntoIsosurface, IntoRepeat, IntoSet, IntoTranslate,
-        IntoUvMap, Modify, ASPECT, REPEAT_ID_2D,
+        IntoUvMap, ASPECT, REPEAT_ID_2D,
     },
     prepass::IntoPrepass,
     raymarch::Raymarch,
-    scale::IntoScale,
     select::Select,
     shape::{DynShape, IntoShape, Shape},
     voronoi::{voronoi, CELL_ID},
+    wrap::{filter::IntoFilter, mirror::IntoMirror, scale::IntoScale},
 };
 use elysian_text::glyphs::{greek::sigma, text, Align};
 use rust_gpu_bridge::glam::Mat4;
@@ -229,7 +227,7 @@ pub fn pangram() -> impl IntoShape {
 
 pub fn composite() -> impl IntoShape {
     Combine::from([Box::new(Overlay) as Box<dyn Combinator>])
-        .push(pangram())
+        .push(pangram().scale(0.25))
         .push(
             raymarched()
                 .set_post(UV, UV.prop().read() * Expr::vector2(16.0, 16.0))

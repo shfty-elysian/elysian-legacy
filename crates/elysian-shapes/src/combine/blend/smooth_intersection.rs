@@ -86,5 +86,5 @@ impl AsModule for SmoothIntersection {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Combinator for SmoothIntersection {}

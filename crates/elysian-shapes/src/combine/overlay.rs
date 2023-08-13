@@ -35,5 +35,5 @@ impl AsModule for Overlay {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Combinator for Overlay {}

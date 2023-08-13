@@ -209,7 +209,7 @@ impl AsModule for Combine {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Shape for Combine {}
 
 #[cfg_attr(feature = "serde", typetag::serde(tag = "type"))]

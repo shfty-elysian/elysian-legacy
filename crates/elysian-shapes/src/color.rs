@@ -6,7 +6,10 @@ use elysian_ir::ast::{
     DISTANCE, ERROR, GRADIENT_2D, NORMAL, POSITION_2D, POSITION_3D, UV, X, Y, Z,
 };
 
-use crate::{derive_support_vector::SUPPORT_VECTOR_2D, modify::REPEAT_ID_2D, voronoi::CELL_ID};
+use crate::{
+    modify::{REPEAT_ID_2D, SUPPORT_VECTOR_2D},
+    voronoi::CELL_ID,
+};
 
 pub fn distance_color(fac: f64) -> Expr {
     let color = 1.0.literal() - (DISTANCE.prop().read() * fac).clamp(0.0, 1.0);

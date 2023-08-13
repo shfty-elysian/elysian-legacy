@@ -296,5 +296,5 @@ impl AsModule for Raymarch {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Shape for Raymarch {}

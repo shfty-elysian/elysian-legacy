@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = ["serde"]
-serde = ["dep:serde", "dep:typetag"]
+serde = ["dep:serde", "dep:typetag", "elysian-core/serde"]
 
 [dependencies]
 elysian-core = { path = "../elysian-core" }

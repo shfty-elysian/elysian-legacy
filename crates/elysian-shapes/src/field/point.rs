@@ -127,5 +127,5 @@ impl AsModule for Point {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Shape for Point {}

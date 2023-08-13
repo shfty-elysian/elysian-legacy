@@ -44,7 +44,7 @@ impl AsModule for Sided {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Combinator for Sided {}
 
 // Pick the given property from the left if inside, or right if outside
@@ -97,5 +97,5 @@ impl AsModule for SidedProp {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Combinator for SidedProp {}

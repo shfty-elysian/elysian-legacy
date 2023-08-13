@@ -8,7 +8,7 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, ERROR, POSITION_2D, POSITION_3D},
     module::{
-        AsModule, DomainsDyn, FunctionIdentifier, ErasedHash, Module, SpecializationData,
+        AsModule, DomainsDyn, ErasedHash, FunctionIdentifier, Module, SpecializationData,
         StructIdentifier, Type, CONTEXT,
     },
     property,
@@ -16,7 +16,7 @@ use elysian_ir::{
 use elysian_proc_macros::elysian_expr;
 
 use crate::{
-    derive_support_vector::{SUPPORT_VECTOR_2D, SUPPORT_VECTOR_3D},
+    modify::{SUPPORT_VECTOR_2D, SUPPORT_VECTOR_3D},
     shape::{DynShape, IntoShape},
 };
 

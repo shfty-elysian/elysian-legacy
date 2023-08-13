@@ -26,7 +26,7 @@ impl AsModule for Box<dyn Shape> {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Shape for Box<dyn Shape> {}
 
 pub trait IntoShape: 'static + Sized + Shape {

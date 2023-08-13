@@ -57,7 +57,7 @@ impl AsModule for Prepass {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Shape for Prepass {}
 
 pub trait IntoPrepass {

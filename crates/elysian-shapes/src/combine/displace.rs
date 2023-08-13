@@ -42,5 +42,5 @@ impl AsModule for Displace {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Combinator for Displace {}

@@ -13,7 +13,7 @@ use elysian_ir::{
 };
 use elysian_proc_macros::elysian_stmt;
 
-use crate::{mirror::IntoMirror, modify::IntoTranslate, shape::Shape};
+use crate::{modify::IntoTranslate, shape::Shape, wrap::mirror::IntoMirror};
 
 use super::Corner;
 
@@ -116,5 +116,5 @@ impl AsModule for Quad {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Shape for Quad {}

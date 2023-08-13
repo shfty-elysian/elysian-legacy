@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-elysian-shapes = { path = "../../crates/elysian-shapes" }
+elysian-shapes = { path = "../../crates/elysian-shapes", features = ["serde"] }
 test-shapes = { path = "../test-shapes" }
 serde = "1.0.183"
 ron = "0.8.0"

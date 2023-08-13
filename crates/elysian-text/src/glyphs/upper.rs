@@ -5,18 +5,18 @@ use elysian_core::{
 use elysian_ir::ast::{POSITION_2D, X, Y};
 use elysian_shapes::{
     combine::{Combine, Union},
-    elongate_basis::IntoElongateBasis,
     field::{Arc, Circle, Line, Point},
-    filter::IntoFilter,
-    mirror::IntoMirror,
     modify::{
         ClampMode, IntoElongateAxis, IntoFlipBasis, IntoManifold, IntoModify, IntoRepeat,
         IntoTranslate, REPEAT_ID_2D,
     },
     prepass::IntoPrepass,
-    rotate::IntoRotate,
     select::Select,
     shape::IntoShape,
+    wrap::{
+        elongate_basis::IntoElongateBasis, filter::IntoFilter, mirror::IntoMirror,
+        rotate::IntoRotate,
+    },
 };
 
 use super::combinator;

@@ -44,5 +44,5 @@ impl AsModule for Union {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Combinator for Union {}

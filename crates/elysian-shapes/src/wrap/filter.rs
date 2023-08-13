@@ -1,9 +1,9 @@
 use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
 
 use elysian_core::identifier::Identifier;
 use elysian_core::property_identifier::PropertyIdentifier;
-use elysian_ir::module::{AsModule, ErasedHash, Module};
+use elysian_ir::ast::Expr;
+use elysian_ir::module::Module;
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 use elysian_ir::{
@@ -14,7 +14,8 @@ use elysian_ir::{
     property,
 };
 
-use crate::shape::{DynShape, IntoShape, Shape};
+use crate::wrap::Wrapper;
+use crate::{shape::IntoShape, wrap::Wrap};
 
 pub const FILTER_CONTEXT: Identifier = Identifier::new("filter_context", 11569410201650399545);
 property!(
@@ -23,43 +24,29 @@ property!(
     Type::Struct(StructIdentifier(CONTEXT))
 );
 
-#[derive(Debug)]
+#[derive(Debug, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Filter {
-    field: DynShape,
     props: Vec<PropertyIdentifier>,
 }
 
 impl Filter {
-    pub fn new(
-        field: impl IntoShape,
-        props: impl IntoIterator<Item = impl Into<PropertyIdentifier>>,
-    ) -> Self {
+    pub fn new(props: impl IntoIterator<Item = impl Into<PropertyIdentifier>>) -> Self {
         Filter {
-            field: field.shape(),
             props: props.into_iter().map(Into::into).collect(),
         }
     }
 }
 
-impl Hash for Filter {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_u64(self.field.erased_hash());
-        self.props.hash(state);
-    }
-}
-
 impl DomainsDyn for Filter {
     fn domains_dyn(&self) -> Vec<PropertyIdentifier> {
-        self.field.domains_dyn()
+        vec![]
     }
 }
 
-impl AsModule for Filter {
-    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
-        let field_module = self.field.module(spec);
-        let field_call = field_module.call(elysian_stmt! { CONTEXT });
-
+#[cfg_attr(feature = "serde", typetag::serde)]
+impl Wrapper for Filter {
+    fn module(&self, spec: &SpecializationData, field_call: Expr) -> elysian_ir::module::Module {
         let mut block = elysian_block! {
             let FILTER_CONTEXT = #field_call;
         };
@@ -74,7 +61,7 @@ impl AsModule for Filter {
             return CONTEXT
         });
 
-        field_module.concat(Module::new(
+        Module::new(
             self,
             spec,
             FunctionDefinition {
@@ -87,25 +74,24 @@ impl AsModule for Filter {
                 output: CONTEXT.into(),
                 block,
             },
-        ))
+        )
     }
 }
 
-#[typetag::serde]
-impl Shape for Filter {}
-
 pub trait IntoFilter {
-    fn filter(self, props: impl IntoIterator<Item = impl Into<PropertyIdentifier>>) -> Filter;
+    fn filter(self, props: impl IntoIterator<Item = impl Into<PropertyIdentifier>>) -> Wrap;
 }
 
 impl<T> IntoFilter for T
 where
     T: IntoShape,
 {
-    fn filter(self, props: impl IntoIterator<Item = impl Into<PropertyIdentifier>>) -> Filter {
-        Filter {
-            field: self.shape(),
-            props: props.into_iter().map(Into::into).collect(),
-        }
+    fn filter(self, props: impl IntoIterator<Item = impl Into<PropertyIdentifier>>) -> Wrap {
+        Wrap::new(
+            Filter {
+                props: props.into_iter().map(Into::into).collect(),
+            },
+            self,
+        )
     }
 }

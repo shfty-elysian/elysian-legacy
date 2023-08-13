@@ -1,45 +1,37 @@
-use std::{
-    fmt::Debug,
-    hash::{Hash, Hasher},
-};
+use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::expr::{Expr, IntoExpr};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
-    module::{
-        AsModule, DomainsDyn, ErasedHash, FunctionIdentifier, Module, SpecializationData, CONTEXT,
-    },
+    module::{DomainsDyn, FunctionIdentifier, Module, SpecializationData, CONTEXT},
 };
-use elysian_proc_macros::{elysian_expr, elysian_stmt};
+use elysian_proc_macros::elysian_expr;
 
-use crate::shape::{DynShape, Shape};
+use crate::{
+    shape::Shape,
+    wrap::{Wrap, Wrapper},
+};
 
-#[derive(Debug)]
+#[derive(Debug, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Scale {
-    pub field: DynShape,
     pub factor: Expr,
-}
-
-impl Hash for Scale {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_u64(self.field.erased_hash());
-    }
 }
 
 impl DomainsDyn for Scale {
     fn domains_dyn(&self) -> Vec<elysian_core::property_identifier::PropertyIdentifier> {
-        self.field
-            .domains_dyn()
-            .into_iter()
-            .chain([POSITION_2D.into(), POSITION_3D.into()])
-            .collect()
+        vec![POSITION_2D.into(), POSITION_3D.into()]
     }
 }
 
-impl AsModule for Scale {
-    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+#[cfg_attr(feature = "serde", typetag::serde)]
+impl Wrapper for Scale {
+    fn module(
+        &self,
+        spec: &SpecializationData,
+        field_call: elysian_ir::ast::Expr,
+    ) -> elysian_ir::module::Module {
         let factor = elysian_ir::ast::Expr::from(self.factor.clone());
 
         let (position, factor_vec) = match (
@@ -57,12 +49,9 @@ impl AsModule for Scale {
             _ => panic!("Invalid position domain"),
         };
 
-        let field_module = self.field.module(spec);
-        let field_call = field_module.call(elysian_stmt! { CONTEXT });
-
         let scale = FunctionIdentifier::new_dynamic("scale".into());
 
-        field_module.concat(Module::new(
+        Module::new(
             self,
             spec,
             elysian_function! {
@@ -73,25 +62,24 @@ impl AsModule for Scale {
                     return CONTEXT;
                 }
             },
-        ))
+        )
     }
 }
 
-#[typetag::serde]
-impl Shape for Scale {}
-
 pub trait IntoScale {
-    fn scale(self, factor: impl IntoExpr) -> Scale;
+    fn scale(self, factor: impl IntoExpr) -> Wrap;
 }
 
 impl<T> IntoScale for T
 where
     T: 'static + Shape,
 {
-    fn scale(self, factor: impl IntoExpr) -> Scale {
-        Scale {
-            field: Box::new(self),
-            factor: factor.expr(),
-        }
+    fn scale(self, factor: impl IntoExpr) -> Wrap {
+        Wrap::new(
+            Scale {
+                factor: factor.expr(),
+            },
+            self,
+        )
     }
 }

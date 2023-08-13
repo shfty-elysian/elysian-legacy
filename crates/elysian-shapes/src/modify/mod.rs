@@ -153,7 +153,7 @@ impl AsModule for Modify {
     }
 }
 
-#[typetag::serde]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl Shape for Modify {}
 
 pub trait IntoModify: 'static + Sized + Shape {
