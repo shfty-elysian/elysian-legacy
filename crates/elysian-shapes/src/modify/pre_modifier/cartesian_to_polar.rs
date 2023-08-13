@@ -29,7 +29,7 @@ impl Domains for CartesianToPolar {
 }
 
 impl AsModule for CartesianToPolar {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let position = if spec.contains(&POSITION_2D.into()) {
             POSITION_2D
         } else if spec.contains(&POSITION_3D.into()) {

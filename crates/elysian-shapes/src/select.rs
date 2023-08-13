@@ -8,14 +8,14 @@ use elysian_proc_macros::elysian_stmt;
 
 use elysian_core::expr::IntoExpr;
 use elysian_ir::module::{
-    DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+    DomainsDyn, ErasedHash, FunctionDefinition, FunctionIdentifier, InputDefinition,
     SpecializationData, CONTEXT,
 };
 
-use crate::shape::{DynShape, IntoShape};
+use crate::shape::{DynShape, IntoShape, Shape};
 
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Select {
     default: DynShape,
     cases: Vec<(elysian_core::expr::Expr, DynShape)>,
@@ -37,9 +37,9 @@ impl Select {
 
 impl Hash for Select {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_u64(self.default.hash_ir());
+        state.write_u64(self.default.erased_hash());
         for (_, shape) in &self.cases {
-            state.write_u64(shape.hash_ir())
+            state.write_u64(shape.erased_hash())
         }
     }
 }
@@ -55,17 +55,17 @@ impl DomainsDyn for Select {
 }
 
 impl AsModule for Select {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let prepared_shapes: Vec<(_, _)> = self
             .cases
             .iter()
             .map(|(k, v)| {
-                let module = v.module_impl(spec);
+                let module = v.module(spec);
                 (k, module)
             })
             .collect();
 
-        let default_module = self.default.module_impl(spec);
+        let default_module = self.default.module(spec);
         let default_call = default_module.call(elysian_stmt! { CONTEXT });
 
         let block = prepared_shapes
@@ -100,3 +100,6 @@ impl AsModule for Select {
             ))
     }
 }
+
+#[typetag::serde]
+impl Shape for Select {}

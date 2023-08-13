@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::combine::{LEFT, OUT, RIGHT};
+use crate::combine::{Combinator, LEFT, OUT, RIGHT};
 use elysian_core::{
     expr::{Expr, IntoExpr},
     property_identifier::PropertyIdentifier,
@@ -20,7 +20,7 @@ pub const SMOOTH_SUBTRACTION: FunctionIdentifier =
     FunctionIdentifier::new("smooth_subtraction", 1414822549598552032);
 
 #[derive(Debug, Clone, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmoothSubtraction {
     prop: PropertyIdentifier,
     k: Expr,
@@ -38,7 +38,7 @@ impl SmoothSubtraction {
 impl Domains for SmoothSubtraction {}
 
 impl AsModule for SmoothSubtraction {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let prop = (*self.prop).clone();
 
         let mut block = elysian_block! {
@@ -85,3 +85,6 @@ impl AsModule for SmoothSubtraction {
         .with_args([self.k.clone().into()])
     }
 }
+
+#[typetag::serde]
+impl Combinator for SmoothSubtraction {}

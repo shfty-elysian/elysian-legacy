@@ -11,12 +11,12 @@ use elysian_ir::{
 
 use elysian_decl_macros::elysian_function;
 
-use crate::{field::RADIUS, rotate::ANGLE};
+use crate::{field::RADIUS, rotate::ANGLE, shape::Shape};
 
 pub const ARC: FunctionIdentifier = FunctionIdentifier::new("arc", 257188426632189116);
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Arc {
     angle: Expr,
     radius: Expr,
@@ -44,7 +44,7 @@ impl Domains for Arc {
 }
 
 impl AsModule for Arc {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         assert!(
             spec.contains(&POSITION_2D.into()),
             "Arc currently requires the 2D Position domain"
@@ -101,3 +101,6 @@ impl AsModule for Arc {
         .with_args([self.angle.clone().into(), self.radius.clone().into()])
     }
 }
+
+#[typetag::serde]
+impl Shape for Arc {}

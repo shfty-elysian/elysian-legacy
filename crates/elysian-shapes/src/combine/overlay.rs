@@ -5,17 +5,19 @@ use elysian_ir::{
     module::{AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, SpecializationData},
 };
 
+use super::Combinator;
+
 pub const OVERLAY: FunctionIdentifier = FunctionIdentifier::new("overlay", 566703164678686767);
 
 // Pick a base context from either the left or right side
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Overlay;
 
 impl Domains for Overlay {}
 
 impl AsModule for Overlay {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         Module::new(
             self,
             &spec.filter(self.domains_dyn()),
@@ -32,3 +34,6 @@ impl AsModule for Overlay {
         )
     }
 }
+
+#[typetag::serde]
+impl Combinator for Overlay {}

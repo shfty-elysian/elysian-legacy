@@ -86,7 +86,7 @@ impl Domains for Repeat {
 }
 
 impl AsModule for Repeat {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, period, min, max, repeat_id) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, PERIOD_2D, MIN_2D, MAX_2D, REPEAT_ID_2D)
         } else if spec.contains(&POSITION_3D.into()) {

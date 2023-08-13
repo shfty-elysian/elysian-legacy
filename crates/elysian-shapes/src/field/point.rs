@@ -14,10 +14,12 @@ use elysian_ir::{
 
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
+use crate::shape::Shape;
+
 pub const POINT: FunctionIdentifier = FunctionIdentifier::new("point", 2023836058494613125);
 
 #[derive(Debug, Copy, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Point;
 
 impl Hash for Point {
@@ -40,7 +42,7 @@ impl Domains for Point {
 }
 
 impl AsModule for Point {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let position = if spec.contains(&POSITION_2D.into()) {
             POSITION_2D
         } else if spec.contains(&POSITION_3D.into()) {
@@ -124,3 +126,6 @@ impl AsModule for Point {
         )
     }
 }
+
+#[typetag::serde]
+impl Shape for Point {}

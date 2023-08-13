@@ -8,9 +8,10 @@ use elysian_shapes::{
     elongate_basis::IntoElongateBasis,
     field::{Arc, Circle, Line, Point},
     filter::IntoFilter,
+    mirror::IntoMirror,
     modify::{
-        ClampMode, IntoElongateAxis, IntoFlipBasis, IntoManifold, IntoMirror, IntoModify,
-        IntoRepeat, IntoTranslate, REPEAT_ID_2D,
+        ClampMode, IntoElongateAxis, IntoFlipBasis, IntoManifold, IntoModify, IntoRepeat,
+        IntoTranslate, REPEAT_ID_2D,
     },
     prepass::IntoPrepass,
     rotate::IntoRotate,

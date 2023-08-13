@@ -68,7 +68,7 @@ impl Domains for ElongateAxis {
 }
 
 impl AsModule for ElongateAxis {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, dir) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),

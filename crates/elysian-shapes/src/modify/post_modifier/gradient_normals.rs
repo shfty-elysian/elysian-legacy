@@ -31,7 +31,7 @@ impl Domains for GradientNormals {
 }
 
 impl AsModule for GradientNormals {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let block = if spec.contains(&GRADIENT_2D.into()) {
             elysian_block! {
                 CONTEXT.NORMAL = VECTOR3 {
@@ -69,7 +69,7 @@ impl AsModule for GradientNormals {
     }
 }
 
-#[cfg_attr(feature = "serde", typetag::serialize)]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PostModifier for GradientNormals {}
 
 pub trait IntoGradientNormals {

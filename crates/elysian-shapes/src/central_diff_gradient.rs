@@ -13,7 +13,7 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
     module::{
-        AsModule, Domains, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData,
+        AsModule, Domains, DomainsDyn, FunctionIdentifier, ErasedHash, Module, SpecializationData,
         CONTEXT,
     },
 };
@@ -27,7 +27,7 @@ pub struct CentralDiffGradient {
 
 impl Hash for CentralDiffGradient {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_u64(self.field.hash_ir());
+        state.write_u64(self.field.erased_hash());
     }
 }
 
@@ -38,7 +38,7 @@ impl DomainsDyn for CentralDiffGradient {
 }
 
 impl AsModule for CentralDiffGradient {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let central_diff_gradient = FunctionIdentifier::new_dynamic("central_diff_gradient".into());
 
         let (gradient, vec_x, vec_y) = if spec.contains(&GRADIENT_2D.into()) {
@@ -77,7 +77,7 @@ impl AsModule for CentralDiffGradient {
 
         let epsilon = self.epsilon.literal();
 
-        let field_module = self.field.module_impl(spec);
+        let field_module = self.field.module(spec);
         let field_entry = field_module.entry_point.clone();
 
         field_module.concat(Module::new(

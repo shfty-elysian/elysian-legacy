@@ -8,18 +8,17 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y, Z},
     module::{
-        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, SpecializationData,
-        CONTEXT,
+        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, SpecializationData, CONTEXT,
     },
 };
 use elysian_proc_macros::elysian_stmt;
 
-use crate::modify::{IntoMirror, IntoTranslate};
+use crate::{mirror::IntoMirror, modify::IntoTranslate, shape::Shape};
 
 use super::Corner;
 
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Quad {
     extent: Expr,
     props: Vec<PropertyIdentifier>,
@@ -51,7 +50,7 @@ impl Domains for Quad {
 }
 
 impl AsModule for Quad {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let one = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -65,7 +64,7 @@ impl AsModule for Quad {
             .translate(self.extent.clone())
             .mirror_basis(one);
 
-        let field_module = field.module_impl(&spec.filter(field.domains_dyn()));
+        let field_module = field.module(&spec.filter(field.domains_dyn()));
         let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         let quad = FunctionIdentifier::new_dynamic("quad".into());
@@ -116,3 +115,6 @@ impl AsModule for Quad {
         ))
     }
 }
+
+#[typetag::serde]
+impl Shape for Quad {}

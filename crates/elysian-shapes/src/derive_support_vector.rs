@@ -43,7 +43,7 @@ impl DomainsDyn for DeriveSupportVector {
 }
 
 impl AsModule for DeriveSupportVector {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let support_vector = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -77,7 +77,7 @@ impl AsModule for DeriveSupportVector {
     }
 }
 
-#[cfg_attr(feature = "serde", typetag::serialize)]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PostModifier for DeriveSupportVector {}
 
 pub trait IntoDeriveSupportVector {

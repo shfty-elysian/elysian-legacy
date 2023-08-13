@@ -8,10 +8,12 @@ use elysian_ir::{
 
 use elysian_decl_macros::elysian_function;
 
+use crate::shape::Shape;
+
 pub const INFINITY: FunctionIdentifier = FunctionIdentifier::new("infinity", 349698827217118514);
 
 #[derive(Debug, Copy, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Infinity;
 
 impl Hash for Infinity {
@@ -27,7 +29,7 @@ impl Domains for Infinity {
 }
 
 impl AsModule for Infinity {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         assert!(
             spec.contains(&DISTANCE.into()),
             "Infinity requires the Distance domain"
@@ -47,3 +49,6 @@ impl AsModule for Infinity {
         )
     }
 }
+
+#[typetag::serde]
+impl Shape for Infinity {}

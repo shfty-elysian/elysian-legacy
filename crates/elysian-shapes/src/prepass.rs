@@ -3,14 +3,14 @@ use std::hash::Hash;
 use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::module::{
-    AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData, CONTEXT,
+    AsModule, DomainsDyn, ErasedHash, FunctionIdentifier, Module, SpecializationData, CONTEXT,
 };
 use elysian_proc_macros::elysian_stmt;
 
-use crate::shape::{DynShape, IntoShape};
+use crate::shape::{DynShape, IntoShape, Shape};
 
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Prepass {
     prepass: DynShape,
     field: DynShape,
@@ -18,8 +18,8 @@ pub struct Prepass {
 
 impl Hash for Prepass {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        state.write_u64(self.prepass.hash_ir());
-        state.write_u64(self.field.hash_ir());
+        state.write_u64(self.prepass.erased_hash());
+        state.write_u64(self.field.erased_hash());
     }
 }
 
@@ -34,11 +34,11 @@ impl DomainsDyn for Prepass {
 }
 
 impl AsModule for Prepass {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
-        let prepass_module = self.prepass.module_impl(spec);
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let prepass_module = self.prepass.module(spec);
         let prepass_call = prepass_module.call(elysian_stmt! { CONTEXT });
 
-        let field_module = self.field.module_impl(spec);
+        let field_module = self.field.module(spec);
         let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         let prepass = FunctionIdentifier::new_dynamic("prepass".into());
@@ -56,6 +56,9 @@ impl AsModule for Prepass {
         ))
     }
 }
+
+#[typetag::serde]
+impl Shape for Prepass {}
 
 pub trait IntoPrepass {
     fn prepass(self, prepass: impl IntoShape) -> Prepass;

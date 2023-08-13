@@ -1,17 +1,15 @@
-use crate::shape::{DynShape, IntoShape};
-
-use super::Combine;
+use super::{Combinator, Combine};
 
 #[derive(Debug)]
-pub struct CombineBuilder(Vec<DynShape>);
+pub struct CombineBuilder(Vec<Box<dyn Combinator>>);
 
 impl CombineBuilder {
     pub fn build() -> Self {
         CombineBuilder(Default::default())
     }
 
-    pub fn push(mut self, combinator: impl IntoShape) -> Self {
-        self.0.push(combinator.shape());
+    pub fn push(mut self, combinator: impl 'static + Combinator) -> Self {
+        self.0.push(Box::new(combinator) as Box<dyn Combinator>);
         self
     }
 
@@ -24,9 +22,9 @@ impl CombineBuilder {
 }
 
 impl IntoIterator for CombineBuilder {
-    type Item = DynShape;
+    type Item = Box<dyn Combinator>;
 
-    type IntoIter = std::vec::IntoIter<DynShape>;
+    type IntoIter = std::vec::IntoIter<Box<dyn Combinator>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()

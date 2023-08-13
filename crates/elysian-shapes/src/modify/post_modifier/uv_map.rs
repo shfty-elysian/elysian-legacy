@@ -11,13 +11,13 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, UV},
     module::{
-        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData, CONTEXT,
+        AsModule, DomainsDyn, ErasedHash, FunctionIdentifier, Module, SpecializationData, CONTEXT,
     },
 };
 use elysian_proc_macros::elysian_stmt;
 
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct UvMap {
     field: DynShape,
 }
@@ -32,7 +32,7 @@ impl UvMap {
 
 impl Hash for UvMap {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_u64(self.field.hash_ir())
+        state.write_u64(self.field.erased_hash())
     }
 }
 
@@ -43,9 +43,9 @@ impl DomainsDyn for UvMap {
 }
 
 impl AsModule for UvMap {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let spec_map = SpecializationData::new_2d();
-        let field_module = self.field.module_impl(&spec_map);
+        let field_module = self.field.module(&spec_map);
         let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         let uv_map = FunctionIdentifier::new_dynamic("uv_map".into());
@@ -66,7 +66,7 @@ impl AsModule for UvMap {
     }
 }
 
-#[cfg_attr(feature = "serde", typetag::serialize)]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PostModifier for UvMap {}
 
 pub trait IntoUvMap {

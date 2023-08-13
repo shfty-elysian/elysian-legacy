@@ -1,4 +1,4 @@
-use crate::combine::{LEFT, OUT, RIGHT};
+use crate::combine::{Combinator, LEFT, OUT, RIGHT};
 use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
@@ -10,7 +10,7 @@ pub const SIDED: FunctionIdentifier = FunctionIdentifier::new("sided", 197569034
 
 // Pick a base context from either the left or right side
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Sided {
     flip: bool,
 }
@@ -28,7 +28,7 @@ impl Sided {
 impl Domains for Sided {}
 
 impl AsModule for Sided {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let side = if self.flip { RIGHT } else { LEFT };
 
         Module::new(
@@ -44,9 +44,12 @@ impl AsModule for Sided {
     }
 }
 
+#[typetag::serde]
+impl Combinator for Sided {}
+
 // Pick the given property from the left if inside, or right if outside
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SidedProp {
     prop: PropertyIdentifier,
     flip: bool,
@@ -64,7 +67,7 @@ impl SidedProp {
 impl Domains for SidedProp {}
 
 impl AsModule for SidedProp {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let sided_prop: FunctionIdentifier = (*SIDED).concat(&self.prop).into();
 
         let prop = &self.prop;
@@ -93,3 +96,6 @@ impl AsModule for SidedProp {
         )
     }
 }
+
+#[typetag::serde]
+impl Combinator for SidedProp {}

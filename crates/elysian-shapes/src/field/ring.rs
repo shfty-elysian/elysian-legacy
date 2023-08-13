@@ -8,14 +8,17 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     module::{
-        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, NumericType,
-        SpecializationData, Type, CONTEXT,
+        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, NumericType, SpecializationData,
+        Type, CONTEXT,
     },
     property,
 };
 use elysian_proc_macros::elysian_stmt;
 
-use crate::modify::{Isosurface, Manifold};
+use crate::{
+    modify::{Isosurface, Manifold},
+    shape::Shape,
+};
 
 use super::{Circle, RADIUS};
 
@@ -25,7 +28,7 @@ pub const WIDTH: Identifier = Identifier::new("width", 2742125101201765597);
 property!(WIDTH, WIDTH_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Ring {
     radius: Expr,
     width: Expr,
@@ -59,17 +62,17 @@ impl Domains for Ring {
 }
 
 impl AsModule for Ring {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let circle = Circle::new(self.radius.clone());
-        let circle_module = circle.module_impl(&spec.filter(circle.domains_dyn()));
+        let circle_module = circle.module(&spec.filter(circle.domains_dyn()));
         let circle_call = circle_module.call(elysian_stmt! { CONTEXT });
 
         let manifold = Manifold;
-        let manifold_module = manifold.module_impl(&spec.filter(manifold.domains_dyn()));
+        let manifold_module = manifold.module(&spec.filter(manifold.domains_dyn()));
         let manifold_call = manifold_module.call(circle_call);
 
         let isosurface = Isosurface::new(self.width.clone());
-        let isosurface_module = isosurface.module_impl(&spec.filter(isosurface.domains_dyn()));
+        let isosurface_module = isosurface.module(&spec.filter(isosurface.domains_dyn()));
         let isosurface_call = isosurface_module.call(manifold_call);
 
         circle_module
@@ -89,3 +92,6 @@ impl AsModule for Ring {
             )
     }
 }
+
+#[typetag::serde]
+impl Shape for Ring {}

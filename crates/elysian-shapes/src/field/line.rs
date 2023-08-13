@@ -8,20 +8,22 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D},
     module::{
-        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, SpecializationData,
-        CONTEXT,
+        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, SpecializationData, CONTEXT,
     },
 };
 use elysian_proc_macros::elysian_stmt;
 
-use crate::modify::{ClampMode, ElongateAxis, DIR_2D, DIR_3D};
+use crate::{
+    modify::{ClampMode, ElongateAxis, DIR_2D, DIR_3D},
+    shape::Shape,
+};
 
 use super::Point;
 
 pub const LINE: FunctionIdentifier = FunctionIdentifier::new("line", 14339483921749952476);
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LineMode {
     Centered,
     Segment,
@@ -38,7 +40,7 @@ impl ToString for LineMode {
 }
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Line {
     dir: Expr,
     mode: LineMode,
@@ -78,7 +80,7 @@ impl Domains for Line {
 }
 
 impl AsModule for Line {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let dir = if spec.contains(&POSITION_2D.into()) {
             DIR_2D
         } else if spec.contains(&POSITION_3D.into()) {
@@ -95,11 +97,11 @@ impl AsModule for Line {
             },
             clamp_pos: ClampMode::Dir,
         };
-        let elongate_module = elongate.module_impl(&spec.filter(elongate.domains_dyn()));
+        let elongate_module = elongate.module(&spec.filter(elongate.domains_dyn()));
         let elongate_call = elongate_module.call(elysian_stmt! { CONTEXT });
 
         let point = Point;
-        let point_module = point.module_impl(&spec.filter(point.domains_dyn()));
+        let point_module = point.module(&spec.filter(point.domains_dyn()));
         let point_call = point_module.call(elongate_call);
 
         let line = LINE.concat(&FunctionIdentifier::new_dynamic(
@@ -120,3 +122,6 @@ impl AsModule for Line {
         )
     }
 }
+
+#[typetag::serde]
+impl Shape for Line {}

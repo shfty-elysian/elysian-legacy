@@ -52,7 +52,7 @@ impl Domains for Translate {
 }
 
 impl AsModule for Translate {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, delta) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, DELTA_2D)
         } else if spec.contains(&POSITION_3D.into()) {

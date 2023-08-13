@@ -11,14 +11,14 @@ use elysian_ir::{
         X, Y, Z,
     },
     module::{
-        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, NumericType, SpecializationData,
-        StructIdentifier, Type, CONTEXT,
+        AsModule, DomainsDyn, ErasedHash, FunctionIdentifier, Module, NumericType,
+        SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
 use elysian_proc_macros::elysian_stmt;
 
-use crate::shape::{DynShape, IntoShape};
+use crate::shape::{DynShape, IntoShape, Shape};
 
 pub const RAYMARCH: FunctionIdentifier = FunctionIdentifier::new("raymarch", 2862797821569013866);
 
@@ -97,7 +97,7 @@ pub const MAX_STEPS: Identifier = Identifier::new("max_steps", 11467479756143826
 property!(MAX_STEPS, MAX_STEPS_PROP, Type::Number(NumericType::UInt));
 
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum March {
     Fixed {
         step_size: elysian_core::expr::Expr,
@@ -116,7 +116,7 @@ pub fn falloff_k(e: f32, r: f32) -> f32 {
 }
 
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Raymarch {
     march: March,
     max_steps: elysian_core::expr::Expr,
@@ -178,7 +178,7 @@ impl Raymarch {
 
 impl Hash for Raymarch {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_u64(self.field.hash_ir())
+        state.write_u64(self.field.erased_hash())
     }
 }
 
@@ -189,7 +189,7 @@ impl DomainsDyn for Raymarch {
 }
 
 impl AsModule for Raymarch {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         if !spec.contains(&POSITION_2D.into()) {
             panic!("Raymarch is only compatible with the 2D Position domain");
         }
@@ -199,7 +199,7 @@ impl AsModule for Raymarch {
         }
 
         let spec_3d = SpecializationData::new_3d();
-        let field_module = self.field.module_impl(&spec_3d);
+        let field_module = self.field.module(&spec_3d);
         let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         let max_steps = Expr::from(self.max_steps.clone());
@@ -295,3 +295,6 @@ impl AsModule for Raymarch {
         ))
     }
 }
+
+#[typetag::serde]
+impl Shape for Raymarch {}

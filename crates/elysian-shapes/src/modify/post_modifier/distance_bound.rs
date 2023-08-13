@@ -8,7 +8,7 @@ use elysian_core::{
 };
 use elysian_ir::{
     ast::{Block, DISTANCE, POSITION_2D, POSITION_3D},
-    module::{AsModule, Domains, HashIR},
+    module::{AsModule, Domains, ErasedHash},
     module::{
         FunctionDefinition, FunctionIdentifier, InputDefinition, Module, NumericType,
         SpecializationData, Type, CONTEXT,
@@ -43,7 +43,7 @@ impl Hash for DistanceBound {
             BoundType::Upper => DISTANCE_UPPER_BOUND.uuid().hash(state),
         };
 
-        state.write_u64(self.bound.hash_ir());
+        state.write_u64(self.bound.erased_hash());
     }
 }
 
@@ -54,7 +54,7 @@ impl Domains for DistanceBound {
 }
 
 impl AsModule for DistanceBound {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let mut block = Block::default();
 
         match self.ty {
@@ -97,7 +97,7 @@ impl AsModule for DistanceBound {
     }
 }
 
-#[cfg_attr(feature = "serde", typetag::serialize)]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PostModifier for DistanceBound {}
 
 pub trait IntoDistanceBound {

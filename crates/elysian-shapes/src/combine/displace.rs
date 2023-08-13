@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::combine::{LEFT, OUT, RIGHT};
+use crate::combine::{Combinator, LEFT, OUT, RIGHT};
 use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
@@ -11,7 +11,7 @@ use elysian_ir::{
 pub const DISPLACE: FunctionIdentifier = FunctionIdentifier::new("displace", 13382542451638139261);
 
 #[derive(Debug, Clone, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Displace {
     prop: PropertyIdentifier,
 }
@@ -25,7 +25,7 @@ impl Displace {
 impl Domains for Displace {}
 
 impl AsModule for Displace {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let displace = FunctionIdentifier(DISPLACE.0.concat(&self.prop));
         let prop = (*self.prop).clone();
 
@@ -41,3 +41,6 @@ impl AsModule for Displace {
         )
     }
 }
+
+#[typetag::serde]
+impl Combinator for Displace {}

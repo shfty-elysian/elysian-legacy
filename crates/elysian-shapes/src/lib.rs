@@ -9,6 +9,7 @@ pub mod derive_support_vector;
 pub mod elongate_basis;
 pub mod field;
 pub mod filter;
+pub mod mirror;
 pub mod modify;
 pub mod prepass;
 pub mod raymarch;

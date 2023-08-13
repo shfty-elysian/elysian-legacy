@@ -1,8 +1,4 @@
-use elysian_shapes::{
-    field::Line,
-    modify::{IntoMirror, IntoTranslate},
-    shape::IntoShape,
-};
+use elysian_shapes::{field::Line, mirror::IntoMirror, modify::IntoTranslate, shape::IntoShape};
 
 use super::combinator;
 

@@ -1,4 +1,4 @@
-use crate::combine::{LEFT, OUT, RIGHT};
+use crate::combine::{Combinator, LEFT, OUT, RIGHT};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{COMBINE_CONTEXT, DISTANCE},
@@ -9,13 +9,13 @@ pub const SUBTRACTION: FunctionIdentifier =
     FunctionIdentifier::new("subtraction", 1414822549598552032);
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Subtraction;
 
 impl Domains for Subtraction {}
 
 impl AsModule for Subtraction {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         Module::new(
             self,
             spec,
@@ -35,3 +35,6 @@ impl AsModule for Subtraction {
         )
     }
 }
+
+#[typetag::serde]
+impl Combinator for Subtraction {}

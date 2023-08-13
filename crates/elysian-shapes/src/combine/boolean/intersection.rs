@@ -1,4 +1,4 @@
-use crate::combine::{LEFT, OUT, RIGHT};
+use crate::combine::{Combinator, LEFT, OUT, RIGHT};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{COMBINE_CONTEXT, DISTANCE},
@@ -9,13 +9,13 @@ pub const INTERSECTION: FunctionIdentifier =
     FunctionIdentifier::new("intersection", 18033822391797795038);
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Intersection;
 
 impl Domains for Intersection {}
 
 impl AsModule for Intersection {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         Module::new(
             self,
             spec,
@@ -34,3 +34,6 @@ impl AsModule for Intersection {
         )
     }
 }
+
+#[typetag::serde]
+impl Combinator for Intersection {}

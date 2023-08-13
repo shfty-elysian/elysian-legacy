@@ -7,7 +7,7 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{Expr, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
     module::{
-        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData, CONTEXT,
+        AsModule, DomainsDyn, FunctionIdentifier, ErasedHash, Module, SpecializationData, CONTEXT,
     },
 };
 use elysian_proc_macros::elysian_stmt;
@@ -33,7 +33,7 @@ impl Debug for CrossSection {
 
 impl Hash for CrossSection {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_u64(self.field.hash_ir())
+        state.write_u64(self.field.erased_hash())
     }
 }
 
@@ -44,7 +44,7 @@ impl DomainsDyn for CrossSection {
 }
 
 impl AsModule for CrossSection {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         if !spec.contains(&POSITION_2D.into()) {
             panic!("CrossSection is only compatible with the 2D position domain");
         }
@@ -52,7 +52,7 @@ impl AsModule for CrossSection {
         let x_axis: Expr = self.x_axis.clone().into();
         let y_axis: Expr = self.y_axis.clone().into();
 
-        let field_module = self.field.module_impl(&SpecializationData::new_3d());
+        let field_module = self.field.module(&SpecializationData::new_3d());
         let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         field_module.concat(Module::new(

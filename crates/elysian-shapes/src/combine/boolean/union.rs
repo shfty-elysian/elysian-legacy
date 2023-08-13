@@ -1,7 +1,4 @@
-use crate::{
-    combine::{LEFT, OUT, RIGHT},
-    shape::{DynShape, IntoShape},
-};
+use crate::combine::{Combinator, LEFT, OUT, RIGHT};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{COMBINE_CONTEXT, DISTANCE},
@@ -11,23 +8,23 @@ use elysian_ir::{
 pub const UNION: FunctionIdentifier = FunctionIdentifier::new("union", 1894363406191409858);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Union;
 
 impl IntoIterator for Union {
-    type Item = DynShape;
+    type Item = Box<dyn Combinator>;
 
-    type IntoIter = std::iter::Once<DynShape>;
+    type IntoIter = std::iter::Once<Box<dyn Combinator>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        std::iter::once(self.shape())
+        std::iter::once(Box::new(self))
     }
 }
 
 impl Domains for Union {}
 
 impl AsModule for Union {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         Module::new(
             self,
             spec,
@@ -46,3 +43,6 @@ impl AsModule for Union {
         )
     }
 }
+
+#[typetag::serde]
+impl Combinator for Union {}

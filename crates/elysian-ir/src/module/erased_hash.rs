@@ -3,15 +3,15 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-pub trait HashIR {
-    fn hash_ir(&self) -> u64;
+pub trait ErasedHash {
+    fn erased_hash(&self) -> u64;
 }
 
-impl<T> HashIR for T
+impl<T> ErasedHash for T
 where
     T: Hash,
 {
-    fn hash_ir(&self) -> u64 {
+    fn erased_hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
         hasher.finish()

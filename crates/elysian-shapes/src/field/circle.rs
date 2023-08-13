@@ -13,7 +13,7 @@ use elysian_ir::{
 };
 use elysian_proc_macros::elysian_stmt;
 
-use crate::modify::Isosurface;
+use crate::{modify::Isosurface, shape::Shape};
 
 use super::Point;
 
@@ -23,7 +23,7 @@ pub const RADIUS: Identifier = Identifier::new("radius", 213754678517975478);
 property!(RADIUS, RADIUS_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Circle {
     radius: elysian_core::expr::Expr,
 }
@@ -57,12 +57,12 @@ impl Domains for Circle {
 }
 
 impl AsModule for Circle {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
-        let point_module = Point.module_impl(&spec.filter(Point::domains()));
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let point_module = Point.module(&spec.filter(Point::domains()));
         let point_call = point_module.call(elysian_stmt! { CONTEXT });
 
         let isosurface_module =
-            Isosurface::new(self.radius.clone()).module_impl(&spec.filter(Isosurface::domains()));
+            Isosurface::new(self.radius.clone()).module(&spec.filter(Isosurface::domains()));
         let isosurface_call = isosurface_module
             .entry_point
             .call([RADIUS.prop().read(), CONTEXT.prop().read()]);
@@ -83,3 +83,6 @@ impl AsModule for Circle {
             .with_args([self.radius().clone().into()])
     }
 }
+
+#[typetag::serde]
+impl Shape for Circle {}

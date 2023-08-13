@@ -39,7 +39,7 @@ impl Domains for Aspect {
 }
 
 impl AsModule for Aspect {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let aspect = ASPECT.function();
         Module::new(
             self,

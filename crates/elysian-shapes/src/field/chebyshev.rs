@@ -13,10 +13,12 @@ use elysian_ir::{
 
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
+use crate::shape::Shape;
+
 pub const CHEBYSHEV: FunctionIdentifier = FunctionIdentifier::new("chebyshev", 2147444445290820053);
 
 #[derive(Debug, Copy, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Chebyshev;
 
 impl Hash for Chebyshev {
@@ -39,7 +41,7 @@ impl Domains for Chebyshev {
 }
 
 impl AsModule for Chebyshev {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let position = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -166,3 +168,6 @@ impl AsModule for Chebyshev {
         )
     }
 }
+
+#[typetag::serde]
+impl Shape for Chebyshev {}

@@ -12,19 +12,21 @@ use elysian_shapes::{
         uv_color,
     },
     combine::{
-        Combine, CombineBuilder, Overlay, SmoothSubtraction, SmoothUnion, Subtraction, Union,
+        Combinator, Combine, CombineBuilder, Overlay, SmoothSubtraction, SmoothUnion, Subtraction,
+        Union,
     },
     field::{Capsule, Chebyshev, Circle, Infinity, Line, Point, Quad, Ring},
     filter::IntoFilter,
+    mirror::IntoMirror,
     modify::{
-        IntoAspect, IntoGradientNormals, IntoIsosurface, IntoMirror, IntoRepeat, IntoSet,
-        IntoTranslate, IntoUvMap, ASPECT, REPEAT_ID_2D,
+        IntoAspect, IntoGradientNormals, IntoIsosurface, IntoRepeat, IntoSet, IntoTranslate,
+        IntoUvMap, Modify, ASPECT, REPEAT_ID_2D,
     },
     prepass::IntoPrepass,
     raymarch::Raymarch,
     scale::IntoScale,
     select::Select,
-    shape::{DynShape, IntoShape},
+    shape::{DynShape, IntoShape, Shape},
     voronoi::{voronoi, CELL_ID},
 };
 use elysian_text::glyphs::{greek::sigma, text, Align};
@@ -226,7 +228,7 @@ pub fn pangram() -> impl IntoShape {
 }
 
 pub fn composite() -> impl IntoShape {
-    Combine::from([Box::new(Overlay) as DynShape])
+    Combine::from([Box::new(Overlay) as Box<dyn Combinator>])
         .push(pangram())
         .push(
             raymarched()
@@ -276,7 +278,7 @@ pub fn ngon(sides: usize, radius: f64) -> impl IntoShape {
     }
 }
 
-pub fn test_shape() -> Module {
+pub fn test_shape() -> Box<dyn Shape> {
     //ngon(5, 1.0)
     composite()
         //.set_post(COLOR, /*COLOR.prop().read() **/ distance_color(1.0))
@@ -284,9 +286,14 @@ pub fn test_shape() -> Module {
         //.set_post(COLOR, position_3d_color())
         //.set_post(COLOR, distance_color(100.0))
         .aspect(ASPECT.prop().read())
-        .module(&SpecializationData::new_2d())
+        .shape()
 }
 
 pub fn shapes() -> impl IntoIterator<Item = (&'static str, Module)> {
-    [("test_shape", test_shape())]
+    [(
+        "test_shape",
+        test_shape()
+            .module(&SpecializationData::new_2d())
+            .finalize(),
+    )]
 }

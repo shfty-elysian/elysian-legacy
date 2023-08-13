@@ -11,14 +11,17 @@ use elysian_ir::{
     module::{AsModule, Domains, FunctionIdentifier, Module, SpecializationData, CONTEXT},
 };
 
-use crate::modify::{Isosurface, DIR_2D, DIR_3D};
+use crate::{
+    modify::{Isosurface, DIR_2D, DIR_3D},
+    shape::Shape,
+};
 
 use super::{Line, RADIUS};
 
 pub const CAPSULE: FunctionIdentifier = FunctionIdentifier::new("capsule", 14339483921749952476);
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Capsule {
     dir: ElysianExpr,
     radius: ElysianExpr,
@@ -51,7 +54,7 @@ impl Domains for Capsule {
 }
 
 impl AsModule for Capsule {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let dir = if spec.contains(&POSITION_2D.into()) {
             DIR_2D
         } else if spec.contains(&POSITION_3D.into()) {
@@ -60,10 +63,10 @@ impl AsModule for Capsule {
             panic!("No position domain");
         };
 
-        let line_module = Line::centered(self.dir.clone()).module_impl(spec);
+        let line_module = Line::centered(self.dir.clone()).module(spec);
         let line_entry_point = &line_module.entry_point;
 
-        let isosurface_module = Isosurface::new(self.radius.clone()).module_impl(spec);
+        let isosurface_module = Isosurface::new(self.radius.clone()).module(spec);
         let isosurface_entry_point = &isosurface_module.entry_point;
 
         let capsule_module = Module::new(
@@ -80,3 +83,6 @@ impl AsModule for Capsule {
         line_module.concat(isosurface_module).concat(capsule_module)
     }
 }
+
+#[typetag::serde]
+impl Shape for Capsule {}

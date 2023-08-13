@@ -8,7 +8,7 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, ERROR, POSITION_2D, POSITION_3D},
     module::{
-        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData,
+        AsModule, DomainsDyn, FunctionIdentifier, ErasedHash, Module, SpecializationData,
         StructIdentifier, Type, CONTEXT,
     },
     property,
@@ -34,7 +34,7 @@ pub struct DeriveBoundingError {
 
 impl Hash for DeriveBoundingError {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_u64(self.field.hash_ir());
+        state.write_u64(self.field.erased_hash());
     }
 }
 
@@ -49,7 +49,7 @@ impl DomainsDyn for DeriveBoundingError {
 }
 
 impl AsModule for DeriveBoundingError {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let derive_bounding_error = FunctionIdentifier::new_dynamic("derive_bounding_error".into());
 
         let (position, support_vector) = match (
@@ -61,7 +61,7 @@ impl AsModule for DeriveBoundingError {
             _ => panic!("Invalid Position domain"),
         };
 
-        let field_module = self.field.module_impl(spec);
+        let field_module = self.field.module(spec);
         let field_call_context = field_module.call(elysian_expr! { CONTEXT });
         let field_call_derive_context = field_module.call(elysian_expr! { DERIVE_CONTEXT });
 

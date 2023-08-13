@@ -11,7 +11,7 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{GRADIENT_2D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
     module::{
-        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, NumericType, SpecializationData,
+        AsModule, DomainsDyn, FunctionIdentifier, ErasedHash, Module, NumericType, SpecializationData,
         Type, CONTEXT,
     },
     property,
@@ -24,7 +24,7 @@ pub const ANGLE: Identifier = Identifier::new("angle", 17396665761465842676);
 property!(ANGLE, ANGLE_PROP, Type::Number(NumericType::Float));
 
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Rotate {
     pub field: DynShape,
     pub angle: Expr,
@@ -32,7 +32,7 @@ pub struct Rotate {
 
 impl Hash for Rotate {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_u64(self.field.hash_ir());
+        state.write_u64(self.field.erased_hash());
     }
 }
 
@@ -47,13 +47,13 @@ impl DomainsDyn for Rotate {
 }
 
 impl AsModule for Rotate {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         assert!(
             spec.contains(&POSITION_2D.into()),
             "Rotate currently requires the 2D Position domain"
         );
 
-        let field_module = self.field.module_impl(spec);
+        let field_module = self.field.module(spec);
         let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         let rotate = FunctionIdentifier::new_dynamic("rotate".into());
@@ -80,6 +80,9 @@ impl AsModule for Rotate {
         ))
     }
 }
+
+#[typetag::serde]
+impl Shape for Rotate {}
 
 pub trait IntoRotate {
     fn rotate(self, angle: impl IntoExpr) -> Rotate;

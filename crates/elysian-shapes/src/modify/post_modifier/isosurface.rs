@@ -57,7 +57,7 @@ impl Domains for Isosurface {
 }
 
 impl AsModule for Isosurface {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let mut block = Block::default();
 
         if spec.contains(&DISTANCE.into()) {
@@ -100,7 +100,7 @@ impl AsModule for Isosurface {
     }
 }
 
-#[cfg_attr(feature = "serde", typetag::serialize)]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PostModifier for Isosurface {}
 
 pub trait IntoIsosurface {

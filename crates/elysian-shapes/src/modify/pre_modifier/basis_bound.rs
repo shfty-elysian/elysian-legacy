@@ -9,7 +9,7 @@ use elysian_core::{
 use elysian_ir::{
     ast::{Block, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
     module::{
-        AsModule, Domains, FunctionDefinition, FunctionIdentifier, HashIR,
+        AsModule, Domains, FunctionDefinition, FunctionIdentifier, ErasedHash,
         InputDefinition, Module, SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
@@ -58,7 +58,7 @@ impl Hash for BasisBound {
             BoundType::Upper => BASIS_UPPER_BOUND.uuid().hash(state),
         };
 
-        state.write_u64(self.bound.hash_ir());
+        state.write_u64(self.bound.erased_hash());
     }
 }
 
@@ -69,7 +69,7 @@ impl Domains for BasisBound {
 }
 
 impl AsModule for BasisBound {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, bound) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),

@@ -10,10 +10,7 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::Expr,
-    module::{
-        AsModule, Domains, FunctionIdentifier, Module, SpecializationData,
-        CONTEXT,
-    },
+    module::{AsModule, Domains, FunctionIdentifier, Module, SpecializationData, CONTEXT},
 };
 
 pub const SET: FunctionIdentifier = FunctionIdentifier::new("set", 1768232690987692666);
@@ -36,7 +33,7 @@ impl Hash for Set {
 impl Domains for Set {}
 
 impl AsModule for Set {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let prop = self.id.clone();
         let expr = Expr::from(self.expr.clone());
 
@@ -58,7 +55,7 @@ impl AsModule for Set {
 #[cfg_attr(feature = "serde", typetag::serde)]
 impl PreModifier for Set {}
 
-#[cfg_attr(feature = "serde", typetag::serialize)]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PostModifier for Set {}
 
 pub trait IntoSet {

@@ -30,7 +30,7 @@ impl Domains for Manifold {
 }
 
 impl AsModule for Manifold {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let mut block = Block::default();
 
         block.extend(elysian_block! {
@@ -77,7 +77,7 @@ impl AsModule for Manifold {
     }
 }
 
-#[cfg_attr(feature = "serde", typetag::serialize)]
+#[cfg_attr(feature = "serde", typetag::serde)]
 impl PostModifier for Manifold {}
 
 pub trait IntoManifold {

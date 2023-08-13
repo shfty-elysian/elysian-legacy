@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use crate::combine::{CombineBuilder, COMBINE_CONTEXT_STRUCT};
+use crate::{combine::{CombineBuilder, COMBINE_CONTEXT_STRUCT}, shape::Shape};
 use elysian_core::{expr::Expr, property_identifier::PropertyIdentifier};
 use elysian_ir::{
     ast::{DISTANCE, POSITION_2D, POSITION_3D},
@@ -22,7 +22,7 @@ use super::{Chebyshev, Point};
 pub const CORNER: FunctionIdentifier = FunctionIdentifier::new("corner", 5817708551492744655);
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Corner {
     props: Vec<PropertyIdentifier>,
 }
@@ -51,7 +51,7 @@ impl Domains for Corner {
 }
 
 impl AsModule for Corner {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let zero = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -75,7 +75,7 @@ impl AsModule for Corner {
             .push(Point.basis_bound(BoundType::Lower, zero))
             .push(Chebyshev.distance_bound(BoundType::Upper, 0.0));
 
-        let field_module = field.module_impl(&spec.filter(field.domains_dyn()));
+        let field_module = field.module(&spec.filter(field.domains_dyn()));
         let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         let mut corner_module = Module::new(
@@ -95,3 +95,6 @@ impl AsModule for Corner {
         field_module.concat(corner_module)
     }
 }
+
+#[typetag::serde]
+impl Shape for Corner {}

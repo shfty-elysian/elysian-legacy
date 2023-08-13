@@ -9,7 +9,7 @@ use elysian_ir::{
         vector2, vector3, Block, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
     },
     module::{
-        AsModule, DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+        AsModule, DomainsDyn, ErasedHash, FunctionDefinition, FunctionIdentifier, InputDefinition,
         Module, SpecializationData, CONTEXT,
     },
 };
@@ -22,7 +22,7 @@ pub const BASIS_MIRROR: FunctionIdentifier =
     FunctionIdentifier::new("basis_mirror", 2763069141557531361);
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MirrorMode {
     Basis(Expr),
     Axis(Expr),
@@ -39,7 +39,7 @@ impl ToString for MirrorMode {
 }
 
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mirror {
     field: DynShape,
     mode: MirrorMode,
@@ -48,7 +48,7 @@ pub struct Mirror {
 impl Hash for Mirror {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         BASIS_MIRROR.uuid().hash(state);
-        state.write_u64(self.field.hash_ir());
+        state.write_u64(self.field.erased_hash());
     }
 }
 
@@ -67,7 +67,7 @@ impl DomainsDyn for Mirror {
 }
 
 impl AsModule for Mirror {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, one) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -115,7 +115,7 @@ impl AsModule for Mirror {
             }
         }
 
-        let field_module = self.field.module_impl(spec);
+        let field_module = self.field.module(spec);
         let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         block.push(elysian_stmt! {
@@ -164,6 +164,9 @@ impl AsModule for Mirror {
         ))
     }
 }
+
+#[typetag::serde]
+impl Shape for Mirror {}
 
 pub trait IntoMirror {
     fn mirror_basis(self, basis: impl IntoExpr) -> Mirror;

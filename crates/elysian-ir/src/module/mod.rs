@@ -1,6 +1,6 @@
 mod domains;
+mod erased_hash;
 mod function_definition;
-mod hash_ir;
 mod properties;
 mod specialization_data;
 mod struct_definition;
@@ -14,8 +14,8 @@ use std::{
 
 pub use domains::*;
 use elysian_core::{identifier::Identifier, property_identifier::PropertyIdentifier, uuid::Uuid};
+pub use erased_hash::*;
 pub use function_definition::*;
-pub use hash_ir::*;
 use indexmap::IndexSet;
 pub use properties::*;
 pub use specialization_data::*;
@@ -78,7 +78,7 @@ impl Hash for Module {
 
 impl Module {
     pub fn new(
-        shape: &(impl HashIR + DomainsDyn),
+        shape: &(impl ErasedHash + DomainsDyn),
         spec: &SpecializationData,
         entry_function: FunctionDefinition,
     ) -> Self {
@@ -88,7 +88,7 @@ impl Module {
             struct_definitions: Default::default(),
             function_definitions: vec![entry_function],
             arguments: Default::default(),
-            hash: shape.hash_ir(),
+            hash: shape.erased_hash(),
         }
     }
 
@@ -251,9 +251,5 @@ fn expr_props(expr: &Expr) -> Vec<PropertyIdentifier> {
 
 pub trait AsModule {
     /// Generate a Module from this implementor
-    fn module_impl(&self, spec: &SpecializationData) -> Module;
-
-    fn module(&self, spec: &SpecializationData) -> Module {
-        self.module_impl(spec).finalize()
-    }
+    fn module(&self, spec: &SpecializationData) -> Module;
 }

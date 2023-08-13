@@ -14,7 +14,7 @@ use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::IntoBlock,
     module::{
-        AsModule, DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+        AsModule, DomainsDyn, ErasedHash, FunctionDefinition, FunctionIdentifier, InputDefinition,
         Module, SpecializationData, CONTEXT,
     },
 };
@@ -22,7 +22,7 @@ use elysian_ir::{
 use crate::shape::{DynShape, IntoShape, Shape};
 
 #[cfg_attr(feature = "serde", typetag::serde(tag = "type"))]
-pub trait PreModifier: Debug + AsModule + HashIR + DomainsDyn {}
+pub trait PreModifier: Debug + AsModule + ErasedHash + DomainsDyn {}
 
 pub trait IntoPreModifier: 'static + Sized + PreModifier {
     fn pre_modifier(self) -> Box<dyn PreModifier> {
@@ -32,8 +32,8 @@ pub trait IntoPreModifier: 'static + Sized + PreModifier {
 
 impl<T> IntoPreModifier for T where T: 'static + PreModifier {}
 
-#[cfg_attr(feature = "serde", typetag::serialize(tag = "type"))]
-pub trait PostModifier: Debug + AsModule + HashIR + DomainsDyn {}
+#[cfg_attr(feature = "serde", typetag::serde(tag = "type"))]
+pub trait PostModifier: Debug + AsModule + ErasedHash + DomainsDyn {}
 
 pub trait IntoPostModifier: 'static + Sized + PostModifier {
     fn post_modifier(self) -> Box<dyn PostModifier> {
@@ -44,7 +44,7 @@ pub trait IntoPostModifier: 'static + Sized + PostModifier {
 impl<T> IntoPostModifier for T where T: 'static + PostModifier {}
 
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Modify {
     pre_modifiers: Vec<Box<dyn PreModifier>>,
     field: DynShape,
@@ -74,11 +74,11 @@ impl Modify {
 impl Hash for Modify {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for modifier in &self.pre_modifiers {
-            state.write_u64(modifier.hash_ir());
+            state.write_u64(modifier.erased_hash());
         }
-        state.write_u64(self.field.hash_ir());
+        state.write_u64(self.field.erased_hash());
         for modifier in &self.post_modifiers {
-            state.write_u64(modifier.hash_ir());
+            state.write_u64(modifier.erased_hash());
         }
     }
 }
@@ -95,21 +95,19 @@ impl DomainsDyn for Modify {
 }
 
 impl AsModule for Modify {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let pre_modules: Vec<_> = self
             .pre_modifiers
             .iter()
-            .map(|m| m.module_impl(&spec.filter(m.domains_dyn())))
+            .map(|m| m.module(&spec.filter(m.domains_dyn())))
             .collect();
 
-        let field_module = self
-            .field
-            .module_impl(&spec.filter(self.field.domains_dyn()));
+        let field_module = self.field.module(&spec.filter(self.field.domains_dyn()));
 
         let post_modules: Vec<_> = self
             .post_modifiers
             .iter()
-            .map(|m| m.module_impl(&spec.filter(m.domains_dyn())))
+            .map(|m| m.module(&spec.filter(m.domains_dyn())))
             .collect();
 
         let modify_module = Module::new(
@@ -154,6 +152,9 @@ impl AsModule for Modify {
         module
     }
 }
+
+#[typetag::serde]
+impl Shape for Modify {}
 
 pub trait IntoModify: 'static + Sized + Shape {
     fn modify(self) -> Modify {

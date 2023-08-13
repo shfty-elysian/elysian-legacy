@@ -9,7 +9,7 @@ use elysian_ir::{
         VECTOR3,
     },
     module::{
-        AsModule, DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+        AsModule, DomainsDyn, ErasedHash, FunctionDefinition, FunctionIdentifier, InputDefinition,
         Module, SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
@@ -18,7 +18,7 @@ use elysian_ir::{
 use elysian_core::expr::Expr;
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
-use crate::shape::{DynShape, IntoShape};
+use crate::shape::{DynShape, IntoShape, Shape};
 
 pub const FLIP_2D: Identifier = Identifier::new("flip_2d", 4082005642022253885);
 property!(
@@ -35,7 +35,7 @@ property!(
 );
 
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FlipBasis {
     pub basis: Expr,
     pub field: DynShape,
@@ -44,7 +44,7 @@ pub struct FlipBasis {
 impl Hash for FlipBasis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.basis.hash(state);
-        state.write_u64(self.field.hash_ir());
+        state.write_u64(self.field.erased_hash());
     }
 }
 
@@ -64,7 +64,7 @@ impl DomainsDyn for FlipBasis {
 }
 
 impl AsModule for FlipBasis {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, flip, one) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, FLIP_2D, vector2([1.0, 1.0]).literal())
         } else if spec.contains(&POSITION_3D.into()) {
@@ -83,7 +83,7 @@ impl AsModule for FlipBasis {
             _ => panic!("Invalid Gradient Domain"),
         };
 
-        let field_module = self.field.module_impl(spec);
+        let field_module = self.field.module(spec);
         let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         let mut block = elysian_block! {
@@ -126,6 +126,9 @@ impl AsModule for FlipBasis {
         )
     }
 }
+
+#[typetag::serde]
+impl Shape for FlipBasis {}
 
 pub trait IntoFlipBasis {
     fn flip_basis(self, basis: impl IntoExpr) -> FlipBasis;

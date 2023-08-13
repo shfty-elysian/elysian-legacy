@@ -23,14 +23,14 @@ use std::hash::{Hash, Hasher};
 use elysian_ir::{
     ast::{Block, Expr, COMBINE_CONTEXT},
     module::{
-        DomainsDyn, FieldDefinition, FunctionDefinition, FunctionIdentifier, HashIR,
+        DomainsDyn, ErasedHash, FieldDefinition, FunctionDefinition, FunctionIdentifier,
         InputDefinition, SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
-use crate::shape::{DynShape, IntoShape};
+use crate::shape::{DynShape, IntoShape, Shape};
 
 pub const LEFT: Identifier = Identifier::new("left", 635254731934742132);
 property!(LEFT, LEFT_PROP_DEF, Type::Struct(StructIdentifier(CONTEXT)));
@@ -67,23 +67,23 @@ pub const COMBINE_CONTEXT_STRUCT: &'static StructDefinition = &StructDefinition 
 };
 
 #[derive(Default)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Combine {
-    pub combinator: Vec<DynShape>,
+    pub combinator: Vec<Box<dyn Combinator>>,
     pub shapes: Vec<DynShape>,
 }
 
 impl<T> From<T> for Combine
 where
-    T: IntoIterator<Item = DynShape>,
+    T: IntoIterator<Item = Box<dyn Combinator>>,
 {
     fn from(value: T) -> Self {
         value.into_iter().collect()
     }
 }
 
-impl FromIterator<DynShape> for Combine {
-    fn from_iter<T: IntoIterator<Item = DynShape>>(iter: T) -> Self {
+impl FromIterator<Box<dyn Combinator>> for Combine {
+    fn from_iter<T: IntoIterator<Item = Box<dyn Combinator>>>(iter: T) -> Self {
         Combine {
             combinator: iter.into_iter().collect(),
             ..Default::default()
@@ -110,10 +110,10 @@ impl Debug for Combine {
 impl Hash for Combine {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for combinator in &self.combinator {
-            state.write_u64(combinator.hash_ir())
+            state.write_u64(combinator.erased_hash())
         }
         for shape in &self.shapes {
-            state.write_u64(shape.hash_ir())
+            state.write_u64(shape.erased_hash())
         }
     }
 }
@@ -129,21 +129,17 @@ impl DomainsDyn for Combine {
 }
 
 impl AsModule for Combine {
-    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+    fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         assert!(self.shapes.len() > 0, "Empty Combine");
 
-        let prepared_shapes: Vec<_> = self.shapes.iter().map(|t| t.module_impl(spec)).collect();
+        let prepared_shapes: Vec<_> = self.shapes.iter().map(|t| t.module(spec)).collect();
 
         let mut iter = prepared_shapes.iter();
         let base_module = iter.next().expect("Empty list").clone();
 
         let mut block = vec![];
 
-        let combinators: Vec<_> = self
-            .combinator
-            .iter()
-            .map(|t| t.module_impl(spec))
-            .collect();
+        let combinators: Vec<_> = self.combinator.iter().map(|t| t.module(spec)).collect();
 
         let combinator = combinators
             .iter()
@@ -212,3 +208,17 @@ impl AsModule for Combine {
         module
     }
 }
+
+#[typetag::serde]
+impl Shape for Combine {}
+
+#[cfg_attr(feature = "serde", typetag::serde(tag = "type"))]
+pub trait Combinator: Debug + AsModule + ErasedHash + DomainsDyn {}
+
+pub trait IntoCombinator: 'static + Sized + Combinator {
+    fn pre_modifier(self) -> Box<dyn Combinator> {
+        Box::new(self)
+    }
+}
+
+impl<T> IntoCombinator for T where T: 'static + Combinator {}
