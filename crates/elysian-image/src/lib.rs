@@ -19,6 +19,12 @@ pub fn distance_to_luma_8(ctx: Struct) -> Vec<u8> {
     vec![d as u8]
 }
 
+pub fn distance_to_luma_32(ctx: Struct) -> Vec<f32> {
+    let d: f64 = ctx.get(&DISTANCE.into()).into();
+    let d = (1.0 - d) * 255.0;
+    vec![d as f32]
+}
+
 pub fn color_to_luma_8(ctx: Struct) -> Vec<u8> {
     let c: Vec4 = ctx.get(&COLOR.into()).into();
     let c = c * 255.0;

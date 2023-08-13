@@ -1,0 +1,10 @@
+[package]
+name = "elysian-ascii"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elysian-ir = { path = "../elysian-ir" }
+elysian-image = { path = "../elysian-image" }
+
+image = "0.24.7"

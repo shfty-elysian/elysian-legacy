@@ -35,6 +35,11 @@ pub mod image {
     pub use elysian_image::*;
 }
 
+#[cfg(feature = "ascii")]
+pub mod ascii {
+    pub use elysian_ascii::*;
+}
+
 #[cfg(feature = "naga")]
 pub mod naga {
     pub use elysian_naga::*;
