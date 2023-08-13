@@ -1,11 +1,11 @@
 use std::time::Instant;
 
 use elysian::{
-    image::{distance_to_luma_8, rasterize},
+    image::{color_to_rgb8, rasterize},
     ir::module::SpecializationData,
     r#static::include_static_shapes,
 };
-use image::{Luma};
+use image::Rgb;
 use viuer::Config;
 
 include_static_shapes!();
@@ -16,7 +16,7 @@ fn main() {
     let start = Instant::now();
     let (width, height) = (64, 48);
 
-    let image = rasterize::<Luma<u8>>(shape, width, height, distance_to_luma_8);
+    let image = rasterize::<Rgb<u8>>(shape, width, height, color_to_rgb8);
     let duration = Instant::now().duration_since(start);
 
     viuer::print(

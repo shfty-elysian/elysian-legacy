@@ -3,7 +3,7 @@ use elysian_core::{
     property_identifier::IntoPropertyIdentifier,
 };
 use elysian_ir::{
-    ast::{COLOR, DISTANCE, GRADIENT_2D, UV, X, Y},
+    ast::{COLOR, DISTANCE, GRADIENT_2D, GRADIENT_3D, UV, X, Y},
     module::{AsModule, Module, SpecializationData},
 };
 use elysian_shapes::{
@@ -151,7 +151,8 @@ pub fn raymarched() -> impl IntoShape {
         Combine::from(Union)
             .push(Circle::new(1.5).translate([0.0, 1.0, -5.0]))
             .push(Capsule::new([0.5, 0.0, 0.0], 1.2).translate([-2.5, -1.5, -5.0]))
-            .push(Quad::new([1.0, 1.0, 1.0], [GRADIENT_2D, UV]).translate([2.5, -1.5, -5.0])),
+            .push(Quad::new([1.0, 1.0, 1.0], [GRADIENT_3D, UV]).translate([2.5, -1.5, -5.0]))
+            .gradient_normals(),
     )
 }
 
@@ -280,7 +281,7 @@ pub fn test_shape() -> Box<dyn Shape> {
     //ngon(5, 1.0)
     composite()
         //.set_post(COLOR, /*COLOR.prop().read() **/ distance_color(1.0))
-        .set_post(COLOR, gradient_color() * distance_color(1.0))
+        .set_post(COLOR, uv_color() * distance_color(1.0))
         //.set_post(COLOR, position_3d_color())
         //.set_post(COLOR, distance_color(100.0))
         .aspect(ASPECT.prop().read())

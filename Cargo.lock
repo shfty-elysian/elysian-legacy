@@ -260,6 +260,7 @@ dependencies = [
  "image",
  "num_cpus",
  "rayon",
+ "ron",
  "rust-gpu-bridge",
  "tracing",
 ]
