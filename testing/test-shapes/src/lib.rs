@@ -143,7 +143,7 @@ pub fn select() -> impl IntoShape {
 
 pub fn raymarched() -> impl IntoShape {
     //let projection = Mat4::orthographic_rh(-1.0, 1.0, -1.0, 1.0, 0.0, 10.0);
-    let projection = Mat4::perspective_infinite_rh(std::f32::consts::PI * 0.25, 1.0, 0.01);
+    let projection = Mat4::perspective_infinite_rh(std::f32::consts::PI * 0.5, 1.0, 0.01);
     Raymarch::sphere(
         0.0001,
         100u64,
@@ -227,7 +227,7 @@ pub fn pangram() -> impl IntoShape {
 
 pub fn composite() -> impl IntoShape {
     Combine::from([Box::new(Overlay) as Box<dyn Combinator>])
-        .push(pangram().scale(0.25))
+        .push(pangram().scale(0.125))
         .push(
             raymarched()
                 .set_post(UV, UV.prop().read() * Expr::vector2(16.0, 16.0))
