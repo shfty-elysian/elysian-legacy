@@ -1,6 +1,7 @@
 pub mod post_modifier;
 pub mod pre_modifier;
 
+use elysian_proc_macros::elysian_stmt;
 pub use post_modifier::*;
 pub use pre_modifier::*;
 
@@ -13,15 +14,15 @@ use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::IntoBlock,
     module::{
-        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead,
-        Prepare, SpecializationData, StructDefinition, CONTEXT,
+        AsModule, DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+        Module, SpecializationData, CONTEXT,
     },
 };
 
 use crate::shape::{DynShape, IntoShape, Shape};
 
 #[cfg_attr(feature = "serde", typetag::serde(tag = "type"))]
-pub trait PreModifier: AsIR {}
+pub trait PreModifier: Debug + AsModule + HashIR + DomainsDyn {}
 
 pub trait IntoPreModifier: 'static + Sized + PreModifier {
     fn pre_modifier(self) -> Box<dyn PreModifier> {
@@ -32,7 +33,7 @@ pub trait IntoPreModifier: 'static + Sized + PreModifier {
 impl<T> IntoPreModifier for T where T: 'static + PreModifier {}
 
 #[cfg_attr(feature = "serde", typetag::serialize(tag = "type"))]
-pub trait PostModifier: AsIR {}
+pub trait PostModifier: Debug + AsModule + HashIR + DomainsDyn {}
 
 pub trait IntoPostModifier: 'static + Sized + PostModifier {
     fn post_modifier(self) -> Box<dyn PostModifier> {
@@ -93,86 +94,64 @@ impl DomainsDyn for Modify {
     }
 }
 
-impl AsIR for Modify {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("modify".into())
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
-        let pre_modifiers: Vec<_> = self
+impl AsModule for Modify {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let pre_modules: Vec<_> = self
             .pre_modifiers
             .iter()
-            .map(|t| {
-                let (_, b, c) = t.prepare(spec);
-                (t, b, c)
-            })
+            .map(|m| m.module_impl(&spec.filter(m.domains_dyn())))
             .collect();
 
-        let (_, field_entry_point, field_functions) = self.field.prepare(spec);
+        let field_module = self
+            .field
+            .module_impl(&spec.filter(self.field.domains_dyn()));
 
-        let post_modifiers: Vec<_> = self
+        let post_modules: Vec<_> = self
             .post_modifiers
             .iter()
-            .map(|t| {
-                let (_, b, c) = t.prepare(spec);
-                (t, b, c)
-            })
+            .map(|m| m.module_impl(&spec.filter(m.domains_dyn())))
             .collect();
 
-        let pre_functions: Vec<_> = pre_modifiers
-            .iter()
-            .flat_map(|(_, _, c)| c)
-            .cloned()
-            .collect();
-
-        let post_functions: Vec<_> = post_modifiers
-            .iter()
-            .flat_map(|(_, _, c)| c)
-            .cloned()
-            .collect();
-
-        pre_functions
-            .into_iter()
-            .chain(field_functions)
-            .chain(post_functions)
-            .chain(FunctionDefinition {
-                id: entry_point.clone(),
+        let modify_module = Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: FunctionIdentifier::new_dynamic("modify".into()),
                 public: true,
                 inputs: vec![InputDefinition {
                     id: PropertyIdentifier(CONTEXT),
                     mutable: false,
                 }],
                 output: PropertyIdentifier(CONTEXT),
-                block: post_modifiers
+                block: post_modules
                     .iter()
                     .fold(
-                        field_entry_point.call(
-                            self.field.arguments(
-                                pre_modifiers.iter().fold(
-                                    PropertyIdentifier(CONTEXT).read(),
-                                    |acc, (t, entry, _)| entry.call(t.arguments(acc)),
-                                ),
-                            ),
+                        field_module.call(
+                            pre_modules
+                                .iter()
+                                .fold(elysian_stmt! {CONTEXT}, |acc, next| next.call(acc)),
                         ),
-                        |acc, (t, entry, _)| entry.call(t.arguments(acc)),
+                        |acc, next| next.call(acc),
                     )
                     .output()
                     .block(),
-            })
-            .collect()
-    }
+            },
+        );
 
-    fn structs(&self) -> Vec<StructDefinition> {
-        self.pre_modifiers
+        let module = pre_modules
             .iter()
-            .flat_map(|t| t.structs())
-            .chain(self.field.structs())
-            .chain(self.post_modifiers.iter().flat_map(|t| t.structs()))
-            .collect()
+            .cloned()
+            .fold(Module::default(), |acc, next| acc.concat(next))
+            .concat(field_module)
+            .concat(
+                post_modules
+                    .iter()
+                    .cloned()
+                    .fold(Module::default(), |acc, next| acc.concat(next)),
+            )
+            .concat(modify_module);
+
+        module
     }
 }
 

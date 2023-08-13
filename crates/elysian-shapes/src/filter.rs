@@ -3,13 +3,13 @@ use std::hash::{Hash, Hasher};
 
 use elysian_core::identifier::Identifier;
 use elysian_core::property_identifier::PropertyIdentifier;
-use elysian_ir::module::{Prepare, StructDefinition};
+use elysian_ir::module::{AsModule, HashIR, Module};
 use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 use elysian_ir::{
     module::{
-        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition,
-        SpecializationData, StructIdentifier, Type, CONTEXT,
+        DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData,
+        StructIdentifier, Type, CONTEXT,
     },
     property,
 };
@@ -55,17 +55,10 @@ impl DomainsDyn for Filter {
     }
 }
 
-impl AsIR for Filter {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("filter".into())
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
-        let (_, field_call, field_functions) = self.field.call(spec, elysian_stmt! { CONTEXT });
+impl AsModule for Filter {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let field_module = self.field.module_impl(spec);
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         let mut block = elysian_block! {
             let FILTER_CONTEXT = #field_call;
@@ -81,10 +74,11 @@ impl AsIR for Filter {
             return CONTEXT
         });
 
-        field_functions
-            .into_iter()
-            .chain(FunctionDefinition {
-                id: entry_point.clone(),
+        field_module.concat(Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: FunctionIdentifier::new_dynamic("filter".into()),
                 public: false,
                 inputs: vec![InputDefinition {
                     id: CONTEXT.into(),
@@ -92,12 +86,8 @@ impl AsIR for Filter {
                 }],
                 output: CONTEXT.into(),
                 block,
-            })
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<StructDefinition> {
-        self.field.structs()
+            },
+        ))
     }
 }
 

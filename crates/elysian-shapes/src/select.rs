@@ -2,16 +2,14 @@ use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 use elysian_core::property_identifier::PropertyIdentifier;
-use elysian_ir::module::{Prepare, StructDefinition};
+use elysian_ir::ast::IntoBlock;
+use elysian_ir::module::{AsModule, Module};
 use elysian_proc_macros::elysian_stmt;
 
 use elysian_core::expr::IntoExpr;
-use elysian_ir::{
-    ast::IntoBlock,
-    module::{
-        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
-        IntoRead, SpecializationData, CONTEXT,
-    },
+use elysian_ir::module::{
+    DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+    SpecializationData, CONTEXT,
 };
 
 use crate::shape::{DynShape, IntoShape};
@@ -56,38 +54,27 @@ impl DomainsDyn for Select {
     }
 }
 
-impl AsIR for Select {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("select".into())
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Select {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let prepared_shapes: Vec<(_, _)> = self
             .cases
             .iter()
             .map(|(k, v)| {
-                let (a, b, c) = v.prepare(spec);
-                (k, (v, a, b, c))
+                let module = v.module_impl(spec);
+                (k, module)
             })
             .collect();
 
-        let (_, default_call, default_functions) =
-            self.default.call(spec, elysian_stmt! { CONTEXT });
+        let default_module = self.default.module_impl(spec);
+        let default_call = default_module.call(elysian_stmt! { CONTEXT });
 
         let block = prepared_shapes
             .iter()
             .rev()
-            .fold(default_call.output(), |acc, (k, (v, _, entry, _))| {
+            .fold(default_call.output(), |acc, (k, v)| {
                 elysian_ir::ast::Stmt::If {
                     cond: (*k).clone().into(),
-                    then: entry
-                        .call(v.arguments(PropertyIdentifier(CONTEXT).read()))
-                        .output()
-                        .box_stmt(),
+                    then: v.call(elysian_stmt! {CONTEXT}).output().box_stmt(),
                     otherwise: Some(acc.box_stmt()),
                 }
             })
@@ -95,26 +82,21 @@ impl AsIR for Select {
 
         prepared_shapes
             .into_iter()
-            .flat_map(|(_, (_, _, _, functions))| functions)
-            .chain(default_functions)
-            .chain(FunctionDefinition {
-                id: entry_point.clone(),
-                public: false,
-                inputs: vec![InputDefinition {
-                    id: CONTEXT.into(),
-                    mutable: false,
-                }],
-                output: CONTEXT.into(),
-                block,
-            })
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<StructDefinition> {
-        self.cases
-            .iter()
-            .flat_map(|(_, v)| v.structs())
-            .chain(self.default.structs())
-            .collect()
+            .fold(Module::default(), |acc, (_, next)| acc.concat(next))
+            .concat(default_module)
+            .concat(Module::new(
+                self,
+                spec,
+                FunctionDefinition {
+                    id: FunctionIdentifier::new_dynamic("select".into()),
+                    public: false,
+                    inputs: vec![InputDefinition {
+                        id: CONTEXT.into(),
+                        mutable: false,
+                    }],
+                    output: CONTEXT.into(),
+                    block,
+                },
+            ))
     }
 }

@@ -11,7 +11,7 @@ use elysian_ir::{
         X, Y, Z,
     },
     module::{
-        AsIR, DomainsDyn, FunctionIdentifier, NumericType, Prepare, SpecializationData,
+        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, NumericType, SpecializationData,
         StructIdentifier, Type, CONTEXT,
     },
     property,
@@ -188,16 +188,8 @@ impl DomainsDyn for Raymarch {
     }
 }
 
-impl AsIR for Raymarch {
-    fn entry_point(&self) -> FunctionIdentifier {
-        RAYMARCH
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
+impl AsModule for Raymarch {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         if !spec.contains(&POSITION_2D.into()) {
             panic!("Raymarch is only compatible with the 2D Position domain");
         }
@@ -207,7 +199,8 @@ impl AsIR for Raymarch {
         }
 
         let spec_3d = SpecializationData::new_3d();
-        let (_, field_call, field_functions) = self.field.call(&spec_3d, elysian_stmt! { CONTEXT });
+        let field_module = self.field.module_impl(&spec_3d);
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         let max_steps = Expr::from(self.max_steps.clone());
         let inv_projection = Expr::from(self.inv_projection.clone());
@@ -235,10 +228,11 @@ impl AsIR for Raymarch {
             }
         };
 
-        field_functions
-            .into_iter()
-            .chain([elysian_function! {
-                fn entry_point(mut CONTEXT) -> CONTEXT {
+        field_module.concat(Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn RAYMARCH(mut CONTEXT) -> CONTEXT {
                     let MAX_STEPS = #max_steps;
                     let STEPS = 0u32;
 
@@ -297,11 +291,7 @@ impl AsIR for Raymarch {
 
                     return CONTEXT;
                 }
-            }])
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
-        self.field.structs()
+            },
+        ))
     }
 }

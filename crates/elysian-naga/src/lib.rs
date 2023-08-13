@@ -8,8 +8,8 @@ use elysian_ir::{
         VECTOR4,
     },
     module::{
-        FunctionDefinition, Module as ElysianModule, NumericType, Type as ElysianType, CONTEXT,
-        SAFE_NORMALIZE_2, SAFE_NORMALIZE_3, SAFE_NORMALIZE_4,
+        properties, FunctionDefinition, FunctionIdentifier, Module as ElysianModule, NumericType,
+        Type as ElysianType, CONTEXT,
     },
 };
 use elysian_shapes::modify::ASPECT;
@@ -21,6 +21,13 @@ use naga::{
     ScalarKind, ShaderStage, Span, Statement, StructMember, SwizzleComponent, Type as NagaType,
     TypeInner, UniqueArena, VectorSize, WithSpan,
 };
+
+pub const SAFE_NORMALIZE_2: FunctionIdentifier =
+    FunctionIdentifier::new("safe_normalize_2", 18883451341246143490);
+pub const SAFE_NORMALIZE_3: FunctionIdentifier =
+    FunctionIdentifier::new("safe_normalize_3", 174303162393329419);
+pub const SAFE_NORMALIZE_4: FunctionIdentifier =
+    FunctionIdentifier::new("safe_normalize_4", 18890028961074310202);
 
 #[derive(Debug, Default)]
 pub struct ExpressionQueue {
@@ -385,8 +392,7 @@ impl<'a> NagaBuilder<'a> {
         #[cfg(feature = "print")]
         println!("get_input_type");
 
-        self.input
-            .props
+        properties()
             .get(id)
             .unwrap_or_else(|| panic!("No input type for {}", id.name()))
     }
@@ -734,8 +740,8 @@ impl<'a> NagaBuilder<'a> {
             | Expr::Gt(lhs, rhs)
             | Expr::And(lhs, rhs)
             | Expr::Or(lhs, rhs) => {
-                let type_l = lhs.ty(&self.input.function_definitions, &self.input.props);
-                let type_r = rhs.ty(&self.input.function_definitions, &self.input.props);
+                let type_l = lhs.ty(&self.input.function_definitions);
+                let type_r = rhs.ty(&self.input.function_definitions);
 
                 let invalid = |a, b| format!("Invalid Binary Op {}, {}", a, b);
 
@@ -924,17 +930,16 @@ impl<'a> NagaBuilder<'a> {
                         arg3: None,
                     })
                 } else {
-                    let function =
-                        match t.ty(&self.input.function_definitions, &self.input.props) {
-                            ElysianType::Struct(s) => match s.name() {
-                                "Vector2" => self.get_function(&SAFE_NORMALIZE_2.name_unique()),
-                                "Vector3" => self.get_function(&SAFE_NORMALIZE_3.name_unique()),
-                                "Vector4" => self.get_function(&SAFE_NORMALIZE_4.name_unique()),
-                                _ => panic!("Invalid Normalize"),
-                            },
+                    let function = match t.ty(&self.input.function_definitions) {
+                        ElysianType::Struct(s) => match s.name() {
+                            "Vector2" => self.get_function(&SAFE_NORMALIZE_2.name_unique()),
+                            "Vector3" => self.get_function(&SAFE_NORMALIZE_3.name_unique()),
+                            "Vector4" => self.get_function(&SAFE_NORMALIZE_4.name_unique()),
                             _ => panic!("Invalid Normalize"),
-                        }
-                        .0;
+                        },
+                        _ => panic!("Invalid Normalize"),
+                    }
+                    .0;
 
                     let call_result = self.push_expression(Expression::CallResult(function));
 

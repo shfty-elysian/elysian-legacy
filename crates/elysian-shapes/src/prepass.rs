@@ -3,8 +3,7 @@ use std::hash::Hash;
 use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::module::{
-    AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, Prepare, SpecializationData,
-    StructDefinition, CONTEXT,
+    AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData, CONTEXT,
 };
 use elysian_proc_macros::elysian_stmt;
 
@@ -34,39 +33,27 @@ impl DomainsDyn for Prepass {
     }
 }
 
-impl AsIR for Prepass {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("prepass".into())
-    }
+impl AsModule for Prepass {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let prepass_module = self.prepass.module_impl(spec);
+        let prepass_call = prepass_module.call(elysian_stmt! { CONTEXT });
 
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
-        let (_, prepass_call, prepass_functions) =
-            self.prepass.call(spec, elysian_stmt! { CONTEXT });
-        let (_, field_call, field_functions) = self.field.call(spec, elysian_stmt! { CONTEXT });
+        let field_module = self.field.module_impl(spec);
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
-        prepass_functions
-            .into_iter()
-            .chain(field_functions)
-            .chain([elysian_function! {
-                fn entry_point(CONTEXT) -> CONTEXT {
+        let prepass = FunctionIdentifier::new_dynamic("prepass".into());
+
+        prepass_module.concat(field_module).concat(Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn prepass(CONTEXT) -> CONTEXT {
                     let CONTEXT = #prepass_call;
                     let CONTEXT = #field_call;
                     return CONTEXT;
                 }
-            }])
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<StructDefinition> {
-        self.prepass
-            .structs()
-            .into_iter()
-            .chain(self.field.structs())
-            .collect()
+            },
+        ))
     }
 }
 

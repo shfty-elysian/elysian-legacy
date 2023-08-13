@@ -8,7 +8,8 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     module::{
-        AsIR, Domains, FunctionIdentifier, NumericType, Prepare, SpecializationData, Type, CONTEXT,
+        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, NumericType,
+        SpecializationData, Type, CONTEXT,
     },
     property,
 };
@@ -57,37 +58,34 @@ impl Domains for Ring {
     }
 }
 
-impl AsIR for Ring {
-    fn entry_point(&self) -> FunctionIdentifier {
-        RING
-    }
+impl AsModule for Ring {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let circle = Circle::new(self.radius.clone());
+        let circle_module = circle.module_impl(&spec.filter(circle.domains_dyn()));
+        let circle_call = circle_module.call(elysian_stmt! { CONTEXT });
 
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.radius.clone().into(), self.width.clone().into(), input]
-    }
+        let manifold = Manifold;
+        let manifold_module = manifold.module_impl(&spec.filter(manifold.domains_dyn()));
+        let manifold_call = manifold_module.call(circle_call);
 
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
-        let (_, circle_call, circle_functions) =
-            Circle::new(self.radius.clone()).call(spec, elysian_stmt! { CONTEXT });
+        let isosurface = Isosurface::new(self.width.clone());
+        let isosurface_module = isosurface.module_impl(&spec.filter(isosurface.domains_dyn()));
+        let isosurface_call = isosurface_module.call(manifold_call);
 
-        let (_, manifold_call, manifold_functions) = Manifold.call(spec, circle_call);
-
-        let (_, isosurface_call, isosurface_functions) =
-            Isosurface::new(self.width.clone()).call(spec, manifold_call);
-
-        circle_functions
-            .into_iter()
-            .chain(manifold_functions)
-            .chain(isosurface_functions)
-            .chain(elysian_function! {
-                fn entry_point(RADIUS, WIDTH, CONTEXT) -> CONTEXT {
-                    return #isosurface_call;
-                }
-            })
-            .collect()
+        circle_module
+            .concat(manifold_module)
+            .concat(isosurface_module)
+            .concat(
+                Module::new(
+                    self,
+                    spec,
+                    elysian_function! {
+                        fn RING(RADIUS, WIDTH, CONTEXT) -> CONTEXT {
+                            return #isosurface_call;
+                        }
+                    },
+                )
+                .with_args([self.radius.clone().into(), self.width.clone().into()]),
+            )
     }
 }

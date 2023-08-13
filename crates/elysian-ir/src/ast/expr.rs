@@ -6,7 +6,8 @@ use crate::{
         Z_AXIS_4,
     },
     module::{
-        FunctionDefinition, FunctionIdentifier, NumericType, StructIdentifier, Type, CONTEXT,
+        properties, FunctionDefinition, FunctionIdentifier, NumericType, StructIdentifier, Type,
+        CONTEXT,
     },
 };
 use elysian_core::{expr::Expr as ElysianExpr, property_identifier::PropertyIdentifier};
@@ -245,11 +246,7 @@ impl core::ops::Neg for Expr {
 }
 
 impl Expr {
-    pub fn ty(
-        &self,
-        function_defs: &Vec<FunctionDefinition>,
-        types: &IndexMap<PropertyIdentifier, Type>,
-    ) -> Type {
+    pub fn ty(&self, function_defs: &Vec<FunctionDefinition>) -> Type {
         match self {
             Literal(v) => match v {
                 Value::Boolean(_) => Type::Boolean,
@@ -263,11 +260,11 @@ impl Expr {
             Struct(def, _) => Type::Struct(def.clone()),
             Read(path) => path
                 .last()
-                .map(|id| types.get(id))
+                .map(|id| properties().get(id))
                 .flatten()
                 .unwrap()
                 .clone(),
-            Call { function, .. } => types
+            Call { function, .. } => properties()
                 .get(
                     &function_defs
                         .iter()
@@ -278,8 +275,8 @@ impl Expr {
                 .unwrap()
                 .clone(),
             Neg(t) | Abs(t) | Sign(t) | Round(t) | Sin(t) | Cos(t) | Tan(t) | Asin(t) | Acos(t)
-            | Atan(t) => t.ty(function_defs, types),
-            Length(t) => match t.ty(function_defs, types) {
+            | Atan(t) => t.ty(function_defs),
+            Length(t) => match t.ty(function_defs) {
                 Type::Boolean => panic!("Invalid Length"),
                 Type::Number(n) => Type::Number(n),
                 Type::Struct(s) => match s.name() {
@@ -289,8 +286,8 @@ impl Expr {
                     _ => panic!("Invalid Length"),
                 },
             },
-            Normalize(t) => t.ty(function_defs, types),
-            Clamp(t, _, _) => t.ty(function_defs, types),
+            Normalize(t) => t.ty(function_defs),
+            Clamp(t, _, _) => t.ty(function_defs),
             Dot(_, _) => Type::Number(NumericType::Float),
             Add(lhs, rhs)
             | Sub(lhs, rhs)
@@ -306,90 +303,88 @@ impl Expr {
             | And(lhs, rhs)
             | Or(lhs, rhs)
             | Atan2(lhs, rhs)
-            | Mix(lhs, rhs, ..) => {
-                match (lhs.ty(function_defs, types), rhs.ty(function_defs, types)) {
-                    (Type::Boolean, Type::Boolean) => Type::Boolean,
-                    (Type::Number(a), Type::Number(b)) => {
-                        if a.name() != b.name() {
+            | Mix(lhs, rhs, ..) => match (lhs.ty(function_defs), rhs.ty(function_defs)) {
+                (Type::Boolean, Type::Boolean) => Type::Boolean,
+                (Type::Number(a), Type::Number(b)) => {
+                    if a.name() != b.name() {
+                        panic!("Invalid Binary Op")
+                    }
+
+                    Type::Number(a)
+                }
+                (Type::Number(..), Type::Struct(s)) => Type::Struct(s),
+                (Type::Struct(s), Type::Number(..)) => Type::Struct(s),
+                (Type::Struct(a), Type::Struct(b)) => match self {
+                    Add(_, _) => match (a.name(), b.name()) {
+                        ("Vector2", "Vector2") => Type::Struct(a),
+                        ("Vector3", "Vector3") => Type::Struct(a),
+                        ("Vector4", "Vector4") => Type::Struct(a),
+                        ("Matrix2", "Matrix2") => Type::Struct(a),
+                        ("Matrix3", "Matrix3") => Type::Struct(a),
+                        ("Matrix4", "Matrix4") => Type::Struct(a),
+                        _ => panic!("Invalid Binary Op"),
+                    },
+                    Sub(_, _) => match (a.name(), b.name()) {
+                        ("Vector2", "Vector2") => Type::Struct(a),
+                        ("Vector3", "Vector3") => Type::Struct(a),
+                        ("Vector4", "Vector4") => Type::Struct(a),
+                        ("Matrix2", "Matrix2") => Type::Struct(a),
+                        ("Matrix3", "Matrix3") => Type::Struct(a),
+                        ("Matrix4", "Matrix4") => Type::Struct(a),
+                        _ => panic!("Invalid Binary Op"),
+                    },
+                    Mul(_, _) => match (a.name(), b.name()) {
+                        ("Vector2", "Vector2") => Type::Struct(a),
+                        ("Vector3", "Vector3") => Type::Struct(a),
+                        ("Vector4", "Vector4") => Type::Struct(a),
+                        ("Matrix2", "Matrix2") => Type::Struct(a),
+                        ("Matrix3", "Matrix3") => Type::Struct(a),
+                        ("Matrix4", "Matrix4") => Type::Struct(a),
+                        ("Vector2", "Matrix2") => Type::Struct(a),
+                        ("Matrix2", "Vector2") => Type::Struct(b),
+                        ("Vector3", "Matrix3") => Type::Struct(a),
+                        ("Matrix3", "Vector3") => Type::Struct(b),
+                        ("Vector4", "Matrix4") => Type::Struct(a),
+                        ("Matrix4", "Vector4") => Type::Struct(b),
+                        _ => panic!("Invalid Binary Op"),
+                    },
+                    Div(_, _) => match (a.name(), b.name()) {
+                        ("Vector2", "Vector2") => Type::Struct(a),
+                        ("Vector3", "Vector3") => Type::Struct(a),
+                        ("Vector4", "Vector4") => Type::Struct(a),
+                        _ => panic!("Invalid Binary Op"),
+                    },
+                    Mod(_, _) => match (a.name(), b.name()) {
+                        ("Vector2", "Vector2") => Type::Struct(a),
+                        ("Vector3", "Vector3") => Type::Struct(a),
+                        ("Vector4", "Vector4") => Type::Struct(a),
+                        _ => panic!("Invalid Binary Op"),
+                    },
+                    Lt(_, _)
+                    | Gt(_, _)
+                    | Eq(_, _)
+                    | Ne(_, _)
+                    | Dot(_, _)
+                    | Min(_, _)
+                    | Max(_, _)
+                    | Mix(_, _, _) => {
+                        if a.name_unique() != b.name_unique() {
                             panic!("Invalid Binary Op")
                         }
 
-                        Type::Number(a)
+                        Type::Struct(a)
                     }
-                    (Type::Number(..), Type::Struct(s)) => Type::Struct(s),
-                    (Type::Struct(s), Type::Number(..)) => Type::Struct(s),
-                    (Type::Struct(a), Type::Struct(b)) => match self {
-                        Add(_, _) => match (a.name(), b.name()) {
-                            ("Vector2", "Vector2") => Type::Struct(a),
-                            ("Vector3", "Vector3") => Type::Struct(a),
-                            ("Vector4", "Vector4") => Type::Struct(a),
-                            ("Matrix2", "Matrix2") => Type::Struct(a),
-                            ("Matrix3", "Matrix3") => Type::Struct(a),
-                            ("Matrix4", "Matrix4") => Type::Struct(a),
-                            _ => panic!("Invalid Binary Op"),
-                        },
-                        Sub(_, _) => match (a.name(), b.name()) {
-                            ("Vector2", "Vector2") => Type::Struct(a),
-                            ("Vector3", "Vector3") => Type::Struct(a),
-                            ("Vector4", "Vector4") => Type::Struct(a),
-                            ("Matrix2", "Matrix2") => Type::Struct(a),
-                            ("Matrix3", "Matrix3") => Type::Struct(a),
-                            ("Matrix4", "Matrix4") => Type::Struct(a),
-                            _ => panic!("Invalid Binary Op"),
-                        },
-                        Mul(_, _) => match (a.name(), b.name()) {
-                            ("Vector2", "Vector2") => Type::Struct(a),
-                            ("Vector3", "Vector3") => Type::Struct(a),
-                            ("Vector4", "Vector4") => Type::Struct(a),
-                            ("Matrix2", "Matrix2") => Type::Struct(a),
-                            ("Matrix3", "Matrix3") => Type::Struct(a),
-                            ("Matrix4", "Matrix4") => Type::Struct(a),
-                            ("Vector2", "Matrix2") => Type::Struct(a),
-                            ("Matrix2", "Vector2") => Type::Struct(b),
-                            ("Vector3", "Matrix3") => Type::Struct(a),
-                            ("Matrix3", "Vector3") => Type::Struct(b),
-                            ("Vector4", "Matrix4") => Type::Struct(a),
-                            ("Matrix4", "Vector4") => Type::Struct(b),
-                            _ => panic!("Invalid Binary Op"),
-                        },
-                        Div(_, _) => match (a.name(), b.name()) {
-                            ("Vector2", "Vector2") => Type::Struct(a),
-                            ("Vector3", "Vector3") => Type::Struct(a),
-                            ("Vector4", "Vector4") => Type::Struct(a),
-                            _ => panic!("Invalid Binary Op"),
-                        },
-                        Mod(_, _) => match (a.name(), b.name()) {
-                            ("Vector2", "Vector2") => Type::Struct(a),
-                            ("Vector3", "Vector3") => Type::Struct(a),
-                            ("Vector4", "Vector4") => Type::Struct(a),
-                            _ => panic!("Invalid Binary Op"),
-                        },
-                        Lt(_, _)
-                        | Gt(_, _)
-                        | Eq(_, _)
-                        | Ne(_, _)
-                        | Dot(_, _)
-                        | Min(_, _)
-                        | Max(_, _)
-                        | Mix(_, _, _) => {
-                            if a.name_unique() != b.name_unique() {
-                                panic!("Invalid Binary Op")
-                            }
-
-                            Type::Struct(a)
+                    And(_, _) | Or(_, _) => {
+                        if a.name() == "Bool" && b.name() == "Bool" {
+                            Type::Boolean
+                        } else {
+                            panic!("Invalid Binary Op")
                         }
-                        And(_, _) | Or(_, _) => {
-                            if a.name() == "Bool" && b.name() == "Bool" {
-                                Type::Boolean
-                            } else {
-                                panic!("Invalid Binary Op")
-                            }
-                        }
-                        op => unreachable!("{op:#?}"),
-                    },
-                    _ => panic!("Invalid Binary Op"),
-                }
-            }
+                    }
+                    op => unreachable!("{op:#?}"),
+                },
+                _ => panic!("Invalid Binary Op"),
+            },
         }
     }
 

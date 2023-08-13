@@ -6,7 +6,8 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
     module::{
-        AsIR, DomainsDyn, FunctionIdentifier, SpecializationData, StructIdentifier, Type, CONTEXT,
+        AsModule, DomainsDyn, FunctionIdentifier, Module, SpecializationData, StructIdentifier,
+        Type, CONTEXT,
     },
     property,
 };
@@ -41,18 +42,8 @@ impl DomainsDyn for DeriveSupportVector {
     }
 }
 
-impl AsIR for DeriveSupportVector {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("derive_support_vector".into())
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
-        let entry_point = entry_point.clone();
-
+impl AsModule for DeriveSupportVector {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let support_vector = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -71,12 +62,18 @@ impl AsIR for DeriveSupportVector {
             _ => panic!("Invalid Gradient domain"),
         };
 
-        vec![elysian_function! {
-            pub fn entry_point(mut CONTEXT) -> CONTEXT {
-                CONTEXT.support_vector = -CONTEXT.gradient.normalize() * CONTEXT.DISTANCE;
-                return CONTEXT;
-            }
-        }]
+        let derive_support_vector = FunctionIdentifier::new_dynamic("derive_support_vector".into());
+
+        Module::new(
+            self,
+            spec,
+            elysian_function! {
+                pub fn derive_support_vector(mut CONTEXT) -> CONTEXT {
+                    CONTEXT.support_vector = -CONTEXT.gradient.normalize() * CONTEXT.DISTANCE;
+                    return CONTEXT;
+                }
+            },
+        )
     }
 }
 

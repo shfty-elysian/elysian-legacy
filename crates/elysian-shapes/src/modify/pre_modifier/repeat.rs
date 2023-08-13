@@ -7,8 +7,8 @@ use elysian_core::{
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData,
-        StructIdentifier, Type, CONTEXT,
+        AsModule, Domains, FunctionIdentifier, Module, SpecializationData, StructIdentifier, Type,
+        CONTEXT,
     },
     property,
 };
@@ -16,8 +16,10 @@ use elysian_ir::{
 use elysian_core::expr::Expr;
 use elysian_decl_macros::elysian_function;
 
-pub const REPEAT_CLAMPED: Identifier = Identifier::new("repeat_clamped", 346035631277210970);
-pub const REPEAT_INFINITE: Identifier = Identifier::new("repeat_infinite", 468741336633754013);
+pub const REPEAT_CLAMPED: FunctionIdentifier =
+    FunctionIdentifier::new("repeat_clamped", 346035631277210970);
+pub const REPEAT_INFINITE: FunctionIdentifier =
+    FunctionIdentifier::new("repeat_infinite", 468741336633754013);
 
 pub const PERIOD_2D: Identifier = Identifier::new("period_2d", 6536292381924824837);
 property!(
@@ -68,10 +70,10 @@ pub struct Repeat {
 
 impl Hash for Repeat {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        if self.range.is_none() {
-            REPEAT_INFINITE.uuid().hash(state);
-        } else {
+        if self.range.is_some() {
             REPEAT_CLAMPED.uuid().hash(state);
+        } else {
+            REPEAT_INFINITE.uuid().hash(state);
         }
         self.period.hash(state);
     }
@@ -83,30 +85,8 @@ impl Domains for Repeat {
     }
 }
 
-impl AsIR for Repeat {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier(if self.range.is_none() {
-            REPEAT_INFINITE
-        } else {
-            REPEAT_CLAMPED
-        })
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        if let Some((min, max)) = self.range.as_ref() {
-            let min = elysian_ir::ast::Expr::from(min.clone());
-            let max = elysian_ir::ast::Expr::from(max.clone());
-            vec![self.period.clone().into(), min, max, input]
-        } else {
-            vec![self.period.clone().into(), input]
-        }
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Repeat {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, period, min, max, repeat_id) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, PERIOD_2D, MIN_2D, MAX_2D, REPEAT_ID_2D)
         } else if spec.contains(&POSITION_3D.into()) {
@@ -115,9 +95,9 @@ impl AsIR for Repeat {
             panic!("No position domain")
         };
 
-        vec![if self.range.is_some() {
+        let function = if self.range.is_some() {
             elysian_function! {
-                fn entry_point(period, min, max, mut CONTEXT) -> CONTEXT {
+                fn REPEAT_CLAMPED(period, min, max, mut CONTEXT) -> CONTEXT {
                     CONTEXT.repeat_id = (CONTEXT.position / period).round().clamp(min, max);
                     CONTEXT.position =
                         CONTEXT.position - period * (CONTEXT.position / period).round().clamp(min, max);
@@ -126,14 +106,22 @@ impl AsIR for Repeat {
             }
         } else {
             elysian_function! {
-                fn entry_point(period, mut CONTEXT) -> CONTEXT {
+                fn REPEAT_INFINITE(period, mut CONTEXT) -> CONTEXT {
                     CONTEXT.repeat_id = (CONTEXT.position / period).round();
                     CONTEXT.position =
                         (CONTEXT.position + period * 0.5) % period - period * 0.5;
                     return CONTEXT;
                 }
             }
-        }]
+        };
+
+        Module::new(self, spec, function).with_args(if let Some((min, max)) = self.range.as_ref() {
+            let min = elysian_ir::ast::Expr::from(min.clone());
+            let max = elysian_ir::ast::Expr::from(max.clone());
+            vec![self.period.clone().into(), min, max]
+        } else {
+            vec![self.period.clone().into()]
+        })
     }
 }
 

@@ -7,7 +7,10 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D},
-    module::{AsIR, Domains, FunctionIdentifier, Prepare, SpecializationData, CONTEXT},
+    module::{
+        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, SpecializationData,
+        CONTEXT,
+    },
 };
 use elysian_proc_macros::elysian_stmt;
 
@@ -74,22 +77,8 @@ impl Domains for Line {
     }
 }
 
-impl AsIR for Line {
-    fn entry_point(&self) -> FunctionIdentifier {
-        LINE.concat(&FunctionIdentifier::new_dynamic(
-            self.mode.to_string().into(),
-        ))
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.dir.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
+impl AsModule for Line {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let dir = if spec.contains(&POSITION_2D.into()) {
             DIR_2D
         } else if spec.contains(&POSITION_3D.into()) {
@@ -98,26 +87,36 @@ impl AsIR for Line {
             panic!("No position domain set")
         };
 
-        let (_, elongate_call, elongate_functions) = ElongateAxis {
+        let elongate = ElongateAxis {
             dir: self.dir.clone(),
             clamp_neg: match self.mode {
                 LineMode::Centered => ClampMode::Dir,
                 LineMode::Segment => ClampMode::Zero,
             },
             clamp_pos: ClampMode::Dir,
-        }
-        .call(spec, elysian_stmt! { CONTEXT });
+        };
+        let elongate_module = elongate.module_impl(&spec.filter(elongate.domains_dyn()));
+        let elongate_call = elongate_module.call(elysian_stmt! { CONTEXT });
 
-        let (_, point_call, point_functions) = Point.call(spec, elongate_call);
+        let point = Point;
+        let point_module = point.module_impl(&spec.filter(point.domains_dyn()));
+        let point_call = point_module.call(elongate_call);
 
-        point_functions
-            .into_iter()
-            .chain(elongate_functions)
-            .chain(elysian_function! {
-                fn entry_point(dir, CONTEXT) -> CONTEXT {
-                    return #point_call;
-                }
-            })
-            .collect()
+        let line = LINE.concat(&FunctionIdentifier::new_dynamic(
+            self.mode.to_string().into(),
+        ));
+
+        elongate_module.concat(point_module).concat(
+            Module::new(
+                self,
+                spec,
+                elysian_function! {
+                    fn line(dir, CONTEXT) -> CONTEXT {
+                        return #point_call;
+                    }
+                },
+            )
+            .with_args([self.dir.clone().into()]),
+        )
     }
 }

@@ -6,7 +6,7 @@ use elysian_ir::{
         MATRIX2, MATRIX3, MATRIX4, VECTOR2, VECTOR3, VECTOR4, W, W_AXIS_4, X, X_AXIS_2, X_AXIS_3,
         X_AXIS_4, Y, Y_AXIS_2, Y_AXIS_3, Y_AXIS_4, Z, Z_AXIS_3, Z_AXIS_4,
     },
-    module::{AsModule, Module, NumericType, SpecializationData, StructIdentifier, CONTEXT},
+    module::{properties, Module, NumericType, StructIdentifier, CONTEXT},
 };
 pub use prettyplease;
 
@@ -20,10 +20,7 @@ use syn::{
     PathSegment, ReturnType, Signature, Stmt, Type, TypePath, Visibility,
 };
 
-use elysian_ir::{
-    ast::{Block as IrBlock, Expr as IrExpr, Stmt as IrStmt},
-    module::AsIR,
-};
+use elysian_ir::ast::{Block as IrBlock, Expr as IrExpr, Stmt as IrStmt};
 
 pub fn type_to_syn(ty: &elysian_ir::module::Type) -> TokenStream {
     match ty {
@@ -61,17 +58,11 @@ pub fn property_to_syn(id: &Identifier) -> TokenStream {
     }
 }
 
-pub fn module_to_string<T>(input: &T, spec: &SpecializationData, name: &str) -> String
-where
-    T: AsIR,
-{
-    prettyplease::unparse(&module_to_syn(input, spec, name))
+pub fn module_to_string(input: &Module, name: &str) -> String {
+    prettyplease::unparse(&module_to_syn(input, name))
 }
 
-pub fn module_to_syn<T>(input: &T, spec: &SpecializationData, name: &str) -> File
-where
-    T: AsIR,
-{
+pub fn module_to_syn(module: &Module, name: &str) -> File {
     let name = Ident::new(name, Span::call_site());
 
     let mut attrs = vec![];
@@ -98,8 +89,6 @@ where
             r#static::StaticShape,
         };
     });
-
-    let module = input.module(spec);
 
     for def in &module.struct_definitions {
         match &def.id {
@@ -144,8 +133,7 @@ where
                                     qself: None,
                                     path: Ident::new(
                                         &builtin_types(
-                                            &module
-                                                .props
+                                            &properties()
                                                 .get(&field.id)
                                                 .unwrap_or_else(|| {
                                                     panic!("No type for {}", field.id.name())
@@ -231,8 +219,7 @@ where
                 let pat = Ident::new(&input.id.name_unique(), Span::call_site());
                 let ty = Ident::new(
                     &builtin_types(
-                        &module
-                            .props
+                        &properties()
                             .get(&input.id)
                             .unwrap_or_else(|| panic!("No type for {}", input.id.name()))
                             .name_unique(),
@@ -248,8 +235,7 @@ where
 
         let output = Ident::new(
             &builtin_types(
-                &module
-                    .props
+                &properties()
                     .get(&def.output)
                     .unwrap_or_else(|| panic!("No type for {}", def.output.name_unique()))
                     .name_unique(),
@@ -315,7 +301,7 @@ where
         }
     });
 
-    let hash = input.hash_ir();
+    let hash = module.hash;
     items.push(parse_quote! {
         #[linkme::distributed_slice(elysian::r#static::STATIC_SHAPES)]
         static STATIC_SHAPE: StaticShape = StaticShape {

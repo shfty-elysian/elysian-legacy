@@ -8,11 +8,11 @@ use elysian_core::{
 };
 use elysian_ir::{
     ast::{Block, DISTANCE, POSITION_2D, POSITION_3D},
+    module::{AsModule, Domains, HashIR},
     module::{
-        AsIR, FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
+        FunctionDefinition, FunctionIdentifier, InputDefinition, Module, NumericType,
         SpecializationData, Type, CONTEXT,
     },
-    module::{Domains, HashIR},
     property,
 };
 
@@ -53,23 +53,8 @@ impl Domains for DistanceBound {
     }
 }
 
-impl AsIR for DistanceBound {
-    fn entry_point(&self) -> FunctionIdentifier {
-        match self.ty {
-            BoundType::Lower => DISTANCE_LOWER_BOUND,
-            BoundType::Upper => DISTANCE_UPPER_BOUND,
-        }
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.bound.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        _: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for DistanceBound {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let mut block = Block::default();
 
         match self.ty {
@@ -85,22 +70,30 @@ impl AsIR for DistanceBound {
             return CONTEXT
         });
 
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![
-                InputDefinition {
-                    id: BOUND.into(),
-                    mutable: false,
+        Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: match self.ty {
+                    BoundType::Lower => DISTANCE_LOWER_BOUND,
+                    BoundType::Upper => DISTANCE_UPPER_BOUND,
                 },
-                InputDefinition {
-                    id: CONTEXT.into(),
-                    mutable: true,
-                },
-            ],
-            output: CONTEXT.into(),
-            block,
-        }]
+                public: false,
+                inputs: vec![
+                    InputDefinition {
+                        id: BOUND.into(),
+                        mutable: false,
+                    },
+                    InputDefinition {
+                        id: CONTEXT.into(),
+                        mutable: true,
+                    },
+                ],
+                output: CONTEXT.into(),
+                block,
+            },
+        )
+        .with_args([self.bound.clone().into()])
     }
 }
 

@@ -5,7 +5,7 @@ use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::COMBINE_CONTEXT,
-    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData},
+    module::{AsModule, Domains, FunctionIdentifier, Module, SpecializationData},
 };
 
 pub const DISPLACE: FunctionIdentifier = FunctionIdentifier::new("displace", 13382542451638139261);
@@ -24,23 +24,20 @@ impl Displace {
 
 impl Domains for Displace {}
 
-impl AsIR for Displace {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier(DISPLACE.0.concat(&self.prop))
-    }
-
-    fn functions(
-        &self,
-        _: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Displace {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let displace = FunctionIdentifier(DISPLACE.0.concat(&self.prop));
         let prop = (*self.prop).clone();
 
-        vec![elysian_function! {
-            fn entry_point(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
-                COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.LEFT.prop + COMBINE_CONTEXT.RIGHT.prop;
-                return COMBINE_CONTEXT;
-            }
-        }]
+        Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn displace(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
+                    COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.LEFT.prop + COMBINE_CONTEXT.RIGHT.prop;
+                    return COMBINE_CONTEXT;
+                }
+            },
+        )
     }
 }

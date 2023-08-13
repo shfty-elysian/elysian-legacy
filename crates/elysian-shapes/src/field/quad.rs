@@ -7,9 +7,12 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y, Z},
-    module::{AsIR, Domains, FunctionIdentifier, Prepare, CONTEXT},
+    module::{
+        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, SpecializationData,
+        CONTEXT,
+    },
 };
-use elysian_proc_macros::elysian_expr;
+use elysian_proc_macros::elysian_stmt;
 
 use crate::modify::{IntoMirror, IntoTranslate};
 
@@ -47,16 +50,8 @@ impl Domains for Quad {
     }
 }
 
-impl AsIR for Quad {
-    fn entry_point(&self) -> elysian_ir::module::FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("quad".into())
-    }
-
-    fn functions(
-        &self,
-        spec: &elysian_ir::module::SpecializationData,
-        entry_point: &elysian_ir::module::FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
+impl AsModule for Quad {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let one = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -70,12 +65,16 @@ impl AsIR for Quad {
             .translate(self.extent.clone())
             .mirror_basis(one);
 
-        let (_, field_call, field_functions) = field.call(spec, elysian_expr! { CONTEXT });
+        let field_module = field.module_impl(&spec.filter(field.domains_dyn()));
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
-        field_functions
-            .into_iter()
-            .chain([elysian_function! {
-                fn entry_point(CONTEXT) -> CONTEXT {
+        let quad = FunctionIdentifier::new_dynamic("quad".into());
+
+        field_module.concat(Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn quad(CONTEXT) -> CONTEXT {
                     let POSITION_3D = CONTEXT.POSITION_3D;
 
                     let CONTEXT = #field_call;
@@ -113,11 +112,7 @@ impl AsIR for Quad {
 
                     return CONTEXT;
                 }
-            }])
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
-        Corner::new(self.props.clone()).structs()
+            },
+        ))
     }
 }

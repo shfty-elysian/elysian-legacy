@@ -6,8 +6,8 @@ use elysian_ir::{
         Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y, Z,
     },
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData,
-        CONTEXT,
+        AsModule, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, Module,
+        SpecializationData, CONTEXT,
     },
 };
 
@@ -38,16 +38,8 @@ impl Domains for Chebyshev {
     }
 }
 
-impl AsIR for Chebyshev {
-    fn entry_point(&self) -> FunctionIdentifier {
-        CHEBYSHEV
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Chebyshev {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let position = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -158,15 +150,19 @@ impl AsIR for Chebyshev {
 
         block.push(elysian_stmt! { return CONTEXT });
 
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![InputDefinition {
-                id: CONTEXT.into(),
-                mutable: true,
-            }],
-            output: CONTEXT.into(),
-            block,
-        }]
+        Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: CHEBYSHEV,
+                public: false,
+                inputs: vec![InputDefinition {
+                    id: CONTEXT.into(),
+                    mutable: true,
+                }],
+                output: CONTEXT.into(),
+                block,
+            },
+        )
     }
 }

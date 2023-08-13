@@ -11,8 +11,8 @@ use elysian_ir::{
         Z,
     },
     module::{
-        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, Prepare,
-        SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
+        AsModule, DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+        Module, SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
@@ -58,20 +58,8 @@ impl DomainsDyn for ElongateBasis {
     }
 }
 
-impl AsIR for ElongateBasis {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("elongate_basis".into())
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.extent.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for ElongateBasis {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, extent, zero) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -81,7 +69,8 @@ impl AsIR for ElongateBasis {
             _ => panic!("Invalid position domain"),
         };
 
-        let (_, field_call, field_functions) = self.field.call(spec, elysian_expr! { CONTEXT });
+        let field_module = self.field.module_impl(spec);
+        let field_call = field_module.call(elysian_expr! { CONTEXT });
 
         let extent_expr = elysian_ir::ast::Expr::from(self.extent.clone());
 
@@ -103,29 +92,29 @@ impl AsIR for ElongateBasis {
             return CONTEXT
         };
 
-        field_functions
-            .into_iter()
-            .chain([FunctionDefinition {
-                id: entry_point.clone(),
-                public: false,
-                inputs: vec![
-                    InputDefinition {
-                        id: extent.clone().into(),
-                        mutable: false,
-                    },
-                    InputDefinition {
-                        id: CONTEXT.into(),
-                        mutable: true,
-                    },
-                ],
-                output: CONTEXT.into(),
-                block,
-            }])
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<StructDefinition> {
-        self.field.structs()
+        field_module.concat(
+            Module::new(
+                self,
+                spec,
+                FunctionDefinition {
+                    id: FunctionIdentifier::new_dynamic("elongate_basis".into()),
+                    public: false,
+                    inputs: vec![
+                        InputDefinition {
+                            id: extent.clone().into(),
+                            mutable: false,
+                        },
+                        InputDefinition {
+                            id: CONTEXT.into(),
+                            mutable: true,
+                        },
+                    ],
+                    output: CONTEXT.into(),
+                    block,
+                },
+            )
+            .with_args([self.extent.clone().into()]),
+        )
     }
 }
 

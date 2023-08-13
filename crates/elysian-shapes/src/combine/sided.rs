@@ -3,7 +3,7 @@ use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{COMBINE_CONTEXT, DISTANCE},
-    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData},
+    module::{AsModule, Domains, FunctionIdentifier, Module, SpecializationData},
 };
 
 pub const SIDED: FunctionIdentifier = FunctionIdentifier::new("sided", 19756903452063788266);
@@ -27,24 +27,20 @@ impl Sided {
 
 impl Domains for Sided {}
 
-impl AsIR for Sided {
-    fn entry_point(&self) -> FunctionIdentifier {
-        SIDED
-    }
-
-    fn functions(
-        &self,
-        _: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Sided {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let side = if self.flip { RIGHT } else { LEFT };
 
-        vec![elysian_function! {
-            fn entry_point(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
-                COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.side;
-                return COMBINE_CONTEXT
-            }
-        }]
+        Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn SIDED(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
+                    COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.side;
+                    return COMBINE_CONTEXT
+                }
+            },
+        )
     }
 }
 
@@ -67,16 +63,10 @@ impl SidedProp {
 
 impl Domains for SidedProp {}
 
-impl AsIR for SidedProp {
-    fn entry_point(&self) -> FunctionIdentifier {
-        (*SIDED).concat(&self.prop).into()
-    }
+impl AsModule for SidedProp {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let sided_prop: FunctionIdentifier = (*SIDED).concat(&self.prop).into();
 
-    fn functions(
-        &self,
-        _: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
         let prop = &self.prop;
 
         let (left, right) = if self.flip {
@@ -85,17 +75,21 @@ impl AsIR for SidedProp {
             (LEFT, RIGHT)
         };
 
-        vec![elysian_function! {
-            fn entry_point(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
-                if COMBINE_CONTEXT.OUT.DISTANCE > 0.0 {
-                    COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.left.prop;
-                }
-                else {
-                    COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.right.prop;
-                }
+        Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn sided_prop(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
+                    if COMBINE_CONTEXT.OUT.DISTANCE > 0.0 {
+                        COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.left.prop;
+                    }
+                    else {
+                        COMBINE_CONTEXT.OUT.prop = COMBINE_CONTEXT.right.prop;
+                    }
 
-                return COMBINE_CONTEXT;
-            }
-        }]
+                    return COMBINE_CONTEXT;
+                }
+            },
+        )
     }
 }

@@ -7,8 +7,8 @@ use elysian_core::{
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData,
-        StructIdentifier, Type, CONTEXT,
+        AsModule, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, Module,
+        SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
@@ -67,26 +67,8 @@ impl Domains for ElongateAxis {
     }
 }
 
-impl AsIR for ElongateAxis {
-    fn entry_point(&self) -> FunctionIdentifier {
-        ELONGATE_AXIS
-            .concat(&FunctionIdentifier::new_dynamic(
-                self.clamp_neg.to_string().into(),
-            ))
-            .concat(&FunctionIdentifier::new_dynamic(
-                self.clamp_pos.to_string().into(),
-            ))
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.dir.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for ElongateAxis {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, dir) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -125,22 +107,35 @@ impl AsIR for ElongateAxis {
             return CONTEXT
         };
 
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![
-                InputDefinition {
-                    id: dir.clone().into(),
-                    mutable: false,
-                },
-                InputDefinition {
-                    id: CONTEXT.into(),
-                    mutable: true,
-                },
-            ],
-            output: CONTEXT.into(),
-            block,
-        }]
+        let elongate_axis = ELONGATE_AXIS
+            .concat(&FunctionIdentifier::new_dynamic(
+                self.clamp_neg.to_string().into(),
+            ))
+            .concat(&FunctionIdentifier::new_dynamic(
+                self.clamp_pos.to_string().into(),
+            ));
+
+        Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: elongate_axis,
+                public: false,
+                inputs: vec![
+                    InputDefinition {
+                        id: dir.clone().into(),
+                        mutable: false,
+                    },
+                    InputDefinition {
+                        id: CONTEXT.into(),
+                        mutable: true,
+                    },
+                ],
+                output: CONTEXT.into(),
+                block,
+            },
+        )
+        .with_args([self.dir.clone().into()])
     }
 }
 

@@ -11,7 +11,7 @@ pub use builder::*;
 pub use displace::*;
 use elysian_core::identifier::Identifier;
 use elysian_core::property_identifier::PropertyIdentifier;
-use elysian_ir::module::Prepare;
+use elysian_ir::module::{AsModule, Module};
 pub use overlay::*;
 pub use overlay::*;
 pub use sided::*;
@@ -23,7 +23,7 @@ use std::hash::{Hash, Hasher};
 use elysian_ir::{
     ast::{Block, Expr, COMBINE_CONTEXT},
     module::{
-        AsIR, DomainsDyn, FieldDefinition, FunctionDefinition, FunctionIdentifier, HashIR,
+        DomainsDyn, FieldDefinition, FunctionDefinition, FunctionIdentifier, HashIR,
         InputDefinition, SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
     },
     property,
@@ -128,75 +128,52 @@ impl DomainsDyn for Combine {
     }
 }
 
-impl AsIR for Combine {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("combine".into())
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Combine {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         assert!(self.shapes.len() > 0, "Empty Combine");
 
-        let prepared_shapes: Vec<_> = self
-            .shapes
-            .iter()
-            .map(|t| {
-                let (a, b, c) = t.prepare(spec);
-                (t, a, b, c)
-            })
-            .collect();
+        let prepared_shapes: Vec<_> = self.shapes.iter().map(|t| t.module_impl(spec)).collect();
 
         let mut iter = prepared_shapes.iter();
-        let (base, _, base_entry, _) = iter.next().expect("Empty list").clone();
+        let base_module = iter.next().expect("Empty list").clone();
 
         let mut block = vec![];
 
         let combinators: Vec<_> = self
             .combinator
             .iter()
-            .map(|t| {
-                let (a, b, c) = t.prepare(spec);
-                (t, a, b, c)
-            })
+            .map(|t| t.module_impl(spec))
             .collect();
 
-        let combinator = combinators.iter().fold(
-            elysian_stmt! { COMBINE_CONTEXT },
-            |acc: Expr, (combinator, _, entry, _)| Expr::Call {
-                function: entry.clone(),
-                args: combinator.arguments(acc),
-            },
-        );
+        let combinator = combinators
+            .iter()
+            .fold(elysian_stmt! { COMBINE_CONTEXT }, |acc: Expr, module| {
+                module.call(acc)
+            });
 
         if prepared_shapes.len() == 1 {
-            let base_call = base_entry.call(base.arguments(elysian_stmt! {CONTEXT}));
+            let base_call = base_module.call(elysian_stmt! {CONTEXT});
             block.push(elysian_stmt! {
                 return #base_call
             });
         } else {
-            iter.fold(
-                base_entry.call(base.arguments(elysian_stmt! {CONTEXT})),
-                |acc, (t, _, entry, _)| {
-                    let entry = entry.call(t.arguments(elysian_stmt! {CONTEXT}));
+            iter.fold(base_module.call(elysian_stmt! {CONTEXT}), |acc, entry| {
+                let entry = entry.call(elysian_stmt! {CONTEXT});
 
-                    block.push(elysian_stmt! {
-                        let COMBINE_CONTEXT = COMBINE_CONTEXT {
-                            LEFT: #acc,
-                            RIGHT: #entry
-                        }
-                    });
+                block.push(elysian_stmt! {
+                    let COMBINE_CONTEXT = COMBINE_CONTEXT {
+                        LEFT: #acc,
+                        RIGHT: #entry
+                    }
+                });
 
-                    block.extend(elysian_block! {
-                        let COMBINE_CONTEXT = #combinator;
-                        let OUT = COMBINE_CONTEXT.OUT;
-                    });
+                block.extend(elysian_block! {
+                    let COMBINE_CONTEXT = #combinator;
+                    let OUT = COMBINE_CONTEXT.OUT;
+                });
 
-                    elysian_stmt! { OUT }
-                },
-            );
+                elysian_stmt! { OUT }
+            });
 
             block.push(elysian_stmt! {
                 return OUT
@@ -205,28 +182,33 @@ impl AsIR for Combine {
 
         let block = Block(block);
 
-        combinators
-            .iter()
-            .flat_map(|(_, _, _, functions)| functions.clone())
-            .chain(
+        let mut module = combinators
+            .into_iter()
+            .fold(Module::default(), |acc, next| acc.concat(next))
+            .concat(
                 prepared_shapes
-                    .iter()
-                    .flat_map(|(_, _, _, functions)| functions.clone()),
+                    .into_iter()
+                    .fold(Module::default(), |acc, next| acc.concat(next)),
             )
-            .chain([FunctionDefinition {
-                id: entry_point.clone(),
-                public: true,
-                inputs: vec![InputDefinition {
-                    id: PropertyIdentifier(CONTEXT),
-                    mutable: false,
-                }],
-                output: PropertyIdentifier(CONTEXT),
-                block,
-            }])
-            .collect()
-    }
+            .concat(Module::new(
+                self,
+                spec,
+                FunctionDefinition {
+                    id: FunctionIdentifier::new_dynamic("combine".into()),
+                    public: true,
+                    inputs: vec![InputDefinition {
+                        id: PropertyIdentifier(CONTEXT),
+                        mutable: false,
+                    }],
+                    output: PropertyIdentifier(CONTEXT),
+                    block,
+                },
+            ));
 
-    fn structs(&self) -> Vec<StructDefinition> {
-        vec![COMBINE_CONTEXT_STRUCT.clone()]
+        module
+            .struct_definitions
+            .push(COMBINE_CONTEXT_STRUCT.clone());
+
+        module
     }
 }

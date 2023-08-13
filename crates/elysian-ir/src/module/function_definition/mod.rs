@@ -43,6 +43,15 @@ pub struct FunctionDefinition {
     pub block: Block,
 }
 
+impl FunctionDefinition {
+    pub fn specialize(self, spec: &SpecializationData) -> Self {
+        FunctionDefinition {
+            id: self.id.specialize(spec),
+            ..self
+        }
+    }
+}
+
 impl IntoIterator for FunctionDefinition {
     type Item = Self;
 

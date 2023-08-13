@@ -2,7 +2,7 @@ use std::{fmt::Debug, hash::Hash};
 
 use crate::{
     modify::{IntoModify, Modify, PostModifier, PreModifier},
-    shape::{IntoShape, Shape},
+    shape::Shape,
 };
 use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
@@ -10,7 +10,10 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::Expr,
-    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},
+    module::{
+        AsModule, Domains, FunctionIdentifier, Module, SpecializationData,
+        CONTEXT,
+    },
 };
 
 pub const SET: FunctionIdentifier = FunctionIdentifier::new("set", 1768232690987692666);
@@ -32,25 +35,23 @@ impl Hash for Set {
 
 impl Domains for Set {}
 
-impl AsIR for Set {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier(Identifier::new_dynamic("set").concat(&self.id))
-    }
-
-    fn functions(
-        &self,
-        _: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Set {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let prop = self.id.clone();
         let expr = Expr::from(self.expr.clone());
 
-        vec![elysian_function! {
-            fn entry_point(mut CONTEXT) -> CONTEXT {
-                CONTEXT.prop = #expr;
-                return CONTEXT
-            }
-        }]
+        let set = FunctionIdentifier(Identifier::new_dynamic("set").concat(&self.id));
+
+        Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn set(mut CONTEXT) -> CONTEXT {
+                    CONTEXT.prop = #expr;
+                    return CONTEXT
+                }
+            },
+        )
     }
 }
 

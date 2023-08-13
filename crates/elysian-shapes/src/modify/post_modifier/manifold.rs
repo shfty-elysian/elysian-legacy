@@ -5,8 +5,8 @@ use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::{Block, DISTANCE, GRADIENT_2D, GRADIENT_3D, NUM, UV, X},
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData,
-        CONTEXT,
+        AsModule, Domains, FunctionDefinition, FunctionIdentifier,
+        InputDefinition, Module, SpecializationData, CONTEXT,
     },
 };
 use elysian_proc_macros::{elysian_block, elysian_stmt};
@@ -29,16 +29,8 @@ impl Domains for Manifold {
     }
 }
 
-impl AsIR for Manifold {
-    fn entry_point(&self) -> FunctionIdentifier {
-        MANIFOLD
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Manifold {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let mut block = Block::default();
 
         block.extend(elysian_block! {
@@ -68,16 +60,20 @@ impl AsIR for Manifold {
 
         block.push(elysian_stmt! { return CONTEXT });
 
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![InputDefinition {
-                id: CONTEXT.into(),
-                mutable: true,
-            }],
-            output: CONTEXT.into(),
-            block,
-        }]
+        Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: MANIFOLD,
+                public: false,
+                inputs: vec![InputDefinition {
+                    id: CONTEXT.into(),
+                    mutable: true,
+                }],
+                output: CONTEXT.into(),
+                block,
+            },
+        )
     }
 }
 

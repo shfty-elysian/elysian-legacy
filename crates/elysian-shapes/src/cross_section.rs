@@ -6,7 +6,9 @@ use std::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{Expr, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
-    module::{AsIR, DomainsDyn, FunctionIdentifier, Prepare, SpecializationData, CONTEXT},
+    module::{
+        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData, CONTEXT,
+    },
 };
 use elysian_proc_macros::elysian_stmt;
 
@@ -41,16 +43,8 @@ impl DomainsDyn for CrossSection {
     }
 }
 
-impl AsIR for CrossSection {
-    fn entry_point(&self) -> FunctionIdentifier {
-        CROSS_SECTION
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        _: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
+impl AsModule for CrossSection {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         if !spec.contains(&POSITION_2D.into()) {
             panic!("CrossSection is only compatible with the 2D position domain");
         }
@@ -58,13 +52,13 @@ impl AsIR for CrossSection {
         let x_axis: Expr = self.x_axis.clone().into();
         let y_axis: Expr = self.y_axis.clone().into();
 
-        let (_, field_call, field_functions) = self
-            .field
-            .call(&SpecializationData::new_3d(), elysian_stmt! { CONTEXT });
+        let field_module = self.field.module_impl(&SpecializationData::new_3d());
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
-        field_functions
-            .into_iter()
-            .chain([elysian_function! {
+        field_module.concat(Module::new(
+            self,
+            spec,
+            elysian_function! {
                 fn CROSS_SECTION(mut CONTEXT) -> CONTEXT {
                     CONTEXT.POSITION_3D =
                         #x_axis * CONTEXT.POSITION_2D.X
@@ -77,11 +71,7 @@ impl AsIR for CrossSection {
                     };
                     return CONTEXT;
                 }
-            }])
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
-        self.field.structs()
+            },
+        ))
     }
 }

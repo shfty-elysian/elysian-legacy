@@ -5,7 +5,7 @@ use elysian_core::{expr::Expr, property_identifier::PropertyIdentifier};
 use elysian_ir::{
     ast::{DISTANCE, POSITION_2D, POSITION_3D},
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, Prepare, SpecializationData, CONTEXT,
+        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, SpecializationData, CONTEXT,
     },
 };
 
@@ -50,16 +50,8 @@ impl Domains for Corner {
     }
 }
 
-impl AsIR for Corner {
-    fn entry_point(&self) -> FunctionIdentifier {
-        CORNER
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Corner {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let zero = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -83,19 +75,23 @@ impl AsIR for Corner {
             .push(Point.basis_bound(BoundType::Lower, zero))
             .push(Chebyshev.distance_bound(BoundType::Upper, 0.0));
 
-        let (_, field_call, field_functions) = field.call(spec, elysian_stmt! { CONTEXT });
+        let field_module = field.module_impl(&spec.filter(field.domains_dyn()));
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
-        field_functions
-            .into_iter()
-            .chain([elysian_function! {
-                fn entry_point(CONTEXT) -> CONTEXT {
+        let mut corner_module = Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn CORNER(CONTEXT) -> CONTEXT {
                     return #field_call;
                 }
-            }])
-            .collect()
-    }
+            },
+        );
 
-    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
-        vec![COMBINE_CONTEXT_STRUCT.clone()]
+        corner_module
+            .struct_definitions
+            .push(COMBINE_CONTEXT_STRUCT.clone());
+
+        field_module.concat(corner_module)
     }
 }

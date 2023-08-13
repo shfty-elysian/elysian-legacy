@@ -2,26 +2,30 @@ use elysian_core::{
     expr::{Expr, IntoLiteral, IntoPath, IntoRead},
     property_identifier::IntoPropertyIdentifier,
 };
-use elysian_ir::ast::{vector2, COLOR, DISTANCE, GRADIENT_2D, POSITION_3D, UV, X, Y};
+use elysian_ir::{
+    ast::{COLOR, DISTANCE, GRADIENT_2D, UV, X, Y},
+    module::{AsModule, Module, SpecializationData},
+};
 use elysian_shapes::{
     color::{
         ambient_light_color, directional_light_color, distance_color, gradient_color, normal_color,
-        position_3d_color, uv_color,
+        uv_color,
     },
-    combine::{CombineBuilder, Combine, Overlay, SmoothSubtraction, SmoothUnion, Subtraction, Union},
-    field::{Capsule, Chebyshev, Circle, Corner, Infinity, Line, Point, Quad, Ring},
+    combine::{
+        Combine, CombineBuilder, Overlay, SmoothSubtraction, SmoothUnion, Subtraction, Union,
+    },
+    field::{Capsule, Chebyshev, Circle, Infinity, Line, Point, Quad, Ring},
     filter::IntoFilter,
     modify::{
-        BoundType, IntoAspect, IntoDistanceBound, IntoGradientNormals, IntoIsosurface,
-        IntoManifold, IntoMirror, IntoModify, IntoRepeat, IntoSet, IntoTranslate, ASPECT,
-        REPEAT_ID_2D,
+        IntoAspect, IntoGradientNormals, IntoIsosurface, IntoMirror, IntoRepeat, IntoSet,
+        IntoTranslate, IntoUvMap, ASPECT, REPEAT_ID_2D,
     },
+    prepass::IntoPrepass,
     raymarch::Raymarch,
     scale::IntoScale,
     select::Select,
     shape::{DynShape, IntoShape},
-    uv_map::IntoUvMap,
-    voronoi::{voronoi, CELL_ID}, prepass::IntoPrepass,
+    voronoi::{voronoi, CELL_ID},
 };
 use elysian_text::glyphs::{greek::sigma, text, Align};
 use rust_gpu_bridge::glam::Mat4;
@@ -272,16 +276,17 @@ pub fn ngon(sides: usize, radius: f64) -> impl IntoShape {
     }
 }
 
-pub fn test_shape() -> impl IntoShape {
+pub fn test_shape() -> Module {
     //ngon(5, 1.0)
-    pangram()
+    composite()
         //.set_post(COLOR, /*COLOR.prop().read() **/ distance_color(1.0))
         .set_post(COLOR, gradient_color() * distance_color(1.0))
         //.set_post(COLOR, position_3d_color())
         //.set_post(COLOR, distance_color(100.0))
         .aspect(ASPECT.prop().read())
+        .module(&SpecializationData::new_2d())
 }
 
-pub fn shapes() -> impl IntoIterator<Item = (&'static str, DynShape)> {
-    [("test_shape", test_shape().shape())]
+pub fn shapes() -> impl IntoIterator<Item = (&'static str, Module)> {
+    [("test_shape", test_shape())]
 }

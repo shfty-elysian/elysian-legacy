@@ -16,7 +16,6 @@ pub mod rotate;
 pub mod scale;
 pub mod select;
 pub mod shape;
-pub mod uv_map;
 pub mod voronoi;
 
 use elysian_ir::ast::COLOR;

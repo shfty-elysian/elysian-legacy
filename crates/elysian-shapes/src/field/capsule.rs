@@ -8,9 +8,8 @@ use elysian_core::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D},
-    module::{AsIR, Domains, FunctionIdentifier, SpecializationData, CONTEXT, Prepare},
+    module::{AsModule, Domains, FunctionIdentifier, Module, SpecializationData, CONTEXT},
 };
-use elysian_proc_macros::elysian_stmt;
 
 use crate::modify::{Isosurface, DIR_2D, DIR_3D};
 
@@ -51,20 +50,8 @@ impl Domains for Capsule {
     }
 }
 
-impl AsIR for Capsule {
-    fn entry_point(&self) -> FunctionIdentifier {
-        CAPSULE
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.dir.clone().into(), self.radius.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
+impl AsModule for Capsule {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let dir = if spec.contains(&POSITION_2D.into()) {
             DIR_2D
         } else if spec.contains(&POSITION_3D.into()) {
@@ -73,20 +60,23 @@ impl AsIR for Capsule {
             panic!("No position domain");
         };
 
-        let (_, line_call, line_functions) =
-            Line::centered(self.dir.clone()).call(spec, elysian_stmt! { CONTEXT });
+        let line_module = Line::centered(self.dir.clone()).module_impl(spec);
+        let line_entry_point = &line_module.entry_point;
 
-        let (_, isosurface_call, isosurface_functions) =
-            Isosurface::new(self.radius.clone()).call(spec, line_call);
+        let isosurface_module = Isosurface::new(self.radius.clone()).module_impl(spec);
+        let isosurface_entry_point = &isosurface_module.entry_point;
 
-        line_functions
-            .into_iter()
-            .chain(isosurface_functions)
-            .chain(elysian_function! {
-                fn entry_point(dir, RADIUS, CONTEXT) -> CONTEXT {
-                    return #isosurface_call;
+        let capsule_module = Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn CAPSULE(dir, RADIUS, CONTEXT) -> CONTEXT {
+                    return #isosurface_entry_point(RADIUS, #line_entry_point(dir, CONTEXT));
                 }
-            })
-            .collect()
+            },
+        )
+        .with_args([self.dir.clone().into(), self.radius.clone().into()]);
+
+        line_module.concat(isosurface_module).concat(capsule_module)
     }
 }

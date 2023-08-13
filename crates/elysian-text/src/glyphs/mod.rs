@@ -1,19 +1,14 @@
 use elysian_core::expr::IntoPath;
-use elysian_ir::ast::{COLOR, X, Y};
-use elysian_shapes::modify::IntoModify;
+use elysian_ir::ast::{X, Y};
 use elysian_shapes::prepass::IntoPrepass;
 use elysian_shapes::shape::DynShape;
+use elysian_shapes::{combine::CombineBuilder, shape::IntoShape};
 use elysian_shapes::{
     combine::Union,
-    field::{Infinity, Point},
+    field::Infinity,
     filter::IntoFilter,
-    modify::{IntoIsosurface, IntoManifold, IntoRepeat, IntoSet, IntoTranslate, REPEAT_ID_2D},
-    scale::IntoScale,
+    modify::{IntoRepeat, IntoTranslate, REPEAT_ID_2D},
     select::Select,
-};
-use elysian_shapes::{
-    combine::{CombineBuilder, Combine},
-    shape::IntoShape,
 };
 
 pub mod greek;

@@ -2,7 +2,7 @@ use crate::combine::{LEFT, OUT, RIGHT};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{COMBINE_CONTEXT, DISTANCE},
-    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData},
+    module::{AsModule, Domains, FunctionIdentifier, Module, SpecializationData},
 };
 
 pub const SUBTRACTION: FunctionIdentifier =
@@ -14,28 +14,24 @@ pub struct Subtraction;
 
 impl Domains for Subtraction {}
 
-impl AsIR for Subtraction {
-    fn entry_point(&self) -> FunctionIdentifier {
-        SUBTRACTION
-    }
+impl AsModule for Subtraction {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn SUBTRACTION(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
+                    COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.RIGHT;
+                    COMBINE_CONTEXT.OUT.DISTANCE =
+                        -COMBINE_CONTEXT.OUT.DISTANCE;
 
-    fn functions(
-        &self,
-        _: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
-        vec![elysian_function! {
-            fn entry_point(mut COMBINE_CONTEXT) -> COMBINE_CONTEXT {
-                COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.RIGHT;
-                COMBINE_CONTEXT.OUT.DISTANCE =
-                    -COMBINE_CONTEXT.OUT.DISTANCE;
+                    if COMBINE_CONTEXT.LEFT.DISTANCE >= COMBINE_CONTEXT.OUT.DISTANCE {
+                        COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.LEFT;
+                    }
 
-                if COMBINE_CONTEXT.LEFT.DISTANCE >= COMBINE_CONTEXT.OUT.DISTANCE {
-                    COMBINE_CONTEXT.OUT = COMBINE_CONTEXT.LEFT;
+                    return COMBINE_CONTEXT;
                 }
-
-                return COMBINE_CONTEXT;
-            }
-        }]
+            },
+        )
     }
 }

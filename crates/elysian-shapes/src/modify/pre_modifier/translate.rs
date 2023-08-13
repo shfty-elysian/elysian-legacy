@@ -10,8 +10,8 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, VECTOR2, VECTOR3},
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData,
-        StructIdentifier, Type, CONTEXT,
+        AsModule, Domains, FunctionIdentifier, Module, SpecializationData, StructIdentifier, Type,
+        CONTEXT,
     },
     property,
 };
@@ -51,20 +51,8 @@ impl Domains for Translate {
     }
 }
 
-impl AsIR for Translate {
-    fn entry_point(&self) -> FunctionIdentifier {
-        TRANSLATE
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.delta.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Translate {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, delta) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, DELTA_2D)
         } else if spec.contains(&POSITION_3D.into()) {
@@ -73,12 +61,17 @@ impl AsIR for Translate {
             panic!("No position domain")
         };
 
-        vec![elysian_function! {
-            fn entry_point(delta, mut CONTEXT) -> CONTEXT {
-                CONTEXT.position = CONTEXT.position - delta;
-                return CONTEXT;
-            }
-        }]
+        Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn TRANSLATE(delta, mut CONTEXT) -> CONTEXT {
+                    CONTEXT.position = CONTEXT.position - delta;
+                    return CONTEXT;
+                }
+            },
+        )
+        .with_args([self.delta.clone().into()])
     }
 }
 

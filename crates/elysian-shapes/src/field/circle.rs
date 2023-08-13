@@ -1,14 +1,17 @@
 use std::{fmt::Debug, hash::Hash};
 
 use elysian_core::{
-    expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
+    expr::IntoExpr,
+    identifier::Identifier,
+    property_identifier::{IntoPropertyIdentifier, PropertyIdentifier},
 };
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
-    module::{AsIR, FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT},
-    module::{Domains, IntoRead, Prepare},
+    module::{AsModule, Domains, IntoRead, Module},
+    module::{FunctionIdentifier, NumericType, SpecializationData, Type, CONTEXT},
     property,
 };
+use elysian_proc_macros::elysian_stmt;
 
 use crate::modify::Isosurface;
 
@@ -31,6 +34,10 @@ impl Circle {
             radius: radius.expr(),
         }
     }
+
+    pub fn radius(&self) -> &elysian_core::expr::Expr {
+        &self.radius
+    }
 }
 
 impl Hash for Circle {
@@ -49,33 +56,30 @@ impl Domains for Circle {
     }
 }
 
-impl AsIR for Circle {
-    fn entry_point(&self) -> FunctionIdentifier {
-        CIRCLE
-    }
+impl AsModule for Circle {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let point_module = Point.module_impl(&spec.filter(Point::domains()));
+        let point_call = point_module.call(elysian_stmt! { CONTEXT });
 
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.radius.clone().into(), input]
-    }
+        let isosurface_module =
+            Isosurface::new(self.radius.clone()).module_impl(&spec.filter(Isosurface::domains()));
+        let isosurface_call = isosurface_module
+            .entry_point
+            .call([RADIUS.prop().read(), CONTEXT.prop().read()]);
 
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
-        let (_, point_call, point_functions) = Point.call(spec, PropertyIdentifier(CONTEXT).read());
-
-        let (_, isosurface_entry, isosurface_functions) =
-            Isosurface::new(self.radius.clone()).prepare(spec);
-
-        point_functions
-            .into_iter()
-            .chain(isosurface_functions)
-            .chain(elysian_function! {
-                fn entry_point(RADIUS, CONTEXT) -> CONTEXT {
-                    return #isosurface_entry(RADIUS, #point_call);
-                }
-            })
-            .collect()
+        point_module
+            .concat(isosurface_module)
+            .concat(Module::new(
+                self,
+                spec,
+                elysian_function! {
+                    fn CIRCLE(RADIUS, CONTEXT) -> CONTEXT {
+                        let CONTEXT = #point_call;
+                        let CONTEXT = #isosurface_call;
+                        return CONTEXT;
+                    }
+                },
+            ))
+            .with_args([self.radius().clone().into()])
     }
 }

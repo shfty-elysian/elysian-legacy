@@ -10,7 +10,9 @@ use crate::{
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, UV},
-    module::{AsIR, DomainsDyn, FunctionIdentifier, Prepare, SpecializationData, CONTEXT},
+    module::{
+        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData, CONTEXT,
+    },
 };
 use elysian_proc_macros::elysian_stmt;
 
@@ -40,36 +42,27 @@ impl DomainsDyn for UvMap {
     }
 }
 
-impl AsIR for UvMap {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("uv_map".into())
-    }
-
-    fn functions(
-        &self,
-        _: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
+impl AsModule for UvMap {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let spec_map = SpecializationData::new_2d();
-        let (_, field_call, field_functions) =
-            self.field.call(&spec_map, elysian_stmt! { CONTEXT });
+        let field_module = self.field.module_impl(&spec_map);
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
-        field_functions
-            .into_iter()
-            .chain([elysian_function! {
-                fn entry_point(mut CONTEXT) -> CONTEXT {
+        let uv_map = FunctionIdentifier::new_dynamic("uv_map".into());
+
+        field_module.concat(Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn uv_map(mut CONTEXT) -> CONTEXT {
                     CONTEXT.POSITION_2D = CONTEXT.UV;
 
                     CONTEXT = #field_call;
 
                     return CONTEXT;
                 }
-            }])
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
-        self.field.structs()
+            },
+        ))
     }
 }
 

@@ -1,13 +1,12 @@
 //! Precompile shapes into Rust functions via build.rs
 
 use elysian_interpreter::{evaluate_module, Interpreter};
-use elysian_ir::module::{AsModule, SpecializationData};
-use elysian_shapes::shape::DynShape;
+use elysian_ir::module::Module;
 use elysian_syn::module_to_string;
 
 use std::{collections::BTreeMap, sync::OnceLock};
 
-use elysian_ir::{ast::Struct, module::AsIR};
+use elysian_ir::ast::Struct;
 
 pub type ShapeHash = u64;
 pub type ShapeFn = fn(Struct) -> Struct;
@@ -49,13 +48,10 @@ pub fn static_shapes_map() -> &'static BTreeMap<ShapeHash, ShapeFn> {
 }
 
 /// Build.rs static shape registrar
-pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, DynShape)>>(
-    t: T,
-    spec: &SpecializationData,
-) {
+pub fn static_shapes<'a, T: IntoIterator<Item = (&'a str, Module)>>(t: T) {
     let source: String = t
         .into_iter()
-        .map(|(name, shape)| module_to_string(&shape, spec, name))
+        .map(|(name, module)| module_to_string(&module, name))
         .collect();
 
     let out_dir = std::env::var_os("OUT_DIR").expect("No OUT_DIR environment variable");
@@ -73,21 +69,12 @@ macro_rules! include_static_shapes {
 
 /// Return a function that calls the static implementation of a given shape if it exists,
 /// falling back to the interpreter otherwise.
-pub fn dispatch_shape<T>(
-    shape: &T,
-    spec: &SpecializationData,
-) -> Box<dyn Fn(Struct) -> Struct + Send + Sync>
-where
-    T: AsIR,
-{
-    let hash = shape.hash_ir();
-
-    if let Some(f) = static_shapes_map().get(&hash) {
+pub fn dispatch_module(module: Module) -> Box<dyn Fn(Struct) -> Struct + Send + Sync> {
+    if let Some(f) = static_shapes_map().get(&module.hash) {
         println!("Dispatching to static function");
         Box::new(|context| f(context))
     } else {
         println!("Dispatching to dynamic interpreter");
-        let module = shape.module(spec);
         Box::new(move |context| {
             evaluate_module(
                 Interpreter {

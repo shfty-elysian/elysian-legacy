@@ -9,8 +9,8 @@ use elysian_ir::{
         VECTOR3,
     },
     module::{
-        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, Prepare,
-        SpecializationData, StructDefinition, StructIdentifier, Type, CONTEXT,
+        AsModule, DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+        Module, SpecializationData, StructIdentifier, Type, CONTEXT,
     },
     property,
 };
@@ -63,20 +63,8 @@ impl DomainsDyn for FlipBasis {
     }
 }
 
-impl AsIR for FlipBasis {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("flip_basis".into())
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.basis.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for FlipBasis {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, flip, one) = if spec.contains(&POSITION_2D.into()) {
             (POSITION_2D, FLIP_2D, vector2([1.0, 1.0]).literal())
         } else if spec.contains(&POSITION_3D.into()) {
@@ -95,7 +83,8 @@ impl AsIR for FlipBasis {
             _ => panic!("Invalid Gradient Domain"),
         };
 
-        let (_, field_call, field_functions) = self.field.call(spec, elysian_stmt! { CONTEXT });
+        let field_module = self.field.module_impl(spec);
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         let mut block = elysian_block! {
             CONTEXT.position = CONTEXT.position * ((#one - flip) * 2.0 - #one).sign();
@@ -112,29 +101,29 @@ impl AsIR for FlipBasis {
             return CONTEXT
         });
 
-        field_functions
-            .into_iter()
-            .chain([FunctionDefinition {
-                id: entry_point.clone(),
-                public: false,
-                inputs: vec![
-                    InputDefinition {
-                        id: flip.into(),
-                        mutable: false,
-                    },
-                    InputDefinition {
-                        id: CONTEXT.into(),
-                        mutable: true,
-                    },
-                ],
-                output: CONTEXT.into(),
-                block,
-            }])
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<StructDefinition> {
-        self.field.structs()
+        field_module.concat(
+            Module::new(
+                self,
+                spec,
+                FunctionDefinition {
+                    id: FunctionIdentifier::new_dynamic("flip_basis".into()),
+                    public: false,
+                    inputs: vec![
+                        InputDefinition {
+                            id: flip.into(),
+                            mutable: false,
+                        },
+                        InputDefinition {
+                            id: CONTEXT.into(),
+                            mutable: true,
+                        },
+                    ],
+                    output: CONTEXT.into(),
+                    block,
+                },
+            )
+            .with_args([self.basis.clone().into()]),
+        )
     }
 }
 

@@ -6,7 +6,7 @@ use elysian_core::{
 };
 use elysian_ir::{
     ast::{DISTANCE, GRADIENT_2D, NUM, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
-    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},
+    module::{AsModule, Domains, FunctionIdentifier, Module, SpecializationData, CONTEXT},
 };
 
 use elysian_decl_macros::elysian_function;
@@ -43,20 +43,8 @@ impl Domains for Arc {
     }
 }
 
-impl AsIR for Arc {
-    fn entry_point(&self) -> FunctionIdentifier {
-        ARC
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.angle.clone().into(), self.radius.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Arc {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         assert!(
             spec.contains(&POSITION_2D.into()),
             "Arc currently requires the 2D Position domain"
@@ -67,44 +55,49 @@ impl AsIR for Arc {
             "Arc currently requires the Distance domain"
         );
 
-        vec![elysian_function! {
-            fn entry_point(ANGLE, RADIUS, mut CONTEXT) -> CONTEXT {
-                let ANGLE = ANGLE * 0.5;
+        Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn ARC(ANGLE, RADIUS, mut CONTEXT) -> CONTEXT {
+                    let ANGLE = ANGLE * 0.5;
 
-                let POSITION_2D = CONTEXT.POSITION_2D;
+                    let POSITION_2D = CONTEXT.POSITION_2D;
 
-                let NUM = CONTEXT.POSITION_2D.X.sign();
-                CONTEXT.POSITION_2D.X = CONTEXT.POSITION_2D.X.abs();
+                    let NUM = CONTEXT.POSITION_2D.X.sign();
+                    CONTEXT.POSITION_2D.X = CONTEXT.POSITION_2D.X.abs();
 
-                if ANGLE.cos() * CONTEXT.POSITION_2D.X > ANGLE.sin() * CONTEXT.POSITION_2D.Y {
-                    let POSITION_2D = CONTEXT.POSITION_2D -
-                        VECTOR2 {
-                            X: ANGLE.sin(),
-                            Y: ANGLE.cos()
-                        } * RADIUS;
+                    if ANGLE.cos() * CONTEXT.POSITION_2D.X > ANGLE.sin() * CONTEXT.POSITION_2D.Y {
+                        let POSITION_2D = CONTEXT.POSITION_2D -
+                            VECTOR2 {
+                                X: ANGLE.sin(),
+                                Y: ANGLE.cos()
+                            } * RADIUS;
 
-                    let DISTANCE = POSITION_2D.length();
+                        let DISTANCE = POSITION_2D.length();
 
-                    CONTEXT.DISTANCE = DISTANCE;
+                        CONTEXT.DISTANCE = DISTANCE;
 
-                    CONTEXT.GRADIENT_2D = VECTOR2 {
-                        X: NUM * POSITION_2D.X,
-                        Y: POSITION_2D.Y
-                    } / VECTOR2 {
-                        X: DISTANCE,
-                        Y: DISTANCE,
-                    };
-                } else {
-                    let DISTANCE = POSITION_2D.length();
-                    CONTEXT.DISTANCE = (DISTANCE - RADIUS).abs();
-                    CONTEXT.GRADIENT_2D =  POSITION_2D / VECTOR2 {
-                        X: DISTANCE,
-                        Y: DISTANCE,
-                    } * (DISTANCE - RADIUS).sign();
+                        CONTEXT.GRADIENT_2D = VECTOR2 {
+                            X: NUM * POSITION_2D.X,
+                            Y: POSITION_2D.Y
+                        } / VECTOR2 {
+                            X: DISTANCE,
+                            Y: DISTANCE,
+                        };
+                    } else {
+                        let DISTANCE = POSITION_2D.length();
+                        CONTEXT.DISTANCE = (DISTANCE - RADIUS).abs();
+                        CONTEXT.GRADIENT_2D =  POSITION_2D / VECTOR2 {
+                            X: DISTANCE,
+                            Y: DISTANCE,
+                        } * (DISTANCE - RADIUS).sign();
+                    }
+
+                    return CONTEXT
                 }
-
-                return CONTEXT
-            }
-        }]
+            },
+        )
+        .with_args([self.angle.clone().into(), self.radius.clone().into()])
     }
 }

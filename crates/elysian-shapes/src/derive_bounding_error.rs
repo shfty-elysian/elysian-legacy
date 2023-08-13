@@ -8,8 +8,8 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, ERROR, POSITION_2D, POSITION_3D},
     module::{
-        AsIR, DomainsDyn, FunctionIdentifier, Prepare, SpecializationData, StructIdentifier, Type,
-        CONTEXT,
+        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData,
+        StructIdentifier, Type, CONTEXT,
     },
     property,
 };
@@ -48,17 +48,9 @@ impl DomainsDyn for DeriveBoundingError {
     }
 }
 
-impl AsIR for DeriveBoundingError {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("derive_bounding_error".into())
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
-        let entry_point = entry_point.clone();
+impl AsModule for DeriveBoundingError {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let derive_bounding_error = FunctionIdentifier::new_dynamic("derive_bounding_error".into());
 
         let (position, support_vector) = match (
             spec.contains(&POSITION_2D.into()),
@@ -69,15 +61,15 @@ impl AsIR for DeriveBoundingError {
             _ => panic!("Invalid Position domain"),
         };
 
-        let (_, field_entry, field_functions) = self.field.prepare(spec);
-        let field_call_context = field_entry.call(self.field.arguments(elysian_expr! { CONTEXT }));
-        let field_call_derive_context =
-            field_entry.call(self.field.arguments(elysian_expr! { DERIVE_CONTEXT }));
+        let field_module = self.field.module_impl(spec);
+        let field_call_context = field_module.call(elysian_expr! { CONTEXT });
+        let field_call_derive_context = field_module.call(elysian_expr! { DERIVE_CONTEXT });
 
-        field_functions
-            .into_iter()
-            .chain([elysian_function! {
-                pub fn entry_point(mut CONTEXT) -> CONTEXT {
+        field_module.concat(Module::new(
+            self,
+            spec,
+            elysian_function! {
+                pub fn derive_bounding_error(mut CONTEXT) -> CONTEXT {
                     let mut DERIVE_CONTEXT = CONTEXT;
                     CONTEXT = #field_call_context;
 
@@ -90,12 +82,8 @@ impl AsIR for DeriveBoundingError {
                     CONTEXT.ERROR = DERIVE_CONTEXT.DISTANCE;
                     return CONTEXT;
                 }
-            }])
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
-        self.field.structs()
+            },
+        ))
     }
 }
 

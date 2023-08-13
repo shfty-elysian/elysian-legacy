@@ -12,6 +12,16 @@ pub struct StructDefinition {
     pub fields: Cow<'static, [FieldDefinition]>,
 }
 
+impl IntoIterator for StructDefinition {
+    type Item = Self;
+
+    type IntoIter = std::iter::Once<Self>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        std::iter::once(self)
+    }
+}
+
 impl StructDefinition {
     pub fn name(&self) -> &str {
         self.id.name()

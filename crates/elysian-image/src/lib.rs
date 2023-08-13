@@ -1,6 +1,6 @@
 //! Rasterize a 2D Elysian field into an image
 
-use elysian_shapes::{modify::ASPECT, shape::IntoShape};
+use elysian_shapes::modify::ASPECT;
 use image::RgbImage;
 use rust_gpu_bridge::glam::Vec4;
 use tracing::instrument;
@@ -8,20 +8,13 @@ use tracing::instrument;
 use elysian_core::number::Number;
 use elysian_ir::{
     ast::{Struct, Value, COLOR, POSITION_2D, VECTOR2, X, Y},
-    module::{SpecializationData, StructIdentifier, CONTEXT},
+    module::{Module, StructIdentifier, CONTEXT},
 };
-use elysian_static::dispatch_shape;
+use elysian_static::dispatch_module;
 
 #[instrument]
-pub fn rasterize(
-    shape: impl IntoShape,
-    spec: &SpecializationData,
-    width: u32,
-    height: u32,
-    scale: f32,
-) -> RgbImage {
-    let shape = shape.shape();
-    let shape = dispatch_shape(&shape, spec);
+pub fn rasterize(module: Module, width: u32, height: u32, scale: f32) -> RgbImage {
+    let shape = dispatch_module(module);
 
     let indices: Vec<_> = (0..height)
         .into_iter()

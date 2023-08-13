@@ -7,8 +7,8 @@ use elysian_ir::{
         VECTOR2, X, Y, Z,
     },
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead,
-        SpecializationData, CONTEXT,
+        AsModule, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, IntoRead,
+        Module, SpecializationData, CONTEXT,
     },
 };
 
@@ -39,16 +39,8 @@ impl Domains for Point {
     }
 }
 
-impl AsIR for Point {
-    fn entry_point(&self) -> FunctionIdentifier {
-        POINT
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Point {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let position = if spec.contains(&POSITION_2D.into()) {
             POSITION_2D
         } else if spec.contains(&POSITION_3D.into()) {
@@ -116,15 +108,19 @@ impl AsIR for Point {
 
         block.push(PropertyIdentifier(CONTEXT).read().output());
 
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![InputDefinition {
-                id: CONTEXT.into(),
-                mutable: true,
-            }],
-            output: CONTEXT.into(),
-            block,
-        }]
+        Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: POINT,
+                public: false,
+                inputs: vec![InputDefinition {
+                    id: CONTEXT.into(),
+                    mutable: true,
+                }],
+                output: CONTEXT.into(),
+                block,
+            },
+        )
     }
 }

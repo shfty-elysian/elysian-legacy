@@ -6,7 +6,7 @@ use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
-    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},
+    module::{AsModule, Domains, FunctionIdentifier, Module, SpecializationData, CONTEXT},
 };
 
 pub const CARTESIAN_TO_POLAR: FunctionIdentifier =
@@ -28,16 +28,8 @@ impl Domains for CartesianToPolar {
     }
 }
 
-impl AsIR for CartesianToPolar {
-    fn entry_point(&self) -> FunctionIdentifier {
-        CARTESIAN_TO_POLAR
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for CartesianToPolar {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let position = if spec.contains(&POSITION_2D.into()) {
             POSITION_2D
         } else if spec.contains(&POSITION_3D.into()) {
@@ -46,9 +38,9 @@ impl AsIR for CartesianToPolar {
             panic!("No position domain")
         };
 
-        vec![match &position {
+        let function = match &position {
             p if *p == POSITION_2D => elysian_function! {
-                fn entry_point(mut CONTEXT) -> CONTEXT {
+                fn CARTESIAN_TO_POLAR(mut CONTEXT) -> CONTEXT {
                     CONTEXT.position = VECTOR2 {
                         X: CONTEXT.position.length(),
                         Y: CONTEXT.position.Y.atan2(CONTEXT.position.X),
@@ -57,7 +49,7 @@ impl AsIR for CartesianToPolar {
                 }
             },
             p if *p == POSITION_3D => elysian_function! {
-                fn entry_point(mut CONTEXT) -> CONTEXT {
+                fn CARTESIAN_TO_POLAR(mut CONTEXT) -> CONTEXT {
                     CONTEXT.position = VECTOR3 {
                         X: CONTEXT.position.length(),
                         Y: (CONTEXT.position.Z / CONTEXT.position.length()).acos(),
@@ -72,7 +64,9 @@ impl AsIR for CartesianToPolar {
                 }
             },
             _ => unreachable!(),
-        }]
+        };
+
+        Module::new(self, spec, function)
     }
 }
 

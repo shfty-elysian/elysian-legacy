@@ -7,7 +7,9 @@ use elysian_core::expr::{Expr, IntoExpr};
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{DISTANCE, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z},
-    module::{AsIR, DomainsDyn, FunctionIdentifier, Prepare, SpecializationData, CONTEXT},
+    module::{
+        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData, CONTEXT,
+    },
 };
 use elysian_proc_macros::{elysian_expr, elysian_stmt};
 
@@ -36,16 +38,8 @@ impl DomainsDyn for Scale {
     }
 }
 
-impl AsIR for Scale {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("scale".into())
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
+impl AsModule for Scale {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let factor = elysian_ir::ast::Expr::from(self.factor.clone());
 
         let (position, factor_vec) = match (
@@ -63,23 +57,23 @@ impl AsIR for Scale {
             _ => panic!("Invalid position domain"),
         };
 
-        let (_, field_call, field_functions) = self.field.call(spec, elysian_stmt! { CONTEXT });
+        let field_module = self.field.module_impl(spec);
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
-        field_functions
-            .into_iter()
-            .chain([elysian_function! {
-                pub fn entry_point(mut CONTEXT) -> CONTEXT {
+        let scale = FunctionIdentifier::new_dynamic("scale".into());
+
+        field_module.concat(Module::new(
+            self,
+            spec,
+            elysian_function! {
+                pub fn scale(mut CONTEXT) -> CONTEXT {
                     CONTEXT.position = CONTEXT.position / #factor_vec;
                     CONTEXT = #field_call;
                     CONTEXT.DISTANCE = CONTEXT.DISTANCE * #factor;
                     return CONTEXT;
                 }
-            }])
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
-        self.field.structs()
+            },
+        ))
     }
 }
 

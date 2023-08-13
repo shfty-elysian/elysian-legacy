@@ -9,8 +9,8 @@ use elysian_ir::{
         vector2, vector3, Block, IntoLiteral, GRADIENT_2D, GRADIENT_3D, POSITION_2D, POSITION_3D,
     },
     module::{
-        AsIR, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition, Prepare,
-        SpecializationData, CONTEXT,
+        AsModule, DomainsDyn, FunctionDefinition, FunctionIdentifier, HashIR, InputDefinition,
+        Module, SpecializationData, CONTEXT,
     },
 };
 
@@ -66,16 +66,8 @@ impl DomainsDyn for Mirror {
     }
 }
 
-impl AsIR for Mirror {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("basis_mirror".into())
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Mirror {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let (position, one) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
@@ -123,7 +115,8 @@ impl AsIR for Mirror {
             }
         }
 
-        let (_, field_call, field_functions) = self.field.call(spec, elysian_stmt! { CONTEXT });
+        let field_module = self.field.module_impl(spec);
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
         block.push(elysian_stmt! {
             let CONTEXT = #field_call
@@ -155,10 +148,11 @@ impl AsIR for Mirror {
             return CONTEXT
         });
 
-        field_functions
-            .into_iter()
-            .chain(FunctionDefinition {
-                id: entry_point.clone(),
+        field_module.concat(Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: FunctionIdentifier::new_dynamic("basis_mirror".into()),
                 public: false,
                 inputs: vec![InputDefinition {
                     id: CONTEXT.into(),
@@ -166,12 +160,8 @@ impl AsIR for Mirror {
                 }],
                 output: CONTEXT.into(),
                 block,
-            })
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
-        self.field.structs()
+            },
+        ))
     }
 }
 

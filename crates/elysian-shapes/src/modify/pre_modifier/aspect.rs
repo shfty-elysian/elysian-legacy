@@ -10,8 +10,8 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, VECTOR2, X, Y},
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, NumericType, SpecializationData,
-        Type, CONTEXT,
+        AsModule, Domains, IntoFunctionIdentifier, Module, NumericType, SpecializationData, Type,
+        CONTEXT,
     },
     property,
 };
@@ -38,26 +38,20 @@ impl Domains for Aspect {
     }
 }
 
-impl AsIR for Aspect {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier(ASPECT)
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.aspect.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        _: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
-        vec![elysian_function! {
-            fn entry_point(ASPECT, mut CONTEXT) -> CONTEXT {
-                CONTEXT.POSITION_2D = CONTEXT.POSITION_2D * VECTOR2 { X: ASPECT, Y: 1.0 };
-                return CONTEXT;
-            }
-        }]
+impl AsModule for Aspect {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let aspect = ASPECT.function();
+        Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn aspect(ASPECT, mut CONTEXT) -> CONTEXT {
+                    CONTEXT.POSITION_2D = CONTEXT.POSITION_2D * VECTOR2 { X: ASPECT, Y: 1.0 };
+                    return CONTEXT;
+                }
+            },
+        )
+        .with_args([self.aspect.clone().into()])
     }
 }
 

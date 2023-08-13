@@ -3,7 +3,7 @@ use std::hash::Hash;
 use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::{IntoLiteral, DISTANCE},
-    module::{AsIR, Domains, FunctionDefinition, FunctionIdentifier, SpecializationData, CONTEXT},
+    module::{AsModule, Domains, FunctionIdentifier, Module, SpecializationData, CONTEXT},
 };
 
 use elysian_decl_macros::elysian_function;
@@ -26,16 +26,8 @@ impl Domains for Infinity {
     }
 }
 
-impl AsIR for Infinity {
-    fn entry_point(&self) -> FunctionIdentifier {
-        INFINITY
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Infinity {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         assert!(
             spec.contains(&DISTANCE.into()),
             "Infinity requires the Distance domain"
@@ -43,11 +35,15 @@ impl AsIR for Infinity {
 
         let infinity = f32::MAX.literal();
 
-        vec![elysian_function! {
-            fn entry_point(mut CONTEXT) -> CONTEXT {
-                CONTEXT.DISTANCE = #infinity;
-                return CONTEXT;
-            }
-        }]
+        Module::new(
+            self,
+            spec,
+            elysian_function! {
+                fn INFINITY(mut CONTEXT) -> CONTEXT {
+                    CONTEXT.DISTANCE = #infinity;
+                    return CONTEXT;
+                }
+            },
+        )
     }
 }

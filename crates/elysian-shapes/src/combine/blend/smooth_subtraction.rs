@@ -8,7 +8,8 @@ use elysian_core::{
 use elysian_ir::{
     ast::{COMBINE_CONTEXT, DISTANCE, NUM},
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData,
+        AsModule, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, Module,
+        SpecializationData,
     },
 };
 use elysian_proc_macros::{elysian_block, elysian_stmt};
@@ -36,20 +37,8 @@ impl SmoothSubtraction {
 
 impl Domains for SmoothSubtraction {}
 
-impl AsIR for SmoothSubtraction {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier(SMOOTH_SUBTRACTION.0.concat(&self.prop))
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.k.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        _: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for SmoothSubtraction {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let prop = (*self.prop).clone();
 
         let mut block = elysian_block! {
@@ -73,21 +62,26 @@ impl AsIR for SmoothSubtraction {
 
         block.push(elysian_stmt!(return COMBINE_CONTEXT));
 
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![
-                InputDefinition {
-                    id: K.into(),
-                    mutable: false,
-                },
-                InputDefinition {
-                    id: COMBINE_CONTEXT.into(),
-                    mutable: true,
-                },
-            ],
-            output: COMBINE_CONTEXT.into(),
-            block,
-        }]
+        Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: FunctionIdentifier(SMOOTH_SUBTRACTION.0.concat(&self.prop)),
+                public: false,
+                inputs: vec![
+                    InputDefinition {
+                        id: K.into(),
+                        mutable: false,
+                    },
+                    InputDefinition {
+                        id: COMBINE_CONTEXT.into(),
+                        mutable: true,
+                    },
+                ],
+                output: COMBINE_CONTEXT.into(),
+                block,
+            },
+        )
+        .with_args([self.k.clone().into()])
     }
 }

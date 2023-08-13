@@ -5,10 +5,10 @@ use elysian_core::{
     expr::IntoExpr, identifier::Identifier, property_identifier::PropertyIdentifier,
 };
 use elysian_ir::{
-    ast::{Block, Expr, DISTANCE, POSITION_2D, POSITION_3D, UV, X},
+    ast::{Block, DISTANCE, POSITION_2D, POSITION_3D, UV, X},
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, NumericType,
-        SpecializationData, Type, CONTEXT,
+        AsModule, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, Module,
+        NumericType, SpecializationData, Type, CONTEXT,
     },
     property,
 };
@@ -32,6 +32,10 @@ impl Isosurface {
     pub fn new(dist: impl IntoExpr) -> Self {
         Isosurface { dist: dist.expr() }
     }
+
+    pub fn dist(&self) -> &AstExpr {
+        &self.dist
+    }
 }
 
 impl Hash for Isosurface {
@@ -52,20 +56,8 @@ impl Domains for Isosurface {
     }
 }
 
-impl AsIR for Isosurface {
-    fn entry_point(&self) -> FunctionIdentifier {
-        ISOSURFACE
-    }
-
-    fn arguments(&self, input: Expr) -> Vec<Expr> {
-        vec![self.dist.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for Isosurface {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let mut block = Block::default();
 
         if spec.contains(&DISTANCE.into()) {
@@ -84,22 +76,27 @@ impl AsIR for Isosurface {
             return CONTEXT
         });
 
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![
-                InputDefinition {
-                    id: DIST.into(),
-                    mutable: false,
-                },
-                InputDefinition {
-                    id: CONTEXT.into(),
-                    mutable: true,
-                },
-            ],
-            output: CONTEXT.into(),
-            block,
-        }]
+        Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: ISOSURFACE,
+                public: false,
+                inputs: vec![
+                    InputDefinition {
+                        id: DIST.into(),
+                        mutable: false,
+                    },
+                    InputDefinition {
+                        id: CONTEXT.into(),
+                        mutable: true,
+                    },
+                ],
+                output: CONTEXT.into(),
+                block,
+            },
+        )
+        .with_args([self.dist.clone().into()])
     }
 }
 

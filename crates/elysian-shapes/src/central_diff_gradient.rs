@@ -12,7 +12,10 @@ use elysian_core::number::Number;
 use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{IntoLiteral, DISTANCE, GRADIENT_2D, GRADIENT_3D, VECTOR2, VECTOR3, X, Y, Z},
-    module::{AsIR, Domains, DomainsDyn, FunctionIdentifier, Prepare, SpecializationData, CONTEXT},
+    module::{
+        AsModule, Domains, DomainsDyn, FunctionIdentifier, HashIR, Module, SpecializationData,
+        CONTEXT,
+    },
 };
 use elysian_proc_macros::elysian_expr;
 
@@ -34,17 +37,9 @@ impl DomainsDyn for CentralDiffGradient {
     }
 }
 
-impl AsIR for CentralDiffGradient {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("central_diff_gradient".into())
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
-        let entry_point = entry_point.clone();
+impl AsModule for CentralDiffGradient {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
+        let central_diff_gradient = FunctionIdentifier::new_dynamic("central_diff_gradient".into());
 
         let (gradient, vec_x, vec_y) = if spec.contains(&GRADIENT_2D.into()) {
             (
@@ -67,23 +62,29 @@ impl AsIR for CentralDiffGradient {
                 }),
             )
         } else {
-            return vec![elysian_function! {
-                fn entry_point(mut CONTEXT) -> CONTEXT {
-                    return CONTEXT;
-                }
-            }];
+            return Module::new(
+                self,
+                spec,
+                elysian_function! {
+                    fn central_diff_gradient(mut CONTEXT) -> CONTEXT {
+                        return CONTEXT;
+                    }
+                },
+            );
         };
 
         let translate = TRANSLATE.specialize(&spec.filter(Translate::domains()));
 
         let epsilon = self.epsilon.literal();
 
-        let (_, field_entry, field_functions) = self.field.prepare(spec);
+        let field_module = self.field.module_impl(spec);
+        let field_entry = field_module.entry_point.clone();
 
-        field_functions
-            .into_iter()
-            .chain([elysian_function! {
-                pub fn entry_point(mut CONTEXT) -> CONTEXT {
+        field_module.concat(Module::new(
+            self,
+            spec,
+            elysian_function! {
+                pub fn central_diff_gradient(mut CONTEXT) -> CONTEXT {
                     let CONTEXT = field_entry(CONTEXT);
                     let LEFT = field_entry(#translate(#vec_x * -#epsilon, CONTEXT));
                     let RIGHT = field_entry(#translate(#vec_x * #epsilon, CONTEXT));
@@ -97,11 +98,7 @@ impl AsIR for CentralDiffGradient {
                     };
                     return CONTEXT;
                 }
-            }])
-            .collect()
-    }
-
-    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
-        self.field.structs()
+            },
+        ))
     }
 }

@@ -11,8 +11,8 @@ use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{GRADIENT_2D, POSITION_2D, POSITION_3D, VECTOR2, X, Y},
     module::{
-        AsIR, DomainsDyn, FunctionIdentifier, NumericType, Prepare, SpecializationData, Type,
-        CONTEXT,
+        AsModule, DomainsDyn, FunctionIdentifier, HashIR, Module, NumericType, SpecializationData,
+        Type, CONTEXT,
     },
     property,
 };
@@ -46,52 +46,38 @@ impl DomainsDyn for Rotate {
     }
 }
 
-impl AsIR for Rotate {
-    fn entry_point(&self) -> FunctionIdentifier {
-        FunctionIdentifier::new_dynamic("rotate".into())
-    }
-
-    fn arguments(&self, input: elysian_ir::ast::Expr) -> Vec<elysian_ir::ast::Expr> {
-        vec![self.angle.clone().into(), input]
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<elysian_ir::module::FunctionDefinition> {
+impl AsModule for Rotate {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         assert!(
             spec.contains(&POSITION_2D.into()),
             "Rotate currently requires the 2D Position domain"
         );
 
-        let (_, field_call, field_functions) = self.field.call(spec, elysian_stmt! { CONTEXT });
+        let field_module = self.field.module_impl(spec);
+        let field_call = field_module.call(elysian_stmt! { CONTEXT });
 
-        field_functions
-            .into_iter()
-            .chain([elysian_function! {
-                pub fn entry_point(ANGLE, mut CONTEXT) -> CONTEXT {
-                    CONTEXT.POSITION_2D = VECTOR2 {
-                        X: CONTEXT.POSITION_2D.X * ANGLE.cos() - CONTEXT.POSITION_2D.Y * ANGLE.sin(),
-                        Y: CONTEXT.POSITION_2D.Y * ANGLE.cos() + CONTEXT.POSITION_2D.X * ANGLE.sin(),
-                    };
+        let rotate = FunctionIdentifier::new_dynamic("rotate".into());
 
-                    CONTEXT = #field_call;
+        field_module.concat(Module::new(self, spec, elysian_function! {
+            pub fn rotate(ANGLE, mut CONTEXT) -> CONTEXT {
+                CONTEXT.POSITION_2D = VECTOR2 {
+                    X: CONTEXT.POSITION_2D.X * ANGLE.cos() - CONTEXT.POSITION_2D.Y * ANGLE.sin(),
+                    Y: CONTEXT.POSITION_2D.Y * ANGLE.cos() + CONTEXT.POSITION_2D.X * ANGLE.sin(),
+                };
 
-                    let ANGLE = -ANGLE;
-                    CONTEXT.GRADIENT_2D = VECTOR2 {
-                        X: CONTEXT.GRADIENT_2D.X * ANGLE.cos() - CONTEXT.GRADIENT_2D.Y * ANGLE.sin(),
-                        Y: CONTEXT.GRADIENT_2D.Y * ANGLE.cos() + CONTEXT.GRADIENT_2D.X * ANGLE.sin(),
-                    };
+                CONTEXT = #field_call;
 
-                    return CONTEXT;
-                }
-            }])
-            .collect()
-    }
+                let ANGLE = -ANGLE;
+                CONTEXT.GRADIENT_2D = VECTOR2 {
+                    X: CONTEXT.GRADIENT_2D.X * ANGLE.cos() - CONTEXT.GRADIENT_2D.Y * ANGLE.sin(),
+                    Y: CONTEXT.GRADIENT_2D.Y * ANGLE.cos() + CONTEXT.GRADIENT_2D.X * ANGLE.sin(),
+                };
 
-    fn structs(&self) -> Vec<elysian_ir::module::StructDefinition> {
-        self.field.structs()
+                return CONTEXT;
+            }
+        }).with_args(
+            [self.angle.clone().into()], 
+        ))
     }
 }
 

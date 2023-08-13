@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use elysian::{image::rasterize, ir::module::SpecializationData, r#static::include_static_shapes};
+use elysian::{image::rasterize, r#static::include_static_shapes};
 use viuer::Config;
 
 include_static_shapes!();
@@ -11,7 +11,7 @@ fn main() {
     let start = Instant::now();
     let (width, height) = (64, 48);
     //let (width, height) = (4, 4);
-    let image = rasterize(shape, &SpecializationData::new_2d(), width, height, 0.5);
+    let image = rasterize(shape, width, height, 0.5);
     let duration = Instant::now().duration_since(start);
 
     viuer::print(

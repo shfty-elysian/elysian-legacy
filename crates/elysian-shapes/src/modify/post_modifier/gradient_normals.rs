@@ -5,8 +5,8 @@ use elysian_core::property_identifier::PropertyIdentifier;
 use elysian_ir::{
     ast::{GRADIENT_2D, GRADIENT_3D, NORMAL, VECTOR3, X, Y, Z},
     module::{
-        AsIR, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, SpecializationData,
-        CONTEXT,
+        AsModule, Domains, FunctionDefinition, FunctionIdentifier, InputDefinition, Module,
+        SpecializationData, CONTEXT,
     },
 };
 use elysian_proc_macros::elysian_block;
@@ -30,16 +30,8 @@ impl Domains for GradientNormals {
     }
 }
 
-impl AsIR for GradientNormals {
-    fn entry_point(&self) -> FunctionIdentifier {
-        GRADIENT_NORMALS
-    }
-
-    fn functions(
-        &self,
-        spec: &SpecializationData,
-        entry_point: &FunctionIdentifier,
-    ) -> Vec<FunctionDefinition> {
+impl AsModule for GradientNormals {
+    fn module_impl(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
         let block = if spec.contains(&GRADIENT_2D.into()) {
             elysian_block! {
                 CONTEXT.NORMAL = VECTOR3 {
@@ -60,16 +52,20 @@ impl AsIR for GradientNormals {
             }
         };
 
-        vec![FunctionDefinition {
-            id: entry_point.clone(),
-            public: false,
-            inputs: vec![InputDefinition {
-                id: CONTEXT.into(),
-                mutable: true,
-            }],
-            output: CONTEXT.into(),
-            block,
-        }]
+        Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: GRADIENT_NORMALS,
+                public: false,
+                inputs: vec![InputDefinition {
+                    id: CONTEXT.into(),
+                    mutable: true,
+                }],
+                output: CONTEXT.into(),
+                block,
+            },
+        )
     }
 }
 
