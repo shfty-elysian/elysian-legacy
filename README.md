@@ -1,6 +1,6 @@
 # Elysian
 
-* A DSL, IR, transpiler, interpreter, and toolkit for building signed distance fields and converting them into concrete assets.
+A DSL, IR, transpiler, interpreter, and toolkit for building signed distance fields and converting them into concrete assets.
 
 ## Distance Fields 101
 
@@ -64,7 +64,7 @@ Worked, but language support too limited to realize the necessary abstractions
     but checks the boxes for compile time, abstraction strength, and runtime performance
 * Output simple code that can compile on lowest-common-denominator targets
 
-## Elysian Is A
+## Elysian Is A...
 
 * Domain-Specific Language
   * For analytically defining implicit geometry
@@ -75,7 +75,7 @@ Worked, but language support too limited to realize the necessary abstractions
 * Rust library encompassing all of the above
 * Set of tool programs exposing the above for general use
 
-## Elysian Is Not A
+## Elysian Is Not A...
 
 * Renderer
 * Image editor
@@ -85,7 +85,7 @@ Worked, but language support too limited to realize the necessary abstractions
 It has some crossover with these domains, but is a higher-order solution for generating the associated data instead of creating it directly.
 To put it another way, Elysian is the foundation you might build any of the above on top of.
 
-## Elysian is applicable in
+## Elysian is applicable in...
 
 * Graphics
     * Images
@@ -108,7 +108,8 @@ To put it another way, Elysian is the foundation you might build any of the abov
 ### Declarative
 
 * Describe what your geometry is, not how it should be constructed
-* Write expressions to wire arbitrary relations between field data and parameters
+* Write expressions to wire relations between field data and parameters
+  * Parametrize over time to create arbitrary animations
 
 ### Procedural
 
@@ -127,7 +128,7 @@ To put it another way, Elysian is the foundation you might build any of the abov
 
 ### Lossless
 
-* Information is not lost in the transition from artist imagination to data
+* Information is retained in the transition from artist imagination to data
 
 ### General
 
@@ -160,7 +161,7 @@ To put it another way, Elysian is the foundation you might build any of the abov
 
 ### You have to hand-code your entire scene when using SDFs, like Shadertoy
 
-* Elysian's purpose is to solve this through abstraction
+* Elysian's purpose is to solve this problem through abstraction
 * It even has a Shadertoy backend that can convert Elysian AST into Shadertoy-compatible GLSL!
 
 ### Calculating extra data like normals is expensive
@@ -239,4 +240,4 @@ To put it another way, Elysian is the foundation you might build any of the abov
 ### diagrams
 
 * Declarative Haskell DSL for composing vector geometry
-* Similar goal, but of different scope and scale
+* Similar goal, different scope and scale
