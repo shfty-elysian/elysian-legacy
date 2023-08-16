@@ -74,10 +74,6 @@ pub fn module_to_syn(module: &Module, name: &str) -> File {
     let mut items = vec![];
 
     items.push(parse_quote! {
-        use rust_gpu_bridge::{glam::*, *};
-    });
-
-    items.push(parse_quote! {
         use elysian::{
             core::property_identifier::PropertyIdentifier,
             ir::{
@@ -86,6 +82,7 @@ pub fn module_to_syn(module: &Module, name: &str) -> File {
                 },
                 module::{CONTEXT, StructIdentifier},
             },
+            math::{glam::*, *},
             r#static::StaticShape,
         };
     });

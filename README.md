@@ -51,7 +51,7 @@ Worked, but language support too limited to realize the necessary abstractions
 
 ### Functional Programming rust-gpu prototype
 
-* Similar ideas to previous, but restricted to Fn trait objects
+* Similar ideas to previous FP attempt, but restricted to implementation via Fn trait objects
 * Worked, but language support still too limited to realize the necessary abstractions
 * Too domain-specific; forces users to use rust-gpu / SPIR-V, which lags behind GLSL / WGSL in support
 
@@ -103,7 +103,7 @@ To put it another way, Elysian is the foundation you might build any of the abov
     * i.e. Bounding behaviour under raymarching
     * MRI-style slicing of 3D fields
 
-## Features
+## Advantages
 
 ### Declarative
 
@@ -156,6 +156,19 @@ To put it another way, Elysian is the foundation you might build any of the abov
 ### Extensible
 
 * Define your own primitives and backends via rust library
+
+## Features
+
+* Export to
+  * Image (via the image crate)
+    * ASCII Art
+
+* Transpile to
+  * Rust (via syn)
+    * Static compilation via build.rs
+  * Shader (via naga)
+
+* Interpret IR at runtime
 
 ## Common Concerns
 

@@ -1,4 +1,4 @@
-use rust_gpu_bridge::glam::Mat4;
+use elysian_math::glam::Mat4;
 
 use crate::number::Number;
 use std::fmt::Debug;

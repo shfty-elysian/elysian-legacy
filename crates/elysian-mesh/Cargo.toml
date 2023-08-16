@@ -1,0 +1,15 @@
+[package]
+name = "elysian-mesh"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elysian-core = { path = "../elysian-core" }
+elysian-ir = { path = "../elysian-ir" }
+elysian-proc-macros = { path = "../elysian-proc-macros", features = ["internal"] }
+
+image = "0.24.7"
+viuer = "0.6.2"
+nalgebra = "0.32.3"
+gltf-json = "1.2.0"
+base64 = "0.21.2"

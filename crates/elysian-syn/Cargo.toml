@@ -6,9 +6,9 @@ edition = "2021"
 [dependencies]
 elysian-core = { path = "../elysian-core" }
 elysian-ir = { path = "../elysian-ir" }
+elysian-math = { path = "../elysian-math" }
 elysian-proc-macros = { path = "../elysian-proc-macros" }
 elysian-interpreter = { path = "../elysian-interpreter" }
-rust-gpu-bridge = { path = "../../../bevy-rust-gpu-project/crates/rust-gpu-bridge", features = ["glam"] }
 
 syn = { version = "2.0.25", features = ["full"]}
 proc-macro2 = "1.0.64"

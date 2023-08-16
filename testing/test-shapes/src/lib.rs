@@ -1,11 +1,15 @@
 use elysian_core::{
     expr::{Expr, IntoLiteral, IntoPath, IntoRead},
+    number::Number,
     property_identifier::IntoPropertyIdentifier,
 };
 use elysian_ir::{
-    ast::{COLOR, DISTANCE, GRADIENT_2D, GRADIENT_3D, UV, X, Y},
-    module::{AsModule, Module, SpecializationData},
+    ast::{
+        Struct, Value, COLOR, DISTANCE, GRADIENT_2D, GRADIENT_3D, POSITION_2D, UV, VECTOR2, X, Y,
+    },
+    module::{AsModule, Module, SpecializationData, StructIdentifier, CONTEXT},
 };
+use elysian_math::glam::Mat4;
 use elysian_shapes::{
     color::{
         ambient_light_color, directional_light_color, distance_color, gradient_color, normal_color,
@@ -28,7 +32,6 @@ use elysian_shapes::{
     wrap::{filter::IntoFilter, mirror::IntoMirror, scale::IntoScale},
 };
 use elysian_text::glyphs::{greek::sigma, text, Align};
-use rust_gpu_bridge::glam::Mat4;
 
 pub fn point() -> impl IntoShape {
     Point.gradient_normals().set_post(COLOR, normal_color())

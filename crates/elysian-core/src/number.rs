@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
-use rust_gpu_bridge::{
+use elysian_math::{
     Abs, Acos, Asin, Atan, Atan2, Clamp, Cos, Max, Min, Mix, Round, Sign, Sin, Tan,
 };
 

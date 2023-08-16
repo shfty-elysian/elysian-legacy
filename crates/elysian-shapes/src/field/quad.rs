@@ -4,14 +4,14 @@ use elysian_core::{
     expr::{Expr, IntoExpr},
     property_identifier::PropertyIdentifier,
 };
-use elysian_decl_macros::elysian_function;
 use elysian_ir::{
     ast::{POSITION_2D, POSITION_3D, UV, VECTOR2, X, Y, Z},
     module::{
-        AsModule, Domains, DomainsDyn, FunctionIdentifier, Module, SpecializationData, CONTEXT,
+        AsModule, Domains, DomainsDyn, FunctionDefinition, FunctionIdentifier, InputDefinition,
+        Module, SpecializationData, CONTEXT,
     },
 };
-use elysian_proc_macros::elysian_stmt;
+use elysian_proc_macros::{elysian_block, elysian_stmt};
 
 use crate::{modify::IntoTranslate, shape::Shape, wrap::mirror::IntoMirror};
 
@@ -51,12 +51,12 @@ impl Domains for Quad {
 
 impl AsModule for Quad {
     fn module(&self, spec: &SpecializationData) -> elysian_ir::module::Module {
-        let one = match (
+        let (position, one) = match (
             spec.contains(&POSITION_2D.into()),
             spec.contains(&POSITION_3D.into()),
         ) {
-            (true, false) => Expr::vector2(1.0, 1.0),
-            (false, true) => Expr::vector3(1.0, 1.0, 1.0),
+            (true, false) => (POSITION_2D, Expr::vector2(1.0, 1.0)),
+            (false, true) => (POSITION_2D, Expr::vector3(1.0, 1.0, 1.0)),
             _ => panic!("Invalid position domain"),
         };
 
@@ -69,37 +69,40 @@ impl AsModule for Quad {
 
         let quad = FunctionIdentifier::new_dynamic("quad".into());
 
-        field_module.concat(Module::new(
-            self,
-            spec,
-            elysian_function! {
-                fn quad(CONTEXT) -> CONTEXT {
-                    let POSITION_3D = CONTEXT.POSITION_3D;
+        let mut block = elysian_block! {
+            let position = CONTEXT.position;
 
-                    let CONTEXT = #field_call;
+            let CONTEXT = #field_call;
+        };
 
+        if spec.contains(&UV.into()) {
+            block.extend(match &position {
+                p if *p == POSITION_2D => elysian_block! {
+                    CONTEXT.UV = CONTEXT.POSITION_2D;
+                },
+                p if *p == POSITION_3D => elysian_block! {
                     let mut X = 0.0;
                     let mut Y = 0.0;
 
-                    if POSITION_3D.X.abs() >= POSITION_3D.Y.abs()
-                    && POSITION_3D.X.abs() >= POSITION_3D.Z.abs()
+                    if position.X.abs() >= position.Y.abs()
+                    && position.X.abs() >= position.Z.abs()
                     {
-                        X = POSITION_3D.Z;
-                        Y = POSITION_3D.Y;
+                        X = position.Z;
+                        Y = position.Y;
                     }
                     else {
-                        if POSITION_3D.Y.abs() >= POSITION_3D.X.abs()
-                        && POSITION_3D.Y.abs() >= POSITION_3D.Z.abs()
+                        if position.Y.abs() >= position.X.abs()
+                        && position.Y.abs() >= position.Z.abs()
                         {
-                            X = POSITION_3D.X;
-                            Y = -POSITION_3D.Z;
+                            X = position.X;
+                            Y = -position.Z;
                         }
                         else {
-                            if POSITION_3D.Z.abs() >= POSITION_3D.X.abs()
-                                && POSITION_3D.Z.abs() >= POSITION_3D.Y.abs()
+                            if position.Z.abs() >= position.X.abs()
+                                && position.Z.abs() >= position.Y.abs()
                             {
-                                X = POSITION_3D.X;
-                                Y = POSITION_3D.Y;
+                                X = position.X;
+                                Y = position.Y;
                             }
                         }
                     }
@@ -108,9 +111,27 @@ impl AsModule for Quad {
                         X: X,
                         Y: Y,
                     };
+                },
+                _ => unreachable!(),
+            });
+        }
 
-                    return CONTEXT;
-                }
+        block.push(elysian_stmt! {
+            return CONTEXT
+        });
+
+        field_module.concat(Module::new(
+            self,
+            spec,
+            FunctionDefinition {
+                id: quad,
+                public: false,
+                inputs: vec![InputDefinition {
+                    id: CONTEXT.into(),
+                    mutable: false,
+                }],
+                output: CONTEXT.into(),
+                block,
             },
         ))
     }

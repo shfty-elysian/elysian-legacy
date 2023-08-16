@@ -4,7 +4,7 @@ use std::{
     ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Sub},
 };
 
-use rust_gpu_bridge::{
+use elysian_math::{
     glam::{Vec2, Vec3, Vec4},
     Abs, Acos, Asin, Atan, Atan2, Clamp, Cos, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,
     Sin, Tan,
@@ -649,6 +649,84 @@ impl From<Value> for f64 {
         };
 
         n
+    }
+}
+
+impl From<Value> for [f32; 2] {
+    fn from(value: Value) -> Self {
+        let Value::Struct(s) = value else {
+            panic!("Value is not a Struct")
+        };
+
+        [s.get(&X.into()).into(), s.get(&Y.into()).into()]
+    }
+}
+
+impl From<Value> for [f64; 2] {
+    fn from(value: Value) -> Self {
+        let Value::Struct(s) = value else {
+            panic!("Value is not a Struct")
+        };
+
+        [s.get(&X.into()).into(), s.get(&Y.into()).into()]
+    }
+}
+
+impl From<Value> for [f32; 3] {
+    fn from(value: Value) -> Self {
+        let Value::Struct(s) = value else {
+            panic!("Value is not a Struct")
+        };
+
+        [
+            s.get(&X.into()).into(),
+            s.get(&Y.into()).into(),
+            s.get(&Z.into()).into(),
+        ]
+    }
+}
+
+impl From<Value> for [f64; 3] {
+    fn from(value: Value) -> Self {
+        let Value::Struct(s) = value else {
+            panic!("Value is not a Struct")
+        };
+
+        [
+            s.get(&X.into()).into(),
+            s.get(&Y.into()).into(),
+            s.get(&Z.into()).into(),
+        ]
+    }
+}
+
+impl From<Value> for [f32; 4] {
+    fn from(value: Value) -> Self {
+        let Value::Struct(s) = value else {
+            panic!("Value is not a Struct")
+        };
+
+        [
+            s.get(&X.into()).into(),
+            s.get(&Y.into()).into(),
+            s.get(&Z.into()).into(),
+            s.get(&W.into()).into(),
+        ]
+    }
+}
+
+impl From<Value> for [f64; 4] {
+    fn from(value: Value) -> Self {
+        let Value::Struct(s) = value else {
+            panic!("Value is not a Struct")
+        };
+
+        [
+            s.get(&X.into()).into(),
+            s.get(&Y.into()).into(),
+            s.get(&Z.into()).into(),
+            s.get(&W.into()).into(),
+        ]
     }
 }
 

@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 use elysian_shapes::modify::ASPECT;
 use image::{ImageBuffer, Pixel};
-use rust_gpu_bridge::glam::Vec4;
+use elysian_math::glam::Vec4;
 
 use elysian_core::number::Number;
 use elysian_ir::{
@@ -59,7 +59,7 @@ where
     P: Debug + Pixel,
     P::Subpixel: Send + Sync,
 {
-    let shape = dispatch_module(module);
+    let shape = dispatch_module(&module);
 
     let indices: Vec<_> = (0..height)
         .into_iter()

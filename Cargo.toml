@@ -15,6 +15,7 @@ text = ["dep:elysian-text"]
 syn = ["dep:elysian-syn"]
 static = ["syn", "dep:elysian-static"]
 image = ["dep:elysian-image"]
+mesh = ["dep:elysian-mesh"]
 ascii = ["dep:elysian-ascii"]
 naga = ["dep:elysian-naga"]
 shadertoy = ["dep:elysian-shadertoy"]
@@ -22,19 +23,19 @@ shadertoy = ["dep:elysian-shadertoy"]
 [dependencies]
 elysian-core = { path = "crates/elysian-core" }
 elysian-ir = { path = "crates/elysian-ir" }
+elysian-math = { path = "crates/elysian-math" }
 elysian-proc-macros = { path = "crates/elysian-proc-macros" }
 elysian-decl-macros = { path = "crates/elysian-decl-macros" }
 elysian-shapes = { path = "crates/elysian-shapes" }
 
 elysian-text = { path = "crates/elysian-text", optional = true }
 elysian-image = { path = "crates/elysian-image", optional = true }
+elysian-mesh = { path = "crates/elysian-mesh", optional = true }
 elysian-ascii = { path = "crates/elysian-ascii", optional = true }
 elysian-syn = { path = "crates/elysian-syn", optional = true }
 elysian-static = { path = "crates/elysian-static", optional = true }
 elysian-naga = { path = "crates/elysian-naga", optional = true }
 elysian-shadertoy = { path = "crates/elysian-shadertoy", optional = true }
-
-rust-gpu-bridge = { path = "../bevy-rust-gpu-project/crates/rust-gpu-bridge" }
 
 # Fast-compile config
 [profile.dev]

@@ -1,4 +1,4 @@
-use rust_gpu_bridge::{
+use elysian_math::{
     glam::{Mat2, Mat3, Mat4, Vec2, Vec3, Vec4},
     Abs, Clamp, Dot, Length, Max, Min, Mix, Normalize, Round, Sign,
 };

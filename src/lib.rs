@@ -6,6 +6,10 @@ pub mod ir {
     pub use elysian_ir::*;
 }
 
+pub mod math {
+    pub use elysian_math::*;
+}
+
 pub mod macros {
     pub use elysian_decl_macros::*;
     pub use elysian_proc_macros::*;
@@ -35,6 +39,11 @@ pub mod image {
     pub use elysian_image::*;
 }
 
+#[cfg(feature = "mesh")]
+pub mod mesh {
+    pub use elysian_mesh::*;
+}
+
 #[cfg(feature = "ascii")]
 pub mod ascii {
     pub use elysian_ascii::*;
@@ -49,3 +58,4 @@ pub mod naga {
 pub mod shadertoy {
     pub use elysian_shadertoy::*;
 }
+
