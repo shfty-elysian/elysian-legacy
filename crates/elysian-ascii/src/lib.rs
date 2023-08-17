@@ -1,8 +1,6 @@
-use std::error::Error;
-
 use elysian_image::{distance_to_luma_32, rasterize};
 use elysian_interpreter::Interpreted;
-use elysian_ir::module::{Dispatch, Module};
+use elysian_ir::module::{Dispatch, Module, EvaluateError};
 use elysian_static::Precompiled;
 use image::Luma;
 
@@ -14,7 +12,7 @@ pub fn ascii(
     height: u32,
     ramp: &str,
     fac: f32,
-) -> Result<String, Box<dyn Error + Send + Sync>> {
+) -> Result<String, EvaluateError> {
     let module = module;
     let buf = rasterize::<Luma<f32>>(
         Dispatch(vec![

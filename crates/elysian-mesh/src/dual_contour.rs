@@ -1,160 +1,221 @@
+use elysian_ir::{
+    ast::DISTANCE,
+    module::{Evaluate, EvaluateError},
+};
 use image::{ImageBuffer, Rgb};
 use nalgebra::{Matrix2, Vector2};
 
 use crate::{
     marching_squares::contours,
-    quad_tree::{Bounds, QuadTree},
+    quad_tree::{Bounds, QuadCellType, QuadTree},
     util::Vec2,
 };
 
-pub fn deriv(sample: impl Fn([f64; 2]) -> f64, p: [f64; 2]) -> [f64; 2] {
+pub fn deriv<'a>(evaluator: &impl Evaluate<'a>, p: [f64; 2]) -> Result<[f64; 2], EvaluateError> {
     let epsilon = 0.001;
-    let dx = sample([p.x() + epsilon, p.y()]) - sample([p.x() - epsilon, p.y()]);
-    let dy = sample([p.x(), p.y() + epsilon]) - sample([p.x(), p.y() - epsilon]);
+    let dx = f64::from(
+        evaluator
+            .sample_2d([p.x() + epsilon, p.y()])?
+            .get(&DISTANCE.into()),
+    ) - f64::from(
+        evaluator
+            .sample_2d([p.x() - epsilon, p.y()])?
+            .get(&DISTANCE.into()),
+    );
+    let dy = f64::from(
+        evaluator
+            .sample_2d([p.x(), p.y() + epsilon])?
+            .get(&DISTANCE.into()),
+    ) - f64::from(
+        evaluator
+            .sample_2d([p.x(), p.y() - epsilon])?
+            .get(&DISTANCE.into()),
+    );
     let len = (dx * dx + dy * dy).sqrt();
-    [dx / len, dy / len]
+    Ok([dx / len, dy / len])
 }
 
-pub fn feature(sample: impl Fn([f64; 2]) -> f64 + Clone, bounds: Bounds) -> Option<[f64; 2]> {
-    let pts_: Vec<_> = contours(sample.clone(), bounds)
-        .into_iter()
-        .flatten()
-        .collect();
-
-    if pts_.len() >= 2 {
-        let pts: Vec<_> = pts_
-            .iter()
-            .map(|foo| Vector2::new(foo.x(), foo.y()))
-            .collect();
-
-        let nms: Vec<_> = pts_
-            .iter()
-            .map(|t| deriv(sample.clone(), *t))
-            .map(|t| Vector2::new(t.x(), t.y()))
-            .collect();
-
-        let center: Vector2<f64> = pts.iter().sum::<Vector2<f64>>() / pts.len() as f64;
-
-        let a = Matrix2::from_row_iterator(pts_.into_iter().flatten());
-
-        let cols = &pts
-            .into_iter()
-            .zip(nms)
-            .map(|(pt, nm)| (pt - center).dot(&nm))
-            .collect::<Vec<_>>();
-        let b = Vector2::from_column_slice(cols);
-
-        let p = center + (a.svd(true, true).solve(&b, 0.001)).unwrap().column(0);
-        Some([p.x, p.y])
-    } else {
-        None
-    }
+pub trait DualContour<'a> {
+    fn dual_contour(&self, sample: &impl Evaluate<'a>)
+        -> Result<Vec<[[f64; 2]; 2]>, EvaluateError>;
 }
 
-fn face_proc(sample: impl Fn([f64; 2]) -> f64 + Clone, tree: QuadTree) -> Vec<[[f64; 2]; 2]> {
-    match tree {
-        crate::tree::Tree::Root(t) => {
-            let (a, b, c, d) = (*t[0].clone(), *t[1].clone(), *t[2].clone(), *t[3].clone());
-            t.into_iter()
-                .flat_map(|t| face_proc(sample.clone(), *t))
-                .chain(edge_proc_h(sample.clone(), a.clone(), b.clone()))
-                .chain(edge_proc_h(sample.clone(), c.clone(), d.clone()))
-                .chain(edge_proc_v(sample.clone(), a.clone(), c.clone()))
-                .chain(edge_proc_v(sample.clone(), b.clone(), d.clone()))
-                .collect()
+impl<'a> DualContour<'a> for QuadTree {
+    fn dual_contour(
+        &self,
+        sample: &impl Evaluate<'a>,
+    ) -> Result<Vec<[[f64; 2]; 2]>, EvaluateError> {
+        fn edge_proc_h<'a>(
+            sample: &impl Evaluate<'a>,
+            a: QuadTree,
+            b: QuadTree,
+        ) -> Result<Vec<[[f64; 2]; 2]>, EvaluateError> {
+            Ok(match (a, b) {
+                (crate::tree::Tree::Leaf(a), crate::tree::Tree::Leaf(b)) => {
+                    if a.ty != QuadCellType::Contour || b.ty != QuadCellType::Contour {
+                        return Ok(vec![]);
+                    }
+
+                    if let (Some(lhs), Some(rhs)) =
+                        (feature(sample, a.bounds)?, feature(sample, b.bounds)?)
+                    {
+                        vec![[lhs, rhs]]
+                    } else {
+                        vec![]
+                    }
+                }
+                (crate::tree::Tree::Leaf(l), crate::tree::Tree::Root(t)) => {
+                    if l.ty != QuadCellType::Contour {
+                        return Ok(vec![]);
+                    }
+
+                    let leaf = crate::tree::Tree::Leaf(l);
+
+                    let (a, c) = (*t[0].clone(), *t[2].clone());
+                    edge_proc_h(sample, leaf.clone(), a)?
+                        .into_iter()
+                        .chain(edge_proc_h(sample, leaf, c)?)
+                        .collect()
+                }
+                (crate::tree::Tree::Root(t), crate::tree::Tree::Leaf(l)) => {
+                    if l.ty != QuadCellType::Contour {
+                        return Ok(vec![]);
+                    }
+
+                    let (b, d) = (*t[1].clone(), *t[3].clone());
+
+                    let leaf = crate::tree::Tree::Leaf(l);
+
+                    edge_proc_h(sample, leaf.clone(), b)?
+                        .into_iter()
+                        .chain(edge_proc_h(sample, leaf, d)?)
+                        .collect()
+                }
+                (crate::tree::Tree::Root(lhs), crate::tree::Tree::Root(rhs)) => {
+                    let (b, d) = (*lhs[1].clone(), *lhs[3].clone());
+                    let (a, c) = (*rhs[0].clone(), *rhs[2].clone());
+                    edge_proc_h(sample, b, a)?
+                        .into_iter()
+                        .chain(edge_proc_h(sample, d, c)?)
+                        .collect()
+                }
+            })
         }
-        _ => vec![],
-    }
-}
 
-fn edge_proc_h(
-    sample: impl Fn([f64; 2]) -> f64 + Clone,
-    a: QuadTree,
-    b: QuadTree,
-) -> Vec<[[f64; 2]; 2]> {
-    match (a, b) {
-        (crate::tree::Tree::Leaf(a), crate::tree::Tree::Leaf(b)) => {
-            if let (Some(lhs), Some(rhs)) = (
-                feature(sample.clone(), a.bounds),
-                feature(sample.clone(), b.bounds),
-            ) {
-                vec![[lhs, rhs]]
+        fn edge_proc_v<'a>(
+            sample: &impl Evaluate<'a>,
+            a: QuadTree,
+            b: QuadTree,
+        ) -> Result<Vec<[[f64; 2]; 2]>, EvaluateError> {
+            Ok(match (a, b) {
+                (crate::tree::Tree::Leaf(a), crate::tree::Tree::Leaf(b)) => {
+                    if a.ty != QuadCellType::Contour || b.ty != QuadCellType::Contour {
+                        return Ok(vec![]);
+                    }
+
+                    if let (Some(lhs), Some(rhs)) =
+                        (feature(sample, a.bounds)?, feature(sample, b.bounds)?)
+                    {
+                        vec![[lhs, rhs]]
+                    } else {
+                        vec![]
+                    }
+                }
+                (crate::tree::Tree::Root(t), crate::tree::Tree::Leaf(l)) => {
+                    if l.ty != QuadCellType::Contour {
+                        return Ok(vec![]);
+                    }
+
+                    let leaf = crate::tree::Tree::Leaf(l);
+
+                    let (c, d) = (*t[2].clone(), *t[3].clone());
+                    edge_proc_v(sample, leaf.clone(), c)?
+                        .into_iter()
+                        .chain(edge_proc_v(sample, leaf.clone(), d)?)
+                        .collect()
+                }
+                (crate::tree::Tree::Leaf(l), crate::tree::Tree::Root(t)) => {
+                    if l.ty != QuadCellType::Contour {
+                        return Ok(vec![]);
+                    }
+
+                    let leaf = crate::tree::Tree::Leaf(l);
+
+                    let (a, b) = (*t[0].clone(), *t[2].clone());
+                    edge_proc_v(sample, leaf.clone(), a)?
+                        .into_iter()
+                        .chain(edge_proc_v(sample, leaf.clone(), b)?)
+                        .collect()
+                }
+                (crate::tree::Tree::Root(lhs), crate::tree::Tree::Root(rhs)) => {
+                    let (c, a) = (*lhs[2].clone(), *lhs[0].clone());
+                    let (d, b) = (*rhs[3].clone(), *rhs[1].clone());
+                    edge_proc_v(sample, b, a)?
+                        .into_iter()
+                        .chain(edge_proc_v(sample, d, c)?)
+                        .collect()
+                }
+            })
+        }
+
+        pub fn feature<'a>(
+            evaluator: &impl Evaluate<'a>,
+            bounds: Bounds,
+        ) -> Result<Option<[f64; 2]>, EvaluateError> {
+            let pts_: Vec<_> = contours(evaluator, bounds)?.into_iter().flatten().collect();
+
+            Ok(if pts_.len() >= 2 {
+                let pts: Vec<_> = pts_
+                    .iter()
+                    .map(|foo| Vector2::new(foo.x(), foo.y()))
+                    .collect();
+
+                let nms: Vec<_> = pts_
+                    .iter()
+                    .map(|t| deriv(evaluator, *t))
+                    .collect::<Result<Vec<_>, _>>()?
+                    .into_iter()
+                    .map(|t| Vector2::new(t.x(), t.y()))
+                    .collect();
+
+                let center: Vector2<f64> = pts.iter().sum::<Vector2<f64>>() / pts.len() as f64;
+
+                let a = Matrix2::from_row_iterator(pts_.into_iter().flatten());
+
+                let cols = &pts
+                    .into_iter()
+                    .zip(nms)
+                    .map(|(pt, nm)| (pt - center).dot(&nm))
+                    .collect::<Vec<_>>();
+                let b = Vector2::from_column_slice(cols);
+
+                let p = center + (a.svd(true, true).solve(&b, 0.001)).unwrap().column(0);
+                Some([p.x, p.y])
             } else {
-                vec![]
+                None
+            })
+        }
+
+        Ok(match self {
+            crate::tree::Tree::Root(t) => {
+                let (a, b, c, d) = (*t[0].clone(), *t[1].clone(), *t[2].clone(), *t[3].clone());
+                t.into_iter()
+                    .map(|t| t.dual_contour(sample))
+                    .collect::<Result<Vec<_>, _>>()?
+                    .into_iter()
+                    .flatten()
+                    .chain(edge_proc_h(sample, a.clone(), b.clone())?)
+                    .chain(edge_proc_h(sample, c.clone(), d.clone())?)
+                    .chain(edge_proc_v(sample, a.clone(), c.clone())?)
+                    .chain(edge_proc_v(sample, b.clone(), d.clone())?)
+                    .collect()
             }
-        }
-        (leaf @ crate::tree::Tree::Leaf(_), crate::tree::Tree::Root(t)) => {
-            let (a, c) = (*t[0].clone(), *t[2].clone());
-            edge_proc_h(sample.clone(), leaf.clone(), a)
-                .into_iter()
-                .chain(edge_proc_h(sample.clone(), leaf, c))
-                .collect()
-        }
-        (crate::tree::Tree::Root(t), leaf @ crate::tree::Tree::Leaf(_)) => {
-            let (b, d) = (*t[1].clone(), *t[3].clone());
-            edge_proc_h(sample.clone(), leaf.clone(), b)
-                .into_iter()
-                .chain(edge_proc_h(sample.clone(), leaf, d))
-                .collect()
-        }
-        (crate::tree::Tree::Root(lhs), crate::tree::Tree::Root(rhs)) => {
-            let (b, d) = (*lhs[1].clone(), *lhs[3].clone());
-            let (a, c) = (*rhs[0].clone(), *rhs[2].clone());
-            edge_proc_h(sample.clone(), b, a)
-                .into_iter()
-                .chain(edge_proc_h(sample.clone(), d, c))
-                .collect()
-        }
+            _ => vec![],
+        })
     }
 }
 
-fn edge_proc_v(
-    sample: impl Fn([f64; 2]) -> f64 + Clone,
-    a: QuadTree,
-    b: QuadTree,
-) -> Vec<[[f64; 2]; 2]> {
-    match (a, b) {
-        (crate::tree::Tree::Leaf(a), crate::tree::Tree::Leaf(b)) => {
-            if let (Some(lhs), Some(rhs)) = (
-                feature(sample.clone(), a.bounds),
-                feature(sample.clone(), b.bounds),
-            ) {
-                vec![[lhs, rhs]]
-            } else {
-                vec![]
-            }
-        }
-        (crate::tree::Tree::Root(t), leaf @ crate::tree::Tree::Leaf(_)) => {
-            let (c, d) = (*t[2].clone(), *t[3].clone());
-            edge_proc_v(sample.clone(), leaf.clone(), c)
-                .into_iter()
-                .chain(edge_proc_v(sample.clone(), leaf.clone(), d))
-                .collect()
-        }
-        (leaf @ crate::tree::Tree::Leaf(_), crate::tree::Tree::Root(t)) => {
-            let (a, b) = (*t[0].clone(), *t[2].clone());
-            edge_proc_v(sample.clone(), leaf.clone(), a)
-                .into_iter()
-                .chain(edge_proc_v(sample.clone(), leaf.clone(), b))
-                .collect()
-        }
-        (crate::tree::Tree::Root(lhs), crate::tree::Tree::Root(rhs)) => {
-            let (c, a) = (*lhs[2].clone(), *lhs[0].clone());
-            let (d, b) = (*rhs[3].clone(), *rhs[1].clone());
-            edge_proc_v(sample.clone(), b, a)
-                .into_iter()
-                .chain(edge_proc_v(sample.clone(), d, c))
-                .collect()
-        }
-    }
-}
-
-pub fn draw_dual_contour(
-    sample: impl Fn([f64; 2]) -> f64 + Clone,
-    tree: QuadTree,
-) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
-    let contours: Vec<_> = face_proc(sample.clone(), tree);
-
+pub fn draw_dual_contour(contours: Vec<[[f64; 2]; 2]>) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
     let mut image = ImageBuffer::new(64, 64);
 
     for contour in contours.iter() {
@@ -175,6 +236,13 @@ pub fn draw_dual_contour(
 
 #[cfg(test)]
 mod test {
+    use elysian_interpreter::Interpreted;
+    use elysian_ir::module::{AsModule, Dispatch, EvaluateError, SpecializationData};
+    use elysian_shapes::{
+        field::Point,
+        modify::{ClampMode, IntoElongateAxis, IntoIsosurface},
+    };
+    use elysian_static::Precompiled;
     use viuer::Config;
 
     use crate::quad_tree::{Bounds, QuadTree};
@@ -182,19 +250,29 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_dual_contour() {
-        let sample = |p: [f64; 2]| (p.x() * p.x() + p.y() * p.y()).sqrt() - 0.6;
-        let quad_tree = QuadTree::new(
+    fn test_dual_contour() -> Result<(), EvaluateError> {
+        let module = Point
+            .isosurface(0.3)
+            .elongate_axis([0.3, 0.0], ClampMode::Dir, ClampMode::Dir)
+            .module(&SpecializationData::new_2d());
+
+        let evaluator = Dispatch(vec![
+            Box::new(Precompiled(&module)),
+            Box::new(Interpreted(&module)),
+        ]);
+
+        let contours = QuadTree::new(
             Bounds {
                 min: [-1.0, -1.0],
                 max: [1.0, 1.0],
             },
-            2,
+            4,
         )
-        .merge(sample, 0.001)
-        .collapse(sample);
+        .merge(&evaluator, 0.001)?
+        .collapse(&evaluator)?
+        .dual_contour(&evaluator)?;
 
-        let image = draw_dual_contour(sample, quad_tree);
+        let image = draw_dual_contour(contours);
 
         viuer::print(
             &image.into(),

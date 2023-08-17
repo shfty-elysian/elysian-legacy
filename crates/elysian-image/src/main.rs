@@ -1,16 +1,13 @@
-use std::{
-    error::Error,
-    io::{stdin, stdout, BufWriter, Cursor, Read, Write},
-};
+use std::io::{stdin, stdout, BufWriter, Cursor, Read, Write};
 
 use elysian_image::{distance_to_luma_8, rasterize};
 use elysian_interpreter::Interpreted;
-use elysian_ir::module::{Dispatch, SpecializationData};
+use elysian_ir::module::{Dispatch, EvaluateError, SpecializationData};
 use elysian_shapes::shape::Shape;
 use elysian_static::Precompiled;
 use image::{ImageOutputFormat, Luma};
 
-fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+fn main() -> Result<(), EvaluateError> {
     let mut buf = String::default();
     stdin().read_to_string(&mut buf)?;
 

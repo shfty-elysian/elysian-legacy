@@ -1,11 +1,11 @@
-use std::{error::Error, time::Instant};
+use std::time::Instant;
 
 use elysian::{
     image::{color_to_rgb8, rasterize},
     interpreter::Interpreted,
     ir::{
         ast::COLOR,
-        module::{AsModule, Dispatch, SpecializationData},
+        module::{AsModule, Dispatch, EvaluateError, SpecializationData},
     },
     r#static::{include_static_shapes, Precompiled},
     shapes::{color::distance_color, modify::IntoSet, shape::IntoShape},
@@ -15,7 +15,7 @@ use viuer::Config;
 
 include_static_shapes!();
 
-fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+fn main() -> Result<(), EvaluateError> {
     let shape = test_shapes::test_shape()
         .module(&SpecializationData::new_2d())
         .finalize();
@@ -70,13 +70,11 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 }
 
 mod quadtree {
-    use std::error::Error;
-
     use elysian::{
         core::number::Number,
         ir::{
             ast::{Struct, Value, DISTANCE, GRADIENT_2D, POSITION_2D, VECTOR2, X, Y},
-            module::{Evaluate, StructIdentifier, CONTEXT},
+            module::{Evaluate, EvaluateError, StructIdentifier, CONTEXT},
         },
         shapes::{
             combine::{Combine, Union},
@@ -91,7 +89,7 @@ mod quadtree {
         min: [f64; 2],
         max: [f64; 2],
         level: usize,
-    ) -> Result<impl IntoShape, Box<dyn Error + Send + Sync>> {
+    ) -> Result<impl IntoShape, EvaluateError> {
         let sample = |x: f64, y: f64| {
             let ctx = Struct::new(StructIdentifier(CONTEXT))
                 .set(

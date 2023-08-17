@@ -325,8 +325,11 @@ version = "0.1.0"
 dependencies = [
  "base64 0.21.2",
  "elysian-core",
+ "elysian-interpreter",
  "elysian-ir",
  "elysian-proc-macros",
+ "elysian-shapes",
+ "elysian-static",
  "gltf-json",
  "image",
  "nalgebra",

@@ -1,3 +1,7 @@
+use elysian_ir::{
+    ast::DISTANCE,
+    module::{Evaluate, EvaluateError},
+};
 use image::{ImageBuffer, Rgb};
 
 use crate::{
@@ -91,28 +95,52 @@ impl QuadTree {
 
     /// Given a sampling function and en epsilon,
     /// merge cells whose local error versus linear interpolation falls below the given threshold
-    pub fn merge(self, sample: impl Fn([f64; 2]) -> f64 + Clone, epsilon: f64) -> QuadTree {
-        fn interpolate(
-            sample: impl Fn([f64; 2]) -> f64 + Clone,
+    pub fn merge<'a>(
+        self,
+        evaluator: &impl Evaluate<'a>,
+        epsilon: f64,
+    ) -> Result<QuadTree, EvaluateError> {
+        fn interpolate<'a>(
+            evaluator: &impl Evaluate<'a>,
             bounds: Bounds,
             p: [f64; 2],
-        ) -> f64 {
+        ) -> Result<f64, EvaluateError> {
             let dx = (p.x() - bounds.min.x()) / (bounds.max.x() - bounds.min.x());
             let dy = (p.y() - bounds.min.y()) / (bounds.max.y() - bounds.min.y());
-            let ab =
-                sample(bounds.min) * (1.0 - dx) + sample([bounds.max.x(), bounds.min.y()]) * dx;
-            let cd =
-                sample([bounds.min.x(), bounds.max.y()]) * (1.0 - dx) + sample(bounds.max) * dx;
-            ab * (1.0 - dy) + cd * dy
+
+            let ab = f64::from(evaluator.sample_2d(bounds.min)?.get(&DISTANCE.into())) * (1.0 - dx)
+                + f64::from(
+                    evaluator
+                        .sample_2d([bounds.max.x(), bounds.min.y()])?
+                        .get(&DISTANCE.into()),
+                ) * dx;
+
+            let cd: f64 = f64::from(
+                evaluator
+                    .sample_2d([bounds.min.x(), bounds.max.y()])?
+                    .get(&DISTANCE.into()),
+            ) * (1.0 - dx)
+                + f64::from(evaluator.sample_2d(bounds.max)?.get(&DISTANCE.into())) * dx;
+
+            Ok(ab * (1.0 - dy) + cd * dy)
         }
 
-        fn score(sample: impl Fn([f64; 2]) -> f64 + Clone, bounds: Bounds, p: [f64; 2]) -> f64 {
-            (interpolate(sample.clone(), bounds, p) - sample(p)).abs()
+        fn score<'a>(
+            evaluator: &impl Evaluate<'a>,
+            bounds: Bounds,
+            p: [f64; 2],
+        ) -> Result<f64, EvaluateError> {
+            Ok((interpolate(evaluator, bounds, p)?
+                - f64::from(evaluator.sample_2d(p)?.get(&DISTANCE.into())))
+            .abs())
         }
 
-        match self {
+        Ok(match self {
             Tree::Root(t) => {
-                let t = t.map(|t| t.merge(sample.clone(), epsilon));
+                let t = t
+                    .into_iter()
+                    .map(|t| t.merge(evaluator, epsilon))
+                    .collect::<Result<Vec<_>, _>>()?;
                 let (a, b, c, d) = (&t[0], &t[1], &t[2], &t[3]);
 
                 match (a, b, c, d) {
@@ -134,11 +162,11 @@ impl QuadTree {
                             ty: QuadCellType::Contour,
                         }),
                     ) => {
-                        if [i, q, r, s, t]
+                        let foo = [i, q, r, s, t]
                             .into_iter()
                             .map(|t| {
                                 score(
-                                    sample.clone(),
+                                    evaluator,
                                     Bounds {
                                         min: *min,
                                         max: *max,
@@ -146,8 +174,9 @@ impl QuadTree {
                                     *t,
                                 )
                             })
-                            .all(|t| t < epsilon)
-                        {
+                            .collect::<Result<Vec<_>, _>>()?;
+
+                        if foo.iter().all(|t| *t < epsilon) {
                             QuadTree::Leaf(QuadCell {
                                 bounds: Bounds {
                                     min: *min,
@@ -173,28 +202,35 @@ impl QuadTree {
                 }
             }
             Tree::Leaf(_) => self,
-        }
+        })
     }
 
     /// Given a sampling function, collapse Leaf cells into Full and Empty variants
-    pub fn collapse(self, sample: impl Fn([f64; 2]) -> f64 + Copy) -> Self {
+    pub fn collapse<'a>(self, evaluator: &impl Evaluate<'a>) -> Result<Self, EvaluateError> {
         let Bounds { min, max } = self.bounds();
 
-        match self {
+        Ok(match self {
             Self::Leaf(QuadCell {
                 bounds: Bounds { min, max },
                 ..
             }) => {
-                let mut iter = [min.y(), max.y()]
+                let samples = [min.y(), max.y()]
                     .into_iter()
                     .flat_map(|y| [min.x(), max.x()].into_iter().map(move |x| [x, y]))
-                    .map(|p| sample(p));
+                    .map(|p| evaluator.sample_2d(p))
+                    .collect::<Result<Vec<_>, _>>()?;
 
                 Self::Leaf(QuadCell {
                     bounds: Bounds { min, max },
-                    ty: if iter.clone().all(|t| t <= 0.0) {
+                    ty: if samples
+                        .iter()
+                        .all(|t| f64::from(t.get(&DISTANCE.into())) <= 0.0)
+                    {
                         QuadCellType::Full
-                    } else if iter.all(|t| t > 0.0) {
+                    } else if samples
+                        .iter()
+                        .all(|t| f64::from(t.get(&DISTANCE.into())) > 0.0)
+                    {
                         QuadCellType::Empty
                     } else {
                         QuadCellType::Contour
@@ -204,8 +240,8 @@ impl QuadTree {
             Self::Root(leaves) => {
                 let leaves = leaves
                     .into_iter()
-                    .map(|t| Box::new(t.collapse(sample)))
-                    .collect::<Vec<_>>();
+                    .map(|t| t.collapse(evaluator).map(Box::new))
+                    .collect::<Result<Vec<_>, _>>()?;
 
                 if leaves.iter().all(|leaf| match **leaf {
                     Tree::Leaf(QuadCell {
@@ -233,7 +269,7 @@ impl QuadTree {
                     Self::Root(leaves.try_into().unwrap())
                 }
             }
-        }
+        })
     }
 }
 
@@ -276,6 +312,13 @@ pub fn draw_quad_tree(tree: QuadTree) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
 
 #[cfg(test)]
 mod test {
+    use elysian_interpreter::Interpreted;
+    use elysian_ir::module::{AsModule, Dispatch, SpecializationData};
+    use elysian_shapes::{
+        field::Point,
+        modify::{ClampMode, IntoIsosurface, IntoElongateAxis},
+    };
+    use elysian_static::Precompiled;
     use viuer::Config;
 
     use crate::quad_tree::draw_quad_tree;
@@ -283,17 +326,26 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_quad_tree() {
-        let sample = |p: [f64; 2]| (p.x() * p.x() + p.y() * p.y()).sqrt() - 0.6;
+    fn test_quad_tree() -> Result<(), EvaluateError> {
+        let module = Point
+            .isosurface(0.3)
+            .elongate_axis([0.3, 0.0], ClampMode::Dir, ClampMode::Dir)
+            .module(&SpecializationData::new_2d());
+
+        let evaluator = Dispatch(vec![
+            Box::new(Precompiled(&module)),
+            Box::new(Interpreted(&module)),
+        ]);
+
         let quad_tree = QuadTree::new(
             Bounds {
                 min: [-1.0, -1.0],
                 max: [1.0, 1.0],
             },
-            6,
+            4,
         )
-        .merge(sample, 0.001)
-        .collapse(sample);
+        .merge(&evaluator, 0.001)?
+        .collapse(&evaluator)?;
 
         let image = draw_quad_tree(quad_tree);
 

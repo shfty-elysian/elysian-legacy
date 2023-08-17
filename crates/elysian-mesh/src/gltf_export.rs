@@ -4,7 +4,8 @@ use base64::Engine;
 
 use elysian_core::{number::Number, property_identifier::PropertyIdentifier};
 use elysian_ir::ast::{
-    Struct, COLOR, NORMAL, POSITION_3D, TANGENT_3D, UV, VECTOR2, VECTOR3, VECTOR4, W, X, Y, Z,
+    Struct, COLOR, NORMAL, POSITION_2D, POSITION_3D, TANGENT_2D, TANGENT_3D, UV, VECTOR2, VECTOR3,
+    VECTOR4, W, X, Y, Z,
 };
 use gltf_json::{
     accessor::{ComponentType, GenericComponentType, Type},
@@ -83,10 +84,10 @@ where
 
 fn float_buffer(
     index: u32,
-    vertices: &[Struct],
+    samples: &[Struct],
     attr: &PropertyIdentifier,
 ) -> (Buffer, View, Accessor) {
-    let values = vertices
+    let values = samples
         .into_iter()
         .map(|v| {
             let elysian_ir::ast::Value::Number(Number::Float(f)) = v.get(attr) else {
@@ -102,10 +103,10 @@ fn float_buffer(
 
 fn vec2_buffer(
     index: u32,
-    vertices: &[Struct],
+    samples: &[Struct],
     attr: &PropertyIdentifier,
 ) -> (Buffer, View, Accessor) {
-    let values = vertices
+    let values = samples
         .into_iter()
         .map(|v| {
             let elysian_ir::ast::Value::Struct(s) = v.get(attr) else { panic!() };
@@ -119,10 +120,10 @@ fn vec2_buffer(
 
 fn vec3_buffer(
     index: u32,
-    vertices: &[Struct],
+    samples: &[Struct],
     attr: &PropertyIdentifier,
 ) -> (Buffer, View, Accessor) {
-    let values = vertices
+    let values = samples
         .into_iter()
         .map(|v| {
             let elysian_ir::ast::Value::Struct(s) = v.get(attr) else { panic!() };
@@ -142,10 +143,10 @@ fn vec3_buffer(
 
 fn vec4_buffer(
     index: u32,
-    vertices: &[Struct],
+    samples: &[Struct],
     attr: &PropertyIdentifier,
 ) -> (Buffer, View, Accessor) {
-    let values = vertices
+    let values = samples
         .into_iter()
         .map(|v| {
             let elysian_ir::ast::Value::Struct(s) = v.get(attr) else { panic!() };
@@ -165,7 +166,7 @@ fn vec4_buffer(
 }
 
 fn to_buffers(
-    vertices: &[Struct],
+    samples: &[Struct],
     attrs: &[PropertyIdentifier],
 ) -> Vec<(Semantic, (Buffer, View, Accessor))> {
     attrs
@@ -173,26 +174,26 @@ fn to_buffers(
         .enumerate()
         .map(|(i, attr)| {
             let semantic = match &attr {
+                a if ***a == POSITION_2D => Semantic::Positions,
                 a if ***a == POSITION_3D => Semantic::Positions,
                 a if ***a == NORMAL => Semantic::Normals,
+                a if ***a == TANGENT_2D => Semantic::Tangents,
                 a if ***a == TANGENT_3D => Semantic::Tangents,
                 a if ***a == COLOR => Semantic::Colors(0),
                 a if ***a == UV => Semantic::TexCoords(0),
                 _ => unimplemented!(),
             };
 
-            let val = vertices[0].get(attr);
+            let val = samples[0].get(attr);
             let bufs = match val {
                 elysian_ir::ast::Value::Number(n) => match n {
-                    elysian_core::number::Number::Float(_) => {
-                        float_buffer(i as u32, vertices, attr)
-                    }
+                    elysian_core::number::Number::Float(_) => float_buffer(i as u32, samples, attr),
                     _ => unimplemented!(),
                 },
                 elysian_ir::ast::Value::Struct(s) => match &s.id {
-                    id if **id == VECTOR2 => vec2_buffer(i as u32, vertices, attr),
-                    id if **id == VECTOR3 => vec3_buffer(i as u32, vertices, attr),
-                    id if **id == VECTOR4 => vec4_buffer(i as u32, vertices, attr),
+                    id if **id == VECTOR2 => vec2_buffer(i as u32, samples, attr),
+                    id if **id == VECTOR3 => vec3_buffer(i as u32, samples, attr),
+                    id if **id == VECTOR4 => vec4_buffer(i as u32, samples, attr),
                     _ => unimplemented!(),
                 },
                 _ => unimplemented!(),
@@ -203,8 +204,8 @@ fn to_buffers(
         .collect()
 }
 
-pub fn vertices_to_gltf(vertices: &[Struct], attrs: &[PropertyIdentifier]) -> Root {
-    let (semantics, bufs): (Vec<_>, Vec<_>) = to_buffers(vertices, attrs).into_iter().unzip();
+pub fn samples_to_gltf(samples: &[Struct], attrs: &[PropertyIdentifier]) -> Root {
+    let (semantics, bufs): (Vec<_>, Vec<_>) = to_buffers(samples, attrs).into_iter().unzip();
 
     let attributes: BTreeMap<_, _> = semantics
         .into_iter()
@@ -275,7 +276,7 @@ mod test {
 
     #[test]
     fn test_gltf_export() {
-        let vertex = |position: [f32; 3], color: [f32; 3]| -> Struct {
+        let sample = |position: [f32; 3], color: [f32; 3]| -> Struct {
             Struct::new(StructIdentifier(CONTEXT))
                 .set(
                     POSITION_3D.into(),
@@ -297,13 +298,13 @@ mod test {
                 )
         };
 
-        let vertices = [
-            vertex([0.0, 0.5, 0.0], [1.0, 0.0, 0.0]),
-            vertex([-0.5, -0.5, 0.0], [0.0, 1.0, 0.0]),
-            vertex([0.5, -0.5, 0.0], [0.0, 0.0, 1.0]),
+        let samples = [
+            sample([0.0, 0.5, 0.0], [1.0, 0.0, 0.0]),
+            sample([-0.5, -0.5, 0.0], [0.0, 1.0, 0.0]),
+            sample([0.5, -0.5, 0.0], [0.0, 0.0, 1.0]),
         ];
 
-        let root = vertices_to_gltf(&vertices, &[POSITION_3D.into(), COLOR.into()]);
+        let root = samples_to_gltf(&samples, &[POSITION_3D.into(), COLOR.into()]);
 
         std::fs::write("./ser.gltf", root.to_string().unwrap()).unwrap();
     }

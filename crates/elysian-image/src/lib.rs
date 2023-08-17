@@ -1,6 +1,6 @@
 //! Rasterize a 2D Elysian field into an image
 
-use std::{error::Error, fmt::Debug};
+use std::fmt::Debug;
 
 use elysian_math::glam::Vec4;
 use elysian_shapes::modify::ASPECT;
@@ -9,7 +9,7 @@ use image::{ImageBuffer, Pixel};
 use elysian_core::number::Number;
 use elysian_ir::{
     ast::{Struct, Value, COLOR, DISTANCE, POSITION_2D, VECTOR2, X, Y},
-    module::{Evaluate, StructIdentifier, CONTEXT},
+    module::{Evaluate, EvaluateError, StructIdentifier, CONTEXT},
 };
 use rayon::prelude::ParallelIterator;
 
@@ -54,7 +54,7 @@ pub fn rasterize<'a, P>(
     width: u32,
     height: u32,
     pixel: impl Send + Sync + Fn(Struct) -> Vec<P::Subpixel>,
-) -> Result<ImageBuffer<P, Vec<P::Subpixel>>, Box<dyn Error + Send + Sync>>
+) -> Result<ImageBuffer<P, Vec<P::Subpixel>>, EvaluateError>
 where
     P: Debug + Pixel,
     P::Subpixel: Send + Sync,
@@ -64,7 +64,7 @@ where
         .flat_map(move |y| (0..width).into_iter().map(move |x| (x, y)))
         .collect();
 
-    let sample = move |x: u32, y: u32| -> Result<Vec<P::Subpixel>, Box<dyn Error + Send + Sync>> {
+    let sample = move |x: u32, y: u32| -> Result<Vec<P::Subpixel>, EvaluateError> {
         let ctx = Struct::new(StructIdentifier(CONTEXT))
             .set(
                 POSITION_2D.into(),
