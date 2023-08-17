@@ -234,6 +234,7 @@ dependencies = [
  "elysian-core",
  "elysian-decl-macros",
  "elysian-image",
+ "elysian-interpreter",
  "elysian-ir",
  "elysian-math",
  "elysian-mesh",
@@ -251,7 +252,9 @@ name = "elysian-ascii"
 version = "0.1.0"
 dependencies = [
  "elysian-image",
+ "elysian-interpreter",
  "elysian-ir",
+ "elysian-static",
  "image",
 ]
 
@@ -273,6 +276,7 @@ name = "elysian-image"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
+ "elysian-interpreter",
  "elysian-ir",
  "elysian-math",
  "elysian-shapes",
@@ -380,9 +384,7 @@ name = "elysian-static"
 version = "0.1.0"
 dependencies = [
  "elysian-core",
- "elysian-interpreter",
  "elysian-ir",
- "elysian-shapes",
  "elysian-syn",
  "linkme",
 ]
@@ -1366,6 +1368,7 @@ version = "0.1.0"
 dependencies = [
  "elysian",
  "elysian-core",
+ "elysian-interpreter",
  "elysian-ir",
  "elysian-static",
  "image",

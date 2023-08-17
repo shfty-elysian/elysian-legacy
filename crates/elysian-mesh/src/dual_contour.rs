@@ -1,7 +1,11 @@
 use image::{ImageBuffer, Rgb};
 use nalgebra::{Matrix2, Vector2};
 
-use crate::{marching_squares::contours, quad_tree::QuadTree, util::Vec2};
+use crate::{
+    marching_squares::contours,
+    quad_tree::{Bounds, QuadTree},
+    util::Vec2,
+};
 
 pub fn deriv(sample: impl Fn([f64; 2]) -> f64, p: [f64; 2]) -> [f64; 2] {
     let epsilon = 0.001;
@@ -11,12 +15,8 @@ pub fn deriv(sample: impl Fn([f64; 2]) -> f64, p: [f64; 2]) -> [f64; 2] {
     [dx / len, dy / len]
 }
 
-pub fn feature(
-    sample: impl Fn([f64; 2]) -> f64 + Clone,
-    min: [f64; 2],
-    max: [f64; 2],
-) -> Option<[f64; 2]> {
-    let pts_: Vec<_> = contours(sample.clone(), min, max)
+pub fn feature(sample: impl Fn([f64; 2]) -> f64 + Clone, bounds: Bounds) -> Option<[f64; 2]> {
+    let pts_: Vec<_> = contours(sample.clone(), bounds)
         .into_iter()
         .flatten()
         .collect();
@@ -51,30 +51,6 @@ pub fn feature(
     }
 }
 
-pub fn draw_dual_contour(
-    sample: impl Fn([f64; 2]) -> f64 + Clone,
-    tree: QuadTree,
-) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
-    let contours: Vec<_> = face_proc(sample.clone(), tree);
-
-    let mut image = ImageBuffer::new(64, 64);
-
-    for contour in contours.iter() {
-        let (from, to) = (contour[0], contour[1]);
-
-        let from_x = ((from.x() * 0.5 + 0.5) * image.width() as f64).floor() as u32;
-        let from_y = ((from.y() * 0.5 + 0.5) * image.height() as f64).floor() as u32;
-
-        let to_x = ((to.x() * 0.5 + 0.5) * image.width() as f64).floor() as u32;
-        let to_y = ((to.y() * 0.5 + 0.5) * image.height() as f64).floor() as u32;
-
-        image.put_pixel(from_x, from_y, Rgb([1.0, 0.0, 0.0]));
-        image.put_pixel(to_x, to_y, Rgb([0.0, 0.0, 1.0]));
-    }
-
-    image
-}
-
 fn face_proc(sample: impl Fn([f64; 2]) -> f64 + Clone, tree: QuadTree) -> Vec<[[f64; 2]; 2]> {
     match tree {
         crate::tree::Tree::Root(t) => {
@@ -99,8 +75,8 @@ fn edge_proc_h(
     match (a, b) {
         (crate::tree::Tree::Leaf(a), crate::tree::Tree::Leaf(b)) => {
             if let (Some(lhs), Some(rhs)) = (
-                feature(sample.clone(), a.min, a.max),
-                feature(sample.clone(), b.min, b.max),
+                feature(sample.clone(), a.bounds),
+                feature(sample.clone(), b.bounds),
             ) {
                 vec![[lhs, rhs]]
             } else {
@@ -140,8 +116,8 @@ fn edge_proc_v(
     match (a, b) {
         (crate::tree::Tree::Leaf(a), crate::tree::Tree::Leaf(b)) => {
             if let (Some(lhs), Some(rhs)) = (
-                feature(sample.clone(), a.min, a.max),
-                feature(sample.clone(), b.min, b.max),
+                feature(sample.clone(), a.bounds),
+                feature(sample.clone(), b.bounds),
             ) {
                 vec![[lhs, rhs]]
             } else {
@@ -173,20 +149,50 @@ fn edge_proc_v(
     }
 }
 
+pub fn draw_dual_contour(
+    sample: impl Fn([f64; 2]) -> f64 + Clone,
+    tree: QuadTree,
+) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
+    let contours: Vec<_> = face_proc(sample.clone(), tree);
+
+    let mut image = ImageBuffer::new(64, 64);
+
+    for contour in contours.iter() {
+        let (from, to) = (contour[0], contour[1]);
+
+        let from_x = ((from.x() * 0.5 + 0.5) * image.width() as f64).floor() as u32;
+        let from_y = ((from.y() * 0.5 + 0.5) * image.height() as f64).floor() as u32;
+
+        let to_x = ((to.x() * 0.5 + 0.5) * image.width() as f64).floor() as u32;
+        let to_y = ((to.y() * 0.5 + 0.5) * image.height() as f64).floor() as u32;
+
+        image.put_pixel(from_x, from_y, Rgb([1.0, 0.0, 0.0]));
+        image.put_pixel(to_x, to_y, Rgb([0.0, 0.0, 1.0]));
+    }
+
+    image
+}
+
 #[cfg(test)]
 mod test {
     use viuer::Config;
 
-    use crate::{marching_squares::merge, quad_tree::QuadTree};
+    use crate::quad_tree::{Bounds, QuadTree};
 
     use super::*;
 
     #[test]
     fn test_dual_contour() {
         let sample = |p: [f64; 2]| (p.x() * p.x() + p.y() * p.y()).sqrt() - 0.6;
-        let quad_tree = QuadTree::new([-1.0, -1.0], [1.0, 1.0], 4);
-        let quad_tree = merge(sample, quad_tree);
-        let quad_tree = quad_tree.collapse(sample);
+        let quad_tree = QuadTree::new(
+            Bounds {
+                min: [-1.0, -1.0],
+                max: [1.0, 1.0],
+            },
+            2,
+        )
+        .merge(sample, 0.001)
+        .collapse(sample);
 
         let image = draw_dual_contour(sample, quad_tree);
 

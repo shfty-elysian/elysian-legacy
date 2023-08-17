@@ -4,11 +4,13 @@ use std::{
 };
 
 use elysian_image::{distance_to_luma_8, rasterize};
-use elysian_ir::module::SpecializationData;
+use elysian_interpreter::Interpreted;
+use elysian_ir::module::{Dispatch, SpecializationData};
 use elysian_shapes::shape::Shape;
+use elysian_static::Precompiled;
 use image::{ImageOutputFormat, Luma};
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut buf = String::default();
     stdin().read_to_string(&mut buf)?;
 
@@ -16,7 +18,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let module = shape.module(&SpecializationData::new_2d());
 
     let (width, height) = (8, 4);
-    let image = rasterize::<Luma<u8>>(module, width, height, distance_to_luma_8);
+    let image = rasterize::<Luma<u8>>(
+        Dispatch(vec![
+            Box::new(Precompiled(&module)),
+            Box::new(Interpreted(&module)),
+        ]),
+        width,
+        height,
+        distance_to_luma_8,
+    )?;
 
     let mut buf = vec![];
     let mut writer = BufWriter::new(Cursor::new(&mut buf));

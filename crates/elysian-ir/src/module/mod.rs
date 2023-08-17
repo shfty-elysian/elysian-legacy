@@ -1,26 +1,29 @@
 mod domains;
 mod erased_hash;
+mod evaluate;
 mod function_definition;
 mod properties;
 mod specialization_data;
 mod struct_definition;
 mod ty;
 
+pub use domains::*;
+pub use erased_hash::*;
+pub use evaluate::*;
+pub use function_definition::*;
+pub use properties::*;
+pub use specialization_data::*;
+pub use struct_definition::*;
+pub use ty::*;
+
+use elysian_core::{identifier::Identifier, property_identifier::PropertyIdentifier, uuid::Uuid};
+use indexmap::IndexSet;
+
 use std::{
     borrow::Cow,
     collections::hash_map::RandomState,
     hash::{Hash, Hasher},
 };
-
-pub use domains::*;
-use elysian_core::{identifier::Identifier, property_identifier::PropertyIdentifier, uuid::Uuid};
-pub use erased_hash::*;
-pub use function_definition::*;
-use indexmap::IndexSet;
-pub use properties::*;
-pub use specialization_data::*;
-pub use struct_definition::*;
-pub use ty::*;
 
 use crate::{
     ast::{

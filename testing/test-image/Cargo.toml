@@ -6,6 +6,7 @@ edition = "2021"
 [build-dependencies]
 elysian-core = { path = "../../crates/elysian-core" }
 elysian-ir = { path = "../../crates/elysian-ir" }
+elysian-interpreter = { path = "../../crates/elysian-interpreter" }
 elysian-static = { path = "../../crates/elysian-static" }
 test-shapes = { path = "../test-shapes" }
 

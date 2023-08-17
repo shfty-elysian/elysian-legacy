@@ -38,8 +38,3 @@ where
         self[2]
     }
 }
-
-pub fn center((min, max): ([f64; 2], [f64; 2])) -> [f64; 2] {
-    [(min.x() + max.x()) / 2.0, (min.y() + max.y()) / 2.0]
-}
-

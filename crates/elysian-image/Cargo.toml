@@ -11,6 +11,7 @@ rayon = ["dep:rayon", "dep:num_cpus"]
 elysian-core = { path = "../elysian-core" }
 elysian-ir = { path = "../elysian-ir" }
 elysian-math = { path = "../elysian-math" }
+elysian-interpreter = { path = "../elysian-interpreter" }
 elysian-static = { path = "../elysian-static" }
 elysian-shapes = { path = "../elysian-shapes" }
 image = "0.24.6"

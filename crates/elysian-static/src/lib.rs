@@ -1,6 +1,9 @@
 //! Precompile shapes into Rust functions via build.rs
 
-use elysian_interpreter::Interpreter;
+mod evaluator;
+
+pub use evaluator::*;
+
 use elysian_ir::module::Module;
 use elysian_syn::module_to_string;
 
@@ -65,28 +68,4 @@ macro_rules! include_static_shapes {
     () => {
         include!(concat!(env!("OUT_DIR"), "/static_shapes.rs"));
     };
-}
-
-/// Return a function that calls the static implementation of a given shape if it exists,
-/// falling back to the interpreter otherwise.
-pub fn dispatch_module(module: &Module) -> Box<dyn Fn(Struct) -> Struct + Send + Sync + '_> {
-    if let Some(f) = static_shapes_map().get(&module.hash) {
-        println!(
-            "Dispatching {} to static function",
-            module.entry_point.name_unique()
-        );
-        Box::new(*f)
-    } else {
-        println!(
-            "Dispatching {} to dynamic interpreter",
-            module.entry_point.name_unique()
-        );
-        Box::new(move |context| {
-            Interpreter {
-                context,
-                ..Default::default()
-            }
-            .evaluate(module)
-        })
-    }
 }

@@ -29,6 +29,11 @@ pub mod syn {
     pub use elysian_syn::*;
 }
 
+#[cfg(feature = "interpreter")]
+pub mod interpreter {
+    pub use elysian_interpreter::*;
+}
+
 #[cfg(feature = "static")]
 pub mod r#static {
     pub use elysian_static::*;

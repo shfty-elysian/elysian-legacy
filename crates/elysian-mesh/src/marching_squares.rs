@@ -1,8 +1,7 @@
 use image::{ImageBuffer, Rgb};
 
 use crate::{
-    quad_tree::{QuadCell, QuadCellType, QuadTree},
-    tree::Tree,
+    quad_tree::{Bounds, QuadCellType, QuadTree},
     util::Vec2,
 };
 
@@ -36,10 +35,14 @@ fn lut(index: usize) -> Vec<(Side, Side)> {
     }
 }
 
-fn index(sample: impl Fn([f64; 2]) -> f64, min: [f64; 2], max: [f64; 2]) -> usize {
-    let pts: Vec<_> = [min.y(), max.y()]
+fn index(sample: impl Fn([f64; 2]) -> f64, bounds: Bounds) -> usize {
+    let pts: Vec<_> = [bounds.min.y(), bounds.max.y()]
         .into_iter()
-        .flat_map(|y| [min.x(), max.x()].into_iter().map(move |x| [x, y]))
+        .flat_map(|y| {
+            [bounds.min.x(), bounds.max.x()]
+                .into_iter()
+                .map(move |x| [x, y])
+        })
         .collect();
 
     pts.into_iter()
@@ -54,24 +57,48 @@ fn index(sample: impl Fn([f64; 2]) -> f64, min: [f64; 2], max: [f64; 2]) -> usiz
         .sum()
 }
 
-fn edges(sample: impl Fn([f64; 2]) -> f64, min: [f64; 2], max: [f64; 2]) -> Vec<(Side, Side)> {
-    lut(index(sample, min, max))
+fn edges(sample: impl Fn([f64; 2]) -> f64, bounds: Bounds) -> Vec<(Side, Side)> {
+    lut(index(sample, bounds))
 }
 
-fn pt(sample: impl Fn([f64; 2]) -> f64, min: [f64; 2], max: [f64; 2], side: Side) -> [f64; 2] {
+fn pt(sample: impl Fn([f64; 2]) -> f64, bounds: Bounds, side: Side) -> [f64; 2] {
     match side {
-        Side::Left => zero(sample, [min.x(), min.y()], [min.x(), max.y()]),
-        Side::Right => zero(sample, [max.x(), min.y()], [max.x(), max.y()]),
-        Side::Lower => zero(sample, [min.x(), min.y()], [max.x(), min.y()]),
-        Side::Upper => zero(sample, [min.x(), max.y()], [max.x(), max.y()]),
+        Side::Left => zero(
+            sample,
+            Bounds {
+                min: [bounds.min.x(), bounds.min.y()],
+                max: [bounds.min.x(), bounds.max.y()],
+            },
+        ),
+        Side::Right => zero(
+            sample,
+            Bounds {
+                min: [bounds.max.x(), bounds.min.y()],
+                max: [bounds.max.x(), bounds.max.y()],
+            },
+        ),
+        Side::Lower => zero(
+            sample,
+            Bounds {
+                min: [bounds.min.x(), bounds.min.y()],
+                max: [bounds.max.x(), bounds.min.y()],
+            },
+        ),
+        Side::Upper => zero(
+            sample,
+            Bounds {
+                min: [bounds.min.x(), bounds.max.y()],
+                max: [bounds.max.x(), bounds.max.y()],
+            },
+        ),
     }
 }
 
-fn zero(sample: impl Fn([f64; 2]) -> f64, min: [f64; 2], max: [f64; 2]) -> [f64; 2] {
-    fn pos(f: f64, min: [f64; 2], max: [f64; 2]) -> [f64; 2] {
+fn zero(sample: impl Fn([f64; 2]) -> f64, bounds: Bounds) -> [f64; 2] {
+    fn pos(f: f64, bounds: Bounds) -> [f64; 2] {
         [
-            min.x() * (1.0 - f) + max.x() * f,
-            min.y() * (1.0 - f) + max.y() * f,
+            bounds.min.x() * (1.0 - f) + bounds.max.x() * f,
+            bounds.min.y() * (1.0 - f) + bounds.max.y() * f,
         ]
     }
 
@@ -80,38 +107,37 @@ fn zero(sample: impl Fn([f64; 2]) -> f64, min: [f64; 2], max: [f64; 2]) -> [f64;
         step: f64,
         i: usize,
         sample: impl Fn([f64; 2]) -> f64,
-        min: [f64; 2],
-        max: [f64; 2],
+        bounds: Bounds,
     ) -> [f64; 2] {
         if i == 0 {
-            pos(f, min, max)
-        } else if sample(pos(f, min, max)) < 0.0 {
-            zero_(f + step, step / 2.0, i - 1, sample, min, max)
+            pos(f, bounds)
+        } else if sample(pos(f, bounds)) < 0.0 {
+            zero_(f + step, step / 2.0, i - 1, sample, bounds)
         } else {
-            zero_(f - step, step / 2.0, i - 1, sample, min, max)
+            zero_(f - step, step / 2.0, i - 1, sample, bounds)
         }
     }
 
-    if sample(min) >= 0.0 {
-        zero_(0.5, 0.25, 10, sample, max, min)
+    if sample(bounds.min) >= 0.0 {
+        zero_(
+            0.5,
+            0.25,
+            10,
+            sample,
+            Bounds {
+                min: bounds.max,
+                max: bounds.min,
+            },
+        )
     } else {
-        zero_(0.5, 0.25, 10, sample, min, max)
+        zero_(0.5, 0.25, 10, sample, bounds)
     }
 }
 
-pub fn contours(
-    sample: impl Fn([f64; 2]) -> f64 + Clone,
-    min: [f64; 2],
-    max: [f64; 2],
-) -> Vec<[[f64; 2]; 2]> {
-    edges(sample.clone(), min, max)
+pub fn contours(sample: impl Fn([f64; 2]) -> f64 + Clone, bounds: Bounds) -> Vec<[[f64; 2]; 2]> {
+    edges(sample.clone(), bounds)
         .into_iter()
-        .map(|(a, b)| {
-            [
-                pt(sample.clone(), min, max, a),
-                pt(sample.clone(), min, max, b),
-            ]
-        })
+        .map(|(a, b)| [pt(sample.clone(), bounds, a), pt(sample.clone(), bounds, b)])
         .collect()
 }
 
@@ -122,7 +148,7 @@ pub fn draw_marching_squares(
     let contours: Vec<_> = tree
         .into_iter()
         .filter(|t| t.ty == QuadCellType::Contour)
-        .flat_map(|t| contours(sample.clone(), t.min, t.max))
+        .flat_map(|t| contours(sample.clone(), t.bounds))
         .collect();
 
     let mut image = ImageBuffer::new(64, 64);
@@ -141,114 +167,26 @@ pub fn draw_marching_squares(
     image
 }
 
-pub fn interpolate(
-    sample: impl Fn([f64; 2]) -> f64 + Clone,
-    min: [f64; 2],
-    max: [f64; 2],
-    p: [f64; 2],
-) -> f64 {
-    let dx = (p.x() - min.x()) / (max.x() - min.x());
-    let dy = (p.y() - min.y()) / (max.y() - min.y());
-    let ab = sample(min) * (1.0 - dx) + sample([max.x(), min.y()]) * dx;
-    let cd = sample([min.x(), max.y()]) * (1.0 - dx) + sample(max) * dx;
-    ab * (1.0 - dy) + cd * dy
-}
-
-pub fn score(
-    sample: impl Fn([f64; 2]) -> f64 + Clone,
-    min: [f64; 2],
-    max: [f64; 2],
-    p: [f64; 2],
-) -> f64 {
-    (interpolate(sample.clone(), min, max, p) - sample(p)).abs()
-}
-
-pub fn merge(sample: impl Fn([f64; 2]) -> f64 + Clone, tree: QuadTree) -> QuadTree {
-    fn merge_(
-        sample: impl Fn([f64; 2]) -> f64 + Clone,
-        a: QuadTree,
-        b: QuadTree,
-        c: QuadTree,
-        d: QuadTree,
-    ) -> QuadTree {
-        match (&a, &b, &c, &d) {
-            (
-                QuadTree::Leaf(QuadCell {
-                    min,
-                    max: i,
-                    ty: QuadCellType::Contour,
-                }),
-                QuadTree::Leaf(QuadCell {
-                    min: q,
-                    max: r,
-                    ty: QuadCellType::Contour,
-                }),
-                QuadTree::Leaf(QuadCell {
-                    min: s,
-                    max: t,
-                    ty: QuadCellType::Contour,
-                }),
-                QuadTree::Leaf(QuadCell {
-                    max,
-                    ty: QuadCellType::Contour,
-                    ..
-                }),
-            ) => {
-                if [i, q, r, s, t]
-                    .into_iter()
-                    .map(|t| score(sample.clone(), *min, *max, *t))
-                    .all(|t| t < 0.001)
-                {
-                    QuadTree::Leaf(QuadCell {
-                        min: *min,
-                        max: *max,
-                        ty: QuadCellType::Contour,
-                    })
-                } else {
-                    QuadTree::Root([
-                        Box::new(a.clone()),
-                        Box::new(b.clone()),
-                        Box::new(c.clone()),
-                        Box::new(d.clone()),
-                    ])
-                }
-            }
-            _ => QuadTree::Root([
-                Box::new(a.clone()),
-                Box::new(b.clone()),
-                Box::new(c.clone()),
-                Box::new(d.clone()),
-            ]),
-        }
-    }
-
-    match tree {
-        Tree::Root(t) => {
-            let mut iter = t.into_iter().map(|t| merge(sample.clone(), *t));
-            let (a, b, c, d) = (
-                iter.next().unwrap(),
-                iter.next().unwrap(),
-                iter.next().unwrap(),
-                iter.next().unwrap(),
-            );
-            merge_(sample.clone(), a, b, c, d)
-        }
-        Tree::Leaf(_) => tree,
-    }
-}
-
 #[cfg(test)]
 mod test {
     use viuer::Config;
 
+    use crate::quad_tree::Bounds;
+
     use super::*;
 
     #[test]
-    fn test_quad_tree() {
+    fn test_marching_squares() {
         let sample = |p: [f64; 2]| (p.x() * p.x() + p.y() * p.y()).sqrt() - 0.6;
-        let quad_tree = QuadTree::new([-1.0, -1.0], [1.0, 1.0], 2);
-        let quad_tree = merge(sample, quad_tree);
-        let quad_tree = quad_tree.collapse(sample);
+        let quad_tree = QuadTree::new(
+            Bounds {
+                min: [-1.0, -1.0],
+                max: [1.0, 1.0],
+            },
+            2,
+        )
+        .merge(sample, 0.001)
+        .collapse(sample);
 
         let image = draw_marching_squares(sample, quad_tree);
 

@@ -6,9 +6,14 @@ use crate::{
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
-pub struct QuadCell {
+pub struct Bounds {
     pub min: [f64; 2],
     pub max: [f64; 2],
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+pub struct QuadCell {
+    pub bounds: Bounds,
     pub ty: QuadCellType,
 }
 
@@ -22,69 +27,174 @@ pub enum QuadCellType {
 pub type QuadTree = Tree4<QuadCell>;
 
 impl QuadTree {
-    pub fn new(min: [f64; 2], max: [f64; 2], level: usize) -> Self {
-        let size = [max.x() - min.x(), max.y() - min.y()];
+    /// Build a full-density QuadTree with the provided bounds and sampling level
+    pub fn new(bounds: Bounds, level: usize) -> Self {
+        let size = [
+            bounds.max.x() - bounds.min.x(),
+            bounds.max.y() - bounds.min.y(),
+        ];
         let hsize = [size.x() * 0.5, size.y() * 0.5];
 
         if level > 0 {
-            let mut trees = vec![];
+            let mut leaves = vec![];
 
             for iy in 0..2 {
                 for ix in 0..2 {
                     let lmin = [
-                        min.x() + hsize.x() * ix as f64,
-                        min.y() + hsize.y() * iy as f64,
+                        bounds.min.x() + hsize.x() * ix as f64,
+                        bounds.min.y() + hsize.y() * iy as f64,
                     ];
                     let lmax = [lmin.x() + hsize.x(), lmin.y() + hsize.y()];
-                    trees.push(Box::new(Self::new(lmin, lmax, level - 1)));
+                    leaves.push(Box::new(Self::new(
+                        Bounds {
+                            min: lmin,
+                            max: lmax,
+                        },
+                        level - 1,
+                    )));
                 }
             }
 
-            Self::Root(trees.try_into().unwrap())
+            Self::Root(leaves.try_into().unwrap())
         } else {
             Self::Leaf(QuadCell {
-                min,
-                max,
+                bounds,
                 ty: QuadCellType::Contour,
             })
         }
     }
 
-    pub fn bounds(&self) -> ([f64; 2], [f64; 2]) {
-        self.bounds_impl([f64::MAX; 2], [f64::MIN; 2])
+    /// Calculate the bounds of the tree via recursion
+    pub fn bounds(&self) -> Bounds {
+        fn bounds_impl(tree: &QuadTree, bounds: Bounds) -> Bounds {
+            match tree {
+                Tree::Root(t) => {
+                    t.into_iter()
+                        .map(|t| bounds_impl(t, bounds))
+                        .fold(bounds, |acc, next| Bounds {
+                            min: [acc.min.x().min(next.min.x()), acc.min.y().min(next.min.y())],
+                            max: [acc.max.x().max(next.max.x()), acc.max.y().max(next.max.y())],
+                        })
+                }
+                Tree::Leaf(QuadCell { bounds, .. }) => *bounds,
+            }
+        }
+
+        bounds_impl(
+            self,
+            Bounds {
+                min: [f64::MAX; 2],
+                max: [f64::MIN; 2],
+            },
+        )
     }
 
-    pub fn bounds_impl(&self, min: [f64; 2], max: [f64; 2]) -> ([f64; 2], [f64; 2]) {
+    /// Given a sampling function and en epsilon,
+    /// merge cells whose local error versus linear interpolation falls below the given threshold
+    pub fn merge(self, sample: impl Fn([f64; 2]) -> f64 + Clone, epsilon: f64) -> QuadTree {
+        fn interpolate(
+            sample: impl Fn([f64; 2]) -> f64 + Clone,
+            bounds: Bounds,
+            p: [f64; 2],
+        ) -> f64 {
+            let dx = (p.x() - bounds.min.x()) / (bounds.max.x() - bounds.min.x());
+            let dy = (p.y() - bounds.min.y()) / (bounds.max.y() - bounds.min.y());
+            let ab =
+                sample(bounds.min) * (1.0 - dx) + sample([bounds.max.x(), bounds.min.y()]) * dx;
+            let cd =
+                sample([bounds.min.x(), bounds.max.y()]) * (1.0 - dx) + sample(bounds.max) * dx;
+            ab * (1.0 - dy) + cd * dy
+        }
+
+        fn score(sample: impl Fn([f64; 2]) -> f64 + Clone, bounds: Bounds, p: [f64; 2]) -> f64 {
+            (interpolate(sample.clone(), bounds, p) - sample(p)).abs()
+        }
+
         match self {
-            Tree::Root(t) => t.into_iter().map(|t| t.bounds_impl(min, max)).fold(
-                (min, max),
-                |(min, max), (cmin, cmax)| {
+            Tree::Root(t) => {
+                let t = t.map(|t| t.merge(sample.clone(), epsilon));
+                let (a, b, c, d) = (&t[0], &t[1], &t[2], &t[3]);
+
+                match (a, b, c, d) {
                     (
-                        [min.x().min(cmin.x()), min.y().min(cmin.y())],
-                        [max.x().max(cmax.x()), max.y().max(cmax.y())],
-                    )
-                },
-            ),
-            Tree::Leaf(QuadCell { min, max, .. }) => (*min, *max),
+                        QuadTree::Leaf(QuadCell {
+                            bounds: Bounds { min, max: i },
+                            ty: QuadCellType::Contour,
+                        }),
+                        QuadTree::Leaf(QuadCell {
+                            bounds: Bounds { min: q, max: r },
+                            ty: QuadCellType::Contour,
+                        }),
+                        QuadTree::Leaf(QuadCell {
+                            bounds: Bounds { min: s, max: t },
+                            ty: QuadCellType::Contour,
+                        }),
+                        QuadTree::Leaf(QuadCell {
+                            bounds: Bounds { max, .. },
+                            ty: QuadCellType::Contour,
+                        }),
+                    ) => {
+                        if [i, q, r, s, t]
+                            .into_iter()
+                            .map(|t| {
+                                score(
+                                    sample.clone(),
+                                    Bounds {
+                                        min: *min,
+                                        max: *max,
+                                    },
+                                    *t,
+                                )
+                            })
+                            .all(|t| t < epsilon)
+                        {
+                            QuadTree::Leaf(QuadCell {
+                                bounds: Bounds {
+                                    min: *min,
+                                    max: *max,
+                                },
+                                ty: QuadCellType::Contour,
+                            })
+                        } else {
+                            QuadTree::Root([
+                                Box::new(a.clone()),
+                                Box::new(b.clone()),
+                                Box::new(c.clone()),
+                                Box::new(d.clone()),
+                            ])
+                        }
+                    }
+                    _ => QuadTree::Root([
+                        Box::new(a.clone()),
+                        Box::new(b.clone()),
+                        Box::new(c.clone()),
+                        Box::new(d.clone()),
+                    ]),
+                }
+            }
+            Tree::Leaf(_) => self,
         }
     }
 
+    /// Given a sampling function, collapse Leaf cells into Full and Empty variants
     pub fn collapse(self, sample: impl Fn([f64; 2]) -> f64 + Copy) -> Self {
-        let (min, max) = self.bounds();
+        let Bounds { min, max } = self.bounds();
 
         match self {
-            Self::Leaf(QuadCell { min, max, .. }) => {
-                let iter = [min.y(), max.y()]
+            Self::Leaf(QuadCell {
+                bounds: Bounds { min, max },
+                ..
+            }) => {
+                let mut iter = [min.y(), max.y()]
                     .into_iter()
                     .flat_map(|y| [min.x(), max.x()].into_iter().map(move |x| [x, y]))
                     .map(|p| sample(p));
 
                 Self::Leaf(QuadCell {
-                    min,
-                    max,
+                    bounds: Bounds { min, max },
                     ty: if iter.clone().all(|t| t <= 0.0) {
                         QuadCellType::Full
-                    } else if iter.clone().all(|t| t > 0.0) {
+                    } else if iter.all(|t| t > 0.0) {
                         QuadCellType::Empty
                     } else {
                         QuadCellType::Contour
@@ -105,8 +215,7 @@ impl QuadTree {
                     _ => false,
                 }) {
                     Self::Leaf(QuadCell {
-                        min,
-                        max,
+                        bounds: Bounds { min, max },
                         ty: QuadCellType::Empty,
                     })
                 } else if leaves.iter().all(|leaf| match **leaf {
@@ -117,8 +226,7 @@ impl QuadTree {
                     _ => false,
                 }) {
                     Self::Leaf(QuadCell {
-                        min,
-                        max,
+                        bounds: Bounds { min, max },
                         ty: QuadCellType::Full,
                     })
                 } else {
@@ -134,9 +242,14 @@ pub fn draw_quad_tree(tree: QuadTree) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
     let size = (tree.resolution() as f64).sqrt() as u32;
     let mut image = ImageBuffer::new(size, size);
 
-    tree.iter()
-        .zip(tree.map_depth())
-        .for_each(|(QuadCell { min, max, ty }, depth)| {
+    tree.iter().zip(tree.map_depth()).for_each(
+        |(
+            QuadCell {
+                bounds: Bounds { min, max },
+                ty,
+            },
+            depth,
+        )| {
             let min_x = ((min.x() * 0.5 + 0.5) * size as f64).floor() as u32;
             let min_y = ((min.y() * 0.5 + 0.5) * size as f64).floor() as u32;
 
@@ -155,7 +268,8 @@ pub fn draw_quad_tree(tree: QuadTree) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
                     image.put_pixel(x, y, p);
                 }
             }
-        });
+        },
+    );
 
     image
 }
@@ -171,7 +285,15 @@ mod test {
     #[test]
     fn test_quad_tree() {
         let sample = |p: [f64; 2]| (p.x() * p.x() + p.y() * p.y()).sqrt() - 0.6;
-        let quad_tree = QuadTree::new([-1.0, -1.0], [1.0, 1.0], 6).collapse(sample);
+        let quad_tree = QuadTree::new(
+            Bounds {
+                min: [-1.0, -1.0],
+                max: [1.0, 1.0],
+            },
+            6,
+        )
+        .merge(sample, 0.001)
+        .collapse(sample);
 
         let image = draw_quad_tree(quad_tree);
 

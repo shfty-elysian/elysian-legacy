@@ -10,9 +10,10 @@ members = [
 ]
 
 [features]
-default = ["text", "static", "image", "ascii", "naga", "shadertoy"]
+default = ["text", "interpreter", "static", "image", "ascii", "naga", "shadertoy"]
 text = ["dep:elysian-text"]
 syn = ["dep:elysian-syn"]
+interpreter = ["dep:elysian-interpreter"]
 static = ["syn", "dep:elysian-static"]
 image = ["dep:elysian-image"]
 mesh = ["dep:elysian-mesh"]
@@ -33,6 +34,7 @@ elysian-image = { path = "crates/elysian-image", optional = true }
 elysian-mesh = { path = "crates/elysian-mesh", optional = true }
 elysian-ascii = { path = "crates/elysian-ascii", optional = true }
 elysian-syn = { path = "crates/elysian-syn", optional = true }
+elysian-interpreter = { path = "crates/elysian-interpreter", optional = true }
 elysian-static = { path = "crates/elysian-static", optional = true }
 elysian-naga = { path = "crates/elysian-naga", optional = true }
 elysian-shadertoy = { path = "crates/elysian-shadertoy", optional = true }
