@@ -1,25 +1,24 @@
 use elysian::{
+    core::property_identifier::IntoPropertyIdentifier,
     interpreter::Interpreted,
     ir::{
-        ast::{Struct, POSITION_2D},
+        ast::POSITION_2D,
         module::{AsModule, Dispatch, Evaluate, EvaluateError, SpecializationData},
     },
     mesh::{
         dual_contour::{feature, DualContour},
+        gltf_export::{samples_to_root, Mode},
         marching_squares::MarchingSquares,
         quad_tree::{Bounds, QuadCell, QuadCellType, QuadTree},
         util::Vec2,
     },
     r#static::Precompiled,
-    shapes::{
-        field::Point,
-        modify::{ClampMode, IntoElongateAxis, IntoIsosurface},
-    },
 };
-use image::{ImageBuffer, Rgb};
+use image::{imageops::flip_vertical_in_place, ImageBuffer, Rgb};
 use viuer::Config;
 
 fn main() -> Result<(), EvaluateError> {
+    // Create shape module and evaluator
     let module = test_shapes::test_shape()
         .module(&SpecializationData::new_2d())
         .finalize();
@@ -29,6 +28,7 @@ fn main() -> Result<(), EvaluateError> {
         Box::new(Interpreted(&module)),
     ]);
 
+    // Create QuadTree, marching cubes, dual contour data
     let level = 5;
     let epsilon = 1.0;
 
@@ -42,36 +42,69 @@ fn main() -> Result<(), EvaluateError> {
     .merge(&evaluator, 0.04)?
     .collapse(&evaluator)?;
 
-    let marching_squares = quad_tree
+    let march_edges = quad_tree
         .marching_squares(&evaluator)?
         .into_iter()
-        .map(|(_, [(_, from), (_, to)])| {
-            Ok(<[Struct; 2]>::try_from([
+        .flat_map(|(_, b)| b)
+        .map(|[from, to]| {
+            Ok([
                 evaluator
                     .sample_2d(from)?
                     .set(POSITION_2D.into(), from.into()),
                 evaluator.sample_2d(to)?.set(POSITION_2D.into(), to.into()),
             ])
-            .unwrap())
         })
         .collect::<Result<Vec<_>, EvaluateError>>()?;
 
-    let dual_contour = quad_tree
+    let dual_edges = quad_tree
         .dual_contour(&evaluator, epsilon)?
         .into_iter()
         .map(|[from, to]| {
-            Ok(<[Struct; 2]>::try_from([
+            Ok([
                 evaluator
                     .sample_2d(from)?
                     .set(POSITION_2D.into(), from.into()),
                 evaluator.sample_2d(to)?.set(POSITION_2D.into(), to.into()),
             ])
-            .unwrap())
         })
         .collect::<Result<Vec<_>, EvaluateError>>()?;
 
-    let width = 80;
-    let height = 80;
+    let quad_tree_loops = quad_tree
+        .iter()
+        .map(
+            |QuadCell {
+                 bounds:
+                     Bounds {
+                         min: [min_x, min_y],
+                         max: [max_x, max_y],
+                     },
+                 ..
+             }| {
+                let min_x = *min_x;
+                let min_y = *min_y;
+                let max_x = *max_x;
+                let max_y = *max_y;
+                Ok([
+                    evaluator
+                        .sample_2d([min_x, min_y])?
+                        .set(POSITION_2D.into(), [min_x, min_y].into()),
+                    evaluator
+                        .sample_2d([max_x, min_y])?
+                        .set(POSITION_2D.into(), [max_x, min_y].into()),
+                    evaluator
+                        .sample_2d([max_x, max_y])?
+                        .set(POSITION_2D.into(), [max_x, max_y].into()),
+                    evaluator
+                        .sample_2d([min_x, max_y])?
+                        .set(POSITION_2D.into(), [min_x, max_y].into()),
+                ])
+            },
+        )
+        .collect::<Result<Vec<_>, EvaluateError>>()?;
+
+    // Draw image
+    let width = 128;
+    let height = 128;
     let mut image = ImageBuffer::new(width, height);
 
     quad_tree.iter().for_each(
@@ -115,7 +148,7 @@ fn main() -> Result<(), EvaluateError> {
         },
     );
 
-    for [from, to] in marching_squares.iter() {
+    for [from, to] in march_edges.iter() {
         let from = <[f64; 2]>::from(from.get(&POSITION_2D.into()));
         let to = <[f64; 2]>::from(to.get(&POSITION_2D.into()));
 
@@ -133,8 +166,7 @@ fn main() -> Result<(), EvaluateError> {
         );
     }
 
-    /*
-    for [from, to] in dual_contour.iter() {
+    for [from, to] in dual_edges.iter() {
         let from = <[f64; 2]>::from(from.get(&POSITION_2D.into()));
         let to = <[f64; 2]>::from(to.get(&POSITION_2D.into()));
 
@@ -153,14 +185,15 @@ fn main() -> Result<(), EvaluateError> {
     }
 
     quad_tree.iter().for_each(|cell| {
-        if let Ok(Some((sides, feature))) = feature(&evaluator, cell.bounds, epsilon) {
+        if let Ok(Some((_, feature))) = feature(&evaluator, cell.bounds, epsilon) {
             let x = ((feature.x() * 0.5 + 0.5) * width as f64).floor() as u32;
             let y = ((feature.y() * 0.5 + 0.5) * height as f64).floor() as u32;
 
-            imageproc::drawing::draw_cross_mut(&mut image, Rgb([1.0; 3]), x as i32, y as i32)
+            image.put_pixel(x, y, Rgb([1.0; 3]));
         }
     });
-    */
+
+    flip_vertical_in_place(&mut image);
 
     viuer::print(
         &image.into(),
@@ -179,5 +212,30 @@ fn main() -> Result<(), EvaluateError> {
     )
     .unwrap();
 
+    let position_2d = [POSITION_2D.prop()];
+
+    // Generate mesh
+    let root = samples_to_root([[
+        [(
+            Mode::Lines,
+            &position_2d,
+            march_edges.into_iter().flatten().collect::<Vec<_>>(),
+        )]
+        .to_vec(),
+        [(
+            Mode::Lines,
+            &position_2d,
+            dual_edges.into_iter().flatten().collect(),
+        )]
+        .to_vec(),
+        quad_tree_loops
+            .into_iter()
+            .map(|l| (Mode::LineLoop, &position_2d, l.to_vec()))
+            .collect::<Vec<_>>(),
+    ]]);
+
+    std::fs::write("./ser.gltf", root.to_string()?)?;
+
+    // Done
     Ok(())
 }

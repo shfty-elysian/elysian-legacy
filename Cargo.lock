@@ -353,9 +353,7 @@ dependencies = [
  "elysian-shapes",
  "elysian-static",
  "gltf-json",
- "image",
  "nalgebra 0.32.3",
- "viuer",
 ]
 
 [[package]]

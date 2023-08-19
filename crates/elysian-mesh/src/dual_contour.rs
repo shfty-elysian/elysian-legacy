@@ -2,11 +2,11 @@ use elysian_ir::{
     ast::GRADIENT_2D,
     module::{Evaluate, EvaluateError},
 };
-use image::{ImageBuffer, Rgb};
+
 use nalgebra::{Matrix2, Vector2};
 
 use crate::{
-    marching_squares::{contours, Side},
+    marching_squares::{contours, Contour},
     quad_tree::{Bounds, QuadCellType, QuadTree},
     util::Vec2,
 };
@@ -23,26 +23,19 @@ pub fn feature<'a>(
     evaluator: &impl Evaluate<'a>,
     bounds: Bounds,
     epsilon: f64,
-) -> Result<Option<(Vec<Side>, [f64; 2])>, EvaluateError> {
-    let pts_: Vec<_> = contours(evaluator, bounds)?
-        .into_iter()
-        .map(|(_, points)| points)
-        .flatten()
-        .collect();
+) -> Result<Option<(Contour, [f64; 2])>, EvaluateError> {
+    let (contour, edges) = contours(evaluator, bounds)?;
 
-    Ok(if pts_.len() >= 2 {
-        let sides: Vec<_> = pts_.iter().map(|(side, _)| *side).collect();
+    Ok(if edges.len() >= 1 {
+        let points: Vec<_> = edges.into_iter().flatten().collect();
 
-        let pts: Vec<_> = pts_
+        let pts: Vec<_> = points.iter().map(|p| Vector2::new(p.x(), p.y())).collect();
+
+        let nms: Vec<_> = points
             .iter()
-            .map(|(_, pt)| Vector2::new(pt.x(), pt.y()))
-            .collect();
-
-        let nms: Vec<_> = pts_
-            .iter()
-            .map(|(side, t)| {
+            .map(|p| {
                 Ok(
-                    <[f64; 2]>::try_from(evaluator.sample_2d(*t)?.get(&GRADIENT_2D.into()))
+                    <[f64; 2]>::try_from(evaluator.sample_2d(*p)?.get(&GRADIENT_2D.into()))
                         .unwrap(),
                 ) as Result<[f64; 2], EvaluateError>
             })
@@ -53,7 +46,7 @@ pub fn feature<'a>(
 
         let center: Vector2<f64> = pts.iter().sum::<Vector2<f64>>() / pts.len() as f64;
 
-        let a = Matrix2::from_row_iterator(pts_.into_iter().map(|(_, v)| v).flatten());
+        let a = Matrix2::from_row_iterator(points.into_iter().flatten());
 
         let cols = &pts
             .into_iter()
@@ -67,7 +60,7 @@ pub fn feature<'a>(
                 .unwrap()
                 .column(0);
         Some((
-            sides,
+            contour,
             [
                 p.x.clamp(bounds.min.x(), bounds.max.x()),
                 p.y.clamp(bounds.min.y(), bounds.max.y()),
@@ -94,17 +87,17 @@ impl<'a> DualContour<'a> for QuadTree {
                 (crate::tree::Tree::Leaf(a), crate::tree::Tree::Leaf(b)) => {
                     if a.ty != QuadCellType::Contour || b.ty != QuadCellType::Contour {
                         vec![]
-                    } else if let (Some((sides_l, feature_l)), Some((sides_r, feature_r))) = (
+                    } else if let (Some((contour_l, feature_l)), Some((contour_r, feature_r))) = (
                         feature(evaluator, a.bounds, epsilon)?,
                         feature(evaluator, b.bounds, epsilon)?,
                     ) {
-                        if true
-                        // TODO: Check compatibility between cell sides
+                        if contour_l.has_sign_change(Contour::RIGHT)
+                            && contour_l.neighbours(contour_r, Contour::RIGHT)
                         {
-                            println!("Connecting {sides_l:?}, {sides_r:?}");
+                            println!("Connecting {contour_l:?}, {contour_r:?}");
                             vec![[feature_l, feature_r]]
                         } else {
-                            println!("Skipping {sides_l:?}, {sides_r:?}");
+                            println!("Skipping {contour_l:?}, {contour_r:?}");
                             vec![]
                         }
                     } else {
@@ -154,11 +147,19 @@ impl<'a> DualContour<'a> for QuadTree {
                 (crate::tree::Tree::Leaf(a), crate::tree::Tree::Leaf(b)) => {
                     if a.ty != QuadCellType::Contour || b.ty != QuadCellType::Contour {
                         vec![]
-                    } else if let (Some((sides_l, feature_l)), Some((sides_r, feature_r))) = (
+                    } else if let (Some((contour_l, feature_l)), Some((contour_r, feature_r))) = (
                         feature(evaluator, a.bounds, epsilon)?,
                         feature(evaluator, b.bounds, epsilon)?,
                     ) {
-                        vec![[feature_l, feature_r]]
+                        if contour_l.has_sign_change(Contour::UP)
+                            && contour_l.neighbours(contour_r, Contour::UP)
+                        {
+                            println!("Connecting {contour_l:?}, {contour_r:?}");
+                            vec![[feature_l, feature_r]]
+                        } else {
+                            println!("Skipping {contour_l:?}, {contour_r:?}");
+                            vec![]
+                        }
                     } else {
                         vec![]
                     }
@@ -212,83 +213,5 @@ impl<'a> DualContour<'a> for QuadTree {
             .collect(),
             _ => vec![],
         })
-    }
-}
-
-pub fn draw_dual_contour(contours: Vec<[[f64; 2]; 2]>) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
-    let mut image = ImageBuffer::new(64, 64);
-
-    for [from, to] in contours.iter() {
-        let from_x = ((from.x() * 0.5 + 0.5) * image.width() as f64).floor() as u32;
-        let from_y = ((from.y() * 0.5 + 0.5) * image.height() as f64).floor() as u32;
-
-        let to_x = ((to.x() * 0.5 + 0.5) * image.width() as f64).floor() as u32;
-        let to_y = ((to.y() * 0.5 + 0.5) * image.height() as f64).floor() as u32;
-
-        image.put_pixel(from_x, from_y, Rgb([1.0, 0.0, 0.0]));
-        image.put_pixel(to_x, to_y, Rgb([0.0, 0.0, 1.0]));
-    }
-
-    image
-}
-
-#[cfg(test)]
-mod test {
-    use elysian_interpreter::Interpreted;
-    use elysian_ir::module::{AsModule, Dispatch, EvaluateError, SpecializationData};
-    use elysian_shapes::{
-        field::Point,
-        modify::{ClampMode, IntoElongateAxis, IntoIsosurface},
-    };
-    use elysian_static::Precompiled;
-    use viuer::Config;
-
-    use crate::quad_tree::{Bounds, QuadTree};
-
-    use super::*;
-
-    #[test]
-    fn test_dual_contour() -> Result<(), EvaluateError> {
-        let module = Point
-            .isosurface(0.3)
-            .elongate_axis([0.1, 0.0], ClampMode::Dir, ClampMode::Dir)
-            .module(&SpecializationData::new_2d());
-
-        let evaluator = Dispatch(vec![
-            Box::new(Precompiled(&module)),
-            Box::new(Interpreted(&module)),
-        ]);
-
-        let contours = QuadTree::new(
-            Bounds {
-                min: [-1.0, -1.0],
-                max: [1.0, 1.0],
-            },
-            4,
-        )
-        .merge(&evaluator, 0.001)?
-        .collapse(&evaluator)?
-        .dual_contour(&evaluator, 4.0)?;
-
-        let image = draw_dual_contour(contours);
-
-        viuer::print(
-            &image.into(),
-            &Config {
-                transparent: false,
-                absolute_offset: false,
-                x: 0,
-                y: 0,
-                restore_cursor: false,
-                width: None,
-                height: None,
-                truecolor: true,
-                use_kitty: true,
-                use_iterm: false,
-            },
-        )
-        .unwrap();
-
-        panic!();
     }
 }

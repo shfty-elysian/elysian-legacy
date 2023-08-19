@@ -10,10 +10,14 @@ use elysian_ir::ast::{
 use gltf_json::{
     accessor::{ComponentType, GenericComponentType, Type},
     buffer::{Target, View},
-    mesh::{Mode, Primitive, Semantic},
+    mesh::{Primitive, Semantic},
     validation::Checked,
     Accessor, Buffer, Index, Mesh, Node, Root, Scene,
 };
+
+pub use gltf_json::mesh::Mode;
+
+use crate::util::Unzip3;
 
 fn to_padded_byte_vector<T>(vec: Vec<T>) -> Vec<u8> {
     let byte_length = vec.len() * mem::size_of::<T>();
@@ -28,10 +32,10 @@ fn to_padded_byte_vector<T>(vec: Vec<T>) -> Vec<u8> {
 }
 
 fn to_data_uri<T>(buf: impl IntoIterator<Item = T>) -> String {
-    let buf = to_padded_byte_vector(buf.into_iter().collect());
     format!(
         "data:model/gltf-binary;base64,{}",
-        base64::engine::general_purpose::STANDARD_NO_PAD.encode(buf)
+        base64::engine::general_purpose::STANDARD_NO_PAD
+            .encode(to_padded_byte_vector(buf.into_iter().collect()))
     )
 }
 
@@ -175,9 +179,10 @@ fn vec4_buffer(
     buffer(index, values, ComponentType::F32, Type::Vec4)
 }
 
-fn to_buffers(
+fn samples_to_buffer<'a>(
+    index: usize,
     samples: &[Struct],
-    attrs: &[PropertyIdentifier],
+    attrs: impl IntoIterator<Item = &'a PropertyIdentifier>,
 ) -> Vec<(Semantic, (Buffer, View, Accessor))> {
     attrs
         .into_iter()
@@ -195,161 +200,187 @@ fn to_buffers(
             };
 
             let val = samples[0].get(attr);
-            let bufs = match val {
+            let bundle = match val {
                 elysian_ir::ast::Value::Number(n) => match n {
-                    elysian_core::number::Number::Float(_) => float_buffer(i as u32, samples, attr),
+                    elysian_core::number::Number::Float(_) => {
+                        float_buffer((index + i) as u32, samples, attr)
+                    }
                     _ => unimplemented!(),
                 },
                 elysian_ir::ast::Value::Struct(s) => match &s.id {
                     id if **id == VECTOR2 => {
                         if semantic == Semantic::Positions {
-                            vec3_buffer(i as u32, samples, attr)
+                            vec3_buffer((index + i) as u32, samples, attr)
                         } else {
-                            vec2_buffer(i as u32, samples, attr)
+                            vec2_buffer((index + i) as u32, samples, attr)
                         }
                     }
-                    id if **id == VECTOR3 => vec3_buffer(i as u32, samples, attr),
-                    id if **id == VECTOR4 => vec4_buffer(i as u32, samples, attr),
+                    id if **id == VECTOR3 => vec3_buffer((index + i) as u32, samples, attr),
+                    id if **id == VECTOR4 => vec4_buffer((index + i) as u32, samples, attr),
                     _ => unimplemented!(),
                 },
                 _ => unimplemented!(),
             };
 
-            (semantic, bufs)
+            (semantic, bundle)
         })
         .collect()
 }
 
-pub fn samples_to_gltf(
-    samples: impl IntoIterator<Item = Struct>,
-    attrs: &[PropertyIdentifier],
+pub fn samples_to_primitive<'a>(
+    index: usize,
+    primitive: impl IntoIterator<Item = Struct>,
+    attrs: impl IntoIterator<Item = &'a PropertyIdentifier>,
     mode: Mode,
-) -> Root {
-    let samples: Vec<_> = samples.into_iter().collect();
-    let (semantics, bufs): (Vec<_>, Vec<_>) = to_buffers(&samples, attrs).into_iter().unzip();
+) -> (Primitive, Vec<(Buffer, View, Accessor)>) {
+    let samples: Vec<_> = primitive.into_iter().collect();
+    let (semantics, bundle): (Vec<_>, Vec<_>) = samples_to_buffer(index, &samples, attrs)
+        .into_iter()
+        .unzip();
 
     let attributes: BTreeMap<_, _> = semantics
         .into_iter()
         .enumerate()
-        .map(|(i, s)| (Checked::Valid(s), Index::<Accessor>::new(i as u32)))
+        .map(|(i, s)| {
+            (
+                Checked::Valid(s),
+                Index::<Accessor>::new((index + i) as u32),
+            )
+        })
         .collect();
 
-    let (buffers, bufs): (Vec<_>, Vec<_>) = bufs
+    (
+        Primitive {
+            attributes,
+            extensions: Default::default(),
+            extras: Default::default(),
+            indices: None,
+            material: None,
+            mode: Checked::Valid(mode),
+            targets: None,
+        },
+        bundle,
+    )
+}
+
+pub fn samples_to_mesh<'a>(
+    index: usize,
+    primitives: impl IntoIterator<
+        Item = (
+            Mode,
+            impl IntoIterator<Item = &'a PropertyIdentifier>,
+            impl IntoIterator<Item = Struct>,
+        ),
+    >,
+) -> (Mesh, Vec<(Buffer, View, Accessor)>) {
+    let (primitives, bundles): (Vec<_>, Vec<_>) = primitives
         .into_iter()
-        .map(|(buffer, view, accessor)| (buffer, (view, accessor)))
+        .enumerate()
+        .map(|(i, (mode, attrs, samples))| samples_to_primitive(index + i, samples, attrs, mode))
         .unzip();
 
-    let (buffer_views, accessors): (Vec<_>, Vec<_>) = bufs.into_iter().unzip();
-
-    let primitive = Primitive {
-        attributes,
-        extensions: Default::default(),
-        extras: Default::default(),
-        indices: None,
-        material: None,
-        mode: Checked::Valid(mode),
-        targets: None,
-    };
+    let bundle = bundles.into_iter().flatten().collect();
 
     let mesh = Mesh {
         extensions: Default::default(),
         extras: Default::default(),
-        primitives: vec![primitive],
+        primitives,
         weights: None,
     };
 
-    let node = Node {
-        camera: None,
-        children: None,
-        extensions: Default::default(),
-        extras: Default::default(),
-        matrix: None,
-        mesh: Some(Index::new(0)),
-        rotation: None,
-        scale: None,
-        translation: None,
-        skin: None,
-        weights: None,
-    };
+    (mesh, bundle)
+}
+
+pub fn samples_to_nodes<'a>(
+    index: usize,
+    meshes: impl IntoIterator<
+        Item = impl IntoIterator<
+            Item = (
+                Mode,
+                impl IntoIterator<Item = &'a PropertyIdentifier>,
+                impl IntoIterator<Item = Struct>,
+            ),
+        >,
+    >,
+) -> Vec<(Node, Mesh, Vec<(Buffer, View, Accessor)>)> {
+    meshes
+        .into_iter()
+        .enumerate()
+        .map(|(i, mesh)| {
+            let (mesh, bundle) = samples_to_mesh(index + i, mesh);
+
+            let node = Node {
+                camera: None,
+                children: None,
+                extensions: Default::default(),
+                extras: Default::default(),
+                matrix: None,
+                mesh: Some(Index::new((index + i) as u32)),
+                rotation: None,
+                scale: None,
+                translation: None,
+                skin: None,
+                weights: None,
+            };
+
+            (node, mesh, bundle)
+        })
+        .collect()
+}
+
+pub fn samples_to_scene<'a>(
+    index: usize,
+    nodes: impl IntoIterator<
+        Item = impl IntoIterator<
+            Item = (
+                Mode,
+                impl IntoIterator<Item = &'a PropertyIdentifier>,
+                impl IntoIterator<Item = Struct>,
+            ),
+        >,
+    >,
+) -> (Scene, Vec<(Node, Mesh, Vec<(Buffer, View, Accessor)>)>) {
+    let bundle = samples_to_nodes(index, nodes);
+
+    (
+        Scene {
+            extensions: Default::default(),
+            extras: Default::default(),
+            nodes: vec![Index::new(index as u32)],
+        },
+        bundle,
+    )
+}
+
+pub fn samples_to_root<'a>(
+    scenes: impl IntoIterator<
+        Item = impl IntoIterator<
+            Item = impl IntoIterator<
+                Item = (
+                    Mode,
+                    impl IntoIterator<Item = &'a PropertyIdentifier>,
+                    impl IntoIterator<Item = Struct>,
+                ),
+            >,
+        >,
+    >,
+) -> Root {
+    let (scenes, bundle): (Vec<_>, Vec<_>) = scenes
+        .into_iter()
+        .enumerate()
+        .map(|(i, scene)| samples_to_scene(i, scene))
+        .unzip();
+
+    let (nodes, meshes, bundles): (Vec<_>, Vec<_>, Vec<_>) = bundle.into_iter().flatten().unzip3();
+    let (buffers, buffer_views, accessors) = bundles.into_iter().flatten().unzip3();
 
     Root {
         accessors,
         buffers,
         buffer_views,
-        meshes: vec![mesh],
-        nodes: vec![node],
-        scenes: vec![Scene {
-            extensions: Default::default(),
-            extras: Default::default(),
-            nodes: vec![Index::new(0)],
-        }],
+        meshes,
+        nodes,
+        scenes,
         ..Default::default()
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use elysian_interpreter::Interpreted;
-    use elysian_ir::module::{AsModule, Dispatch, Evaluate, EvaluateError, SpecializationData};
-    use elysian_shapes::{
-        field::Point,
-        modify::{ClampMode, IntoElongateAxis, IntoIsosurface, IntoManifold},
-    };
-    use elysian_static::Precompiled;
-
-    use crate::{
-        dual_contour::DualContour,
-        quad_tree::{Bounds, QuadTree},
-    };
-
-    use super::*;
-
-    #[test]
-    fn test_gltf_export() -> Result<(), EvaluateError> {
-        let module = Point
-            .isosurface(0.3)
-            .elongate_axis([0.1, 0.0], ClampMode::Dir, ClampMode::Dir)
-            .manifold()
-            .isosurface(0.1)
-            .module(&SpecializationData::new_2d());
-
-        let evaluator = Dispatch(vec![
-            Box::new(Precompiled(&module)),
-            Box::new(Interpreted(&module)),
-        ]);
-
-        let contours = QuadTree::new(
-            Bounds {
-                min: [-1.0, -1.0],
-                max: [1.0, 1.0],
-            },
-            5,
-        )
-        .merge(&evaluator, 0.001)?
-        .collapse(&evaluator)?
-        .dual_contour(&evaluator, 5.0)?;
-
-        let samples = contours
-            .into_iter()
-            .map(|[from, to]| {
-                Ok(<[Struct; 2]>::try_from([
-                    evaluator
-                        .sample_2d(from)?
-                        .set(POSITION_2D.into(), from.into()),
-                    evaluator.sample_2d(to)?.set(POSITION_2D.into(), to.into()),
-                ])
-                .unwrap())
-            })
-            .collect::<Result<Vec<_>, EvaluateError>>()?;
-
-        let root = samples_to_gltf(
-            samples.into_iter().flatten(),
-            &[POSITION_2D.into()],
-            Mode::Lines,
-        );
-
-        std::fs::write("./ser.gltf", root.to_string()?)?;
-
-        Ok(())
     }
 }

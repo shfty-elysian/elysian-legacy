@@ -2,7 +2,6 @@ use elysian_ir::{
     ast::DISTANCE,
     module::{Evaluate, EvaluateError},
 };
-use image::{ImageBuffer, Rgb};
 
 use crate::{
     tree::{Tree, Tree4},
@@ -274,98 +273,3 @@ impl QuadTree {
     }
 }
 
-pub fn draw_quad_tree(tree: QuadTree) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
-    let max_depth = tree.depth();
-    let size = (tree.resolution() as f64).sqrt() as u32;
-    let mut image = ImageBuffer::new(size, size);
-
-    tree.iter().zip(tree.map_depth()).for_each(
-        |(
-            QuadCell {
-                bounds: Bounds { min, max },
-                ty,
-            },
-            depth,
-        )| {
-            let min_x = ((min.x() * 0.5 + 0.5) * size as f64).floor() as u32;
-            let min_y = ((min.y() * 0.5 + 0.5) * size as f64).floor() as u32;
-
-            let max_x = ((max.x() * 0.5 + 0.5) * size as f64).floor() as u32;
-            let max_y = ((max.y() * 0.5 + 0.5) * size as f64).floor() as u32;
-
-            let c = depth as f32 / max_depth as f32;
-            let p = Rgb(match ty {
-                QuadCellType::Empty => [c, 0.0, 0.0],
-                QuadCellType::Full => [0.0, 0.0, c],
-                QuadCellType::Contour => [0.0, c, 0.0],
-            });
-
-            for y in min_y..max_y {
-                for x in min_x..max_x {
-                    image.put_pixel(x, y, p);
-                }
-            }
-        },
-    );
-
-    image
-}
-
-#[cfg(test)]
-mod test {
-    use elysian_interpreter::Interpreted;
-    use elysian_ir::module::{AsModule, Dispatch, SpecializationData};
-    use elysian_shapes::{
-        field::Point,
-        modify::{ClampMode, IntoElongateAxis, IntoIsosurface},
-    };
-    use elysian_static::Precompiled;
-    use viuer::Config;
-
-    use crate::quad_tree::draw_quad_tree;
-
-    use super::*;
-
-    #[test]
-    fn test_quad_tree() -> Result<(), EvaluateError> {
-        let module = Point
-            .isosurface(0.3)
-            .elongate_axis([0.1, 0.0], ClampMode::Dir, ClampMode::Dir)
-            .module(&SpecializationData::new_2d());
-
-        let evaluator = Dispatch(vec![
-            Box::new(Precompiled(&module)),
-            Box::new(Interpreted(&module)),
-        ]);
-
-        let quad_tree = QuadTree::new(
-            Bounds {
-                min: [-1.0, -1.0],
-                max: [1.0, 1.0],
-            },
-            4,
-        )
-        .merge(&evaluator, 0.001)?
-        .collapse(&evaluator)?;
-        let image = draw_quad_tree(quad_tree);
-
-        viuer::print(
-            &image.into(),
-            &Config {
-                transparent: false,
-                absolute_offset: false,
-                x: 0,
-                y: 0,
-                restore_cursor: false,
-                width: None,
-                height: None,
-                truecolor: true,
-                use_kitty: true,
-                use_iterm: false,
-            },
-        )
-        .unwrap();
-
-        panic!();
-    }
-}

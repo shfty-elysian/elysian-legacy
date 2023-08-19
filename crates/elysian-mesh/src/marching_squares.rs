@@ -1,10 +1,9 @@
 use std::ops::Not;
 
 use elysian_ir::{
-    ast::{Struct, DISTANCE, POSITION_2D},
+    ast::DISTANCE,
     module::{Evaluate, EvaluateError},
 };
-use image::{ImageBuffer, Rgb};
 
 use crate::{
     quad_tree::{Bounds, QuadCellType, QuadTree},
@@ -15,22 +14,19 @@ pub trait MarchingSquares {
     fn marching_squares<'a>(
         &self,
         sample: &impl Evaluate<'a>,
-    ) -> Result<Vec<(Contour, [(Side, [f64; 2]); 2])>, EvaluateError>;
+    ) -> Result<Vec<(Contour, Vec<[[f64; 2]; 2]>)>, EvaluateError>;
 }
 
 impl MarchingSquares for QuadTree {
     fn marching_squares<'a>(
         &self,
         evaluator: &impl Evaluate<'a>,
-    ) -> Result<Vec<(Contour, [(Side, [f64; 2]); 2])>, EvaluateError> {
+    ) -> Result<Vec<(Contour, Vec<[[f64; 2]; 2]>)>, EvaluateError> {
         Ok(self
             .iter()
             .filter(|t| t.ty == QuadCellType::Contour)
             .map(|t| contours(evaluator, t.bounds))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect())
+            .collect::<Result<_, _>>()?)
     }
 }
 
@@ -73,6 +69,18 @@ impl Contour {
             .fold(true, |acc, (from, to)| {
                 acc & ((self & from).is_empty() == (rhs & to).is_empty())
             })
+    }
+
+    /// Test whether `self` and `rhs` share a sign change on the given side
+    pub fn has_sign_change(self, side: Contour) -> bool {
+        assert!(
+            [Contour::UP, Contour::LEFT, Contour::RIGHT, Contour::DOWN].contains(&side),
+            "Side must be one of Contour::{{ UP, LEFT, RIGHT, DOWN }}"
+        );
+
+        let [al, ar]: [Contour; 2] = side.iter().collect::<Vec<_>>().try_into().unwrap();
+
+        (self & al).is_empty() != (self & ar).is_empty()
     }
 
     pub fn sides(self) -> Vec<[Side; 2]> {
@@ -246,7 +254,7 @@ fn zero<'a>(evaluator: &impl Evaluate<'a>, bounds: Bounds) -> Result<[f64; 2], E
 pub fn contours<'a>(
     evaluator: &impl Evaluate<'a>,
     bounds: Bounds,
-) -> Result<Vec<(Contour, [(Side, [f64; 2]); 2])>, EvaluateError> {
+) -> Result<(Contour, Vec<[[f64; 2]; 2]>), EvaluateError> {
     fn index<'a>(evaluator: &impl Evaluate<'a>, bounds: Bounds) -> Result<usize, EvaluateError> {
         let pts: Vec<_> = [bounds.min.y(), bounds.max.y()]
             .into_iter()
@@ -310,114 +318,18 @@ pub fn contours<'a>(
 
     let contour = Contour::from_bits(index(evaluator, bounds)?).unwrap();
 
-    Ok(contour
-        .sides()
-        .into_iter()
-        .map(|[a, b]| {
-            Ok((
-                contour,
-                [
-                    (a, pt(evaluator, bounds, a)?),
-                    (b, pt(evaluator, bounds, b)?),
-                ],
-            )) as Result<(Contour, [(Side, [f64; 2]); 2]), EvaluateError>
-        })
-        .collect::<Result<Vec<_>, _>>()?
-        .chunks(2)
-        .flat_map(|chunk| chunk.to_vec())
-        .collect())
-}
-
-pub fn draw_marching_squares(samples: Vec<[Struct; 2]>) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
-    let mut image = ImageBuffer::new(64, 64);
-
-    for [from, to] in samples.iter() {
-        let from = <[f64; 2]>::from(from.get(&POSITION_2D.into()));
-        let to = <[f64; 2]>::from(to.get(&POSITION_2D.into()));
-
-        let from_x = ((from.x() * 0.5 + 0.5) * image.width() as f64).floor() as u32;
-        let from_y = ((from.y() * 0.5 + 0.5) * image.height() as f64).floor() as u32;
-
-        let to_x = ((to.x() * 0.5 + 0.5) * image.width() as f64).floor() as u32;
-        let to_y = ((to.y() * 0.5 + 0.5) * image.height() as f64).floor() as u32;
-
-        image.put_pixel(from_x, from_y, Rgb([1.0, 0.0, 0.0]));
-        image.put_pixel(to_x, to_y, Rgb([0.0, 0.0, 1.0]));
-    }
-
-    image
-}
-
-#[cfg(test)]
-mod test {
-    use elysian_interpreter::Interpreted;
-    use elysian_ir::module::{AsModule, Dispatch, EvaluateError, SpecializationData};
-    use elysian_shapes::{
-        field::Point,
-        modify::{ClampMode, IntoElongateAxis, IntoIsosurface},
-    };
-    use elysian_static::Precompiled;
-    use viuer::Config;
-
-    use crate::quad_tree::Bounds;
-
-    use super::*;
-
-    #[test]
-    fn test_marching_squares() -> Result<(), EvaluateError> {
-        let module = Point
-            .isosurface(0.3)
-            .elongate_axis([0.1, 0.0], ClampMode::Dir, ClampMode::Dir)
-            .module(&SpecializationData::new_2d());
-
-        let evaluator = Dispatch(vec![
-            Box::new(Precompiled(&module)),
-            Box::new(Interpreted(&module)),
-        ]);
-
-        let contours = QuadTree::new(
-            Bounds {
-                min: [-1.0, -1.0],
-                max: [1.0, 1.0],
-            },
-            4,
-        )
-        .merge(&evaluator, 0.001)?
-        .collapse(&evaluator)?
-        .marching_squares(&evaluator)?;
-
-        let samples = contours
+    Ok((
+        contour,
+        contour
+            .sides()
             .into_iter()
-            .map(|(_, [(_, from), (_, to)])| {
-                Ok(<[Struct; 2]>::try_from([
-                    evaluator
-                        .sample_2d(from)?
-                        .set(POSITION_2D.into(), from.into()),
-                    evaluator.sample_2d(to)?.set(POSITION_2D.into(), to.into()),
-                ])
-                .unwrap())
+            .map(|[a, b]| {
+                Ok([pt(evaluator, bounds, a)?, pt(evaluator, bounds, b)?])
+                    as Result<[[f64; 2]; 2], EvaluateError>
             })
-            .collect::<Result<Vec<_>, EvaluateError>>()?;
-
-        let image = draw_marching_squares(samples);
-
-        viuer::print(
-            &image.into(),
-            &Config {
-                transparent: false,
-                absolute_offset: false,
-                x: 0,
-                y: 0,
-                restore_cursor: false,
-                width: None,
-                height: None,
-                truecolor: true,
-                use_kitty: true,
-                use_iterm: false,
-            },
-        )
-        .unwrap();
-
-        panic!();
-    }
+            .collect::<Result<Vec<_>, _>>()?
+            .chunks(2)
+            .flat_map(|chunk| chunk.to_vec())
+            .collect(),
+    ))
 }

@@ -38,3 +38,23 @@ where
         self[2]
     }
 }
+
+pub trait Unzip3<T, U, V>: Sized + IntoIterator<Item = (T, U, V)> {
+    fn unzip3<W, X, Y>(self) -> (W, X, Y)
+    where
+        W: Default + Extend<T>,
+        X: Default + Extend<U>,
+        Y: Default + Extend<V>,
+    {
+        let (buffers, bufs): (W, Vec<_>) = self
+            .into_iter()
+            .map(|(buffer, view, accessor)| (buffer, (view, accessor)))
+            .unzip();
+
+        let (buffer_views, accessors): (X, Y) = bufs.into_iter().unzip();
+
+        (buffers, buffer_views, accessors)
+    }
+}
+
+impl<T, U, V, W> Unzip3<U, V, W> for T where T: IntoIterator<Item = (U, V, W)> {}
