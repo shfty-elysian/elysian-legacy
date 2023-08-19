@@ -86,8 +86,8 @@ where
     T: Clone,
     Number: From<T>,
 {
-    fn from(value: [T; 2]) -> Self {
-        Value::Vector2([value[0].clone().into(), value[1].clone().into()])
+    fn from([x, y]: [T; 2]) -> Self {
+        Value::Vector2([x.into(), y.into()])
     }
 }
 
@@ -96,12 +96,8 @@ where
     T: Clone,
     Number: From<T>,
 {
-    fn from(value: [T; 3]) -> Self {
-        Value::Vector3([
-            value[0].clone().into(),
-            value[1].clone().into(),
-            value[2].clone().into(),
-        ])
+    fn from([x, y, z]: [T; 3]) -> Self {
+        Value::Vector3([x.into(), y.into(), z.into()])
     }
 }
 
@@ -110,13 +106,8 @@ where
     T: Clone,
     Number: From<T>,
 {
-    fn from(value: [T; 4]) -> Self {
-        Value::Vector4([
-            value[0].clone().into(),
-            value[1].clone().into(),
-            value[2].clone().into(),
-            value[3].clone().into(),
-        ])
+    fn from([x, y, z, w]: [T; 4]) -> Self {
+        Value::Vector4([x.into(), y.into(), z.into(), w.into()])
     }
 }
 

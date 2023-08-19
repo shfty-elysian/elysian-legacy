@@ -1,6 +1,6 @@
 use elysian_image::{distance_to_luma_32, rasterize};
 use elysian_interpreter::Interpreted;
-use elysian_ir::module::{Dispatch, Module, EvaluateError};
+use elysian_ir::module::{Dispatch, EvaluateError, Module};
 use elysian_static::Precompiled;
 use image::Luma;
 
@@ -33,7 +33,7 @@ pub fn ascii(
                 .clone()
                 .into_iter()
                 .zip(chunk[1].clone().into_iter())
-                .map(|(a, b)| (a[0] + b[0]) * 0.5)
+                .map(|(Luma([a]), Luma([b]))| (a + b) * 0.5)
         })
         .collect::<Vec<_>>();
 

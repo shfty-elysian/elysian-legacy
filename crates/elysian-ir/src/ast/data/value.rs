@@ -399,101 +399,167 @@ impl From<f64> for Value {
     }
 }
 
-pub fn vector2<T>(t: [T; 2]) -> Value
+pub fn vector2<T>([x, y]: [T; 2]) -> Value
 where
     T: Clone,
     Value: From<T>,
 {
     Value::Struct(
         Struct::new(StructIdentifier(VECTOR2))
-            .set(X.into(), t[0].clone().into())
-            .set(Y.into(), t[1].clone().into()),
+            .set(X.into(), x.into())
+            .set(Y.into(), y.into()),
     )
 }
 
-pub fn vector3<T>(t: [T; 3]) -> Value
+pub fn vector3<T>([x, y, z]: [T; 3]) -> Value
 where
     T: Clone,
     Value: From<T>,
 {
     Value::Struct(
         Struct::new(StructIdentifier(VECTOR3))
-            .set(X.into(), t[0].clone().into())
-            .set(Y.into(), t[1].clone().into())
-            .set(Z.into(), t[2].clone().into()),
+            .set(X.into(), x.into())
+            .set(Y.into(), y.into())
+            .set(Z.into(), z.into()),
     )
 }
 
-pub fn vector4<T>(t: [T; 4]) -> Value
+pub fn vector4<T>([x, y, z, w]: [T; 4]) -> Value
 where
     T: Clone,
     Value: From<T>,
 {
     Value::Struct(
         Struct::new(StructIdentifier(VECTOR4))
-            .set(X.into(), t[0].clone().into())
-            .set(Y.into(), t[1].clone().into())
-            .set(Z.into(), t[2].clone().into())
-            .set(W.into(), t[3].clone().into()),
+            .set(X.into(), x.into())
+            .set(Y.into(), y.into())
+            .set(Z.into(), z.into())
+            .set(W.into(), w.into()),
     )
 }
 
-pub fn matrix2<T>(t: [[T; 2]; 2]) -> Value
+pub fn matrix2<T>([x, y]: [[T; 2]; 2]) -> Value
 where
     T: Clone,
     Value: From<T>,
 {
     Value::Struct(
         Struct::new(StructIdentifier(MATRIX2))
-            .set(X_AXIS_2.into(), vector2(t[0].clone()))
-            .set(Y_AXIS_2.into(), vector2(t[1].clone())),
+            .set(X_AXIS_2.into(), vector2(x))
+            .set(Y_AXIS_2.into(), vector2(y)),
     )
 }
 
-pub fn matrix3<T>(t: [[T; 3]; 3]) -> Value
+pub fn matrix3<T>([x, y, z]: [[T; 3]; 3]) -> Value
 where
     T: Clone,
     Value: From<T>,
 {
     Value::Struct(
         Struct::new(StructIdentifier(MATRIX3))
-            .set(X_AXIS_3.into(), vector3(t[0].clone()))
-            .set(Y_AXIS_3.into(), vector3(t[1].clone()))
-            .set(Z_AXIS_3.into(), vector3(t[2].clone())),
+            .set(X_AXIS_3.into(), vector3(x))
+            .set(Y_AXIS_3.into(), vector3(y))
+            .set(Z_AXIS_3.into(), vector3(z)),
     )
 }
 
-pub fn matrix4<T>(t: [[T; 4]; 4]) -> Value
+pub fn matrix4<T>([x, y, z, w]: [[T; 4]; 4]) -> Value
 where
     T: Clone,
     Value: From<T>,
 {
     Value::Struct(
         Struct::new(StructIdentifier(MATRIX4))
-            .set(X_AXIS_4.into(), vector4(t[0].clone()))
-            .set(Y_AXIS_4.into(), vector4(t[1].clone()))
-            .set(Z_AXIS_4.into(), vector4(t[2].clone()))
-            .set(W_AXIS_4.into(), vector4(t[3].clone())),
+            .set(X_AXIS_4.into(), vector4(x.clone()))
+            .set(Y_AXIS_4.into(), vector4(y.clone()))
+            .set(Z_AXIS_4.into(), vector4(z.clone()))
+            .set(W_AXIS_4.into(), vector4(w.clone())),
     )
 }
 
-impl From<Vec2> for Value {
-    fn from(value: Vec2) -> Self {
+impl From<[f32; 2]> for Value {
+    fn from([x, y]: [f32; 2]) -> Self {
         Value::Struct(
             Struct::new(StructIdentifier(VECTOR2))
-                .set(X.into(), value.x.into())
-                .set(Y.into(), value.y.into()),
+                .set(X.into(), x.into())
+                .set(Y.into(), y.into()),
+        )
+    }
+}
+
+impl From<[f64; 2]> for Value {
+    fn from([x, y]: [f64; 2]) -> Self {
+        Value::Struct(
+            Struct::new(StructIdentifier(VECTOR2))
+                .set(X.into(), x.into())
+                .set(Y.into(), y.into()),
+        )
+    }
+}
+
+impl From<[f32; 3]> for Value {
+    fn from([x, y, z]: [f32; 3]) -> Self {
+        Value::Struct(
+            Struct::new(StructIdentifier(VECTOR3))
+                .set(X.into(), x.into())
+                .set(Y.into(), y.into())
+                .set(Z.into(), z.into()),
+        )
+    }
+}
+
+impl From<[f64; 3]> for Value {
+    fn from([x, y, z]: [f64; 3]) -> Self {
+        Value::Struct(
+            Struct::new(StructIdentifier(VECTOR3))
+                .set(X.into(), x.into())
+                .set(Y.into(), y.into())
+                .set(Z.into(), z.into()),
+        )
+    }
+}
+
+impl From<[f32; 4]> for Value {
+    fn from([x, y, z, w]: [f32; 4]) -> Self {
+        Value::Struct(
+            Struct::new(StructIdentifier(VECTOR4))
+                .set(X.into(), x.into())
+                .set(Y.into(), y.into())
+                .set(Z.into(), z.into())
+                .set(W.into(), w.into()),
+        )
+    }
+}
+
+impl From<[f64; 4]> for Value {
+    fn from([x, y, z, w]: [f64; 4]) -> Self {
+        Value::Struct(
+            Struct::new(StructIdentifier(VECTOR4))
+                .set(X.into(), x.into())
+                .set(Y.into(), y.into())
+                .set(Z.into(), z.into())
+                .set(W.into(), w.into()),
+        )
+    }
+}
+
+impl From<Vec2> for Value {
+    fn from(Vec2 { x, y }: Vec2) -> Self {
+        Value::Struct(
+            Struct::new(StructIdentifier(VECTOR2))
+                .set(X.into(), x.into())
+                .set(Y.into(), y.into()),
         )
     }
 }
 
 impl From<Vec3> for Value {
-    fn from(value: Vec3) -> Self {
+    fn from(Vec3 { x, y, z }: Vec3) -> Self {
         Value::Struct(
             Struct::new(StructIdentifier(VECTOR3))
-                .set(X.into(), value.x.into())
-                .set(Y.into(), value.y.into())
-                .set(Z.into(), value.z.into()),
+                .set(X.into(), x.into())
+                .set(Y.into(), y.into())
+                .set(Z.into(), z.into()),
         )
     }
 }

@@ -130,11 +130,21 @@ fn vec3_buffer(
             s
         })
         .map(|v| {
-            [
-                f32::from(v.get(&X.into())),
-                f32::from(v.get(&Y.into())),
-                f32::from(v.get(&Z.into())),
-            ]
+            if v.id == VECTOR3.into() {
+                [
+                    f32::from(v.get(&X.into())),
+                    f32::from(v.get(&Y.into())),
+                    f32::from(v.get(&Z.into())),
+                ]
+            } else if v.id == VECTOR2.into() {
+                [
+                    f32::from(v.get(&X.into())),
+                    f32::from(v.get(&Y.into())),
+                    0.0,
+                ]
+            } else {
+                panic!("Invalid Struct Type")
+            }
         })
         .collect::<Vec<_>>();
 
@@ -191,7 +201,13 @@ fn to_buffers(
                     _ => unimplemented!(),
                 },
                 elysian_ir::ast::Value::Struct(s) => match &s.id {
-                    id if **id == VECTOR2 => vec2_buffer(i as u32, samples, attr),
+                    id if **id == VECTOR2 => {
+                        if semantic == Semantic::Positions {
+                            vec3_buffer(i as u32, samples, attr)
+                        } else {
+                            vec2_buffer(i as u32, samples, attr)
+                        }
+                    }
                     id if **id == VECTOR3 => vec3_buffer(i as u32, samples, attr),
                     id if **id == VECTOR4 => vec4_buffer(i as u32, samples, attr),
                     _ => unimplemented!(),
@@ -204,8 +220,13 @@ fn to_buffers(
         .collect()
 }
 
-pub fn samples_to_gltf(samples: &[Struct], attrs: &[PropertyIdentifier]) -> Root {
-    let (semantics, bufs): (Vec<_>, Vec<_>) = to_buffers(samples, attrs).into_iter().unzip();
+pub fn samples_to_gltf(
+    samples: impl IntoIterator<Item = Struct>,
+    attrs: &[PropertyIdentifier],
+    mode: Mode,
+) -> Root {
+    let samples: Vec<_> = samples.into_iter().collect();
+    let (semantics, bufs): (Vec<_>, Vec<_>) = to_buffers(&samples, attrs).into_iter().unzip();
 
     let attributes: BTreeMap<_, _> = semantics
         .into_iter()
@@ -226,7 +247,7 @@ pub fn samples_to_gltf(samples: &[Struct], attrs: &[PropertyIdentifier]) -> Root
         extras: Default::default(),
         indices: None,
         material: None,
-        mode: Checked::Valid(Mode::Triangles),
+        mode: Checked::Valid(mode),
         targets: None,
     };
 
@@ -268,44 +289,67 @@ pub fn samples_to_gltf(samples: &[Struct], attrs: &[PropertyIdentifier]) -> Root
 
 #[cfg(test)]
 mod test {
-    use elysian_ir::module::{StructIdentifier, CONTEXT};
+    use elysian_interpreter::Interpreted;
+    use elysian_ir::module::{AsModule, Dispatch, Evaluate, EvaluateError, SpecializationData};
+    use elysian_shapes::{
+        field::Point,
+        modify::{ClampMode, IntoElongateAxis, IntoIsosurface, IntoManifold},
+    };
+    use elysian_static::Precompiled;
 
-    use crate::util::Vec3;
+    use crate::{
+        dual_contour::DualContour,
+        quad_tree::{Bounds, QuadTree},
+    };
 
     use super::*;
 
     #[test]
-    fn test_gltf_export() {
-        let sample = |position: [f32; 3], color: [f32; 3]| -> Struct {
-            Struct::new(StructIdentifier(CONTEXT))
-                .set(
-                    POSITION_3D.into(),
-                    elysian_ir::ast::Value::Struct(
-                        Struct::new(StructIdentifier(VECTOR3))
-                            .set(X.into(), position.x().into())
-                            .set(Y.into(), position.y().into())
-                            .set(Z.into(), position.z().into()),
-                    ),
-                )
-                .set(
-                    COLOR.into(),
-                    elysian_ir::ast::Value::Struct(
-                        Struct::new(StructIdentifier(VECTOR3))
-                            .set(X.into(), color.x().into())
-                            .set(Y.into(), color.y().into())
-                            .set(Z.into(), color.z().into()),
-                    ),
-                )
-        };
+    fn test_gltf_export() -> Result<(), EvaluateError> {
+        let module = Point
+            .isosurface(0.3)
+            .elongate_axis([0.1, 0.0], ClampMode::Dir, ClampMode::Dir)
+            .manifold()
+            .isosurface(0.1)
+            .module(&SpecializationData::new_2d());
 
-        let samples = [
-            sample([0.0, 0.5, 0.0], [1.0, 0.0, 0.0]),
-            sample([-0.5, -0.5, 0.0], [0.0, 1.0, 0.0]),
-            sample([0.5, -0.5, 0.0], [0.0, 0.0, 1.0]),
-        ];
+        let evaluator = Dispatch(vec![
+            Box::new(Precompiled(&module)),
+            Box::new(Interpreted(&module)),
+        ]);
 
-        let root = samples_to_gltf(&samples, &[POSITION_3D.into(), COLOR.into()]);
+        let contours = QuadTree::new(
+            Bounds {
+                min: [-1.0, -1.0],
+                max: [1.0, 1.0],
+            },
+            5,
+        )
+        .merge(&evaluator, 0.001)?
+        .collapse(&evaluator)?
+        .dual_contour(&evaluator, 5.0)?;
 
-        std::fs::write("./ser.gltf", root.to_string().unwrap()).unwrap();
+        let samples = contours
+            .into_iter()
+            .map(|[from, to]| {
+                Ok(<[Struct; 2]>::try_from([
+                    evaluator
+                        .sample_2d(from)?
+                        .set(POSITION_2D.into(), from.into()),
+                    evaluator.sample_2d(to)?.set(POSITION_2D.into(), to.into()),
+                ])
+                .unwrap())
+            })
+            .collect::<Result<Vec<_>, EvaluateError>>()?;
+
+        let root = samples_to_gltf(
+            samples.into_iter().flatten(),
+            &[POSITION_2D.into()],
+            Mode::Lines,
+        );
+
+        std::fs::write("./ser.gltf", root.to_string()?)?;
+
+        Ok(())
     }
 }

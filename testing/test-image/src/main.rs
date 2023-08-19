@@ -20,19 +20,6 @@ fn main() -> Result<(), EvaluateError> {
         .module(&SpecializationData::new_2d())
         .finalize();
 
-    let shape = quadtree::quadtree(
-        &Dispatch(vec![
-            Box::new(Precompiled(&shape)),
-            Box::new(Interpreted(&shape)),
-        ]),
-        [-1.0, -1.0],
-        [1.0, 1.0],
-        4,
-    )?
-    .shape()
-    .set_post(COLOR, distance_color(10.0))
-    .module(&SpecializationData::new_2d());
-
     let start = Instant::now();
     let (width, height) = (16, 16);
 
@@ -86,8 +73,8 @@ mod quadtree {
 
     pub fn quadtree<'a>(
         shape: &impl Evaluate<'a>,
-        min: [f64; 2],
-        max: [f64; 2],
+        [min_x, min_y]: [f64; 2],
+        [max_x, max_y]: [f64; 2],
         level: usize,
     ) -> Result<impl IntoShape, EvaluateError> {
         let sample = |x: f64, y: f64| {
@@ -105,25 +92,26 @@ mod quadtree {
             shape.evaluate(ctx)
         };
 
-        let size = [max[0] - min[0], max[1] - min[1]];
-        let qsize = [size[0] * 0.25, size[1] * 0.25];
-        let hsize = [size[0] * 0.5, size[1] * 0.5];
+        let [width, height] = [max_x - min_x, max_y - min_y];
+        let qsize = [width * 0.25, height * 0.25];
+        let [hw, hh] = [width * 0.5, height * 0.5];
 
         let mut out = Combine::from(Union);
 
         for (iy, y) in [(0, 1), (1, 3)] {
             for (ix, x) in [(0, 1), (1, 3)] {
-                let p = [min[0] + qsize[0] * x as f64, min[1] + qsize[1] * y as f64];
+                let p @ [x, y] = [min_x + qsize[0] * x as f64, min_y + qsize[1] * y as f64];
 
-                let ctx = sample(p[0], p[1])?;
+                let ctx = sample(x, y)?;
                 let d: f64 = ctx.get(&DISTANCE.into()).into();
 
                 if d <= 0.0 {
                     out = out.push(Quad::new(qsize, [GRADIENT_2D]).translate(p).manifold());
 
                     if level > 1 {
-                        let lmin = [min[0] + hsize[0] * ix as f64, min[1] + hsize[1] * iy as f64];
-                        let lmax = [lmin[0] + hsize[0], lmin[1] + hsize[1]];
+                        let lmin @ [lmin_x, lmin_y] =
+                            [min_x + hw * ix as f64, min_y * hh * iy as f64];
+                        let lmax = [lmin_x + hw, lmin_y + hh];
                         out = out.push(quadtree(shape, lmin, lmax, level - 1)?);
                     }
                 }

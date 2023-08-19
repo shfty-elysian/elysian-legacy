@@ -91,11 +91,11 @@ pub enum Align {
 pub fn text(
     text: &str,
     align: Align,
-    cell_size: [f64; 2],
-    padding: [f64; 2],
+    cell_size @ [cell_width, cell_height]: [f64; 2],
+    _padding @ [pad_x, pad_y]: [f64; 2],
     modifier: Option<impl Fn(DynShape, [f64; 2], [f64; 2]) -> DynShape>,
 ) -> impl IntoShape {
-    let total_size = [cell_size[0] + padding[0], cell_size[1] + padding[1]];
+    let total_size @ [total_width, total_height] = [cell_width + pad_x, cell_height + pad_y];
 
     let id_x = REPEAT_ID_2D.path().push(X).read();
     let id_x_lt = |t: f64| id_x.clone().lt(t);
@@ -105,10 +105,10 @@ pub fn text(
 
     let lines = text.lines().map(|line| line.replace('\t', "    ")).rev();
 
-    let total_width = lines
+    let max_width = lines
         .clone()
         .fold(0, |acc, line| acc.max(line.chars().count())) as f64;
-    let total_max_x = total_width - 1.0;
+    let total_max_x = max_width - 1.0;
 
     let height = lines.clone().count() as f64;
     let max_y = height - 1.0;
@@ -132,7 +132,7 @@ pub fn text(
                     };
                     acc.case(
                         id_x_lt(x as f64 + 1.0),
-                        char_field.translate([x as f64 * total_size[0], 0.0]),
+                        char_field.translate([x as f64 * total_width, 0.0]),
                     )
                 })
                 .prepass(
@@ -158,7 +158,7 @@ pub fn text(
 
             acc.case(
                 id_y_lt(y as f64 + 1.0),
-                field.translate([0.0, y as f64 * total_size[1]]),
+                field.translate([0.0, y as f64 * total_height]),
             )
         })
         .prepass(
@@ -167,7 +167,7 @@ pub fn text(
                 .filter(REPEAT_ID_2D),
         )
         .translate([
-            -total_max_x * total_size[0] * 0.5,
-            -max_y * total_size[1] * 0.5,
+            -total_max_x * total_width * 0.5,
+            -max_y * total_height * 0.5,
         ])
 }

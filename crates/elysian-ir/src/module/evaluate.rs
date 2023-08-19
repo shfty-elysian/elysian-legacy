@@ -9,28 +9,28 @@ pub type EvaluateError = Box<dyn Error + Send + Sync>;
 pub trait Evaluate<'a>: 'a + Send + Sync {
     fn evaluate(&self, context: Struct) -> Result<Struct, EvaluateError>;
 
-    fn sample_2d(&self, p: [f64; 2]) -> Result<Struct, EvaluateError> {
+    fn sample_2d(&self, [x, y]: [f64; 2]) -> Result<Struct, EvaluateError> {
         self.evaluate(
             Struct::new(CONTEXT.into()).set(
                 POSITION_2D.into(),
                 Value::Struct(
                     Struct::new(StructIdentifier(VECTOR2))
-                        .set(X.into(), p[0].into())
-                        .set(Y.into(), p[1].into()),
+                        .set(X.into(), x.into())
+                        .set(Y.into(), y.into()),
                 ),
             ),
         )
     }
 
-    fn sample_3d(&self, p: [f64; 3]) -> Result<Struct, EvaluateError> {
+    fn sample_3d(&self, [x, y, z]: [f64; 3]) -> Result<Struct, EvaluateError> {
         self.evaluate(
             Struct::new(CONTEXT.into()).set(
                 POSITION_3D.into(),
                 Value::Struct(
                     Struct::new(StructIdentifier(VECTOR3))
-                        .set(X.into(), p[0].into())
-                        .set(Y.into(), p[1].into())
-                        .set(Z.into(), p[2].into()),
+                        .set(X.into(), x.into())
+                        .set(Y.into(), y.into())
+                        .set(Z.into(), z.into()),
                 ),
             ),
         )

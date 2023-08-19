@@ -202,16 +202,16 @@ pub fn pangram() -> impl IntoShape {
         [0.4, 0.5],
         [1.0, 1.0],
         Some(
-            |field: DynShape, cell_size: [f64; 2], total_size: [f64; 2]| {
+            |field: DynShape, cell_size: [f64; 2], [total_width, total_height]: [f64; 2]| {
                 Combine::from(Union)
                     /*
                     .push(
-                        Quad::new([cell_size[0], cell_size[1]], [GRADIENT_2D])
+                        Quad::new(cell_size, [GRADIENT_2D])
                             .manifold()
                             .set_post(COLOR, [1.0, 0.0, 1.0, 1.0].literal() * distance_color(25.0)),
                     )
                     .push(
-                        Quad::new([total_size[0] * 0.5, total_size[1] * 0.5], [GRADIENT_2D])
+                        Quad::new([total_width * 0.5, total_height * 0.5], [GRADIENT_2D])
                             .manifold()
                             .set_post(COLOR, [1.0, 1.0, 0.0, 1.0].literal() * distance_color(25.0)),
                     )
@@ -245,7 +245,12 @@ pub fn ngon(sides: usize, radius: f64) -> impl IntoShape {
     let k = sides_f.sqrt();
     let width = radius * angle.cos();
 
-    let field = Line::centered([width * k, 0.0]).translate([0.0, radius / k]);
+    let field = Line::centered([width * k, 0.0])
+        .translate([0.0, radius / k])
+        .set_post(
+            DISTANCE,
+            DISTANCE.prop().read() * POSITION_2D.path().push(Y).read().sign(),
+        );
 
     match sides {
         3 => field
@@ -281,13 +286,13 @@ pub fn ngon(sides: usize, radius: f64) -> impl IntoShape {
 }
 
 pub fn test_shape() -> Box<dyn Shape> {
-    //ngon(5, 1.0)
-    composite()
-        //.set_post(COLOR, /*COLOR.prop().read() **/ distance_color(1.0))
-        .set_post(COLOR, uv_color() * distance_color(1.0))
+    ngon(5, 1.0)
+        //composite()
+        .set_post(COLOR, gradient_color() * distance_color(1.0))
+        //.set_post(COLOR, uv_color() * distance_color(1.0))
         //.set_post(COLOR, position_3d_color())
         //.set_post(COLOR, distance_color(100.0))
-        .aspect(ASPECT.prop().read())
+        //.aspect(ASPECT.prop().read())
         .shape()
 }
 

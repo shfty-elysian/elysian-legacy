@@ -136,14 +136,15 @@ impl QuadTree {
         }
 
         Ok(match self {
-            Tree::Root(t) => {
-                let t = t
-                    .into_iter()
-                    .map(|t| t.merge(evaluator, epsilon))
-                    .collect::<Result<Vec<_>, _>>()?;
-                let (a, b, c, d) = (&t[0], &t[1], &t[2], &t[3]);
+            Tree::Root([a, b, c, d]) => {
+                let [a, b, c, d] = [
+                    a.merge(evaluator, epsilon)?,
+                    b.merge(evaluator, epsilon)?,
+                    c.merge(evaluator, epsilon)?,
+                    d.merge(evaluator, epsilon)?,
+                ];
 
-                match (a, b, c, d) {
+                match (&a, &b, &c, &d) {
                     (
                         QuadTree::Leaf(QuadCell {
                             bounds: Bounds { min, max: i },
@@ -316,7 +317,7 @@ mod test {
     use elysian_ir::module::{AsModule, Dispatch, SpecializationData};
     use elysian_shapes::{
         field::Point,
-        modify::{ClampMode, IntoIsosurface, IntoElongateAxis},
+        modify::{ClampMode, IntoElongateAxis, IntoIsosurface},
     };
     use elysian_static::Precompiled;
     use viuer::Config;
@@ -329,7 +330,7 @@ mod test {
     fn test_quad_tree() -> Result<(), EvaluateError> {
         let module = Point
             .isosurface(0.3)
-            .elongate_axis([0.3, 0.0], ClampMode::Dir, ClampMode::Dir)
+            .elongate_axis([0.1, 0.0], ClampMode::Dir, ClampMode::Dir)
             .module(&SpecializationData::new_2d());
 
         let evaluator = Dispatch(vec![
@@ -346,7 +347,6 @@ mod test {
         )
         .merge(&evaluator, 0.001)?
         .collapse(&evaluator)?;
-
         let image = draw_quad_tree(quad_tree);
 
         viuer::print(
