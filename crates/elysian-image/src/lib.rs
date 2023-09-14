@@ -11,7 +11,6 @@ use elysian_ir::{
     ast::{Struct, Value, COLOR, DISTANCE, POSITION_2D, VECTOR2, X, Y},
     module::{Evaluate, EvaluateError, StructIdentifier, CONTEXT},
 };
-use rayon::prelude::ParallelIterator;
 
 pub fn distance_to_luma_8(ctx: Struct) -> Vec<u8> {
     let d: f64 = ctx.get(&DISTANCE.into()).into();
@@ -88,6 +87,7 @@ where
         #[cfg(feature = "rayon")]
         {
             use rayon::prelude::ParallelBridge;
+            use rayon::prelude::ParallelIterator;
 
             let chunk_size = (width * height) as usize / num_cpus::get();
 
@@ -110,7 +110,7 @@ where
         {
             indices
                 .into_iter()
-                .map(|(x, y)| sample(x, y)?)
+                .map(|(x, y)| sample(x, y))
                 .collect::<Result<Vec<_>, _>>()?
                 .into_iter()
                 .flatten()
