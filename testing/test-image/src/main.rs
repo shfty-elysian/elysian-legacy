@@ -16,7 +16,7 @@ use viuer::Config;
 include_static_shapes!();
 
 fn main() -> Result<(), EvaluateError> {
-    let shape = test_shapes::test_shape()
+    let shape = test_shapes::pangram()
         .module(&SpecializationData::new_2d())
         .finalize();
 

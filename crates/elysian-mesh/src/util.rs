@@ -1,60 +1,20 @@
-pub trait Vec2<T> {
-    fn x(&self) -> T;
-    fn y(&self) -> T;
-}
+pub trait CollectArray<T, const N: usize> {
+    fn try_collect_array(self) -> Result<[T; N], <[T; N] as TryFrom<Vec<T>>>::Error>;
 
-impl<T> Vec2<T> for [T; 2]
-where
-    T: Copy,
-{
-    fn x(&self) -> T {
-        self[0]
-    }
-
-    fn y(&self) -> T {
-        self[1]
-    }
-}
-
-pub trait Vec3<T> {
-    fn x(&self) -> T;
-    fn y(&self) -> T;
-    fn z(&self) -> T;
-}
-
-impl<T> Vec3<T> for [T; 3]
-where
-    T: Copy,
-{
-    fn x(&self) -> T {
-        self[0]
-    }
-
-    fn y(&self) -> T {
-        self[1]
-    }
-
-    fn z(&self) -> T {
-        self[2]
-    }
-}
-
-pub trait Unzip3<T, U, V>: Sized + IntoIterator<Item = (T, U, V)> {
-    fn unzip3<W, X, Y>(self) -> (W, X, Y)
+    fn collect_array(self) -> [T; N]
     where
-        W: Default + Extend<T>,
-        X: Default + Extend<U>,
-        Y: Default + Extend<V>,
+        Self: Sized,
+        T: std::fmt::Debug,
     {
-        let (buffers, bufs): (W, Vec<_>) = self
-            .into_iter()
-            .map(|(buffer, view, accessor)| (buffer, (view, accessor)))
-            .unzip();
-
-        let (buffer_views, accessors): (X, Y) = bufs.into_iter().unzip();
-
-        (buffers, buffer_views, accessors)
+        self.try_collect_array().unwrap()
     }
 }
 
-impl<T, U, V, W> Unzip3<U, V, W> for T where T: IntoIterator<Item = (U, V, W)> {}
+impl<T, U, const N: usize> CollectArray<U, N> for T
+where
+    T: Iterator<Item = U>,
+{
+    fn try_collect_array(self) -> Result<[U; N], <[U; N] as TryFrom<Vec<U>>>::Error> {
+        self.collect::<Vec<_>>().try_into()
+    }
+}

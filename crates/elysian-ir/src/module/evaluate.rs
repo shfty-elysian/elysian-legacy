@@ -1,40 +1,11 @@
 use std::{error::Error, fmt::Display};
 
-use crate::ast::{Struct, Value, POSITION_2D, POSITION_3D, VECTOR2, VECTOR3, X, Y, Z};
-
-use super::{StructIdentifier, CONTEXT};
+use crate::ast::Struct;
 
 pub type EvaluateError = Box<dyn Error + Send + Sync>;
 
 pub trait Evaluate<'a>: 'a + Send + Sync {
     fn evaluate(&self, context: Struct) -> Result<Struct, EvaluateError>;
-
-    fn sample_2d(&self, [x, y]: [f64; 2]) -> Result<Struct, EvaluateError> {
-        self.evaluate(
-            Struct::new(CONTEXT.into()).set(
-                POSITION_2D.into(),
-                Value::Struct(
-                    Struct::new(StructIdentifier(VECTOR2))
-                        .set(X.into(), x.into())
-                        .set(Y.into(), y.into()),
-                ),
-            ),
-        )
-    }
-
-    fn sample_3d(&self, [x, y, z]: [f64; 3]) -> Result<Struct, EvaluateError> {
-        self.evaluate(
-            Struct::new(CONTEXT.into()).set(
-                POSITION_3D.into(),
-                Value::Struct(
-                    Struct::new(StructIdentifier(VECTOR3))
-                        .set(X.into(), x.into())
-                        .set(Y.into(), y.into())
-                        .set(Z.into(), z.into()),
-                ),
-            ),
-        )
-    }
 }
 
 pub struct Dispatch<'a>(pub Vec<Box<dyn Evaluate<'a>>>);

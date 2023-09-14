@@ -1585,6 +1585,7 @@ dependencies = [
  "elysian",
  "image",
  "imageproc",
+ "nalgebra 0.32.3",
  "test-shapes",
  "viuer",
 ]

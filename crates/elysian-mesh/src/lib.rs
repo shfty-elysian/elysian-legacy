@@ -1,6 +1,9 @@
-pub mod dual_contour;
-pub mod marching_squares;
-pub mod quad_tree;
+//pub mod dual_contour;
+pub mod bounds;
+pub mod gltf_export;
+pub mod marching_cells;
+pub mod subdivision_tree;
 pub mod tree;
 pub mod util;
-pub mod gltf_export;
+pub mod vector_space;
+pub mod sample;

@@ -10,3 +10,4 @@ test-shapes = { path = "../test-shapes" }
 image = "0.24.7"
 imageproc = "0.23.0"
 viuer = "0.6.2"
+nalgebra = "0.32.3"

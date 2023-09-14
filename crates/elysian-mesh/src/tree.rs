@@ -1,17 +1,50 @@
 use std::fmt::Debug;
 
+use crate::vector_space::{SubdivisionArray, D1, D2, D3};
+
 /// Recursive tree with N cells per root
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum Tree<T, const N: usize> {
-    Root([Box<Tree<T, N>>; N]),
+#[derive(Clone, PartialEq, PartialOrd)]
+pub enum Tree<T, D: SubdivisionArray<Box<Tree<T, D>>>> {
+    Root(D::SubdivisionArray),
     Leaf(T),
 }
 
-pub type Tree2<T> = Tree<T, 2>;
-pub type Tree4<T> = Tree<T, 4>;
-pub type Tree8<T> = Tree<T, 8>;
+impl<T> Debug for Tree<T, D2>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Root(arg0) => f.debug_tuple("Root").field(arg0).finish(),
+            Self::Leaf(arg0) => f.debug_tuple("Leaf").field(arg0).finish(),
+        }
+    }
+}
 
-impl<T, const N: usize> Tree<T, N> {
+impl<T> Debug for Tree<T, D3>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Root(arg0) => f.debug_tuple("Root").field(arg0).finish(),
+            Self::Leaf(arg0) => f.debug_tuple("Leaf").field(arg0).finish(),
+        }
+    }
+}
+
+pub type Tree2<T> = Tree<T, D1>;
+pub type Tree4<T> = Tree<T, D2>;
+pub type Tree8<T> = Tree<T, D3>;
+
+impl<T, D> Tree<T, D>
+where
+    D: SubdivisionArray<Box<Tree<T, D>>> + SubdivisionArray<Box<Tree<usize, D>>>,
+    for<'a> &'a <D as SubdivisionArray<Box<Tree<T, D>>>>::SubdivisionArray:
+        IntoIterator<Item = &'a Box<Tree<T, D>>>,
+    <<D as SubdivisionArray<Box<Tree<usize, D>>>>::SubdivisionArray as IntoIterator>::IntoIter:
+        'static,
+{
     // Return the maximum depth present in the tree
     pub fn depth(&self) -> usize {
         self.map_depth_impl(0)
@@ -20,11 +53,11 @@ impl<T, const N: usize> Tree<T, N> {
     }
 
     // Map the tree to one containing a depth at each leaf
-    pub fn map_depth(&self) -> Tree<usize, N> {
+    pub fn map_depth(&self) -> Tree<usize, D> {
         self.map_depth_impl(0)
     }
 
-    fn map_depth_impl(&self, d: usize) -> Tree<usize, N> {
+    fn map_depth_impl(&self, d: usize) -> Tree<usize, D> {
         match self {
             Tree::Leaf(_) => Tree::Leaf(d),
             Tree::Root(t) => Tree::Root(
@@ -32,14 +65,15 @@ impl<T, const N: usize> Tree<T, N> {
                     .map(|t| Box::new(t.map_depth_impl(d + 1)))
                     .collect::<Vec<_>>()
                     .try_into()
-                    .unwrap(),
+                    .ok()
+                    .expect("Invalid root length"),
             ),
         }
     }
 
     // Return the maximum number of cells needed to respresent a tree of this depth
     pub fn resolution(&self) -> usize {
-        N.pow(self.depth() as u32)
+        D::SUBDIVISION.pow(self.depth() as u32)
     }
 
     // Conversion to borrowing iterator
@@ -51,24 +85,31 @@ impl<T, const N: usize> Tree<T, N> {
     }
 
     // Structure-preserving map
-    pub fn map<F, U>(self, f: F) -> Tree<U, N>
+    pub fn map<F, U>(self, f: F) -> Tree<U, D>
     where
         F: Clone + Fn(T) -> U,
         U: Debug,
+        D: SubdivisionArray<Box<Tree<T, D>>> + SubdivisionArray<Box<Tree<U, D>>>,
+        <D as SubdivisionArray<Box<Tree<U, D>>>>::SubdivisionArray: Debug,
     {
         match self {
             Tree::Leaf(t) => Tree::Leaf(f(t)),
             Tree::Root(t) => Tree::Root({
-                let v: Vec<_> = t.into_iter().map(|t| Box::new(t.map(f.clone()))).collect();
-                v.try_into().unwrap()
+                let v: Vec<_> = t
+                    .into_iter()
+                    .map(|u: Box<Tree<T, D>>| Box::new(u.map(f.clone())))
+                    .collect();
+                v.try_into().ok().expect("Invalid root length")
             }),
         }
     }
 }
 
-impl<T, const N: usize> IntoIterator for Tree<T, N>
+impl<T, D> IntoIterator for Tree<T, D>
 where
     T: 'static,
+    D: SubdivisionArray<Box<Tree<T, D>>>,
+    <<D as SubdivisionArray<Box<Tree<T, D>>>>::SubdivisionArray as IntoIterator>::IntoIter: 'static,
 {
     type Item = T;
 
