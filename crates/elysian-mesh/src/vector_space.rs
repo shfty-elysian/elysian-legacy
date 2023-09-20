@@ -3,16 +3,16 @@ use std::fmt::Debug;
 use nalgebra::{ClosedAdd, ClosedSub};
 
 /// 1D Vector Space
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum D1 {}
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct D1;
 
 /// 2D Vector Space
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum D2 {}
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct D2;
 
 /// 3D Vector Space
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum D3 {}
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct D3;
 
 /// An N-dimension vector space
 pub trait VectorDimension {
@@ -230,45 +230,45 @@ impl DimensionVector<f64> for D3 {
 }
 
 /// Array type corresponding to the number of dimensions in a vector space
-pub trait DimensionArray<T>: VectorDimension {
-    type DimensionArray;
+pub trait DimensionArray: VectorDimension {
+    type DimensionArray<T>;
 }
 
-impl<T> DimensionArray<T> for D1 {
-    type DimensionArray = T;
+impl DimensionArray for D1 {
+    type DimensionArray<T> = T;
 }
 
-impl<T> DimensionArray<T> for D2 {
-    type DimensionArray = [T; 2];
+impl DimensionArray for D2 {
+    type DimensionArray<T> = [T; 2];
 }
 
-impl<T> DimensionArray<T> for D3 {
-    type DimensionArray = [T; 3];
+impl DimensionArray for D3 {
+    type DimensionArray<T> = [T; 3];
 }
 
 /// Array type corresponding to the number of cells required
 /// to evenly subdivide a vector space
-pub trait SubdivisionArray<T>: VectorSubdivision {
-    type SubdivisionArray: TryFrom<Vec<T>, Error = Vec<T>> + IntoIterator<Item = T>;
+pub trait SubdivisionArray: VectorSubdivision + 'static {
+    type SubdivisionArray<T>: TryFrom<Vec<T>, Error = Vec<T>> + IntoIterator<Item = T>;
     type Mapped<U>: TryFrom<Vec<U>, Error = Vec<U>> + IntoIterator<Item = U>;
 
-    fn map<U>(arr: Self::SubdivisionArray, f: impl FnMut(T) -> U) -> Self::Mapped<U>;
-    fn map_ref<U>(arr: &Self::SubdivisionArray, f: impl FnMut(&T) -> U) -> Self::Mapped<U>;
+    fn map<T, U>(arr: Self::SubdivisionArray<T>, f: impl FnMut(T) -> U) -> Self::Mapped<U>;
+    fn map_ref<T, U>(arr: &Self::SubdivisionArray<T>, f: impl FnMut(&T) -> U) -> Self::Mapped<U>;
 
-    fn iter<'a>(arr: &'a Self::SubdivisionArray) -> std::slice::Iter<'a, T>;
+    fn iter<'a, T>(arr: &'a Self::SubdivisionArray<T>) -> std::slice::Iter<'a, T>;
 
     fn subdivision_indices() -> Vec<Vec<usize>>;
 }
 
-impl<T> SubdivisionArray<T> for D1 {
-    type SubdivisionArray = [T; 2];
+impl SubdivisionArray for D1 {
+    type SubdivisionArray<T> = [T; 2];
     type Mapped<U> = [U; 2];
 
-    fn map<U>(arr: Self::SubdivisionArray, f: impl FnMut(T) -> U) -> Self::Mapped<U> {
+    fn map<T, U>(arr: Self::SubdivisionArray<T>, f: impl FnMut(T) -> U) -> Self::Mapped<U> {
         arr.map(f)
     }
 
-    fn map_ref<U>(arr: &Self::SubdivisionArray, f: impl FnMut(&T) -> U) -> Self::Mapped<U> {
+    fn map_ref<T, U>(arr: &Self::SubdivisionArray<T>, f: impl FnMut(&T) -> U) -> Self::Mapped<U> {
         arr.iter()
             .map(f)
             .collect::<Vec<_>>()
@@ -277,7 +277,7 @@ impl<T> SubdivisionArray<T> for D1 {
             .unwrap()
     }
 
-    fn iter<'a>(arr: &'a Self::SubdivisionArray) -> std::slice::Iter<'a, T> {
+    fn iter<'a, T>(arr: &'a Self::SubdivisionArray<T>) -> std::slice::Iter<'a, T> {
         arr.iter()
     }
 
@@ -286,15 +286,15 @@ impl<T> SubdivisionArray<T> for D1 {
     }
 }
 
-impl<T> SubdivisionArray<T> for D2 {
-    type SubdivisionArray = [T; 4];
+impl SubdivisionArray for D2 {
+    type SubdivisionArray<T> = [T; 4];
     type Mapped<U> = [U; 4];
 
-    fn map<U>(arr: Self::SubdivisionArray, f: impl FnMut(T) -> U) -> Self::Mapped<U> {
+    fn map<T, U>(arr: Self::SubdivisionArray<T>, f: impl FnMut(T) -> U) -> Self::Mapped<U> {
         arr.map(f)
     }
 
-    fn map_ref<U>(arr: &Self::SubdivisionArray, f: impl FnMut(&T) -> U) -> Self::Mapped<U> {
+    fn map_ref<T, U>(arr: &Self::SubdivisionArray<T>, f: impl FnMut(&T) -> U) -> Self::Mapped<U> {
         arr.iter()
             .map(f)
             .collect::<Vec<_>>()
@@ -303,7 +303,7 @@ impl<T> SubdivisionArray<T> for D2 {
             .unwrap()
     }
 
-    fn iter<'a>(arr: &'a Self::SubdivisionArray) -> std::slice::Iter<'a, T> {
+    fn iter<'a, T>(arr: &'a Self::SubdivisionArray<T>) -> std::slice::Iter<'a, T> {
         arr.iter()
     }
 
@@ -315,15 +315,15 @@ impl<T> SubdivisionArray<T> for D2 {
     }
 }
 
-impl<T> SubdivisionArray<T> for D3 {
-    type SubdivisionArray = [T; 8];
+impl SubdivisionArray for D3 {
+    type SubdivisionArray<T> = [T; 8];
     type Mapped<U> = [U; 8];
 
-    fn map<U>(arr: Self::SubdivisionArray, f: impl FnMut(T) -> U) -> Self::Mapped<U> {
+    fn map<T, U>(arr: Self::SubdivisionArray<T>, f: impl FnMut(T) -> U) -> Self::Mapped<U> {
         arr.map(f)
     }
 
-    fn map_ref<U>(arr: &Self::SubdivisionArray, f: impl FnMut(&T) -> U) -> Self::Mapped<U> {
+    fn map_ref<T, U>(arr: &Self::SubdivisionArray<T>, f: impl FnMut(&T) -> U) -> Self::Mapped<U> {
         arr.iter()
             .map(f)
             .collect::<Vec<_>>()
@@ -332,7 +332,7 @@ impl<T> SubdivisionArray<T> for D3 {
             .unwrap()
     }
 
-    fn iter<'a>(arr: &'a Self::SubdivisionArray) -> std::slice::Iter<'a, T> {
+    fn iter<'a, T>(arr: &'a Self::SubdivisionArray<T>) -> std::slice::Iter<'a, T> {
         arr.iter()
     }
 
@@ -349,3 +349,6 @@ impl<T> SubdivisionArray<T> for D3 {
 }
 
 impl<T> VectorSubdivision for T where T: VectorDimension {}
+
+pub trait VectorSpace<T>: DimensionVector<T> + DimensionArray + SubdivisionArray {}
+impl<T, U> VectorSpace<U> for T where T: DimensionVector<U> + DimensionArray + SubdivisionArray {}

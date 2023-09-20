@@ -1,11 +1,11 @@
-use std::fmt::Debug;
+use std::{collections::BTreeSet, fmt::Debug};
 
-use crate::vector_space::{SubdivisionArray, D1, D2, D3};
+use crate::vector_space::{VectorSpace, D1, D2, D3};
 
 /// Recursive tree with N cells per root
 #[derive(Clone, PartialEq, PartialOrd)]
-pub enum Tree<T, D: SubdivisionArray<Box<Tree<T, D>>>> {
-    Root(D::SubdivisionArray),
+pub enum Tree<T, D: VectorSpace<f64>> {
+    Root(D::SubdivisionArray<Box<Tree<T, D>>>),
     Leaf(T),
 }
 
@@ -39,17 +39,23 @@ pub type Tree8<T> = Tree<T, D3>;
 
 impl<T, D> Tree<T, D>
 where
-    D: SubdivisionArray<Box<Tree<T, D>>> + SubdivisionArray<Box<Tree<usize, D>>>,
-    for<'a> &'a <D as SubdivisionArray<Box<Tree<T, D>>>>::SubdivisionArray:
-        IntoIterator<Item = &'a Box<Tree<T, D>>>,
-    <<D as SubdivisionArray<Box<Tree<usize, D>>>>::SubdivisionArray as IntoIterator>::IntoIter:
-        'static,
+    D: VectorSpace<f64>,
 {
     // Return the maximum depth present in the tree
     pub fn depth(&self) -> usize {
-        self.map_depth_impl(0)
+        self.map_depth()
             .into_iter()
             .fold(0, |acc, next| acc.max(next))
+    }
+
+    /// Return the set of depths that exist in the tree
+    pub fn depths(&self) -> BTreeSet<usize> {
+        BTreeSet::from_iter(self.map_depth())
+    }
+
+    /// Returns true if all leaves are of the same depth
+    pub fn is_grid(&self) -> bool {
+        self.depths().len() == 1
     }
 
     // Map the tree to one containing a depth at each leaf
@@ -61,7 +67,7 @@ where
         match self {
             Tree::Leaf(_) => Tree::Leaf(d),
             Tree::Root(t) => Tree::Root(
-                t.into_iter()
+                D::iter(t)
                     .map(|t| Box::new(t.map_depth_impl(d + 1)))
                     .collect::<Vec<_>>()
                     .try_into()
@@ -80,7 +86,7 @@ where
     pub fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
         match self {
             Self::Leaf(t) => Box::new(std::iter::once(t)),
-            Self::Root(t) => Box::new(t.into_iter().flat_map(|t| t.iter())),
+            Self::Root(t) => Box::new(D::iter(t).flat_map(|t| t.iter())),
         }
     }
 
@@ -88,9 +94,6 @@ where
     pub fn map<F, U>(self, f: F) -> Tree<U, D>
     where
         F: Clone + Fn(T) -> U,
-        U: Debug,
-        D: SubdivisionArray<Box<Tree<T, D>>> + SubdivisionArray<Box<Tree<U, D>>>,
-        <D as SubdivisionArray<Box<Tree<U, D>>>>::SubdivisionArray: Debug,
     {
         match self {
             Tree::Leaf(t) => Tree::Leaf(f(t)),
@@ -108,8 +111,7 @@ where
 impl<T, D> IntoIterator for Tree<T, D>
 where
     T: 'static,
-    D: SubdivisionArray<Box<Tree<T, D>>>,
-    <<D as SubdivisionArray<Box<Tree<T, D>>>>::SubdivisionArray as IntoIterator>::IntoIter: 'static,
+    D: VectorSpace<f64>,
 {
     type Item = T;
 
@@ -122,4 +124,3 @@ where
         }
     }
 }
-

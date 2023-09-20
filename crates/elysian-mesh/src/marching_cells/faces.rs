@@ -1,16 +1,25 @@
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
+use std::{
+    marker::PhantomData,
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not},
+};
+
+use crate::vector_space::{D2, D3};
 
 use super::{face::Face, All};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Faces<const D: usize>(pub u8);
+pub struct Faces<D>(pub u8, PhantomData<D>);
 
-impl<const D: usize> Faces<D> {
-    pub const EMPTY: Self = Faces(0);
+impl<D> Faces<D> {
+    pub const EMPTY: Self = Self::new(0);
+
+    pub const fn new(faces: u8) -> Self {
+        Self(faces, PhantomData)
+    }
 }
 
-impl IntoIterator for Faces<2> {
-    type Item = Face<2>;
+impl IntoIterator for Faces<D2> {
+    type Item = Face<D2>;
 
     type IntoIter = Box<dyn Iterator<Item = Self::Item>>;
 
@@ -29,8 +38,8 @@ impl IntoIterator for Faces<2> {
     }
 }
 
-impl IntoIterator for Faces<3> {
-    type Item = Face<3>;
+impl IntoIterator for Faces<D3> {
+    type Item = Face<D3>;
 
     type IntoIter = Box<dyn Iterator<Item = Self::Item>>;
 
@@ -49,88 +58,93 @@ impl IntoIterator for Faces<3> {
     }
 }
 
-impl All for Faces<2> {
+impl All for Faces<D2> {
     fn all() -> Self {
-        Face::<2>::L | Face::<2>::R | Face::<2>::U | Face::<2>::D
+        Face::<D2>::L | Face::<D2>::R | Face::<D2>::U | Face::<D2>::D
     }
 }
 
-impl All for Faces<3> {
+impl All for Faces<D3> {
     fn all() -> Self {
-        Face::<3>::L | Face::<3>::R | Face::<3>::U | Face::<3>::D | Face::<3>::F | Face::<3>::B
+        Face::<D3>::L
+            | Face::<D3>::R
+            | Face::<D3>::U
+            | Face::<D3>::D
+            | Face::<D3>::F
+            | Face::<D3>::B
     }
 }
 
-impl<const D: usize> BitAnd<Face<D>> for Faces<D> {
+impl<D> BitAnd<Face<D>> for Faces<D> {
     type Output = Self;
 
     fn bitand(self, rhs: Face<D>) -> Self::Output {
-        Self(self.0 & rhs.0.get())
+        Self::new(self.0 & rhs.0.get())
     }
 }
 
-impl<const D: usize> BitOr<Face<D>> for Faces<D> {
+impl<D> BitOr<Face<D>> for Faces<D> {
     type Output = Self;
 
     fn bitor(self, rhs: Face<D>) -> Self::Output {
-        Self(self.0 | rhs.0.get())
+        Self::new(self.0 | rhs.0.get())
     }
 }
 
-impl<const D: usize> BitXor<Face<D>> for Faces<D> {
+impl<D> BitXor<Face<D>> for Faces<D> {
     type Output = Self;
 
     fn bitxor(self, rhs: Face<D>) -> Self::Output {
-        Self(self.0 ^ rhs.0.get())
+        Self::new(self.0 ^ rhs.0.get())
     }
 }
 
-impl<const D: usize> BitAnd for Faces<D> {
+impl<D> BitAnd for Faces<D> {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-        Self(self.0 & rhs.0)
+        Self::new(self.0 & rhs.0)
     }
 }
 
-impl<const D: usize> BitAndAssign for Faces<D> {
+impl<D> BitAndAssign for Faces<D> where D: Copy {
     fn bitand_assign(&mut self, rhs: Self) {
         *self = self.bitand(rhs);
     }
 }
 
-impl<const D: usize> BitOr for Faces<D> {
+impl<D> BitOr for Faces<D> {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
+        Self::new(self.0 | rhs.0)
     }
 }
 
-impl<const D: usize> BitOrAssign for Faces<D> {
+impl<D> BitOrAssign for Faces<D> where D: Copy {
     fn bitor_assign(&mut self, rhs: Self) {
         *self = self.bitor(rhs);
     }
 }
 
-impl<const D: usize> BitXor for Faces<D> {
+impl<D> BitXor for Faces<D> {
     type Output = Self;
 
     fn bitxor(self, rhs: Self) -> Self::Output {
-        Self(self.0 ^ rhs.0)
+        Self::new(self.0 ^ rhs.0)
     }
 }
 
-impl<const D: usize> BitXorAssign for Faces<D> {
+impl<D> BitXorAssign for Faces<D> where D: Copy {
     fn bitxor_assign(&mut self, rhs: Self) {
         *self = self.bitxor(rhs);
     }
 }
 
-impl<const D: usize> Not for Faces<D> {
+impl<D> Not for Faces<D> {
     type Output = Self;
 
     fn not(self) -> Self::Output {
-        Self(!self.0)
+        Self::new(!self.0)
     }
 }

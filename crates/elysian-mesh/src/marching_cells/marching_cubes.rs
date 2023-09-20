@@ -5,14 +5,15 @@ use nalgebra::Vector3;
 use crate::{
     marching_cells::{Cell, Corner, Point},
     util::CollectArray,
+    vector_space::D3,
 };
 
-use super::{edge::Edge, Corners, Edges, MarchingCell};
+use super::{edge::Edge, Corners, Edges, MarchPrimitive, MarchPrimitives, ToMarchPrimitives};
 
 /// Comparator function for finding the closest edge position to a given point
-fn distance_to(p: impl Into<Vector3<f64>>) -> impl Fn(&Edge<3>, &Edge<3>) -> Ordering {
+fn distance_to(p: impl Into<Vector3<f64>>) -> impl Fn(&Edge<D3>, &Edge<D3>) -> Ordering {
     let p = p.into();
-    move |lhs: &Edge<3>, rhs: &Edge<3>| {
+    move |lhs: &Edge<D3>, rhs: &Edge<D3>| {
         (Vector3::from(lhs.point()) - p)
             .magnitude()
             .partial_cmp(&(Vector3::from(rhs.point()) - p).magnitude())
@@ -23,10 +24,10 @@ fn distance_to(p: impl Into<Vector3<f64>>) -> impl Fn(&Edge<3>, &Edge<3>) -> Ord
 pub const QUAD_INDICES: [u32; 6] = [0, 1, 3, 3, 1, 2];
 
 fn hexagon(
-    points: Vec<Edge<3>>,
-    mut lines: Vec<Edges<3>>,
+    points: Vec<Edge<D3>>,
+    mut lines: Vec<Edges<D3>>,
     folded: bool,
-) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
+) -> Vec<(Vec<Edge<D3>>, Option<Vec<u32>>)> {
     let line_base: Vec<_> = if folded {
         points.into_iter().collect()
     } else {
@@ -77,7 +78,7 @@ fn hexagon(
     ]
 }
 
-fn double_quad(lines: Vec<Edges<3>>) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
+fn double_quad(lines: Vec<Edges<D3>>) -> Vec<(Vec<Edge<D3>>, Option<Vec<u32>>)> {
     let [(edge_a, position_a), b, c, d] = lines
         .into_iter()
         .map(|t| {
@@ -116,7 +117,7 @@ fn double_quad(lines: Vec<Edges<3>>) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
     ]
 }
 
-fn fan(points: Vec<Edge<3>>, lines: Vec<Edges<3>>) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
+fn fan(points: Vec<Edge<D3>>, lines: Vec<Edges<D3>>) -> Vec<(Vec<Edge<D3>>, Option<Vec<u32>>)> {
     let point = points[0];
 
     let [line_a, line_b] = [lines[0], lines[1]];
@@ -134,9 +135,9 @@ fn fan(points: Vec<Edge<3>>, lines: Vec<Edges<3>>) -> Vec<(Vec<Edge<3>>, Option<
 }
 
 fn inverse_fan(
-    points: Vec<Edge<3>>,
-    lines: Vec<Edges<3>>,
-) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
+    points: Vec<Edge<D3>>,
+    lines: Vec<Edges<D3>>,
+) -> Vec<(Vec<Edge<D3>>, Option<Vec<u32>>)> {
     let line = lines[0];
 
     let [line_left, line_right] = line.into_iter().collect_array();
@@ -166,9 +167,9 @@ fn inverse_fan(
 }
 
 fn quad_and_triangle(
-    points: Vec<Edge<3>>,
-    lines: Vec<Edges<3>>,
-) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
+    points: Vec<Edge<D3>>,
+    lines: Vec<Edges<D3>>,
+) -> Vec<(Vec<Edge<D3>>, Option<Vec<u32>>)> {
     let lines_center: Vector3<f64> = lines
         .iter()
         .map(|t| {
@@ -202,7 +203,7 @@ fn quad_and_triangle(
     ]
 }
 
-fn double_triangle(mut points: Vec<Edge<3>>) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
+fn double_triangle(mut points: Vec<Edge<D3>>) -> Vec<(Vec<Edge<D3>>, Option<Vec<u32>>)> {
     let base = points[0];
     points.sort_by(distance_to(base.point()));
 
@@ -223,15 +224,15 @@ impl Ord for FloatOrd {
     }
 }
 
-fn triangle(edges: Vec<Edge<3>>) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
+fn triangle(edges: Vec<Edge<D3>>) -> Vec<(Vec<Edge<D3>>, Option<Vec<u32>>)> {
     vec![((edges, None))]
 }
 
-fn point_quad(points: Vec<Edge<3>>) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
+fn point_quad(points: Vec<Edge<D3>>) -> Vec<(Vec<Edge<D3>>, Option<Vec<u32>>)> {
     vec![((points.into_iter().collect(), Some(QUAD_INDICES.to_vec())))]
 }
 
-fn line_quad(lines: Vec<Edges<3>>) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
+fn line_quad(lines: Vec<Edges<D3>>) -> Vec<(Vec<Edge<D3>>, Option<Vec<u32>>)> {
     vec![
         ((
             lines.into_iter().flat_map(|t| t.into_iter()).collect(),
@@ -240,15 +241,13 @@ fn line_quad(lines: Vec<Edges<3>>) -> Vec<(Vec<Edge<3>>, Option<Vec<u32>>)> {
     ]
 }
 
-impl MarchingCell for Corners<3> {
-    type Item = (Vec<Edge<3>>, Option<Vec<u32>>);
-
-    fn marching_cell(self) -> Vec<Self::Item> {
+impl ToMarchPrimitives<D3> for Corners<D3> {
+    fn march_primitives(self) -> MarchPrimitives<D3> {
         let (corners, mut edges): (Vec<_>, Vec<_>) = self.cell().into_iter().unzip();
 
         let mut triangles = vec![];
         let mut push_edges =
-            |corners: &[Corner<3>], mut edges: Vec<Edge<3>>, inds: Option<Vec<u32>>| {
+            |corners: &[Corner<D3>], mut edges: Vec<Edge<D3>>, inds: Option<Vec<u32>>| {
                 let corner_count = corners.len();
                 let corner_center: Vector3<f64> = corners
                     .into_iter()
@@ -275,7 +274,7 @@ impl MarchingCell for Corners<3> {
                     FloatOrd(y.atan2(x))
                 });
 
-                triangles.push((edges, inds));
+                triangles.push(MarchPrimitive::new(edges, inds));
             };
 
         // Prune off free-standing corner triangles
@@ -324,7 +323,7 @@ impl MarchingCell for Corners<3> {
 
         assert!(triangles.len() > 0);
 
-        triangles
+        MarchPrimitives::from_iter(triangles)
     }
 }
 
@@ -335,12 +334,12 @@ mod test {
         ast::{Struct, POSITION_3D},
         module::{StructIdentifier, CONTEXT},
     };
-    use gltf_json::mesh::Mode;
+    use gltf_json::{mesh::Mode, Root};
     use nalgebra::Vector3;
 
     use crate::{
-        gltf_export::samples_to_root,
-        marching_cells::{Corners, MarchingCell, Point},
+        gltf_export::{ExportPrimitive, Indices, Nodes, Samples, Scenes},
+        marching_cells::{Corners, Point, ToMarchPrimitives}, vector_space::D3,
     };
 
     #[test]
@@ -349,7 +348,7 @@ mod test {
 
         let nodes = (1..=254)
             .into_iter()
-            .map(|i| Corners::<3>(i).marching_cell())
+            .map(|i| Corners::<D3>::new(i).march_primitives())
             .enumerate()
             .map(|(i, triangles)| {
                 let x = (i % 6) as isize * 3;
@@ -359,27 +358,29 @@ mod test {
                 // Synthesize samples for GLTF conversion
                 triangles
                     .into_iter()
-                    .map(|(edges, indices)| {
-                        (
-                            Mode::Triangles,
-                            [&position_3d],
-                            edges
-                                .into_iter()
-                                .map(|t| {
-                                    let v = Vector3::<f64>::from(t.point())
-                                        + Vector3::<f64>::new(x as f64, y as f64, z as f64);
+                    .map(|marching_cell| ExportPrimitive {
+                        mode: Mode::Triangles,
+                        properties: [&position_3d].into_iter().collect(),
+                        samples: marching_cell
+                            .edges
+                            .into_iter()
+                            .map(|t| {
+                                let v = Vector3::<f64>::from(t.point())
+                                    + Vector3::<f64>::new(x as f64, y as f64, z as f64);
 
-                                    Struct::new(StructIdentifier(CONTEXT))
-                                        .set(POSITION_3D.into(), [v.x, v.y, v.z].into())
-                                })
-                                .collect::<Vec<_>>(),
-                            indices,
-                        )
+                                Struct::new(StructIdentifier(CONTEXT))
+                                    .set(POSITION_3D.into(), [v.x, v.y, v.z].into())
+                            })
+                            .collect::<Samples>(),
+                        indices: marching_cell
+                            .indices
+                            .map(|indices| indices.into_iter().collect::<Indices>()),
                     })
-                    .collect::<Vec<_>>()
-            });
+                    .collect()
+            })
+            .collect::<Nodes>();
 
-        let root = samples_to_root([nodes]);
+        let root = Root::from([nodes].into_iter().collect::<Scenes>());
 
         std::fs::write("ser.gltf", root.to_string_pretty().unwrap()).unwrap();
 

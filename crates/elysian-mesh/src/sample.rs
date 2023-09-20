@@ -3,9 +3,10 @@ use elysian_ir::{
     module::{Evaluate, EvaluateError, StructIdentifier, CONTEXT},
 };
 
-use crate::vector_space::{DimensionVector, D2, D3};
+use crate::vector_space::{DimensionVector, VectorSpace, D2, D3};
 
-pub trait Sample<'a, D: DimensionVector<f64>>: Evaluate<'a> {
+/// Given a position, sample it and return the result
+pub trait Sample<'a, D: VectorSpace<f64>>: Evaluate<'a> {
     fn sample(&self, p: D::DimensionVector) -> Result<Struct, EvaluateError>;
 }
 

@@ -3,18 +3,25 @@ use std::{
     ops::Mul,
 };
 
+use elysian_ir::{ast::DISTANCE, module::EvaluateError};
 use nalgebra::{Vector1, Vector2, Vector3};
 
-use crate::vector_space::{DimensionVector, D1, D2, D3};
+use crate::{
+    gltf_export::Samples,
+    marching_cells::Corners,
+    sample::Sample,
+    vector_space::{DimensionVector, VectorSpace, D1, D2, D3},
+};
 
-pub struct Bounds<V: DimensionVector<f64>> {
+/// Closed range in a vector space
+pub struct Bounds<V: VectorSpace<f64>> {
     pub min: V::DimensionVector,
     pub max: V::DimensionVector,
 }
 
 impl<V> std::fmt::Debug for Bounds<V>
 where
-    V: DimensionVector<f64>,
+    V: VectorSpace<f64>,
     V::DimensionVector: std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -27,7 +34,7 @@ where
 
 impl<V> Clone for Bounds<V>
 where
-    V: DimensionVector<f64>,
+    V: VectorSpace<f64>,
     V::DimensionVector: Clone,
 {
     fn clone(&self) -> Self {
@@ -40,14 +47,14 @@ where
 
 impl<V> Copy for Bounds<V>
 where
-    V: DimensionVector<f64>,
+    V: VectorSpace<f64>,
     V::DimensionVector: Copy,
 {
 }
 
 impl<V> PartialEq for Bounds<V>
 where
-    V: DimensionVector<f64>,
+    V: VectorSpace<f64>,
     V::DimensionVector: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -57,7 +64,7 @@ where
 
 impl<V> PartialOrd for Bounds<V>
 where
-    V: DimensionVector<f64>,
+    V: VectorSpace<f64>,
     V::DimensionVector: PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -71,7 +78,7 @@ where
 
 impl<V> Hash for Bounds<V>
 where
-    V: DimensionVector<f64>,
+    V: VectorSpace<f64>,
     V::DimensionVector: Hash,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -126,7 +133,7 @@ impl IntoIterator for Bounds<D3> {
 
 impl<V> Bounds<V>
 where
-    V: DimensionVector<f64>,
+    V: VectorSpace<f64>,
 {
     pub fn size(&self) -> V::DimensionVector {
         self.max.clone() - self.min.clone()
@@ -137,5 +144,39 @@ where
         V::DimensionVector: Mul<f64, Output = V::DimensionVector>,
     {
         self.min.clone() + self.size() * 0.5
+    }
+
+    pub fn samples<'a>(&self, evaluator: &impl Sample<'a, V>) -> Result<Samples, EvaluateError>
+    where
+        Self: IntoIterator<Item = V::DimensionVector>,
+    {
+        self.clone()
+            .into_iter()
+            .map(|p| evaluator.sample(p.into()))
+            .collect()
+    }
+
+    pub fn sample_corners<'a>(
+        &self,
+        evaluator: &impl Sample<'a, V>,
+    ) -> Result<Corners<V>, EvaluateError>
+    where
+        Self: IntoIterator<Item = V::DimensionVector>,
+    {
+        Ok(Corners::new(
+            self.clone()
+                .into_iter()
+                .enumerate()
+                .map(|(i, pt)| {
+                    Ok(
+                        if f64::from(evaluator.sample(pt.into())?.get(&DISTANCE.into())) < 0.0 {
+                            2u8.pow(i as u32) as u8
+                        } else {
+                            0
+                        },
+                    )
+                })
+                .sum::<Result<u8, EvaluateError>>()?,
+        ))
     }
 }

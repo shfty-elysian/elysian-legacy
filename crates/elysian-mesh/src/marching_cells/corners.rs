@@ -1,34 +1,30 @@
 use std::{
     collections::BTreeMap,
+    marker::PhantomData,
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not},
 };
 
-use elysian_ir::{
-    ast::{Struct, DISTANCE},
-    module::EvaluateError,
-};
-
-use crate::{
-    bounds::Bounds,
-    sample::Sample,
-    vector_space::{DimensionVector, VectorSubdivision, D2, D3},
-};
+use crate::vector_space::{D2, D3};
 
 use super::{edge::Edge, All, Cell, Corner, Edges, ToEdges};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Corners<const D: usize>(pub u8);
+pub struct Corners<D>(pub u8, PhantomData<D>);
 
-impl<const D: usize> Corners<D> {
-    pub const EMPTY: Self = Corners(0);
+impl<D> Corners<D> {
+    pub const EMPTY: Self = Corners::new(0);
+
+    pub const fn new(corners: u8) -> Self {
+        Corners(corners, PhantomData)
+    }
 
     pub fn is_empty(&self) -> bool {
-        *self == Self::EMPTY
+        self.0 == Self::EMPTY.0
     }
 }
 
-impl IntoIterator for Corners<2> {
-    type Item = Corner<2>;
+impl IntoIterator for Corners<D2> {
+    type Item = Corner<D2>;
 
     type IntoIter = Box<dyn Iterator<Item = Self::Item>>;
 
@@ -47,8 +43,8 @@ impl IntoIterator for Corners<2> {
     }
 }
 
-impl IntoIterator for Corners<3> {
-    type Item = Corner<3>;
+impl IntoIterator for Corners<D3> {
+    type Item = Corner<D3>;
 
     type IntoIter = Box<dyn Iterator<Item = Self::Item>>;
 
@@ -67,29 +63,30 @@ impl IntoIterator for Corners<3> {
     }
 }
 
-impl All for Corners<2> {
+impl All for Corners<D2> {
     fn all() -> Self {
-        Corner::<2>::DL | Corner::<2>::DR | Corner::<2>::UL | Corner::<2>::UR
+        Corner::<D2>::DL | Corner::<D2>::DR | Corner::<D2>::UL | Corner::<D2>::UR
     }
 }
 
-impl All for Corners<3> {
+impl All for Corners<D3> {
     fn all() -> Self {
-        Corner::<3>::FDL
-            | Corner::<3>::FDR
-            | Corner::<3>::FUL
-            | Corner::<3>::FUR
-            | Corner::<3>::BDL
-            | Corner::<3>::BDR
-            | Corner::<3>::BUL
-            | Corner::<3>::BUR
+        Corner::<D3>::FDL
+            | Corner::<D3>::FDR
+            | Corner::<D3>::FUL
+            | Corner::<D3>::FUR
+            | Corner::<D3>::BDL
+            | Corner::<D3>::BDR
+            | Corner::<D3>::BUL
+            | Corner::<D3>::BUR
     }
 }
 
-impl<const D: usize> ToEdges<D> for Corners<D>
+impl<D> ToEdges<D> for Corners<D>
 where
     Corners<D>: IntoIterator<Item = Corner<D>>,
     Corner<D>: ToEdges<D>,
+    D: Copy,
 {
     fn to_edges(&self) -> Edges<D> {
         self.into_iter()
@@ -97,86 +94,90 @@ where
     }
 }
 
-impl<const D: usize> BitAnd<Corner<D>> for Corners<D> {
+impl<D> BitAnd<Corner<D>> for Corners<D> {
     type Output = Self;
 
     fn bitand(self, rhs: Corner<D>) -> Self::Output {
-        Self(self.0 & rhs.0.get())
+        Self::new(self.0 & rhs.0.get())
     }
 }
 
-impl<const D: usize> BitOr<Corner<D>> for Corners<D> {
+impl<D> BitOr<Corner<D>> for Corners<D> {
     type Output = Self;
 
     fn bitor(self, rhs: Corner<D>) -> Self::Output {
-        Self(self.0 | rhs.0.get())
+        Self::new(self.0 | rhs.0.get())
     }
 }
 
-impl<const D: usize> BitXor<Corner<D>> for Corners<D> {
+impl<D> BitXor<Corner<D>> for Corners<D> {
     type Output = Self;
 
     fn bitxor(self, rhs: Corner<D>) -> Self::Output {
-        Self(self.0 ^ rhs.0.get())
+        Self::new(self.0 ^ rhs.0.get())
     }
 }
 
-impl<const D: usize> BitAnd for Corners<D> {
+impl<D> BitAnd for Corners<D> {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-        Self(self.0 & rhs.0)
+        Self::new(self.0 & rhs.0)
     }
 }
 
-impl<const D: usize> BitAndAssign for Corners<D> {
+impl<D> BitAndAssign for Corners<D> where D: Copy {
     fn bitand_assign(&mut self, rhs: Self) {
         *self = self.bitand(rhs);
     }
 }
 
-impl<const D: usize> BitOr for Corners<D> {
+impl<D> BitOr for Corners<D> {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
+        Self::new(self.0 | rhs.0)
     }
 }
 
-impl<const D: usize> BitOrAssign for Corners<D> {
+impl<D> BitOrAssign for Corners<D> where D: Copy {
     fn bitor_assign(&mut self, rhs: Self) {
         *self = self.bitor(rhs);
     }
 }
 
-impl<const D: usize> BitXor for Corners<D> {
+impl<D> BitXor for Corners<D> {
     type Output = Self;
 
     fn bitxor(self, rhs: Self) -> Self::Output {
-        Self(self.0 ^ rhs.0)
+        Self::new(self.0 ^ rhs.0)
     }
 }
 
-impl<const D: usize> BitXorAssign for Corners<D> {
+impl<D> BitXorAssign for Corners<D>
+where
+    D: Copy,
+{
     fn bitxor_assign(&mut self, rhs: Self) {
         *self = self.bitxor(rhs);
     }
 }
 
-impl<const D: usize> Not for Corners<D> {
+impl<D> Not for Corners<D> {
     type Output = Self;
 
     fn not(self) -> Self::Output {
-        Self(!self.0)
+        Self::new(!self.0)
     }
 }
 
-impl<const D: usize> Cell<D> for Corners<D>
+impl<D> Cell<D> for Corners<D>
 where
-    Corners<D>: IntoIterator<Item = Corner<D>>,
+    Corners<D>: Copy + IntoIterator<Item = Corner<D>>,
     Corner<D>: ToEdges<D>,
-    Edges<D>: All + IntoIterator<Item = Edge<D>>,
-    Edge<D>: ToCorners<D>,
+    Edges<D>: Copy + All + IntoIterator<Item = Edge<D>>,
+    Edge<D>: Copy + ToCorners<D>,
+    D: Copy + Ord,
 {
     fn cell(&self) -> BTreeMap<Corner<D>, Edges<D>> {
         let mut edges = self.to_edges();
@@ -205,92 +206,6 @@ where
     }
 }
 
-pub trait ToCorners<const D: usize> {
+pub trait ToCorners<D> {
     fn to_corners(&self) -> Corners<D>;
-}
-
-/// `Sample` extension trait for producing a set of `Corners`
-pub trait SampleCorners<'a, D, const N: usize>: Sample<'a, D>
-where
-    D: DimensionVector<f64> + VectorSubdivision,
-    Bounds<D>: IntoIterator<Item = D::DimensionVector>,
-{
-    fn sample_corners(&self, bounds: Bounds<D>) -> Result<Corners<N>, EvaluateError>;
-}
-
-impl<'a, T> SampleCorners<'a, D2, 2> for T
-where
-    T: Sample<'a, D2>,
-    D2: DimensionVector<f64> + VectorSubdivision,
-    Bounds<D2>: IntoIterator<Item = <D2 as DimensionVector<f64>>::DimensionVector>,
-{
-    fn sample_corners(&self, bounds: Bounds<D2>) -> Result<Corners<2>, EvaluateError> {
-        Ok(Corners(
-            bounds
-                .into_iter()
-                .enumerate()
-                .map(|(i, pt)| {
-                    Ok(
-                        if f64::from(Sample::<D2>::sample(self, pt.into())?.get(&DISTANCE.into()))
-                            < 0.0
-                        {
-                            2u8.pow(i as u32) as u8
-                        } else {
-                            0
-                        },
-                    )
-                })
-                .sum::<Result<u8, EvaluateError>>()?,
-        ))
-    }
-}
-
-impl<'a, T> SampleCorners<'a, D3, 3> for T
-where
-    T: Sample<'a, D3>,
-    D3: DimensionVector<f64> + VectorSubdivision,
-    Bounds<D3>: IntoIterator<Item = <D3 as DimensionVector<f64>>::DimensionVector>,
-{
-    fn sample_corners(&self, bounds: Bounds<D3>) -> Result<Corners<3>, EvaluateError> {
-        Ok(Corners(
-            bounds
-                .into_iter()
-                .enumerate()
-                .map(|(i, pt)| {
-                    Ok(
-                        if f64::from(Sample::<D3>::sample(self, pt.into())?.get(&DISTANCE.into()))
-                            < 0.0
-                        {
-                            2u8.pow(i as u32) as u8
-                        } else {
-                            0
-                        },
-                    )
-                })
-                .sum::<Result<u8, EvaluateError>>()?,
-        ))
-    }
-}
-
-/// `Sample` extension trait for sampling at the corners of a `Bounds`
-pub trait SampleBounds<'a, D>
-where
-    D: DimensionVector<f64>,
-{
-    fn sample_bounds(&self, bounds: Bounds<D>) -> Result<Vec<Struct>, EvaluateError>;
-}
-
-impl<'a, D, T> SampleBounds<'a, D> for T
-where
-    D: DimensionVector<f64>,
-    T: Sample<'a, D>,
-    Bounds<D>: IntoIterator,
-    <D as DimensionVector<f64>>::DimensionVector: From<<Bounds<D> as IntoIterator>::Item>,
-{
-    fn sample_bounds(&self, bounds: Bounds<D>) -> Result<Vec<Struct>, EvaluateError> {
-        bounds
-            .into_iter()
-            .map(|p| Sample::<D>::sample(self, p.into()))
-            .collect::<Result<Vec<_>, _>>()
-    }
 }

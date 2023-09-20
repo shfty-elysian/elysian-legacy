@@ -3,12 +3,8 @@ use std::time::Instant;
 use elysian::{
     image::{color_to_rgb8, rasterize},
     interpreter::Interpreted,
-    ir::{
-        ast::COLOR,
-        module::{AsModule, Dispatch, EvaluateError, SpecializationData},
-    },
+    ir::module::{AsModule, Dispatch, EvaluateError, SpecializationData},
     r#static::{include_static_shapes, Precompiled},
-    shapes::{color::distance_color, modify::IntoSet, shape::IntoShape},
 };
 use image::Rgb;
 use viuer::Config;
