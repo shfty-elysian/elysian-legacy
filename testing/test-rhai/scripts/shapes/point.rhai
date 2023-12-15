@@ -1,0 +1,4 @@
+fn point() {
+    euclidean()
+}
+

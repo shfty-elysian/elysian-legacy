@@ -1,5 +1,4 @@
 use bounds::Bounds;
-use cell_indices::CellIndices;
 use dual_contour::AsDualContour;
 use dual_graph::AsDualGraph;
 use elysian_core::property_identifier::IntoPropertyIdentifier;
@@ -17,25 +16,22 @@ use marching_cells::{Corners, Edge, LocalPoint};
 use nalgebra::{Matrix2, Matrix3, Vector2, Vector3};
 use neighbours::Neighbours;
 use sample::Sample;
-use subdivision_tree::{QuadTree, SubdivisionTree};
+use subdivision_tree::{CellIndices, QuadTree, SubdivisionTree};
 use util::CollectArray;
 use vector_space::{VectorSpace, D2};
 
 use crate::{marching_cells::ToMarchPrimitives, subdivision_tree::Octree, vector_space::D3};
 
 pub mod bounds;
-pub mod cell_indices;
 pub mod dual_contour;
 pub mod dual_graph;
 pub mod evaluator;
-pub mod face_centers;
 pub mod gltf_export;
 pub mod has_sign_change;
 pub mod interpolate_cell;
 pub mod marching_cells;
 pub mod neighbours;
 pub mod sample;
-pub mod subdivision_cell;
 pub mod subdivision_tree;
 pub mod tree;
 pub mod util;

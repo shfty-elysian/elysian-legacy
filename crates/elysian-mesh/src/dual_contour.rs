@@ -5,8 +5,7 @@ use crate::{
     marching_cells::Corners,
     neighbours::Neighbours,
     sample::Sample,
-    subdivision_cell::SubdivisionCell,
-    subdivision_tree::SubdivisionTree,
+    subdivision_tree::{SubdivisionCell, SubdivisionTree},
     vector_space::VectorSpace,
 };
 

@@ -1,13 +1,19 @@
+mod subdivision_cell;
+mod cell_indices;
+mod face_centers;
+
+pub use subdivision_cell::*;
+pub use cell_indices::*;
+pub use face_centers::*;
+
 use std::ops::Mul;
 
 use crate::{
     bounds::Bounds,
     dual_graph::{AsDualGraph, DualGraph, DualPair},
-    face_centers::FaceCenters,
     interpolate_cell::InterpolateCell,
     marching_cells::Face,
     sample::Sample,
-    subdivision_cell::{CellType, SubdivisionCell},
     tree::Tree,
     vector_space::{VectorSpace, D2, D3},
 };

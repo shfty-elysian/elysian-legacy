@@ -1,8 +1,9 @@
 use crate::{
+    has_sign_change::HasSignChange,
     marching_cells::{Corners, Face},
     neighbours::Neighbours,
-    has_sign_change::HasSignChange,
-    vector_space::VectorSpace, subdivision_cell::SubdivisionCell,
+    subdivision_tree::SubdivisionCell,
+    vector_space::VectorSpace,
 };
 
 #[derive(Copy, Clone)]

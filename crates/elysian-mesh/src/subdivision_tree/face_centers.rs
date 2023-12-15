@@ -1,8 +1,7 @@
 use crate::{
     bounds::Bounds,
     gltf_export::Points,
-    subdivision_cell::SubdivisionCell,
-    subdivision_tree::SubdivisionTree,
+    subdivision_tree::{SubdivisionTree, SubdivisionCell},
     tree::Tree,
     vector_space::{VectorSpace, D2, D3},
 };
